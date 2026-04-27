@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Brain, BookOpen, Code2, Cpu, Network, MessageSquare } from "lucide-react";
 import Image from "next/image";
-import { YoutubeIcon, GithubIcon, TwitterIcon, LinkedinIcon } from "@/components/icons/SocialIcons";
+import { YoutubeIcon, GithubIcon, LinkedinIcon } from "@/components/icons/SocialIcons";
 
 const expertise = [
   {
@@ -38,19 +38,10 @@ const expertise = [
   },
 ];
 
-const timeline = [
-  { year: "2021", event: "Started deep-diving into NLP, transformers, and BERT-era models" },
-  { year: "2022", event: "Built first production RAG system; contributed to open-source LLM tooling" },
-  { year: "2023", event: "Launched AmanAI Lab — teaching AI through structured YouTube series" },
-  { year: "2024", event: "Hit 50K subscribers; published 12 complete series; 2M+ total views" },
-  { year: "2025", event: "Expanding into multi-agent systems, multi-modal AI, and AI safety" },
-];
-
 const socials = [
   { icon: YoutubeIcon, label: "YouTube", href: "https://youtube.com/@AmanAI_lab", color: "hover:text-red-400 hover:border-red-400/30" },
-  { icon: GithubIcon, label: "GitHub", href: "https://github.com", color: "hover:text-white hover:border-zinc-500" },
-  { icon: TwitterIcon, label: "Twitter/X", href: "https://twitter.com", color: "hover:text-blue-400 hover:border-blue-400/30" },
-  { icon: LinkedinIcon, label: "LinkedIn", href: "https://linkedin.com", color: "hover:text-blue-400 hover:border-blue-400/30" },
+  { icon: GithubIcon, label: "GitHub", href: "https://github.com/amanailab", color: "hover:text-white hover:border-zinc-500" },
+  { icon: LinkedinIcon, label: "LinkedIn", href: "https://www.linkedin.com/in/aman-chauhan71/", color: "hover:text-blue-400 hover:border-blue-400/30" },
 ];
 
 const fadeUp = {
@@ -58,7 +49,13 @@ const fadeUp = {
   visible: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.5, delay: i * 0.1 } }),
 };
 
-export default function AboutContent() {
+interface Props {
+  videoCount: string;
+  subscriberCount: string;
+  viewCount: string;
+}
+
+export default function AboutContent({ videoCount, subscriberCount, viewCount }: Props) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-28">
       {/* Hero */}
@@ -71,29 +68,22 @@ export default function AboutContent() {
           <p className="text-orange-500 text-xs font-semibold uppercase tracking-[0.2em] mb-3">
             About
           </p>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-6 leading-tight">
-            Hi, I&apos;m Aman —{" "}
-            <span
-              style={{
-                backgroundImage: "linear-gradient(135deg, #fb923c, #f97316)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              AI Educator
-            </span>
+          <h1 className="text-4xl sm:text-5xl font-bold mb-2 leading-tight">
+            Hi, I&apos;m Aman Chauhan
           </h1>
+          <p className="text-orange-400 font-semibold text-base mb-6">Founder, AmanAI Lab</p>
           <div className="space-y-4 text-zinc-400 text-[16px] leading-relaxed mb-8">
             <p>
-              I teach Generative AI, Large Language Models, and AI Agents through structured,
-              hands-on video series. My goal: bridge the gap between cutting-edge AI research
-              and real-world software engineering.
+              With over 10 years of industry experience, I have worked on real-world AI and
+              technology projects with Fortune 500 companies including SAP Labs, S&amp;P Global,
+              Amdocs, and LTIMindtree. My hands-on experience spans Machine Learning, Deep
+              Learning, Computer Vision, NLP, Generative AI, and Agentic AI — from research
+              to production.
             </p>
             <p>
-              Whether you&apos;re just starting out or an experienced developer adding AI to your
-              stack, AmanAI Lab has a learning path designed to take you from concepts to
-              production-grade systems.
+              I founded AmanAI Lab to make high-quality, practical AI education accessible to
+              everyone. Every course, video, and resource here is built from real project
+              experience — not just theory.
             </p>
           </div>
 
@@ -148,9 +138,9 @@ export default function AboutContent() {
               </div>
               <div className="grid grid-cols-3 gap-3 w-full mt-2">
                 {[
-                  { v: "150+", l: "Videos" },
-                  { v: "50K+", l: "Subs" },
-                  { v: "2M+", l: "Views" },
+                  { v: videoCount, l: "Videos" },
+                  { v: subscriberCount, l: "Subs" },
+                  { v: viewCount, l: "Views" },
                 ].map(({ v, l }) => (
                   <div key={l} className="bg-zinc-800/60 rounded-xl p-2.5 text-center">
                     <p className="text-orange-400 font-bold text-sm">{v}</p>
@@ -204,46 +194,6 @@ export default function AboutContent() {
               <p className="text-zinc-500 text-xs leading-relaxed">{item.desc}</p>
             </motion.div>
           ))}
-        </div>
-      </div>
-
-      {/* Timeline */}
-      <div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={fadeUp}
-          className="mb-10"
-        >
-          <p className="text-orange-500 text-xs font-semibold uppercase tracking-[0.2em] mb-2">
-            History
-          </p>
-          <h2 className="text-3xl font-bold">The Journey</h2>
-        </motion.div>
-
-        <div className="relative max-w-2xl">
-          <div className="absolute left-[68px] top-2 bottom-2 w-px bg-gradient-to-b from-orange-500/60 via-zinc-700 to-transparent" />
-          <div className="space-y-8">
-            {timeline.map((item, i) => (
-              <motion.div
-                key={item.year}
-                initial={{ opacity: 0, x: -16 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-                className="flex items-start gap-6"
-              >
-                <div className="w-14 shrink-0 text-right">
-                  <span className="text-orange-500 font-bold text-sm tabular-nums">{item.year}</span>
-                </div>
-                <div className="relative shrink-0 mt-1">
-                  <div className="w-3 h-3 rounded-full bg-orange-500 ring-4 ring-zinc-950 relative z-10" />
-                </div>
-                <p className="text-zinc-300 text-sm leading-relaxed">{item.event}</p>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </div>
 

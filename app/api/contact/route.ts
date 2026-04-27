@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
@@ -17,14 +20,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
     }
 
-    // ── Integrate your email provider here ───────────────────────────────────
-    // Option 1 – Resend:
-    //   await resend.emails.send({ from: '...', to: 'hello@amanailab.com', subject, html })
-    // Option 2 – Nodemailer:
-    //   await transporter.sendMail({ from: email, to: 'hello@amanailab.com', subject, text: message })
-    // ─────────────────────────────────────────────────────────────────────────
-
-    console.log("[Contact Form]", { name, email, subject, message, at: new Date().toISOString() });
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: process.env.CONTACT_EMAIL!,
+      replyTo: email,
+      subject: `New message from ${name}${subject ? `: ${subject}` : ""}`,
+      html: `
+        <h2>New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>Message:</strong> ${message}</p>
+      `,
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
