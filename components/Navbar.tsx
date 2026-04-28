@@ -11,6 +11,7 @@ import { YoutubeIcon } from "@/components/icons/SocialIcons";
 const navLinks = [
   { href: "/", label: "Home" },
   { href: "/series", label: "Series" },
+  { href: "/resources", label: "Resources" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
