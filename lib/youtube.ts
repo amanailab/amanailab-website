@@ -251,10 +251,7 @@ export async function getPlaylistVideos(playlistId: string, limit = 30): Promise
     .map((item) => {
       const snippet = item.snippet ?? {};
       const videoId: string = snippet.resourceId.videoId;
-      const thumb: string =
-        snippet.thumbnails?.maxres?.url ??
-        snippet.thumbnails?.high?.url ??
-        `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      const thumb: string = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
 
       return {
         id: videoId,
