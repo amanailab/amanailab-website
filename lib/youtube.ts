@@ -173,8 +173,10 @@ export async function getPlaylists(limit = 20): Promise<Playlist[]> {
     const desc: string = snippet.description ?? "";
     const thumb: string =
       snippet.thumbnails?.maxres?.url ??
+      snippet.thumbnails?.standard?.url ??
       snippet.thumbnails?.high?.url ??
       snippet.thumbnails?.medium?.url ??
+      snippet.thumbnails?.default?.url ??
       "";
     const videoCount: number = item.contentDetails?.itemCount ?? 0;
     const gradient = GRADIENTS[i % GRADIENTS.length];
@@ -223,7 +225,10 @@ export async function getPlaylistById(playlistId: string): Promise<Playlist | nu
     description: desc,
     thumbnail:
       snippet.thumbnails?.maxres?.url ??
+      snippet.thumbnails?.standard?.url ??
       snippet.thumbnails?.high?.url ??
+      snippet.thumbnails?.medium?.url ??
+      snippet.thumbnails?.default?.url ??
       "",
     videoCount: item.contentDetails?.itemCount ?? 0,
     url: `https://www.youtube.com/playlist?list=${item.id}`,
