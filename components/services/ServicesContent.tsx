@@ -65,9 +65,6 @@ function HeroIllustration() {
       className="w-full max-w-sm mx-auto lg:max-w-none"
       aria-hidden="true"
     >
-      {/* ── Outer ambient glow ── */}
-      <circle cx="200" cy="200" r="170" fill="#FF6B35" fillOpacity="0.04" />
-      <circle cx="200" cy="200" r="140" fill="#60a5fa" fillOpacity="0.03" />
 
       {/* ── Connecting lines (ring 1 → center) ── */}
       <line x1="200" y1="200" x2="200" y2="90"  stroke="#FF6B35" strokeWidth="1.5" strokeOpacity="0.35" />
