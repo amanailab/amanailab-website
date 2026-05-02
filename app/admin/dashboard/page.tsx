@@ -4,15 +4,20 @@ import { getAdminSupabase } from '@/lib/admin'
 import { FileText, Globe, FileEdit, PenSquare, ExternalLink, Home } from 'lucide-react'
 
 async function getStats() {
-  const supabase = getAdminSupabase()
-  const [{ count: total }, { count: published }] = await Promise.all([
-    supabase.from('blog_posts').select('*', { count: 'exact', head: true }),
-    supabase.from('blog_posts').select('*', { count: 'exact', head: true }).eq('published', true),
-  ])
-  return {
-    total: total ?? 0,
-    published: published ?? 0,
-    drafts: (total ?? 0) - (published ?? 0),
+  try {
+    const supabase = getAdminSupabase()
+    const [{ count: total }, { count: published }] = await Promise.all([
+      supabase.from('blog_posts').select('*', { count: 'exact', head: true }),
+      supabase.from('blog_posts').select('*', { count: 'exact', head: true }).eq('published', true),
+    ])
+    return {
+      total: total ?? 0,
+      published: published ?? 0,
+      drafts: (total ?? 0) - (published ?? 0),
+    }
+  } catch (err) {
+    console.error('[admin/dashboard] getStats error:', err)
+    return { total: 0, published: 0, drafts: 0 }
   }
 }
 
@@ -29,7 +34,6 @@ export default async function DashboardPage() {
             <p className="text-zinc-500 text-sm mt-1">Welcome back, Aman</p>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
               <div className="flex items-center gap-3 mb-3">
@@ -65,7 +69,6 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick Actions */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
             <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">Quick Actions</h2>
             <div className="flex flex-wrap gap-3">

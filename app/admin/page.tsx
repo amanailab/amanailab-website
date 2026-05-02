@@ -30,6 +30,7 @@ export default function AdminLoginPage() {
                   type="password"
                   name="password"
                   required
+                  autoComplete="current-password"
                   placeholder="Enter admin password"
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-orange-500"
                 />

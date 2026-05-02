@@ -15,26 +15,37 @@ async function getPostsPage(
   search: string,
   category: string
 ): Promise<{ posts: BlogPost[]; total: number }> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
 
-  const start = (page - 1) * PER_PAGE
-  const end = start + PER_PAGE - 1
+    const start = (page - 1) * PER_PAGE
+    const end = start + PER_PAGE - 1
 
-  let query = supabase
-    .from('blog_posts')
-    .select('*', { count: 'exact' })
-    .eq('published', true)
-    .order('created_at', { ascending: false })
-    .range(start, end)
+    let query = supabase
+      .from('blog_posts')
+      .select('*', { count: 'exact' })
+      .eq('published', true)
+      .order('created_at', { ascending: false })
+      .range(start, end)
 
-  if (search) query = query.ilike('title', `%${search}%`)
-  if (category) query = query.eq('category', category)
+    if (search) query = query.ilike('title', `%${search}%`)
+    if (category) query = query.eq('category', category)
 
-  const { data, count } = await query
-  return { posts: data ?? [], total: count ?? 0 }
+    const { data, count, error } = await query
+
+    if (error) {
+      console.error('[blog/page] Supabase error:', error.message)
+      return { posts: [], total: 0 }
+    }
+
+    return { posts: data ?? [], total: count ?? 0 }
+  } catch (err) {
+    console.error('[blog/page] Unexpected error:', err)
+    return { posts: [], total: 0 }
+  }
 }
 
 export default async function BlogPage({
@@ -42,10 +53,10 @@ export default async function BlogPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const { page: pageParam, q, category } = await searchParams
-  const page = Math.max(1, Number(pageParam) || 1)
-  const search = typeof q === 'string' ? q : ''
-  const cat = typeof category === 'string' ? category : ''
+  const sp = await searchParams
+  const page = Math.max(1, Number(sp.page) || 1)
+  const search = typeof sp.q === 'string' ? sp.q : ''
+  const cat = typeof sp.category === 'string' ? sp.category : ''
 
   const { posts, total } = await getPostsPage(page, search, cat)
 
