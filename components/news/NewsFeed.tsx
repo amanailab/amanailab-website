@@ -137,12 +137,29 @@ function NewsCard({ article }: { article: NewsArticle }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
+function lastUpdatedLabel(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} minute${minutes !== 1 ? "s" : ""} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days !== 1 ? "s" : ""} ago`;
+}
+
 export default function NewsFeed() {
   const [articles, setArticles]     = useState<NewsArticle[]>([]);
   const [loading, setLoading]       = useState(true);
   const [category, setCategory]     = useState<Category>("all");
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("news_last_updated");
+    if (stored) setLastUpdated(stored);
+  }, []);
 
   const fetchArticles = useCallback(async (cat: Category) => {
     setLoading(true);
@@ -157,7 +174,12 @@ export default function NewsFeed() {
     }
 
     const { data, error } = await query;
-    if (!error) setArticles(data ?? []);
+    if (!error) {
+      setArticles(data ?? []);
+      const now = new Date().toISOString();
+      localStorage.setItem("news_last_updated", now);
+      setLastUpdated(now);
+    }
     setLoading(false);
   }, []);
 
@@ -201,6 +223,11 @@ export default function NewsFeed() {
           <p className="text-zinc-400 text-lg max-w-xl mx-auto">
             Latest AI updates curated for developers. Updated daily.
           </p>
+          {lastUpdated && (
+            <p className="text-zinc-600 text-sm mt-3">
+              Last updated: {lastUpdatedLabel(lastUpdated)}
+            </p>
+          )}
         </div>
       </div>
 

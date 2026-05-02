@@ -15,33 +15,31 @@ interface GroqAnalysis {
   category: "models" | "research" | "tools" | "agents" | "india_ai" | "general";
 }
 
+// FIX 2 — relaxed keyword list, title-only matching
 const AI_KEYWORDS = [
+  "ai",
   "artificial intelligence",
-  "large language model",
+  "machine learning",
   "llm",
-  "generative ai",
   "gpt",
-  "claude ai",
-  "gemini ai",
   "openai",
   "anthropic",
-  "hugging face",
-  "huggingface",
-  "mistral",
-  "llama",
-  "ai model",
-  "machine learning",
-  "deep learning",
-  "neural network",
-  "ai agent",
+  "google",
+  "meta ai",
   "chatgpt",
-  "foundation model",
-  "diffusion model",
-  "transformer model",
+  "deep learning",
+  "neural",
+  "model",
+  "generative",
+  "language model",
+  "data science",
+  "algorithm",
+  "automation",
+  "robot",
 ];
 
-function containsAIKeyword(text: string): boolean {
-  const lower = text.toLowerCase();
+function containsAIKeyword(title: string): boolean {
+  const lower = title.toLowerCase();
   return AI_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
@@ -71,7 +69,8 @@ async function fetchRSSFeed(url: string, sourceName: string): Promise<RawArticle
       if (articles.length >= 5) break;
 
       const title = stripHtml(extractTagContent(item, "title"));
-      const link = extractTagContent(item, "link") ||
+      const link =
+        extractTagContent(item, "link") ||
         (item.match(/<link\s*\/?>\s*(https?:\/\/[^\s<]+)/i)?.[1] ?? "");
       const pubDate = extractTagContent(item, "pubDate");
       const description = stripHtml(
@@ -79,7 +78,8 @@ async function fetchRSSFeed(url: string, sourceName: string): Promise<RawArticle
       );
 
       if (!title || !link) continue;
-      if (!containsAIKeyword(title + " " + description)) continue;
+      // FIX 2 — check title only
+      if (!containsAIKeyword(title)) continue;
 
       articles.push({
         title,
@@ -155,22 +155,16 @@ export async function GET() {
   try {
     const articles: RawArticle[] = [];
 
-    // STEP 1 — NewsData.io
+    // STEP 1 — NewsData.io (FIX 1: relaxed query, size 50)
     try {
       const newsdataUrl =
         "https://newsdata.io/api/1/latest?" +
         "apikey=" + process.env.NEWSDATA_API_KEY +
-        "&q=artificial intelligence OR LLM OR " +
-        "large language model OR generative AI OR " +
-        "GPT OR Claude AI OR Gemini AI OR " +
-        "AI model OR machine learning model OR " +
-        "AI agent OR deep learning OR " +
-        "HuggingFace OR OpenAI OR Anthropic OR " +
-        "Llama AI OR Mistral AI" +
+        "&q=AI OR artificial intelligence OR machine learning OR LLM OR ChatGPT OR OpenAI OR Google AI OR Meta AI" +
         "&language=en" +
         "&category=technology,science" +
         "&removeduplicate=1" +
-        "&size=10";
+        "&size=50";
 
       const ndRes = await fetch(newsdataUrl, { signal: AbortSignal.timeout(10000) });
       if (ndRes.ok) {
@@ -191,12 +185,18 @@ export async function GET() {
       console.error("[NewsData] Error:", err);
     }
 
-    // STEP 2 — RSS feeds
+    // STEP 2 — RSS feeds (FIX 3: expanded feed list)
     const rssFeeds = [
       { url: "https://huggingface.co/blog/feed.xml", name: "Hugging Face" },
       { url: "https://venturebeat.com/ai/feed", name: "VentureBeat" },
       { url: "https://techcrunch.com/tag/artificial-intelligence/feed", name: "TechCrunch" },
       { url: "https://analyticsindiamag.com/feed", name: "Analytics India Magazine" },
+      { url: "https://www.thenextweb.com/feed/", name: "The Next Web" },
+      { url: "https://www.wired.com/feed/tag/artificial-intelligence/rss", name: "Wired" },
+      { url: "https://feeds.arstechnica.com/arstechnica/technology-lab", name: "Ars Technica" },
+      { url: "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml", name: "The Verge" },
+      { url: "https://techcrunch.com/category/artificial-intelligence/feed/", name: "TechCrunch AI" },
+      { url: "https://www.zdnet.com/topic/artificial-intelligence/rss.xml", name: "ZDNet" },
     ];
 
     const rssResults = await Promise.allSettled(
@@ -209,15 +209,8 @@ export async function GET() {
       }
     }
 
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 30);
-
-    const recentArticles = articles.filter((a) => {
-      const d = new Date(a.published_at);
-      return isNaN(d.getTime()) ? true : d >= oneDayAgo;
-    });
-
-    if (recentArticles.length === 0) {
+    // FIX 4 — removed date filter; accept all articles
+    if (articles.length === 0) {
       return NextResponse.json({ success: false, count: 0, message: "No articles found from sources." });
     }
 
@@ -227,7 +220,7 @@ export async function GET() {
 
     let savedCount = 0;
 
-    for (const article of recentArticles) {
+    for (const article of articles) {
       if (!article.title || !article.source_url) continue;
 
       const analysis = await analyzeWithGroq(article);
@@ -267,7 +260,6 @@ export async function GET() {
       }
     }
 
-    // STEP 6 — Return response
     return NextResponse.json({
       success: true,
       count: savedCount,

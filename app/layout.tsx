@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GoogleAnalytics } from '@next/third-parties/google'
+import { headers } from 'next/headers'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,21 +23,24 @@ export const metadata: Metadata = {
   keywords: ["Generative AI", "LLMs", "AI Agents", "RAG", "LangChain", "Fine-tuning", "YouTube"],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers()
+  const isAdmin = headersList.get('x-is-admin') === '1'
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
       <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased" suppressHydrationWarning={true}>
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <GoogleAnalytics gaId="G-1H3YS42SXP" />
+        {!isAdmin && <Navbar />}
+        <main className={isAdmin ? 'flex-1' : 'flex-1'}>{children}</main>
+        {!isAdmin && <Footer />}
+        {!isAdmin && <GoogleAnalytics gaId="G-1H3YS42SXP" />}
       </body>
     </html>
   );
