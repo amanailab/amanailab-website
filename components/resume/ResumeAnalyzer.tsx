@@ -79,6 +79,20 @@ interface BuilderProject {
   description: string;
 }
 
+interface BuilderResumeExperience {
+  company: string;
+  role: string;
+  duration: string;
+  bullets: string[];
+}
+
+interface BuilderResume {
+  summary: string;
+  experiences: BuilderResumeExperience[];
+  skillsFormatted: string;
+  toolsFormatted: string;
+}
+
 interface BuilderState {
   fullName: string;
   email: string;
@@ -848,11 +862,11 @@ export default function ResumeAnalyzer() {
   const [usedToday, setUsedToday] = useState(0);
   const [copied, setCopied] = useState(false);
   const [coverCopied, setCoverCopied] = useState(false);
-  const [resumeCopied, setResumeCopied] = useState(false);
   const [linkedInCopied, setLinkedInCopied] = useState(false);
   const [builder, setBuilder] = useState<BuilderState>(INITIAL_BUILDER);
-  const [builderResume, setBuilderResume] = useState("");
+  const [builderResume, setBuilderResume] = useState<BuilderResume | null>(null);
   const [builderErrors, setBuilderErrors] = useState<Record<string, string>>({});
+  const [pdfWorking, setPdfWorking] = useState(false);
   const [linkedIn, setLinkedIn] = useState<LinkedInState>(INITIAL_LINKEDIN);
   const [linkedInErrors, setLinkedInErrors] = useState<Record<string, string>>({});
   const [linkedInResult, setLinkedInResult] = useState("");
@@ -918,7 +932,7 @@ export default function ResumeAnalyzer() {
     setAnalysis(null);
     setMatch(null);
     setCoverLetter("");
-    setBuilderResume("");
+    setBuilderResume(null);
     setBuilderErrors({});
     setLinkedInResult("");
     setLinkedInErrors({});
@@ -1013,7 +1027,7 @@ export default function ResumeAnalyzer() {
     setAnalysis(null);
     setMatch(null);
     setCoverLetter("");
-    setBuilderResume("");
+    setBuilderResume(null);
     setBuilderErrors({});
     setBuilder(INITIAL_BUILDER);
     setLinkedIn(INITIAL_LINKEDIN);
@@ -1054,14 +1068,197 @@ export default function ResumeAnalyzer() {
     }
   }
 
-  async function copyBuilderResume() {
-    if (!builderResume) return;
+  async function downloadResumePDF() {
+    if (!builderResume || pdfWorking) return;
+    setPdfWorking(true);
     try {
-      await navigator.clipboard.writeText(builderResume);
-      setResumeCopied(true);
-      setTimeout(() => setResumeCopied(false), 2000);
-    } catch {
-      // ignore
+      const { default: jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentWidth = pageWidth - margin * 2;
+      let y = 20;
+
+      const ensureSpace = (needed: number) => {
+        if (y + needed > pageHeight - margin) {
+          doc.addPage();
+          y = margin;
+        }
+      };
+
+      // NAME — large, centered, black
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      const nameText = (builder.fullName || "").toUpperCase();
+      doc.text(nameText, pageWidth / 2, y, { align: "center" });
+      y += 8;
+
+      // Target role — centered, gray
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(80, 80, 80);
+      if (builder.targetRole) {
+        doc.text(builder.targetRole, pageWidth / 2, y, { align: "center" });
+        y += 6;
+      }
+
+      // Contact — centered, small
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      const contact = [builder.email, builder.phone, builder.location, builder.linkedin]
+        .filter(Boolean)
+        .join("  |  ");
+      if (contact) {
+        const contactLines = doc.splitTextToSize(contact, contentWidth);
+        doc.text(contactLines, pageWidth / 2, y, { align: "center" });
+        y += contactLines.length * 5;
+      }
+      y += 4;
+
+      // Orange divider
+      doc.setDrawColor(255, 107, 53);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      const sectionHeader = (label: string) => {
+        ensureSpace(14);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 107, 53);
+        doc.text(label, margin, y);
+        y += 6;
+      };
+
+      const grayDivider = () => {
+        ensureSpace(8);
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.3);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 6;
+      };
+
+      // PROFESSIONAL SUMMARY
+      sectionHeader("PROFESSIONAL SUMMARY");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+      const summaryLines = doc.splitTextToSize(builderResume.summary || "", contentWidth);
+      ensureSpace(summaryLines.length * 5);
+      doc.text(summaryLines, margin, y);
+      y += summaryLines.length * 5 + 6;
+
+      grayDivider();
+
+      // WORK EXPERIENCE
+      sectionHeader("WORK EXPERIENCE");
+      const experiences = builderResume.experiences ?? [];
+      experiences.forEach((exp) => {
+        ensureSpace(10);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        const heading = `${exp.role || ""}${exp.role && exp.company ? " | " : ""}${exp.company || ""}`;
+        doc.text(heading, margin, y);
+
+        if (exp.duration) {
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "italic");
+          doc.setTextColor(100, 100, 100);
+          doc.text(exp.duration, pageWidth - margin, y, { align: "right" });
+        }
+        y += 5;
+
+        (exp.bullets ?? []).forEach((bullet) => {
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(0, 0, 0);
+          const bulletLines = doc.splitTextToSize(`• ${bullet}`, contentWidth - 5);
+          ensureSpace(bulletLines.length * 4 + 2);
+          doc.text(bulletLines, margin + 3, y);
+          y += bulletLines.length * 4 + 2;
+        });
+        y += 3;
+      });
+
+      grayDivider();
+
+      // TECHNICAL SKILLS
+      sectionHeader("TECHNICAL SKILLS");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+      const skillsBlock = [
+        `Technical: ${builderResume.skillsFormatted || builder.technicalSkills}`,
+        builder.tools || builderResume.toolsFormatted
+          ? `Tools: ${builderResume.toolsFormatted || builder.tools}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      const skillLines = doc.splitTextToSize(skillsBlock, contentWidth);
+      ensureSpace(skillLines.length * 5);
+      doc.text(skillLines, margin, y);
+      y += skillLines.length * 5 + 6;
+
+      grayDivider();
+
+      // EDUCATION
+      sectionHeader("EDUCATION");
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      ensureSpace(10);
+      doc.text(builder.degree || "", margin, y);
+      y += 5;
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+      const eduLine = [builder.college, builder.graduationYear].filter(Boolean).join(" | ");
+      if (eduLine) {
+        doc.text(eduLine, margin, y);
+        y += 5;
+      }
+      y += 3;
+
+      // PROJECTS
+      const projects = (builder.projects || []).filter(
+        (p) => p.name.trim() || p.description.trim()
+      );
+      if (projects.length > 0) {
+        grayDivider();
+        sectionHeader("PROJECTS");
+        projects.forEach((project) => {
+          if (project.name) {
+            ensureSpace(10);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 0, 0);
+            doc.text(project.name, margin, y);
+            y += 5;
+          }
+          if (project.description) {
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            const projLines = doc.splitTextToSize(`• ${project.description}`, contentWidth - 5);
+            ensureSpace(projLines.length * 4 + 2);
+            doc.text(projLines, margin + 3, y);
+            y += projLines.length * 4 + 4;
+          }
+        });
+      }
+
+      const safeName = (builder.fullName || "Resume").replace(/[^a-z0-9]+/gi, "_");
+      doc.save(`${safeName}_Resume_AmanAI_Lab.pdf`);
+    } catch (err) {
+      console.error("[Resume PDF] Error:", err);
+      setError("Could not generate PDF. Please try again.");
+    } finally {
+      setPdfWorking(false);
     }
   }
 
@@ -1164,7 +1361,7 @@ export default function ResumeAnalyzer() {
     }
     setError("");
     setWorking(true);
-    if (!regenerate) setBuilderResume("");
+    if (!regenerate) setBuilderResume(null);
     try {
       const res = await fetch("/api/resume/build", {
         method: "POST",
@@ -1176,7 +1373,29 @@ export default function ResumeAnalyzer() {
 
       const newCount = incrementUsage();
       setUsedToday(newCount);
-      setBuilderResume(typeof data.resume === "string" ? data.resume : "");
+      const r = data.resume;
+      if (
+        r &&
+        typeof r === "object" &&
+        typeof r.summary === "string" &&
+        Array.isArray(r.experiences)
+      ) {
+        setBuilderResume({
+          summary: r.summary,
+          experiences: r.experiences.map((e: BuilderResumeExperience) => ({
+            company: typeof e?.company === "string" ? e.company : "",
+            role: typeof e?.role === "string" ? e.role : "",
+            duration: typeof e?.duration === "string" ? e.duration : "",
+            bullets: Array.isArray(e?.bullets)
+              ? e.bullets.filter((b: unknown): b is string => typeof b === "string")
+              : [],
+          })),
+          skillsFormatted: typeof r.skillsFormatted === "string" ? r.skillsFormatted : "",
+          toolsFormatted: typeof r.toolsFormatted === "string" ? r.toolsFormatted : "",
+        });
+      } else {
+        throw new Error("Unexpected response format from server.");
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -2286,56 +2505,154 @@ export default function ResumeAnalyzer() {
         {/* ── Builder result ── */}
         {builderResume && mode === "build" && (
           <div className="flex flex-col gap-5">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <FilePlus className="w-4 h-4 text-orange-400" />
-                  <h3 className="text-lg font-bold text-zinc-100">
-                    Your Resume{builder.fullName.trim() ? ` — ${builder.fullName.trim()}` : ""}
-                  </h3>
-                </div>
-                <button
-                  onClick={copyBuilderResume}
-                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  {resumeCopied ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-green-400" />
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      Copy Resume
-                    </>
-                  )}
-                </button>
-              </div>
-              <pre className="text-zinc-200 text-sm leading-relaxed bg-zinc-950/60 border border-zinc-800 rounded-xl p-5 whitespace-pre-wrap font-sans overflow-x-auto">
-                {builderResume}
-              </pre>
-              <div className="flex items-center justify-between mt-3 gap-3 flex-wrap">
-                <p className="text-xs text-zinc-500">
-                  {builderResume.trim().split(/\s+/).filter(Boolean).length} words
+            {/* White preview that mirrors the PDF */}
+            <div className="bg-white text-zinc-900 rounded-2xl p-6 sm:p-10 shadow-2xl shadow-black/40 border border-zinc-200">
+              <div className="text-center">
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase">
+                  {builder.fullName || "Your Name"}
+                </h2>
+                {builder.targetRole && (
+                  <p className="text-sm text-zinc-600 mt-1">{builder.targetRole}</p>
+                )}
+                <p className="text-xs text-zinc-600 mt-2 leading-relaxed">
+                  {[builder.email, builder.phone, builder.location, builder.linkedin]
+                    .filter(Boolean)
+                    .join("  |  ")}
                 </p>
-                <button
-                  onClick={() => runBuild({ regenerate: true })}
-                  disabled={working || limitReached}
-                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  {working ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Regenerating…
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Regenerate
-                    </>
-                  )}
-                </button>
               </div>
+
+              <div className="my-5 h-0.5 bg-orange-500 rounded" />
+
+              {/* Summary */}
+              <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-2">
+                Professional Summary
+              </h3>
+              <p className="text-sm leading-relaxed text-zinc-800">{builderResume.summary}</p>
+
+              <div className="my-5 h-px bg-zinc-200" />
+
+              {/* Experience */}
+              <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-3">
+                Work Experience
+              </h3>
+              <div className="flex flex-col gap-4">
+                {builderResume.experiences.map((exp, i) => (
+                  <div key={i}>
+                    <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                      <p className="text-sm font-bold text-zinc-900">
+                        {exp.role}
+                        {exp.role && exp.company ? " | " : ""}
+                        {exp.company}
+                      </p>
+                      {exp.duration && (
+                        <p className="text-xs italic text-zinc-500">{exp.duration}</p>
+                      )}
+                    </div>
+                    {exp.bullets?.length > 0 && (
+                      <ul className="mt-1.5 ml-4 list-disc text-sm text-zinc-800 space-y-1">
+                        {exp.bullets.map((b, j) => (
+                          <li key={j} className="leading-relaxed">
+                            {b}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="my-5 h-px bg-zinc-200" />
+
+              {/* Skills */}
+              <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-2">
+                Technical Skills
+              </h3>
+              <p className="text-sm leading-relaxed text-zinc-800">
+                <span className="font-semibold">Technical:</span>{" "}
+                {builderResume.skillsFormatted || builder.technicalSkills}
+              </p>
+              {(builderResume.toolsFormatted || builder.tools) && (
+                <p className="text-sm leading-relaxed text-zinc-800 mt-1">
+                  <span className="font-semibold">Tools:</span>{" "}
+                  {builderResume.toolsFormatted || builder.tools}
+                </p>
+              )}
+
+              <div className="my-5 h-px bg-zinc-200" />
+
+              {/* Education */}
+              <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-2">
+                Education
+              </h3>
+              <p className="text-sm font-bold text-zinc-900">{builder.degree}</p>
+              <p className="text-xs text-zinc-600 mt-0.5">
+                {[builder.college, builder.graduationYear].filter(Boolean).join(" | ")}
+              </p>
+
+              {/* Projects */}
+              {builder.projects.filter((p) => p.name.trim() || p.description.trim()).length >
+                0 && (
+                <>
+                  <div className="my-5 h-px bg-zinc-200" />
+                  <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-2">
+                    Projects
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {builder.projects
+                      .filter((p) => p.name.trim() || p.description.trim())
+                      .map((p, i) => (
+                        <div key={i}>
+                          {p.name && (
+                            <p className="text-sm font-bold text-zinc-900">{p.name}</p>
+                          )}
+                          {p.description && (
+                            <ul className="mt-1 ml-4 list-disc text-sm text-zinc-800">
+                              <li className="leading-relaxed">{p.description}</li>
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={downloadResumePDF}
+                disabled={pdfWorking}
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-base font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                {pdfWorking ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Building PDF…
+                  </>
+                ) : (
+                  <>
+                    <FilePlus className="w-5 h-5" />
+                    Download PDF
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => runBuild({ regenerate: true })}
+                disabled={working || limitReached}
+                className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-orange-500/40 disabled:opacity-50 disabled:cursor-not-allowed text-orange-300 text-base font-semibold px-4 py-3.5 rounded-xl transition-colors"
+              >
+                {working ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Regenerating…
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-5 h-5" />
+                    Regenerate
+                  </>
+                )}
+              </button>
             </div>
 
             {limitReached && (

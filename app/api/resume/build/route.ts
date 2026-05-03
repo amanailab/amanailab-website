@@ -130,13 +130,11 @@ export async function POST(req: Request) {
         messages: [
           {
             role: "system",
-            content:
-              "You are an expert resume writer specializing in AI/ML roles. Create professional ATS-optimized resumes. Return ONLY the resume content in clean plain text format. No JSON. No markdown symbols. Just clean resume text.",
+            content: "You are an expert resume writer. Return ONLY valid JSON. No markdown.",
           },
           {
             role: "user",
-            content: `Create a professional resume for:
-
+            content: `Create resume data for:
 Name: ${fullName}
 Contact: ${contactLine || "(not provided)"}
 ${linksLine}
@@ -157,19 +155,28 @@ Education: ${degree} from ${college} (${graduationYear})
 Projects:
 ${projectsBlock}
 
-Requirements:
-- Start with name and contact info
-- Write a strong 3 line summary
-- List experience with bullet points
-- Each bullet starts with action verb
-- Include quantified achievements
-- ATS optimized for ${targetRole}
-- Professional format
-- Include all sections`,
+Return this exact JSON:
+{
+  "summary": "3-sentence ATS-optimized professional summary tailored to ${targetRole}",
+  "experiences": [
+    {
+      "company": "string",
+      "role": "string",
+      "duration": "string",
+      "bullets": ["3 bullet strings — each starts with an action verb and includes a quantified achievement and impact"]
+    }
+  ],
+  "skillsFormatted": "comma-separated technical skills, ordered for ATS relevance to ${targetRole}",
+  "toolsFormatted": "comma-separated tools and frameworks, ordered for ATS relevance"
+}
+
+Use the same number of experiences as Work History above, in the same order.
+Return ONLY valid JSON. No markdown fences. No commentary.`,
           },
         ],
         temperature: 0.5,
         max_tokens: 1800,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -180,10 +187,19 @@ Requirements:
     }
 
     const groqData = await groqRes.json();
-    const resume: string = (groqData.choices?.[0]?.message?.content ?? "").trim();
+    const raw: string = (groqData.choices?.[0]?.message?.content ?? "").trim();
 
-    if (!resume) {
+    if (!raw) {
       return NextResponse.json({ error: "Empty response from model." }, { status: 500 });
+    }
+
+    let resume: unknown;
+    try {
+      const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
+      resume = JSON.parse(cleaned);
+    } catch (err) {
+      console.error("[Build] JSON parse error:", err, "raw:", raw);
+      return NextResponse.json({ error: "Failed to parse resume." }, { status: 500 });
     }
 
     return NextResponse.json({ resume });
