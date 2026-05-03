@@ -17,11 +17,13 @@ import {
   Target,
   MessageCircle,
   ListChecks,
+  Mail,
+  RefreshCw,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = "analyze" | "match";
+type Mode = "analyze" | "match" | "cover";
 
 type SectionStatus = "good" | "needs_work" | "missing";
 
@@ -171,6 +173,11 @@ function buildWhatsappLink(score: number) {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
+function buildCoverLetterWhatsappLink() {
+  const message = "Hi Aman, I need my cover letter reviewed professionally";
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
 // ─── Score Circle ─────────────────────────────────────────────────────────────
 
 function ScoreCircle({ score }: { score: number }) {
@@ -223,19 +230,28 @@ export default function ResumeAnalyzer() {
   const [pastedText, setPastedText] = useState("");
   const [role, setRole] = useState("");
   const [jobDescription, setJobDescription] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [userName, setUserName] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [working, setWorking] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [match, setMatch] = useState<MatchResult | null>(null);
+  const [coverLetter, setCoverLetter] = useState("");
   const [error, setError] = useState("");
   const [usedToday, setUsedToday] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [coverCopied, setCoverCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const hasPastedText = pastedText.trim().length > 0;
   const hasResume = !!file || hasPastedText;
   const canAnalyze = hasResume && !!role;
   const canMatch = hasResume && jobDescription.trim().length >= 50;
+  const canCover =
+    hasResume &&
+    jobDescription.trim().length >= 50 &&
+    companyName.trim().length > 0 &&
+    userName.trim().length > 0;
 
   useEffect(() => {
     setUsedToday(getUsage());
@@ -243,7 +259,10 @@ export default function ResumeAnalyzer() {
 
   const limitReached = usedToday >= DAILY_LIMIT;
   const remaining = useMemo(() => Math.max(0, DAILY_LIMIT - usedToday), [usedToday]);
-  const result = mode === "analyze" ? analysis : match;
+  const hasResult =
+    (mode === "analyze" && !!analysis) ||
+    (mode === "match" && !!match) ||
+    (mode === "cover" && !!coverLetter);
 
   function handleFile(f: File | null) {
     if (!f) return;
@@ -273,6 +292,7 @@ export default function ResumeAnalyzer() {
     setError("");
     setAnalysis(null);
     setMatch(null);
+    setCoverLetter("");
   }
 
   function appendResumeFields(fd: FormData) {
@@ -331,13 +351,43 @@ export default function ResumeAnalyzer() {
     }
   }
 
+  async function runCover({ regenerate = false }: { regenerate?: boolean } = {}) {
+    if (!canCover || working) return;
+    if (!regenerate && limitReached) return;
+    setError("");
+    setWorking(true);
+    if (!regenerate) setCoverLetter("");
+    try {
+      const fd = new FormData();
+      fd.append("jobDescription", jobDescription.trim());
+      fd.append("companyName", companyName.trim());
+      fd.append("userName", userName.trim());
+      appendResumeFields(fd);
+
+      const res = await fetch("/api/resume/coverletter", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to generate cover letter.");
+
+      const newCount = incrementUsage();
+      setUsedToday(newCount);
+      setCoverLetter(typeof data.coverLetter === "string" ? data.coverLetter : "");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
   function reset() {
     setAnalysis(null);
     setMatch(null);
+    setCoverLetter("");
     setFile(null);
     setPastedText("");
     setRole("");
     setJobDescription("");
+    setCompanyName("");
+    setUserName("");
     setError("");
     if (inputRef.current) inputRef.current.value = "";
   }
@@ -353,8 +403,19 @@ export default function ResumeAnalyzer() {
     }
   }
 
+  async function copyCover() {
+    if (!coverLetter) return;
+    try {
+      await navigator.clipboard.writeText(coverLetter);
+      setCoverCopied(true);
+      setTimeout(() => setCoverCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }
+
   // ── Limit reached ──
-  if (limitReached && !result) {
+  if (limitReached && !hasResult) {
     return (
       <section className="min-h-screen bg-zinc-950 text-zinc-50">
         <div className="max-w-2xl mx-auto px-4 py-24 text-center">
@@ -400,8 +461,8 @@ export default function ResumeAnalyzer() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         {/* Mode toggle */}
-        {!result && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 grid grid-cols-2 gap-1.5 mb-6">
+        {!hasResult && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 grid grid-cols-1 sm:grid-cols-3 gap-1.5 mb-6">
             <button
               onClick={() => switchMode("analyze")}
               className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
@@ -424,22 +485,37 @@ export default function ResumeAnalyzer() {
               <Target className="w-4 h-4" />
               JD Matcher
             </button>
+            <button
+              onClick={() => switchMode("cover")}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                mode === "cover"
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
+                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              Cover Letter
+            </button>
           </div>
         )}
 
         {/* ── Step 1: Upload ── */}
-        {!result && (
+        {!hasResult && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
             <div>
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
                 Step 1
               </p>
               <h2 className="text-xl font-bold text-zinc-100">
-                {mode === "analyze" ? "Upload your resume" : "Match your resume to a JD"}
+                {mode === "analyze"
+                  ? "Upload your resume"
+                  : mode === "match"
+                  ? "Match your resume to a JD"
+                  : "Generate a cover letter"}
               </h2>
               <p className="text-zinc-500 text-sm mt-1">
-                {remaining} of {DAILY_LIMIT} free analyses remaining today
-                {" · "}shared between Analyzer and JD Matcher
+                {remaining} of {DAILY_LIMIT} free runs remaining today
+                {" · "}shared across all three modes
               </p>
             </div>
 
@@ -521,7 +597,7 @@ export default function ResumeAnalyzer() {
             </div>
 
             {/* Mode-specific input */}
-            {mode === "analyze" ? (
+            {mode === "analyze" && (
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
                   Select your target role
@@ -539,7 +615,9 @@ export default function ResumeAnalyzer() {
                   ))}
                 </select>
               </div>
-            ) : (
+            )}
+
+            {mode === "match" && (
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
                   Paste Job Description
@@ -561,6 +639,56 @@ export default function ResumeAnalyzer() {
               </div>
             )}
 
+            {mode === "cover" && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                    Paste Job Description
+                  </label>
+                  <textarea
+                    value={jobDescription}
+                    onChange={(e) => {
+                      setJobDescription(e.target.value);
+                      if (e.target.value.trim()) setError("");
+                    }}
+                    placeholder="Paste the full job description here..."
+                    style={{ minHeight: "150px" }}
+                    className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-y"
+                  />
+                  <p className="text-xs text-zinc-500">
+                    {jobDescription.trim().length} characters · the more detail, the more
+                    personalised the letter
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                      Company Name
+                    </label>
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="e.g. Acme Corp"
+                      className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                      Your Name
+                    </label>
+                    <input
+                      type="text"
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="e.g. Aman Chauhan"
+                      className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
             {error && (
               <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
                 <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -568,7 +696,7 @@ export default function ResumeAnalyzer() {
               </div>
             )}
 
-            {mode === "analyze" ? (
+            {mode === "analyze" && (
               <button
                 onClick={runAnalyze}
                 disabled={!canAnalyze || working}
@@ -586,7 +714,9 @@ export default function ResumeAnalyzer() {
                   </>
                 )}
               </button>
-            ) : (
+            )}
+
+            {mode === "match" && (
               <button
                 onClick={runMatch}
                 disabled={!canMatch || working}
@@ -601,6 +731,26 @@ export default function ResumeAnalyzer() {
                   <>
                     <Target className="w-4 h-4" />
                     Match My Resume
+                  </>
+                )}
+              </button>
+            )}
+
+            {mode === "cover" && (
+              <button
+                onClick={() => runCover()}
+                disabled={!canCover || working}
+                className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                {working ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating cover letter…
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-4 h-4" />
+                    Generate Cover Letter
                   </>
                 )}
               </button>
@@ -919,6 +1069,98 @@ export default function ResumeAnalyzer() {
             >
               <RotateCcw className="w-4 h-4" />
               {limitReached ? "Daily limit reached" : "Try another match"}
+            </button>
+          </div>
+        )}
+
+        {/* ── Cover letter result ── */}
+        {coverLetter && mode === "cover" && (
+          <div className="flex flex-col gap-5">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4 gap-3">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-orange-400" />
+                  <h3 className="text-lg font-bold text-zinc-100">
+                    Cover Letter for {companyName.trim() || "your application"}
+                  </h3>
+                </div>
+                <button
+                  onClick={copyCover}
+                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {coverCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-green-400" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      Copy
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="text-zinc-200 text-sm leading-relaxed bg-zinc-950/60 border border-zinc-800 rounded-xl p-5 whitespace-pre-wrap font-sans">
+                {coverLetter}
+              </p>
+              <div className="flex items-center justify-between mt-3 gap-3 flex-wrap">
+                <p className="text-xs text-zinc-500">
+                  {coverLetter.length} characters ·{" "}
+                  {coverLetter.trim().split(/\s+/).filter(Boolean).length} words
+                </p>
+                <button
+                  onClick={() => runCover({ regenerate: true })}
+                  disabled={working || limitReached}
+                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {working ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Regenerating…
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Regenerate
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {limitReached && (
+              <p className="text-center text-zinc-500 text-xs">
+                Daily limit reached — regenerate option will be available again tomorrow.
+              </p>
+            )}
+
+            {/* WhatsApp CTA */}
+            <div className="bg-gradient-to-br from-orange-500/15 to-orange-500/5 border border-orange-500/30 rounded-2xl p-6 sm:p-8 text-center">
+              <h3 className="text-xl font-bold text-zinc-100 mb-2">
+                Want a professionally reviewed cover letter?
+              </h3>
+              <p className="text-zinc-400 text-sm max-w-md mx-auto mb-5">
+                We&apos;ll polish tone, structure and impact so it lands the recruiter&apos;s
+                attention.
+              </p>
+              <a
+                href={buildCoverLetterWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Get Expert Review ₹499
+              </a>
+            </div>
+
+            <button
+              onClick={reset}
+              className="flex items-center justify-center gap-2 w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Start over
             </button>
           </div>
         )}
