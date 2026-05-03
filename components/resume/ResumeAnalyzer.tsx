@@ -22,11 +22,50 @@ import {
   FilePlus,
   Plus,
   Trash2,
+  Mic2,
+  Lightbulb,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  HelpCircle,
 } from "lucide-react";
+import { LinkedinIcon } from "@/components/icons/SocialIcons";
+
+type IconComponent = React.ComponentType<{ className?: string }>;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = "analyze" | "match" | "cover" | "build";
+type Mode = "analyze" | "match" | "cover" | "build" | "linkedin" | "predict";
+
+interface FeatureMeta {
+  id: Mode;
+  title: string;
+  description: string;
+  Icon: IconComponent;
+}
+
+interface LinkedInState {
+  currentRole: string;
+  experience: string;
+  skills: string;
+  achievement: string;
+  targetRole: string;
+  tone: string;
+}
+
+interface PredictState {
+  jobDescription: string;
+  companyName: string;
+}
+
+interface PredictResult {
+  technicalQuestions: string[];
+  behavioralQuestions: string[];
+  roleSpecificQuestions: string[];
+  trickyQuestions: string[];
+  questionsToAsk: string[];
+  preparationTips: string[];
+}
 
 interface BuilderExperience {
   company: string;
@@ -63,9 +102,45 @@ interface BuilderState {
 const YEARS_OPTIONS = ["0-1", "1-3", "3-5", "5-10", "10+"];
 const MAX_EXPERIENCES = 3;
 const MAX_PROJECTS = 2;
-const BUILD_DAILY_LIMIT = 2;
-const BUILD_LS_COUNT_KEY = "resume_builds_count";
-const BUILD_LS_DATE_KEY = "resume_builds_date";
+
+const FEATURES: FeatureMeta[] = [
+  {
+    id: "analyze",
+    title: "Resume Analyzer",
+    description: "ATS score, missing keywords, section feedback",
+    Icon: Sparkles,
+  },
+  {
+    id: "match",
+    title: "JD Matcher",
+    description: "Score your resume against any job description",
+    Icon: Target,
+  },
+  {
+    id: "cover",
+    title: "Cover Letter",
+    description: "Personalised, ATS-optimised in seconds",
+    Icon: Mail,
+  },
+  {
+    id: "build",
+    title: "Resume Builder",
+    description: "Build a recruiter-ready resume from scratch",
+    Icon: FilePlus,
+  },
+  {
+    id: "linkedin",
+    title: "LinkedIn Summary",
+    description: "Compelling About section that ranks in search",
+    Icon: LinkedinIcon,
+  },
+  {
+    id: "predict",
+    title: "Interview Predictor",
+    description: "Predict the questions you will be asked",
+    Icon: Mic2,
+  },
+];
 
 const EMPTY_EXPERIENCE: BuilderExperience = {
   company: "",
@@ -140,9 +215,27 @@ const ROLES = [
 ];
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const DAILY_LIMIT = 3;
-const LS_KEY = "amanai_resume_usage";
+const DAILY_LIMIT = 5;
+const LS_USES_KEY = "resume_tool_uses";
+const LS_DATE_KEY = "resume_tool_date";
 const WHATSAPP_NUMBER = "919997600372";
+
+const LINKEDIN_YEARS = ["1-2", "3-5", "5-10", "10+"];
+const LINKEDIN_TONES = ["Professional", "Conversational", "Bold"];
+
+const INITIAL_LINKEDIN: LinkedInState = {
+  currentRole: "",
+  experience: "",
+  skills: "",
+  achievement: "",
+  targetRole: "",
+  tone: "",
+};
+
+const INITIAL_PREDICT: PredictState = {
+  jobDescription: "",
+  companyName: "",
+};
 
 const SECTION_LABELS: Record<keyof AnalysisResult["sectionScores"], string> = {
   contactInfo: "Contact Info",
@@ -184,10 +277,12 @@ function todayKey() {
 
 function getUsage(): number {
   try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return 0;
-    const { date, count } = JSON.parse(raw);
-    return date === todayKey() ? count : 0;
+    const date = localStorage.getItem(LS_DATE_KEY);
+    const countRaw = localStorage.getItem(LS_USES_KEY);
+    if (!date || !countRaw) return 0;
+    if (date !== todayKey()) return 0;
+    const count = parseInt(countRaw, 10);
+    return Number.isFinite(count) ? count : 0;
   } catch {
     return 0;
   }
@@ -195,7 +290,8 @@ function getUsage(): number {
 
 function incrementUsage(): number {
   const count = getUsage() + 1;
-  localStorage.setItem(LS_KEY, JSON.stringify({ date: todayKey(), count }));
+  localStorage.setItem(LS_DATE_KEY, todayKey());
+  localStorage.setItem(LS_USES_KEY, String(count));
   return count;
 }
 
@@ -254,30 +350,19 @@ function buildResumeReviewWhatsappLink() {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-function buildBuilderHelpWhatsappLink() {
-  const message =
-    "Hi Aman, I have used my free resume builds today and want expert help";
+function buildLinkedInWhatsappLink() {
+  const message = "Hi Aman, I want my complete LinkedIn profile optimized";
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-function getBuildUsage(): number {
-  try {
-    const date = localStorage.getItem(BUILD_LS_DATE_KEY);
-    const countRaw = localStorage.getItem(BUILD_LS_COUNT_KEY);
-    if (!date || !countRaw) return 0;
-    if (date !== todayKey()) return 0;
-    const count = parseInt(countRaw, 10);
-    return Number.isFinite(count) ? count : 0;
-  } catch {
-    return 0;
-  }
+function buildMockInterviewWhatsappLink() {
+  const message = "Hi Aman, I want a mock interview session";
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-function incrementBuildUsage(): number {
-  const count = getBuildUsage() + 1;
-  localStorage.setItem(BUILD_LS_DATE_KEY, todayKey());
-  localStorage.setItem(BUILD_LS_COUNT_KEY, String(count));
-  return count;
+function buildUnlimitedAccessWhatsappLink() {
+  const message = "Hi Aman, I want unlimited access to the resume tools";
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
 // ─── Score Circle ─────────────────────────────────────────────────────────────
@@ -339,8 +424,6 @@ interface BuilderFormProps {
   onSubmit: () => void;
   working: boolean;
   error: string;
-  buildLimitReached: boolean;
-  buildsRemaining: number;
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -368,36 +451,7 @@ function BuilderForm(props: BuilderFormProps) {
     onSubmit,
     working,
     error,
-    buildLimitReached,
-    buildsRemaining,
   } = props;
-
-  if (buildLimitReached) {
-    return (
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center flex flex-col items-center gap-5">
-        <div className="w-14 h-14 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-          <FilePlus className="w-7 h-7 text-orange-400" />
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-zinc-100 mb-2">
-            You have used your 2 free resume builds today
-          </h2>
-          <p className="text-zinc-400 text-sm max-w-md mx-auto">
-            Come back tomorrow or get expert help to craft a recruiter-ready resume now.
-          </p>
-        </div>
-        <a
-          href={buildBuilderHelpWhatsappLink()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
-        >
-          <MessageCircle className="w-4 h-4" />
-          Talk to Aman
-        </a>
-      </div>
-    );
-  }
 
   const sectionHeader = (n: number, title: string) => (
     <div>
@@ -418,7 +472,7 @@ function BuilderForm(props: BuilderFormProps) {
         </p>
         <h2 className="text-xl font-bold text-zinc-100">Build a recruiter-ready resume</h2>
         <p className="text-zinc-500 text-sm mt-1">
-          {buildsRemaining} of {BUILD_DAILY_LIMIT} free builds remaining today
+          Fill in the sections below — required fields are marked with *
         </p>
       </div>
 
@@ -792,13 +846,19 @@ export default function ResumeAnalyzer() {
   const [coverLetter, setCoverLetter] = useState("");
   const [error, setError] = useState("");
   const [usedToday, setUsedToday] = useState(0);
-  const [buildsUsedToday, setBuildsUsedToday] = useState(0);
   const [copied, setCopied] = useState(false);
   const [coverCopied, setCoverCopied] = useState(false);
   const [resumeCopied, setResumeCopied] = useState(false);
+  const [linkedInCopied, setLinkedInCopied] = useState(false);
   const [builder, setBuilder] = useState<BuilderState>(INITIAL_BUILDER);
   const [builderResume, setBuilderResume] = useState("");
   const [builderErrors, setBuilderErrors] = useState<Record<string, string>>({});
+  const [linkedIn, setLinkedIn] = useState<LinkedInState>(INITIAL_LINKEDIN);
+  const [linkedInErrors, setLinkedInErrors] = useState<Record<string, string>>({});
+  const [linkedInResult, setLinkedInResult] = useState("");
+  const [predict, setPredict] = useState<PredictState>(INITIAL_PREDICT);
+  const [predictResult, setPredictResult] = useState<PredictResult | null>(null);
+  const [expandedTechIdx, setExpandedTechIdx] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const hasPastedText = pastedText.trim().length > 0;
@@ -813,21 +873,21 @@ export default function ResumeAnalyzer() {
 
   useEffect(() => {
     setUsedToday(getUsage());
-    setBuildsUsedToday(getBuildUsage());
   }, []);
 
   const limitReached = usedToday >= DAILY_LIMIT;
-  const buildLimitReached = buildsUsedToday >= BUILD_DAILY_LIMIT;
   const remaining = useMemo(() => Math.max(0, DAILY_LIMIT - usedToday), [usedToday]);
-  const buildsRemaining = useMemo(
-    () => Math.max(0, BUILD_DAILY_LIMIT - buildsUsedToday),
-    [buildsUsedToday]
+  const usagePct = useMemo(
+    () => Math.min(100, Math.round((usedToday / DAILY_LIMIT) * 100)),
+    [usedToday]
   );
   const hasResult =
     (mode === "analyze" && !!analysis) ||
     (mode === "match" && !!match) ||
     (mode === "cover" && !!coverLetter) ||
-    (mode === "build" && !!builderResume);
+    (mode === "build" && !!builderResume) ||
+    (mode === "linkedin" && !!linkedInResult) ||
+    (mode === "predict" && !!predictResult);
 
   function handleFile(f: File | null) {
     if (!f) return;
@@ -860,6 +920,10 @@ export default function ResumeAnalyzer() {
     setCoverLetter("");
     setBuilderResume("");
     setBuilderErrors({});
+    setLinkedInResult("");
+    setLinkedInErrors({});
+    setPredictResult(null);
+    setExpandedTechIdx(null);
   }
 
   function appendResumeFields(fd: FormData) {
@@ -952,6 +1016,12 @@ export default function ResumeAnalyzer() {
     setBuilderResume("");
     setBuilderErrors({});
     setBuilder(INITIAL_BUILDER);
+    setLinkedIn(INITIAL_LINKEDIN);
+    setLinkedInErrors({});
+    setLinkedInResult("");
+    setPredict(INITIAL_PREDICT);
+    setPredictResult(null);
+    setExpandedTechIdx(null);
     setFile(null);
     setPastedText("");
     setRole("");
@@ -1087,8 +1157,7 @@ export default function ResumeAnalyzer() {
   }
 
   async function runBuild({ regenerate = false }: { regenerate?: boolean } = {}) {
-    if (working) return;
-    if (!regenerate && buildLimitReached) return;
+    if (working || limitReached) return;
     if (!validateBuilder()) {
       setError("Please fill in the highlighted required fields.");
       return;
@@ -1105,8 +1174,8 @@ export default function ResumeAnalyzer() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to generate resume.");
 
-      const newCount = incrementBuildUsage();
-      setBuildsUsedToday(newCount);
+      const newCount = incrementUsage();
+      setUsedToday(newCount);
       setBuilderResume(typeof data.resume === "string" ? data.resume : "");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -1115,27 +1184,123 @@ export default function ResumeAnalyzer() {
     }
   }
 
-  // ── Limit reached (analyze / match / cover only — build has its own counter) ──
-  if (limitReached && mode !== "build" && !hasResult) {
+  function validateLinkedIn(): boolean {
+    const errs: Record<string, string> = {};
+    if (!linkedIn.currentRole.trim()) errs.currentRole = "Current role is required";
+    if (!linkedIn.experience.trim()) errs.experience = "Select years of experience";
+    if (!linkedIn.skills.trim()) errs.skills = "Top skills are required";
+    if (!linkedIn.achievement.trim()) errs.achievement = "Notable achievement is required";
+    if (!linkedIn.targetRole.trim()) errs.targetRole = "Target role is required";
+    if (!linkedIn.tone.trim()) errs.tone = "Select a tone";
+    setLinkedInErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  function updateLinkedIn<K extends keyof LinkedInState>(key: K, value: LinkedInState[K]) {
+    setLinkedIn((s) => ({ ...s, [key]: value }));
+    if (linkedInErrors[key as string]) {
+      setLinkedInErrors((prev) => {
+        const next = { ...prev };
+        delete next[key as string];
+        return next;
+      });
+    }
+  }
+
+  async function runLinkedIn({ regenerate = false }: { regenerate?: boolean } = {}) {
+    if (working || limitReached) return;
+    if (!validateLinkedIn()) {
+      setError("Please fill in the highlighted required fields.");
+      return;
+    }
+    setError("");
+    setWorking(true);
+    if (!regenerate) setLinkedInResult("");
+    try {
+      const res = await fetch("/api/resume/linkedin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(linkedIn),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to generate LinkedIn summary.");
+
+      const newCount = incrementUsage();
+      setUsedToday(newCount);
+      setLinkedInResult(typeof data.summary === "string" ? data.summary : "");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function copyLinkedIn() {
+    if (!linkedInResult) return;
+    try {
+      await navigator.clipboard.writeText(linkedInResult);
+      setLinkedInCopied(true);
+      setTimeout(() => setLinkedInCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function runPredict() {
+    if (working || limitReached) return;
+    if (!hasResume) {
+      setError("Please upload your resume PDF or paste your resume text.");
+      return;
+    }
+    if (predict.jobDescription.trim().length < 50) {
+      setError("Job description must be at least 50 characters.");
+      return;
+    }
+    setError("");
+    setWorking(true);
+    setPredictResult(null);
+    setExpandedTechIdx(null);
+    try {
+      const fd = new FormData();
+      fd.append("jobDescription", predict.jobDescription.trim());
+      if (predict.companyName.trim()) fd.append("companyName", predict.companyName.trim());
+      appendResumeFields(fd);
+
+      const res = await fetch("/api/resume/predict", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to predict questions.");
+
+      const newCount = incrementUsage();
+      setUsedToday(newCount);
+      setPredictResult(data as PredictResult);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  // ── Limit reached — shared across all 6 features ──
+  if (limitReached && !hasResult) {
     return (
       <section className="min-h-screen bg-zinc-950 text-zinc-50">
         <div className="max-w-2xl mx-auto px-4 py-24 text-center">
           <div className="w-16 h-16 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-6 mx-auto">
             <FileText className="w-8 h-8 text-orange-400" />
           </div>
-          <h1 className="text-3xl font-bold mb-4">
-            You&apos;ve used your 3 free analyses today
-          </h1>
+          <h1 className="text-3xl font-bold mb-3">Daily limit reached</h1>
           <p className="text-zinc-400 mb-8 leading-relaxed">
-            Want a complete resume rewrite? Our team can help you build an ATS-optimized,
-            recruiter-ready resume tailored to AI/ML roles.
+            Come back tomorrow for {DAILY_LIMIT} more free uses across all six tools.
           </p>
-          <Link
-            href="/services"
+          <a
+            href={buildUnlimitedAccessWhatsappLink()}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
           >
-            View Services <ArrowRight className="w-4 h-4" />
-          </Link>
+            <MessageCircle className="w-4 h-4" />
+            Get Unlimited Access
+          </a>
         </div>
       </section>
     );
@@ -1144,70 +1309,89 @@ export default function ResumeAnalyzer() {
   return (
     <section className="min-h-screen bg-zinc-950 text-zinc-50">
       {/* Hero */}
-      <div className="relative py-20 px-4 text-center overflow-hidden">
+      <div className="relative pt-20 pb-12 px-4 text-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 via-transparent to-transparent pointer-events-none" />
         <div className="relative max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 tracking-wide uppercase">
             <Sparkles className="w-3.5 h-3.5" />
-            Resume Tools
+            AI Resume Suite
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            AI Resume Analyzer
+            AI Resume Suite
           </h1>
-          <p className="text-zinc-400 text-lg max-w-xl mx-auto">
-            Upload your resume and get instant AI-powered feedback. Free. No login needed.
+          <p className="text-zinc-400 text-lg max-w-xl mx-auto mb-6">
+            6 powerful AI tools to land your dream AI job. Free. No login needed.
           </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
+            {[
+              { label: "6 Tools" },
+              { label: "100% Free" },
+              { label: "No Login" },
+            ].map((s) => (
+              <span
+                key={s.label}
+                className="inline-flex items-center px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 font-semibold"
+              >
+                {s.label}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-        {/* Mode toggle */}
+        {/* Usage progress */}
         {!hasResult && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 grid grid-cols-2 lg:grid-cols-4 gap-1.5 mb-6">
-            <button
-              onClick={() => switchMode("analyze")}
-              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                mode === "analyze"
-                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
-                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
-              }`}
-            >
-              <Sparkles className="w-4 h-4 shrink-0" />
-              <span className="truncate">Resume Analyzer</span>
-            </button>
-            <button
-              onClick={() => switchMode("match")}
-              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                mode === "match"
-                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
-                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
-              }`}
-            >
-              <Target className="w-4 h-4 shrink-0" />
-              <span className="truncate">JD Matcher</span>
-            </button>
-            <button
-              onClick={() => switchMode("cover")}
-              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                mode === "cover"
-                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
-                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
-              }`}
-            >
-              <Mail className="w-4 h-4 shrink-0" />
-              <span className="truncate">Cover Letter</span>
-            </button>
-            <button
-              onClick={() => switchMode("build")}
-              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                mode === "build"
-                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
-                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
-              }`}
-            >
-              <FilePlus className="w-4 h-4 shrink-0" />
-              <span className="truncate">Resume Builder</span>
-            </button>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-2 rounded-full bg-zinc-900 border border-zinc-800 overflow-hidden">
+              <div
+                className="h-full bg-orange-500 transition-all duration-500"
+                style={{ width: `${usagePct}%` }}
+              />
+            </div>
+            <p className="text-xs font-semibold text-zinc-400 tabular-nums shrink-0">
+              {remaining} of {DAILY_LIMIT} free uses left today
+            </p>
+          </div>
+        )}
+
+        {/* Feature grid */}
+        {!hasResult && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            {FEATURES.map(({ id, title, description, Icon }) => {
+              const active = mode === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => switchMode(id)}
+                  className={`group flex flex-col items-start gap-2 text-left p-4 rounded-2xl border transition-all ${
+                    active
+                      ? "bg-orange-500/10 border-orange-500 shadow-lg shadow-orange-500/15"
+                      : "bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:shadow-lg hover:shadow-orange-500/5"
+                  }`}
+                >
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
+                      active
+                        ? "bg-orange-500 text-white"
+                        : "bg-zinc-800 text-orange-400 group-hover:bg-zinc-700"
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <p
+                    className={`text-sm font-bold ${
+                      active ? "text-orange-300" : "text-zinc-100"
+                    }`}
+                  >
+                    {title}
+                  </p>
+                  <p className="text-xs text-zinc-500 leading-snug line-clamp-2">
+                    {description}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -1226,13 +1410,154 @@ export default function ResumeAnalyzer() {
             onSubmit={() => runBuild()}
             working={working}
             error={error}
-            buildLimitReached={buildLimitReached}
-            buildsRemaining={buildsRemaining}
           />
         )}
 
-        {/* ── Step 1: Upload (Analyzer / Matcher / Cover Letter) ── */}
-        {!hasResult && mode !== "build" && (
+        {/* ── LinkedIn form ── */}
+        {!hasResult && mode === "linkedin" && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
+            <div>
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
+                LinkedIn Summary
+              </p>
+              <h2 className="text-xl font-bold text-zinc-100">
+                Generate a recruiter-ready About section
+              </h2>
+              <p className="text-zinc-500 text-sm mt-1">
+                Tell us a bit about you — we&apos;ll write the LinkedIn About in your chosen tone.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Current Role *
+                </label>
+                <input
+                  type="text"
+                  value={linkedIn.currentRole}
+                  onChange={(e) => updateLinkedIn("currentRole", e.target.value)}
+                  placeholder="ML Engineer at Acme"
+                  className={inputClass(!!linkedInErrors.currentRole)}
+                />
+                <FieldError message={linkedInErrors.currentRole} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Years of Experience *
+                </label>
+                <select
+                  value={linkedIn.experience}
+                  onChange={(e) => updateLinkedIn("experience", e.target.value)}
+                  className={inputClass(!!linkedInErrors.experience)}
+                >
+                  <option value="">Select…</option>
+                  {LINKEDIN_YEARS.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={linkedInErrors.experience} />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                Top Skills *
+              </label>
+              <input
+                type="text"
+                value={linkedIn.skills}
+                onChange={(e) => updateLinkedIn("skills", e.target.value)}
+                placeholder="Python, LLMs, RAG, FastAPI"
+                className={inputClass(!!linkedInErrors.skills)}
+              />
+              <FieldError message={linkedInErrors.skills} />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                Notable Achievement *
+              </label>
+              <textarea
+                value={linkedIn.achievement}
+                onChange={(e) => updateLinkedIn("achievement", e.target.value)}
+                placeholder="Built RAG system for Fortune 500..."
+                rows={3}
+                className={`${inputClass(!!linkedInErrors.achievement)} resize-y`}
+              />
+              <FieldError message={linkedInErrors.achievement} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Target Role *
+                </label>
+                <select
+                  value={linkedIn.targetRole}
+                  onChange={(e) => updateLinkedIn("targetRole", e.target.value)}
+                  className={inputClass(!!linkedInErrors.targetRole)}
+                >
+                  <option value="">Choose a role…</option>
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={linkedInErrors.targetRole} />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Tone *
+                </label>
+                <select
+                  value={linkedIn.tone}
+                  onChange={(e) => updateLinkedIn("tone", e.target.value)}
+                  className={inputClass(!!linkedInErrors.tone)}
+                >
+                  <option value="">Pick a tone…</option>
+                  {LINKEDIN_TONES.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <FieldError message={linkedInErrors.tone} />
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+                <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-red-300 text-sm whitespace-pre-line">{error}</p>
+              </div>
+            )}
+
+            <button
+              onClick={() => runLinkedIn()}
+              disabled={working}
+              className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+            >
+              {working ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Writing your About section…
+                </>
+              ) : (
+                <>
+                  <LinkedinIcon className="w-4 h-4" />
+                  Generate LinkedIn Summary
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* ── Step 1: Upload (Analyzer / Matcher / Cover Letter / Predictor) ── */}
+        {!hasResult && (mode === "analyze" || mode === "match" || mode === "cover" || mode === "predict") && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
             <div>
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
@@ -1243,11 +1568,12 @@ export default function ResumeAnalyzer() {
                   ? "Upload your resume"
                   : mode === "match"
                   ? "Match your resume to a JD"
-                  : "Generate a cover letter"}
+                  : mode === "cover"
+                  ? "Generate a cover letter"
+                  : "Predict your interview questions"}
               </h2>
               <p className="text-zinc-500 text-sm mt-1">
-                {remaining} of {DAILY_LIMIT} free runs remaining today
-                {" · "}shared across all three modes
+                Upload your resume PDF or paste the text below.
               </p>
             </div>
 
@@ -1421,6 +1747,44 @@ export default function ResumeAnalyzer() {
               </>
             )}
 
+            {mode === "predict" && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                    Paste Job Description
+                  </label>
+                  <textarea
+                    value={predict.jobDescription}
+                    onChange={(e) => {
+                      setPredict((p) => ({ ...p, jobDescription: e.target.value }));
+                      if (e.target.value.trim()) setError("");
+                    }}
+                    placeholder="Paste the full job description here..."
+                    style={{ minHeight: "120px" }}
+                    className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-y"
+                  />
+                  <p className="text-xs text-zinc-500">
+                    {predict.jobDescription.trim().length} characters · paste the listing to get
+                    role-specific predictions
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                    Company Name <span className="text-zinc-600">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={predict.companyName}
+                    onChange={(e) =>
+                      setPredict((p) => ({ ...p, companyName: e.target.value }))
+                    }
+                    placeholder="e.g. OpenAI"
+                    className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+                  />
+                </div>
+              </>
+            )}
+
             {error && (
               <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
                 <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -1483,6 +1847,28 @@ export default function ResumeAnalyzer() {
                   <>
                     <Mail className="w-4 h-4" />
                     Generate Cover Letter
+                  </>
+                )}
+              </button>
+            )}
+
+            {mode === "predict" && (
+              <button
+                onClick={runPredict}
+                disabled={
+                  !hasResume || predict.jobDescription.trim().length < 50 || working
+                }
+                className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                {working ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Predicting interview questions…
+                  </>
+                ) : (
+                  <>
+                    <Mic2 className="w-4 h-4" />
+                    Predict My Interview Questions
                   </>
                 )}
               </button>
@@ -1934,7 +2320,7 @@ export default function ResumeAnalyzer() {
                 </p>
                 <button
                   onClick={() => runBuild({ regenerate: true })}
-                  disabled={working || buildLimitReached}
+                  disabled={working || limitReached}
                   className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                 >
                   {working ? (
@@ -1952,7 +2338,7 @@ export default function ResumeAnalyzer() {
               </div>
             </div>
 
-            {buildLimitReached && (
+            {limitReached && (
               <p className="text-center text-zinc-500 text-xs">
                 Daily limit reached — regenerate available again tomorrow.
               </p>
@@ -1975,6 +2361,294 @@ export default function ResumeAnalyzer() {
               >
                 <MessageCircle className="w-4 h-4" />
                 Get Expert Review ₹999
+              </a>
+            </div>
+
+            <button
+              onClick={reset}
+              className="flex items-center justify-center gap-2 w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Start over
+            </button>
+          </div>
+        )}
+
+        {/* ── LinkedIn result ── */}
+        {linkedInResult && mode === "linkedin" && (
+          <div className="flex flex-col gap-5">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <LinkedinIcon className="w-4 h-4 text-orange-400" />
+                  <h3 className="text-lg font-bold text-zinc-100">Your LinkedIn About</h3>
+                </div>
+                <button
+                  onClick={copyLinkedIn}
+                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {linkedInCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-green-400" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      Copy
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="text-zinc-200 text-sm leading-relaxed bg-zinc-950/60 border border-zinc-800 rounded-xl p-5 whitespace-pre-wrap font-sans">
+                {linkedInResult}
+              </p>
+              <div className="flex items-center justify-between mt-3 gap-3 flex-wrap">
+                <p
+                  className={`text-xs ${
+                    linkedInResult.length > 2600 ? "text-red-400" : "text-zinc-500"
+                  }`}
+                >
+                  {linkedInResult.length} / 2600 characters
+                </p>
+                <button
+                  onClick={() => runLinkedIn({ regenerate: true })}
+                  disabled={working || limitReached}
+                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {working ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Regenerating…
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Regenerate
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 flex items-start gap-3">
+              <Lightbulb className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+              <p className="text-sm text-zinc-300">
+                <span className="font-semibold">Pro tip:</span> Add emojis to make it stand out.
+              </p>
+            </div>
+
+            {/* WhatsApp CTA */}
+            <div className="bg-gradient-to-br from-orange-500/15 to-orange-500/5 border border-orange-500/30 rounded-2xl p-6 sm:p-8 text-center">
+              <h3 className="text-xl font-bold text-zinc-100 mb-2">
+                Want complete LinkedIn profile optimization?
+              </h3>
+              <p className="text-zinc-400 text-sm max-w-md mx-auto mb-5">
+                We&apos;ll polish your headline, About, experience and skills end-to-end so
+                recruiters find you first.
+              </p>
+              <a
+                href={buildLinkedInWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Get LinkedIn Review ₹499
+              </a>
+            </div>
+
+            <button
+              onClick={reset}
+              className="flex items-center justify-center gap-2 w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Start over
+            </button>
+          </div>
+        )}
+
+        {/* ── Predictor result ── */}
+        {predictResult && mode === "predict" && (
+          <div className="flex flex-col gap-5">
+            {/* Section 1 — Technical */}
+            {predictResult.technicalQuestions?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-1 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-orange-400" />
+                  Technical Questions
+                </h3>
+                <p className="text-zinc-500 text-xs mb-4">
+                  Click a question to see how to approach it.
+                </p>
+                <ol className="flex flex-col gap-2">
+                  {predictResult.technicalQuestions.map((q, i) => {
+                    const open = expandedTechIdx === i;
+                    return (
+                      <li key={i} className="bg-zinc-950/40 border border-orange-500/20 rounded-xl">
+                        <button
+                          onClick={() => setExpandedTechIdx(open ? null : i)}
+                          className="w-full flex items-start gap-3 text-left px-4 py-3"
+                        >
+                          <span className="shrink-0 w-6 h-6 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-bold flex items-center justify-center mt-0.5">
+                            {i + 1}
+                          </span>
+                          <span className="flex-1 text-sm text-zinc-200 leading-relaxed">{q}</span>
+                          {open ? (
+                            <ChevronUp className="w-4 h-4 text-zinc-500 shrink-0 mt-1" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0 mt-1" />
+                          )}
+                        </button>
+                        {open && (
+                          <div className="px-4 pb-4 pt-1 ml-9 text-xs text-zinc-400 leading-relaxed">
+                            <p className="font-semibold text-zinc-300 mb-1">How to answer this</p>
+                            Walk through your reasoning step by step. Reference the specific
+                            tools, projects or numbers from your resume. State trade-offs and
+                            close with what you would do differently at scale.
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            )}
+
+            {/* Section 2 — Behavioral */}
+            {predictResult.behavioralQuestions?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-1 flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-blue-400" />
+                  Behavioral Questions
+                </h3>
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg px-3 py-2 text-xs text-blue-200 mb-4">
+                  <span className="font-semibold">STAR method:</span> Situation · Task · Action ·
+                  Result
+                </div>
+                <ol className="flex flex-col gap-2">
+                  {predictResult.behavioralQuestions.map((q, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-3 bg-zinc-950/40 border border-blue-500/20 rounded-xl px-4 py-3"
+                    >
+                      <span className="shrink-0 w-6 h-6 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-xs font-bold flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      <p className="text-sm text-zinc-200 leading-relaxed">{q}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Section 3 — Role specific */}
+            {predictResult.roleSpecificQuestions?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-4 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-purple-400" />
+                  Role-Specific Questions
+                </h3>
+                <ol className="flex flex-col gap-2">
+                  {predictResult.roleSpecificQuestions.map((q, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-3 bg-zinc-950/40 border border-purple-500/20 rounded-xl px-4 py-3"
+                    >
+                      <span className="shrink-0 w-6 h-6 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-xs font-bold flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      <p className="text-sm text-zinc-200 leading-relaxed">{q}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Section 4 — Tricky */}
+            {predictResult.trickyQuestions?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-1 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                  Tricky Questions
+                </h3>
+                <p className="text-zinc-500 text-xs mb-4">Be prepared for these.</p>
+                <ol className="flex flex-col gap-2">
+                  {predictResult.trickyQuestions.map((q, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-3 bg-zinc-950/40 border border-red-500/20 rounded-xl px-4 py-3"
+                    >
+                      <span className="shrink-0 w-6 h-6 rounded-full bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-bold flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      <p className="text-sm text-zinc-200 leading-relaxed">{q}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Section 5 — Questions to ask */}
+            {predictResult.questionsToAsk?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-1 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-400" />
+                  Questions to Ask Your Interviewer
+                </h3>
+                <p className="text-zinc-500 text-xs mb-4">Ask these to impress them.</p>
+                <ol className="flex flex-col gap-2">
+                  {predictResult.questionsToAsk.map((q, i) => (
+                    <li
+                      key={i}
+                      className="flex items-start gap-3 bg-zinc-950/40 border border-green-500/20 rounded-xl px-4 py-3"
+                    >
+                      <span className="shrink-0 w-6 h-6 rounded-full bg-green-500/15 border border-green-500/30 text-green-300 text-xs font-bold flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      <p className="text-sm text-zinc-200 leading-relaxed">{q}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Section 6 — Preparation tips */}
+            {predictResult.preparationTips?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-4">Preparation Tips</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {predictResult.preparationTips.map((t, i) => (
+                    <div
+                      key={i}
+                      className="flex flex-col gap-2 bg-zinc-950/40 border border-zinc-800 rounded-xl p-4"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-orange-500/15 border border-orange-500/30 flex items-center justify-center">
+                        <Lightbulb className="w-4 h-4 text-orange-400" />
+                      </div>
+                      <p className="text-sm text-zinc-200 leading-relaxed">{t}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* WhatsApp CTA */}
+            <div className="bg-gradient-to-br from-orange-500/15 to-orange-500/5 border border-orange-500/30 rounded-2xl p-6 sm:p-8 text-center">
+              <h3 className="text-xl font-bold text-zinc-100 mb-2">
+                Want a full mock interview session?
+              </h3>
+              <p className="text-zinc-400 text-sm max-w-md mx-auto mb-5">
+                Practise live with Aman and get personalised feedback before your real interview.
+              </p>
+              <a
+                href={buildMockInterviewWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Book Mock Interview ₹999
               </a>
             </div>
 
