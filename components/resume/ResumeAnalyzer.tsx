@@ -19,11 +19,81 @@ import {
   ListChecks,
   Mail,
   RefreshCw,
+  FilePlus,
+  Plus,
+  Trash2,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = "analyze" | "match" | "cover";
+type Mode = "analyze" | "match" | "cover" | "build";
+
+interface BuilderExperience {
+  company: string;
+  role: string;
+  duration: string;
+  responsibilities: string;
+}
+
+interface BuilderProject {
+  name: string;
+  description: string;
+}
+
+interface BuilderState {
+  fullName: string;
+  email: string;
+  phone: string;
+  linkedin: string;
+  location: string;
+  targetRole: string;
+  currentRole: string;
+  yearsExperience: string;
+  topSkills: string;
+  oneLiner: string;
+  experiences: BuilderExperience[];
+  technicalSkills: string;
+  tools: string;
+  degree: string;
+  college: string;
+  graduationYear: string;
+  projects: BuilderProject[];
+}
+
+const YEARS_OPTIONS = ["0-1", "1-3", "3-5", "5-10", "10+"];
+const MAX_EXPERIENCES = 3;
+const MAX_PROJECTS = 2;
+const BUILD_DAILY_LIMIT = 2;
+const BUILD_LS_COUNT_KEY = "resume_builds_count";
+const BUILD_LS_DATE_KEY = "resume_builds_date";
+
+const EMPTY_EXPERIENCE: BuilderExperience = {
+  company: "",
+  role: "",
+  duration: "",
+  responsibilities: "",
+};
+const EMPTY_PROJECT: BuilderProject = { name: "", description: "" };
+
+const INITIAL_BUILDER: BuilderState = {
+  fullName: "",
+  email: "",
+  phone: "",
+  linkedin: "",
+  location: "",
+  targetRole: "",
+  currentRole: "",
+  yearsExperience: "",
+  topSkills: "",
+  oneLiner: "",
+  experiences: [{ ...EMPTY_EXPERIENCE }],
+  technicalSkills: "",
+  tools: "",
+  degree: "",
+  college: "",
+  graduationYear: "",
+  projects: [],
+};
 
 type SectionStatus = "good" | "needs_work" | "missing";
 
@@ -178,6 +248,38 @@ function buildCoverLetterWhatsappLink() {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
+function buildResumeReviewWhatsappLink() {
+  const message =
+    "Hi Aman, I generated my resume using AmanAI Lab and want expert review";
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
+function buildBuilderHelpWhatsappLink() {
+  const message =
+    "Hi Aman, I have used my free resume builds today and want expert help";
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
+function getBuildUsage(): number {
+  try {
+    const date = localStorage.getItem(BUILD_LS_DATE_KEY);
+    const countRaw = localStorage.getItem(BUILD_LS_COUNT_KEY);
+    if (!date || !countRaw) return 0;
+    if (date !== todayKey()) return 0;
+    const count = parseInt(countRaw, 10);
+    return Number.isFinite(count) ? count : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function incrementBuildUsage(): number {
+  const count = getBuildUsage() + 1;
+  localStorage.setItem(BUILD_LS_DATE_KEY, todayKey());
+  localStorage.setItem(BUILD_LS_COUNT_KEY, String(count));
+  return count;
+}
+
 // ─── Score Circle ─────────────────────────────────────────────────────────────
 
 function ScoreCircle({ score }: { score: number }) {
@@ -222,6 +324,457 @@ function ScoreCircle({ score }: { score: number }) {
   );
 }
 
+// ─── Builder Form ─────────────────────────────────────────────────────────────
+
+interface BuilderFormProps {
+  builder: BuilderState;
+  errors: Record<string, string>;
+  updateBuilder: <K extends keyof BuilderState>(key: K, value: BuilderState[K]) => void;
+  updateExperience: (index: number, field: keyof BuilderExperience, value: string) => void;
+  addExperience: () => void;
+  removeExperience: (index: number) => void;
+  updateProject: (index: number, field: keyof BuilderProject, value: string) => void;
+  addProject: () => void;
+  removeProject: (index: number) => void;
+  onSubmit: () => void;
+  working: boolean;
+  error: string;
+  buildLimitReached: boolean;
+  buildsRemaining: number;
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-xs text-red-400 mt-1">{message}</p>;
+}
+
+function inputClass(hasError: boolean) {
+  return `w-full bg-zinc-800 border ${
+    hasError ? "border-red-500/60" : "border-zinc-700"
+  } focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors`;
+}
+
+function BuilderForm(props: BuilderFormProps) {
+  const {
+    builder,
+    errors,
+    updateBuilder,
+    updateExperience,
+    addExperience,
+    removeExperience,
+    updateProject,
+    addProject,
+    removeProject,
+    onSubmit,
+    working,
+    error,
+    buildLimitReached,
+    buildsRemaining,
+  } = props;
+
+  if (buildLimitReached) {
+    return (
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center flex flex-col items-center gap-5">
+        <div className="w-14 h-14 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+          <FilePlus className="w-7 h-7 text-orange-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-zinc-100 mb-2">
+            You have used your 2 free resume builds today
+          </h2>
+          <p className="text-zinc-400 text-sm max-w-md mx-auto">
+            Come back tomorrow or get expert help to craft a recruiter-ready resume now.
+          </p>
+        </div>
+        <a
+          href={buildBuilderHelpWhatsappLink()}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+        >
+          <MessageCircle className="w-4 h-4" />
+          Talk to Aman
+        </a>
+      </div>
+    );
+  }
+
+  const sectionHeader = (n: number, title: string) => (
+    <div>
+      <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1">
+        Section {n}
+      </p>
+      <h3 className="text-base font-bold text-zinc-100">{title}</h3>
+    </div>
+  );
+
+  const labelClass = "text-xs font-semibold text-zinc-400 uppercase tracking-wide";
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col gap-8">
+      <div>
+        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
+          Resume Builder
+        </p>
+        <h2 className="text-xl font-bold text-zinc-100">Build a recruiter-ready resume</h2>
+        <p className="text-zinc-500 text-sm mt-1">
+          {buildsRemaining} of {BUILD_DAILY_LIMIT} free builds remaining today
+        </p>
+      </div>
+
+      {/* Section 1 — Personal Info */}
+      <div className="flex flex-col gap-4">
+        {sectionHeader(1, "Personal Info")}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Full Name *</label>
+            <input
+              type="text"
+              value={builder.fullName}
+              onChange={(e) => updateBuilder("fullName", e.target.value)}
+              placeholder="Aman Chauhan"
+              className={inputClass(!!errors.fullName)}
+            />
+            <FieldError message={errors.fullName} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Email *</label>
+            <input
+              type="email"
+              value={builder.email}
+              onChange={(e) => updateBuilder("email", e.target.value)}
+              placeholder="you@example.com"
+              className={inputClass(!!errors.email)}
+            />
+            <FieldError message={errors.email} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Phone</label>
+            <input
+              type="tel"
+              value={builder.phone}
+              onChange={(e) => updateBuilder("phone", e.target.value)}
+              placeholder="+91 99999 99999"
+              className={inputClass(false)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>LinkedIn URL</label>
+            <input
+              type="url"
+              value={builder.linkedin}
+              onChange={(e) => updateBuilder("linkedin", e.target.value)}
+              placeholder="https://linkedin.com/in/yourname"
+              className={inputClass(false)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Location</label>
+            <input
+              type="text"
+              value={builder.location}
+              onChange={(e) => updateBuilder("location", e.target.value)}
+              placeholder="Bengaluru, India"
+              className={inputClass(false)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Target Role *</label>
+            <select
+              value={builder.targetRole}
+              onChange={(e) => updateBuilder("targetRole", e.target.value)}
+              className={inputClass(!!errors.targetRole)}
+            >
+              <option value="">Choose a role…</option>
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            <FieldError message={errors.targetRole} />
+          </div>
+        </div>
+      </div>
+
+      {/* Section 2 — Professional Summary */}
+      <div className="flex flex-col gap-4">
+        {sectionHeader(2, "Professional Summary")}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Current Role *</label>
+            <input
+              type="text"
+              value={builder.currentRole}
+              onChange={(e) => updateBuilder("currentRole", e.target.value)}
+              placeholder="Data Engineer at TCS"
+              className={inputClass(!!errors.currentRole)}
+            />
+            <FieldError message={errors.currentRole} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Years of Experience *</label>
+            <select
+              value={builder.yearsExperience}
+              onChange={(e) => updateBuilder("yearsExperience", e.target.value)}
+              className={inputClass(!!errors.yearsExperience)}
+            >
+              <option value="">Select…</option>
+              {YEARS_OPTIONS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+            <FieldError message={errors.yearsExperience} />
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className={labelClass}>Top 3 Skills *</label>
+          <input
+            type="text"
+            value={builder.topSkills}
+            onChange={(e) => updateBuilder("topSkills", e.target.value)}
+            placeholder="Python, Machine Learning, RAG"
+            className={inputClass(!!errors.topSkills)}
+          />
+          <FieldError message={errors.topSkills} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className={labelClass}>One line about yourself</label>
+          <textarea
+            value={builder.oneLiner}
+            onChange={(e) => updateBuilder("oneLiner", e.target.value)}
+            placeholder="Passionate about building production AI systems"
+            rows={2}
+            className={`${inputClass(false)} resize-y`}
+          />
+        </div>
+      </div>
+
+      {/* Section 3 — Work Experience */}
+      <div className="flex flex-col gap-4">
+        {sectionHeader(3, "Work Experience")}
+        {builder.experiences.map((exp, i) => {
+          const expError = errors[`experience_${i}`];
+          return (
+            <div
+              key={i}
+              className={`flex flex-col gap-3 p-4 rounded-xl border ${
+                expError ? "border-red-500/40 bg-red-500/5" : "border-zinc-800 bg-zinc-950/40"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold text-zinc-300 uppercase tracking-wide">
+                  Experience {i + 1}
+                  {i === 0 ? " *" : ""}
+                </p>
+                {builder.experiences.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeExperience(i)}
+                    className="flex items-center gap-1 text-xs text-zinc-400 hover:text-red-400 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={exp.company}
+                  onChange={(e) => updateExperience(i, "company", e.target.value)}
+                  placeholder="Company"
+                  className={inputClass(false)}
+                />
+                <input
+                  type="text"
+                  value={exp.role}
+                  onChange={(e) => updateExperience(i, "role", e.target.value)}
+                  placeholder="Role / Title"
+                  className={inputClass(false)}
+                />
+              </div>
+              <input
+                type="text"
+                value={exp.duration}
+                onChange={(e) => updateExperience(i, "duration", e.target.value)}
+                placeholder="Duration (e.g. 2023-Present)"
+                className={inputClass(false)}
+              />
+              <textarea
+                value={exp.responsibilities}
+                onChange={(e) => updateExperience(i, "responsibilities", e.target.value)}
+                placeholder="Describe what you did..."
+                rows={3}
+                className={`${inputClass(false)} resize-y`}
+              />
+              <FieldError message={expError} />
+            </div>
+          );
+        })}
+        {builder.experiences.length < MAX_EXPERIENCES && (
+          <button
+            type="button"
+            onClick={addExperience}
+            className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add More Experience
+          </button>
+        )}
+      </div>
+
+      {/* Section 4 — Skills */}
+      <div className="flex flex-col gap-4">
+        {sectionHeader(4, "Skills")}
+        <div className="flex flex-col gap-2">
+          <label className={labelClass}>Technical Skills *</label>
+          <textarea
+            value={builder.technicalSkills}
+            onChange={(e) => updateBuilder("technicalSkills", e.target.value)}
+            placeholder="Python, SQL, TensorFlow..."
+            rows={3}
+            className={`${inputClass(!!errors.technicalSkills)} resize-y`}
+          />
+          <FieldError message={errors.technicalSkills} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className={labelClass}>Tools & Frameworks</label>
+          <textarea
+            value={builder.tools}
+            onChange={(e) => updateBuilder("tools", e.target.value)}
+            placeholder="LangChain, FastAPI, AWS..."
+            rows={3}
+            className={`${inputClass(false)} resize-y`}
+          />
+        </div>
+      </div>
+
+      {/* Section 5 — Education */}
+      <div className="flex flex-col gap-4">
+        {sectionHeader(5, "Education")}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Degree *</label>
+            <input
+              type="text"
+              value={builder.degree}
+              onChange={(e) => updateBuilder("degree", e.target.value)}
+              placeholder="B.Tech in Computer Science"
+              className={inputClass(!!errors.degree)}
+            />
+            <FieldError message={errors.degree} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>College / University *</label>
+            <input
+              type="text"
+              value={builder.college}
+              onChange={(e) => updateBuilder("college", e.target.value)}
+              placeholder="IIT Delhi"
+              className={inputClass(!!errors.college)}
+            />
+            <FieldError message={errors.college} />
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className={labelClass}>Year of Graduation *</label>
+          <input
+            type="text"
+            value={builder.graduationYear}
+            onChange={(e) => updateBuilder("graduationYear", e.target.value)}
+            placeholder="2024"
+            className={inputClass(!!errors.graduationYear)}
+          />
+          <FieldError message={errors.graduationYear} />
+        </div>
+      </div>
+
+      {/* Section 6 — Projects (optional) */}
+      <div className="flex flex-col gap-4">
+        {sectionHeader(6, "Projects (Optional)")}
+        {builder.projects.length === 0 && (
+          <p className="text-xs text-zinc-500">
+            Add up to {MAX_PROJECTS} side projects to strengthen your resume.
+          </p>
+        )}
+        {builder.projects.map((p, i) => (
+          <div
+            key={i}
+            className="flex flex-col gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/40"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-zinc-300 uppercase tracking-wide">
+                Project {i + 1}
+              </p>
+              <button
+                type="button"
+                onClick={() => removeProject(i)}
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-red-400 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Remove
+              </button>
+            </div>
+            <input
+              type="text"
+              value={p.name}
+              onChange={(e) => updateProject(i, "name", e.target.value)}
+              placeholder="Project Name"
+              className={inputClass(false)}
+            />
+            <textarea
+              value={p.description}
+              onChange={(e) => updateProject(i, "description", e.target.value)}
+              placeholder="What you built and impact"
+              rows={3}
+              className={`${inputClass(false)} resize-y`}
+            />
+          </div>
+        ))}
+        {builder.projects.length < MAX_PROJECTS && (
+          <button
+            type="button"
+            onClick={addProject}
+            className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add More Project
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
+          <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          <p className="text-red-300 text-sm whitespace-pre-line">{error}</p>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={working}
+        className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-base font-semibold px-4 py-4 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+      >
+        {working ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Generating your resume…
+          </>
+        ) : (
+          <>
+            <FilePlus className="w-5 h-5" />
+            Generate My Resume
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ResumeAnalyzer() {
@@ -239,8 +792,13 @@ export default function ResumeAnalyzer() {
   const [coverLetter, setCoverLetter] = useState("");
   const [error, setError] = useState("");
   const [usedToday, setUsedToday] = useState(0);
+  const [buildsUsedToday, setBuildsUsedToday] = useState(0);
   const [copied, setCopied] = useState(false);
   const [coverCopied, setCoverCopied] = useState(false);
+  const [resumeCopied, setResumeCopied] = useState(false);
+  const [builder, setBuilder] = useState<BuilderState>(INITIAL_BUILDER);
+  const [builderResume, setBuilderResume] = useState("");
+  const [builderErrors, setBuilderErrors] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const hasPastedText = pastedText.trim().length > 0;
@@ -255,14 +813,21 @@ export default function ResumeAnalyzer() {
 
   useEffect(() => {
     setUsedToday(getUsage());
+    setBuildsUsedToday(getBuildUsage());
   }, []);
 
   const limitReached = usedToday >= DAILY_LIMIT;
+  const buildLimitReached = buildsUsedToday >= BUILD_DAILY_LIMIT;
   const remaining = useMemo(() => Math.max(0, DAILY_LIMIT - usedToday), [usedToday]);
+  const buildsRemaining = useMemo(
+    () => Math.max(0, BUILD_DAILY_LIMIT - buildsUsedToday),
+    [buildsUsedToday]
+  );
   const hasResult =
     (mode === "analyze" && !!analysis) ||
     (mode === "match" && !!match) ||
-    (mode === "cover" && !!coverLetter);
+    (mode === "cover" && !!coverLetter) ||
+    (mode === "build" && !!builderResume);
 
   function handleFile(f: File | null) {
     if (!f) return;
@@ -293,6 +858,8 @@ export default function ResumeAnalyzer() {
     setAnalysis(null);
     setMatch(null);
     setCoverLetter("");
+    setBuilderResume("");
+    setBuilderErrors({});
   }
 
   function appendResumeFields(fd: FormData) {
@@ -382,6 +949,9 @@ export default function ResumeAnalyzer() {
     setAnalysis(null);
     setMatch(null);
     setCoverLetter("");
+    setBuilderResume("");
+    setBuilderErrors({});
+    setBuilder(INITIAL_BUILDER);
     setFile(null);
     setPastedText("");
     setRole("");
@@ -414,8 +984,139 @@ export default function ResumeAnalyzer() {
     }
   }
 
-  // ── Limit reached ──
-  if (limitReached && !hasResult) {
+  async function copyBuilderResume() {
+    if (!builderResume) return;
+    try {
+      await navigator.clipboard.writeText(builderResume);
+      setResumeCopied(true);
+      setTimeout(() => setResumeCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }
+
+  function updateBuilder<K extends keyof BuilderState>(key: K, value: BuilderState[K]) {
+    setBuilder((b) => ({ ...b, [key]: value }));
+    if (builderErrors[key as string]) {
+      setBuilderErrors((prev) => {
+        const next = { ...prev };
+        delete next[key as string];
+        return next;
+      });
+    }
+  }
+
+  function updateExperience(index: number, field: keyof BuilderExperience, value: string) {
+    setBuilder((b) => {
+      const next = [...b.experiences];
+      next[index] = { ...next[index], [field]: value };
+      return { ...b, experiences: next };
+    });
+    const errKey = `experience_${index}`;
+    if (builderErrors[errKey]) {
+      setBuilderErrors((prev) => {
+        const next = { ...prev };
+        delete next[errKey];
+        return next;
+      });
+    }
+  }
+
+  function addExperience() {
+    setBuilder((b) =>
+      b.experiences.length >= MAX_EXPERIENCES
+        ? b
+        : { ...b, experiences: [...b.experiences, { ...EMPTY_EXPERIENCE }] }
+    );
+  }
+
+  function removeExperience(index: number) {
+    setBuilder((b) => {
+      if (b.experiences.length <= 1) return b;
+      const next = b.experiences.filter((_, i) => i !== index);
+      return { ...b, experiences: next };
+    });
+  }
+
+  function updateProject(index: number, field: keyof BuilderProject, value: string) {
+    setBuilder((b) => {
+      const next = [...b.projects];
+      next[index] = { ...next[index], [field]: value };
+      return { ...b, projects: next };
+    });
+  }
+
+  function addProject() {
+    setBuilder((b) =>
+      b.projects.length >= MAX_PROJECTS
+        ? b
+        : { ...b, projects: [...b.projects, { ...EMPTY_PROJECT }] }
+    );
+  }
+
+  function removeProject(index: number) {
+    setBuilder((b) => ({ ...b, projects: b.projects.filter((_, i) => i !== index) }));
+  }
+
+  function validateBuilder(): boolean {
+    const errs: Record<string, string> = {};
+    if (!builder.fullName.trim()) errs.fullName = "Full name is required";
+    if (!builder.email.trim()) errs.email = "Email is required";
+    if (!builder.targetRole.trim()) errs.targetRole = "Target role is required";
+    if (!builder.currentRole.trim()) errs.currentRole = "Current role is required";
+    if (!builder.yearsExperience.trim()) errs.yearsExperience = "Select years of experience";
+    if (!builder.topSkills.trim()) errs.topSkills = "List your top 3 skills";
+    if (!builder.technicalSkills.trim()) errs.technicalSkills = "Technical skills are required";
+    if (!builder.degree.trim()) errs.degree = "Degree is required";
+    if (!builder.college.trim()) errs.college = "College is required";
+    if (!builder.graduationYear.trim()) errs.graduationYear = "Graduation year is required";
+
+    const firstExp = builder.experiences[0];
+    if (
+      !firstExp ||
+      !firstExp.company.trim() ||
+      !firstExp.role.trim() ||
+      !firstExp.duration.trim() ||
+      !firstExp.responsibilities.trim()
+    ) {
+      errs.experience_0 = "Fill in all fields for your first experience";
+    }
+
+    setBuilderErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
+  async function runBuild({ regenerate = false }: { regenerate?: boolean } = {}) {
+    if (working) return;
+    if (!regenerate && buildLimitReached) return;
+    if (!validateBuilder()) {
+      setError("Please fill in the highlighted required fields.");
+      return;
+    }
+    setError("");
+    setWorking(true);
+    if (!regenerate) setBuilderResume("");
+    try {
+      const res = await fetch("/api/resume/build", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(builder),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to generate resume.");
+
+      const newCount = incrementBuildUsage();
+      setBuildsUsedToday(newCount);
+      setBuilderResume(typeof data.resume === "string" ? data.resume : "");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  // ── Limit reached (analyze / match / cover only — build has its own counter) ──
+  if (limitReached && mode !== "build" && !hasResult) {
     return (
       <section className="min-h-screen bg-zinc-950 text-zinc-50">
         <div className="max-w-2xl mx-auto px-4 py-24 text-center">
@@ -462,45 +1163,76 @@ export default function ResumeAnalyzer() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         {/* Mode toggle */}
         {!hasResult && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 grid grid-cols-1 sm:grid-cols-3 gap-1.5 mb-6">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 grid grid-cols-2 lg:grid-cols-4 gap-1.5 mb-6">
             <button
               onClick={() => switchMode("analyze")}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 mode === "analyze"
                   ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
                   : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
               }`}
             >
-              <Sparkles className="w-4 h-4" />
-              Resume Analyzer
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span className="truncate">Resume Analyzer</span>
             </button>
             <button
               onClick={() => switchMode("match")}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 mode === "match"
                   ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
                   : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
               }`}
             >
-              <Target className="w-4 h-4" />
-              JD Matcher
+              <Target className="w-4 h-4 shrink-0" />
+              <span className="truncate">JD Matcher</span>
             </button>
             <button
               onClick={() => switchMode("cover")}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 mode === "cover"
                   ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
                   : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
               }`}
             >
-              <Mail className="w-4 h-4" />
-              Cover Letter
+              <Mail className="w-4 h-4 shrink-0" />
+              <span className="truncate">Cover Letter</span>
+            </button>
+            <button
+              onClick={() => switchMode("build")}
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                mode === "build"
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
+                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+              }`}
+            >
+              <FilePlus className="w-4 h-4 shrink-0" />
+              <span className="truncate">Resume Builder</span>
             </button>
           </div>
         )}
 
-        {/* ── Step 1: Upload ── */}
-        {!hasResult && (
+        {/* ── Resume Builder form ── */}
+        {!hasResult && mode === "build" && (
+          <BuilderForm
+            builder={builder}
+            errors={builderErrors}
+            updateBuilder={updateBuilder}
+            updateExperience={updateExperience}
+            addExperience={addExperience}
+            removeExperience={removeExperience}
+            updateProject={updateProject}
+            addProject={addProject}
+            removeProject={removeProject}
+            onSubmit={() => runBuild()}
+            working={working}
+            error={error}
+            buildLimitReached={buildLimitReached}
+            buildsRemaining={buildsRemaining}
+          />
+        )}
+
+        {/* ── Step 1: Upload (Analyzer / Matcher / Cover Letter) ── */}
+        {!hasResult && mode !== "build" && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
             <div>
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
@@ -1152,6 +1884,97 @@ export default function ResumeAnalyzer() {
               >
                 <MessageCircle className="w-4 h-4" />
                 Get Expert Review ₹499
+              </a>
+            </div>
+
+            <button
+              onClick={reset}
+              className="flex items-center justify-center gap-2 w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Start over
+            </button>
+          </div>
+        )}
+
+        {/* ── Builder result ── */}
+        {builderResume && mode === "build" && (
+          <div className="flex flex-col gap-5">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <FilePlus className="w-4 h-4 text-orange-400" />
+                  <h3 className="text-lg font-bold text-zinc-100">
+                    Your Resume{builder.fullName.trim() ? ` — ${builder.fullName.trim()}` : ""}
+                  </h3>
+                </div>
+                <button
+                  onClick={copyBuilderResume}
+                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {resumeCopied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-green-400" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      Copy Resume
+                    </>
+                  )}
+                </button>
+              </div>
+              <pre className="text-zinc-200 text-sm leading-relaxed bg-zinc-950/60 border border-zinc-800 rounded-xl p-5 whitespace-pre-wrap font-sans overflow-x-auto">
+                {builderResume}
+              </pre>
+              <div className="flex items-center justify-between mt-3 gap-3 flex-wrap">
+                <p className="text-xs text-zinc-500">
+                  {builderResume.trim().split(/\s+/).filter(Boolean).length} words
+                </p>
+                <button
+                  onClick={() => runBuild({ regenerate: true })}
+                  disabled={working || buildLimitReached}
+                  className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  {working ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Regenerating…
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Regenerate
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {buildLimitReached && (
+              <p className="text-center text-zinc-500 text-xs">
+                Daily limit reached — regenerate available again tomorrow.
+              </p>
+            )}
+
+            {/* WhatsApp CTA */}
+            <div className="bg-gradient-to-br from-orange-500/15 to-orange-500/5 border border-orange-500/30 rounded-2xl p-6 sm:p-8 text-center">
+              <h3 className="text-xl font-bold text-zinc-100 mb-2">
+                Want a human expert to review and polish this resume?
+              </h3>
+              <p className="text-zinc-400 text-sm max-w-md mx-auto mb-5">
+                We&apos;ll refine wording, structure and impact to give you a recruiter-ready,
+                ATS-optimised version.
+              </p>
+              <a
+                href={buildResumeReviewWhatsappLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Get Expert Review ₹999
               </a>
             </div>
 
