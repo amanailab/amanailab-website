@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { PDFParse } from "pdf-parse";
+import { createRequire } from "node:module";
+
+// Use the v1 internal entry to skip pdf-parse's debug-mode self-test that
+// reads a sample PDF from disk (not bundled by Vercel).
+const require = createRequire(import.meta.url);
+const pdfParse: (buffer: Buffer) => Promise<{ text: string }> =
+  require("pdf-parse/lib/pdf-parse");
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,15 +38,6 @@ interface AnalysisResult {
   improvedSummary: string;
 }
 
-async function extractPdfText(buffer: Buffer): Promise<string> {
-  const parser = new PDFParse({ data: new Uint8Array(buffer) });
-  try {
-    const result = await parser.getText();
-    return (result.text ?? "").replace(/\s+\n/g, "\n").trim();
-  } finally {
-    await parser.destroy().catch(() => {});
-  }
-}
 
 export async function POST(req: Request) {
   try {
@@ -73,13 +70,21 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "File too large. Max 5MB." }, { status: 400 });
       }
 
-      const buffer = Buffer.from(await file.arrayBuffer());
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
 
       try {
-        resumeText = await extractPdfText(buffer);
+        const data = await pdfParse(buffer);
+        resumeText = (data.text ?? "").replace(/\s+\n/g, "\n").trim();
       } catch (err) {
         console.error("[Resume] PDF parse error:", err);
-        return NextResponse.json({ error: IMAGE_PDF_MESSAGE }, { status: 400 });
+        return NextResponse.json(
+          {
+            error:
+              "Could not read PDF. Please paste your resume text in the text box instead.",
+          },
+          { status: 400 }
+        );
       }
 
       if (resumeText.trim().length < MIN_RESUME_CHARS) {
