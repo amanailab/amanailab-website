@@ -14,9 +14,14 @@ import {
   ArrowRight,
   RotateCcw,
   Loader2,
+  Target,
+  MessageCircle,
+  ListChecks,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+type Mode = "analyze" | "match";
 
 type SectionStatus = "good" | "needs_work" | "missing";
 
@@ -36,6 +41,19 @@ interface AnalysisResult {
   improvedSummary: string;
 }
 
+type Verdict = "strong_match" | "good_match" | "weak_match" | "poor_match";
+
+interface MatchResult {
+  matchScore: number;
+  matchedKeywords: string[];
+  missingKeywords: string[];
+  matchedSkills: string[];
+  missingSkills: string[];
+  topSuggestions: string[];
+  verdict: Verdict;
+  verdictReason: string;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ROLES = [
@@ -52,6 +70,7 @@ const ROLES = [
 const MAX_BYTES = 5 * 1024 * 1024;
 const DAILY_LIMIT = 3;
 const LS_KEY = "amanai_resume_usage";
+const WHATSAPP_NUMBER = "919997600372";
 
 const SECTION_LABELS: Record<keyof AnalysisResult["sectionScores"], string> = {
   contactInfo: "Contact Info",
@@ -60,6 +79,29 @@ const SECTION_LABELS: Record<keyof AnalysisResult["sectionScores"], string> = {
   skills: "Skills",
   projects: "Projects",
   education: "Education",
+};
+
+const VERDICT_META: Record<Verdict, { label: string; color: string; bg: string }> = {
+  strong_match: {
+    label: "Strong Match",
+    color: "text-green-300",
+    bg: "bg-green-500/15 border-green-500/40",
+  },
+  good_match: {
+    label: "Good Match",
+    color: "text-yellow-300",
+    bg: "bg-yellow-500/15 border-yellow-500/40",
+  },
+  weak_match: {
+    label: "Weak Match",
+    color: "text-orange-300",
+    bg: "bg-orange-500/15 border-orange-500/40",
+  },
+  poor_match: {
+    label: "Poor Match",
+    color: "text-red-300",
+    bg: "bg-red-500/15 border-red-500/40",
+  },
 };
 
 // ─── Rate-limit helpers ───────────────────────────────────────────────────────
@@ -124,6 +166,11 @@ function statusMeta(status: SectionStatus) {
   };
 }
 
+function buildWhatsappLink(score: number) {
+  const message = `Hi Aman, I want my resume rewritten for a specific job. My JD match is ${score}%`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+}
+
 // ─── Score Circle ─────────────────────────────────────────────────────────────
 
 function ScoreCircle({ score }: { score: number }) {
@@ -171,27 +218,32 @@ function ScoreCircle({ score }: { score: number }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ResumeAnalyzer() {
+  const [mode, setMode] = useState<Mode>("analyze");
   const [file, setFile] = useState<File | null>(null);
   const [pastedText, setPastedText] = useState("");
   const [role, setRole] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
   const [dragActive, setDragActive] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [working, setWorking] = useState(false);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [match, setMatch] = useState<MatchResult | null>(null);
   const [error, setError] = useState("");
   const [usedToday, setUsedToday] = useState(0);
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const hasPastedText = pastedText.trim().length > 0;
-  const canAnalyze = (!!file || hasPastedText) && !!role;
+  const hasResume = !!file || hasPastedText;
+  const canAnalyze = hasResume && !!role;
+  const canMatch = hasResume && jobDescription.trim().length >= 50;
 
   useEffect(() => {
     setUsedToday(getUsage());
   }, []);
 
   const limitReached = usedToday >= DAILY_LIMIT;
-
   const remaining = useMemo(() => Math.max(0, DAILY_LIMIT - usedToday), [usedToday]);
+  const result = mode === "analyze" ? analysis : match;
 
   function handleFile(f: File | null) {
     if (!f) return;
@@ -215,50 +267,85 @@ export default function ResumeAnalyzer() {
     if (f) handleFile(f);
   }
 
-  async function analyze() {
-    if (!canAnalyze || analyzing || limitReached) return;
+  function switchMode(next: Mode) {
+    if (next === mode || working) return;
+    setMode(next);
     setError("");
-    setAnalyzing(true);
-    setResult(null);
+    setAnalysis(null);
+    setMatch(null);
+  }
+
+  function appendResumeFields(fd: FormData) {
+    if (hasPastedText) {
+      fd.append("text", pastedText.trim());
+    } else if (file) {
+      fd.append("file", file);
+    }
+  }
+
+  async function runAnalyze() {
+    if (!canAnalyze || working || limitReached) return;
+    setError("");
+    setWorking(true);
+    setAnalysis(null);
     try {
       const fd = new FormData();
       fd.append("role", role);
-      if (hasPastedText) {
-        fd.append("text", pastedText.trim());
-      } else if (file) {
-        fd.append("file", file);
-      }
+      appendResumeFields(fd);
 
-      const res = await fetch("/api/resume/analyze", {
-        method: "POST",
-        body: fd,
-      });
+      const res = await fetch("/api/resume/analyze", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to analyze resume.");
 
       const newCount = incrementUsage();
       setUsedToday(newCount);
-      setResult(data as AnalysisResult);
+      setAnalysis(data as AnalysisResult);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
-      setAnalyzing(false);
+      setWorking(false);
+    }
+  }
+
+  async function runMatch() {
+    if (!canMatch || working || limitReached) return;
+    setError("");
+    setWorking(true);
+    setMatch(null);
+    try {
+      const fd = new FormData();
+      fd.append("jobDescription", jobDescription.trim());
+      appendResumeFields(fd);
+
+      const res = await fetch("/api/resume/match", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to match resume.");
+
+      const newCount = incrementUsage();
+      setUsedToday(newCount);
+      setMatch(data as MatchResult);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setWorking(false);
     }
   }
 
   function reset() {
-    setResult(null);
+    setAnalysis(null);
+    setMatch(null);
     setFile(null);
     setPastedText("");
     setRole("");
+    setJobDescription("");
     setError("");
     if (inputRef.current) inputRef.current.value = "";
   }
 
   async function copyImproved() {
-    if (!result) return;
+    if (!analysis) return;
     try {
-      await navigator.clipboard.writeText(result.improvedSummary);
+      await navigator.clipboard.writeText(analysis.improvedSummary);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -274,7 +361,9 @@ export default function ResumeAnalyzer() {
           <div className="w-16 h-16 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-6 mx-auto">
             <FileText className="w-8 h-8 text-orange-400" />
           </div>
-          <h1 className="text-3xl font-bold mb-4">You&apos;ve used your 3 free analyses today</h1>
+          <h1 className="text-3xl font-bold mb-4">
+            You&apos;ve used your 3 free analyses today
+          </h1>
           <p className="text-zinc-400 mb-8 leading-relaxed">
             Want a complete resume rewrite? Our team can help you build an ATS-optimized,
             recruiter-ready resume tailored to AI/ML roles.
@@ -310,6 +399,34 @@ export default function ResumeAnalyzer() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        {/* Mode toggle */}
+        {!result && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5 grid grid-cols-2 gap-1.5 mb-6">
+            <button
+              onClick={() => switchMode("analyze")}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                mode === "analyze"
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
+                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Resume Analyzer
+            </button>
+            <button
+              onClick={() => switchMode("match")}
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                mode === "match"
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
+                  : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+              }`}
+            >
+              <Target className="w-4 h-4" />
+              JD Matcher
+            </button>
+          </div>
+        )}
+
         {/* ── Step 1: Upload ── */}
         {!result && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col gap-6">
@@ -317,9 +434,12 @@ export default function ResumeAnalyzer() {
               <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
                 Step 1
               </p>
-              <h2 className="text-xl font-bold text-zinc-100">Upload your resume</h2>
+              <h2 className="text-xl font-bold text-zinc-100">
+                {mode === "analyze" ? "Upload your resume" : "Match your resume to a JD"}
+              </h2>
               <p className="text-zinc-500 text-sm mt-1">
                 {remaining} of {DAILY_LIMIT} free analyses remaining today
+                {" · "}shared between Analyzer and JD Matcher
               </p>
             </div>
 
@@ -400,24 +520,46 @@ export default function ResumeAnalyzer() {
               )}
             </div>
 
-            {/* Role selector */}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
-                Select your target role
-              </label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 outline-none transition-colors"
-              >
-                <option value="">Choose a role…</option>
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Mode-specific input */}
+            {mode === "analyze" ? (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Select your target role
+                </label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 outline-none transition-colors"
+                >
+                  <option value="">Choose a role…</option>
+                  {ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                  Paste Job Description
+                </label>
+                <textarea
+                  value={jobDescription}
+                  onChange={(e) => {
+                    setJobDescription(e.target.value);
+                    if (e.target.value.trim()) setError("");
+                  }}
+                  placeholder="Paste the full job description here..."
+                  style={{ minHeight: "150px" }}
+                  className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-y"
+                />
+                <p className="text-xs text-zinc-500">
+                  {jobDescription.trim().length} characters · paste the complete listing for the
+                  most accurate match
+                </p>
+              </div>
+            )}
 
             {error && (
               <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
@@ -426,53 +568,70 @@ export default function ResumeAnalyzer() {
               </div>
             )}
 
-            <button
-              onClick={analyze}
-              disabled={!canAnalyze || analyzing}
-              className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
-            >
-              {analyzing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing your resume…
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Analyze Resume
-                </>
-              )}
-            </button>
+            {mode === "analyze" ? (
+              <button
+                onClick={runAnalyze}
+                disabled={!canAnalyze || working}
+                className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                {working ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Analyzing your resume…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Analyze Resume
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                onClick={runMatch}
+                disabled={!canMatch || working}
+                className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                {working ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Matching to job description…
+                  </>
+                ) : (
+                  <>
+                    <Target className="w-4 h-4" />
+                    Match My Resume
+                  </>
+                )}
+              </button>
+            )}
           </div>
         )}
 
-        {/* ── Step 2: Results ── */}
-        {result && (
+        {/* ── Analyze results ── */}
+        {analysis && mode === "analyze" && (
           <div className="flex flex-col gap-5">
             {/* Score */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
-              <ScoreCircle score={result.score} />
+              <ScoreCircle score={analysis.score} />
               <div className="flex-1 text-center sm:text-left">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
                   ATS Score
                 </p>
-                <h2 className={`text-2xl font-bold ${scoreLabel(result.score)}`}>
-                  {result.score >= 75
+                <h2 className={`text-2xl font-bold ${scoreLabel(analysis.score)}`}>
+                  {analysis.score >= 75
                     ? "Strong resume"
-                    : result.score >= 50
+                    : analysis.score >= 50
                     ? "Decent — room to improve"
                     : "Needs significant work"}
                 </h2>
-                <p className="text-zinc-400 text-sm mt-2 leading-relaxed">{result.summary}</p>
+                <p className="text-zinc-400 text-sm mt-2 leading-relaxed">{analysis.summary}</p>
               </div>
             </div>
 
             {/* Missing keywords */}
-            {result.missingKeywords?.length > 0 && (
+            {analysis.missingKeywords?.length > 0 && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
-                  Card 3
-                </p>
                 <h3 className="text-lg font-bold text-zinc-100 mb-1">
                   Missing Keywords for {role}
                 </h3>
@@ -480,7 +639,7 @@ export default function ResumeAnalyzer() {
                   Add these to your skills, summary, or experience sections.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {result.missingKeywords.map((kw) => (
+                  {analysis.missingKeywords.map((kw) => (
                     <span
                       key={kw}
                       className="text-xs font-semibold px-2.5 py-1.5 rounded-full border bg-orange-500/15 text-orange-300 border-orange-500/30"
@@ -498,7 +657,7 @@ export default function ResumeAnalyzer() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(Object.keys(SECTION_LABELS) as Array<keyof typeof SECTION_LABELS>).map(
                   (key) => {
-                    const status = result.sectionScores?.[key] ?? "missing";
+                    const status = analysis.sectionScores?.[key] ?? "missing";
                     const meta = statusMeta(status);
                     return (
                       <div
@@ -520,11 +679,11 @@ export default function ResumeAnalyzer() {
             </div>
 
             {/* Top improvements */}
-            {result.improvements?.length > 0 && (
+            {analysis.improvements?.length > 0 && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                 <h3 className="text-lg font-bold text-zinc-100 mb-4">Top Improvements</h3>
                 <ol className="flex flex-col gap-3">
-                  {result.improvements.map((imp, i) => (
+                  {analysis.improvements.map((imp, i) => (
                     <li key={i} className="flex items-start gap-3">
                       <span className="shrink-0 w-6 h-6 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-bold flex items-center justify-center mt-0.5">
                         {i + 1}
@@ -537,7 +696,7 @@ export default function ResumeAnalyzer() {
             )}
 
             {/* Improved summary */}
-            {result.improvedSummary && (
+            {analysis.improvedSummary && (
               <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4 gap-3">
                   <div className="flex items-center gap-2">
@@ -562,7 +721,7 @@ export default function ResumeAnalyzer() {
                   </button>
                 </div>
                 <p className="text-zinc-300 text-sm leading-relaxed bg-zinc-950/60 border border-zinc-800 rounded-xl p-4 whitespace-pre-line">
-                  {result.improvedSummary}
+                  {analysis.improvedSummary}
                 </p>
               </div>
             )}
@@ -590,6 +749,176 @@ export default function ResumeAnalyzer() {
             >
               <RotateCcw className="w-4 h-4" />
               {limitReached ? "Daily limit reached" : "Analyze another resume"}
+            </button>
+          </div>
+        )}
+
+        {/* ── Match results ── */}
+        {match && mode === "match" && (
+          <div className="flex flex-col gap-5">
+            {/* Score + verdict */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
+              <ScoreCircle score={match.matchScore} />
+              <div className="flex-1 text-center sm:text-left">
+                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
+                  JD Match Score
+                </p>
+                <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start mb-2">
+                  <h2 className={`text-2xl font-bold ${scoreLabel(match.matchScore)}`}>
+                    {match.matchScore}/100
+                  </h2>
+                  <span
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                      VERDICT_META[match.verdict]?.bg ?? "bg-zinc-800 border-zinc-700"
+                    } ${VERDICT_META[match.verdict]?.color ?? "text-zinc-300"}`}
+                  >
+                    {VERDICT_META[match.verdict]?.label ?? match.verdict}
+                  </span>
+                </div>
+                <p className="text-zinc-400 text-sm leading-relaxed">{match.verdictReason}</p>
+              </div>
+            </div>
+
+            {/* Matched keywords */}
+            {match.matchedKeywords?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-1 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-400" />
+                  Keywords You Have
+                </h3>
+                <p className="text-zinc-500 text-xs mb-4">
+                  Found in both your resume and the job description.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {match.matchedKeywords.map((kw) => (
+                    <span
+                      key={kw}
+                      className="text-xs font-semibold px-2.5 py-1.5 rounded-full border bg-green-500/15 text-green-300 border-green-500/30"
+                    >
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Missing keywords */}
+            {match.missingKeywords?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-1 flex items-center gap-2">
+                  <XCircle className="w-5 h-5 text-red-400" />
+                  Keywords You Are Missing
+                </h3>
+                <p className="text-zinc-500 text-xs mb-4">Add these to your resume.</p>
+                <div className="flex flex-wrap gap-2">
+                  {match.missingKeywords.map((kw) => (
+                    <span
+                      key={kw}
+                      className="text-xs font-semibold px-2.5 py-1.5 rounded-full border bg-red-500/15 text-red-300 border-red-500/30"
+                    >
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Skills gap */}
+            {(match.matchedSkills?.length > 0 || match.missingSkills?.length > 0) && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-4">Skills Gap</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs font-semibold text-green-400 uppercase tracking-wide mb-3">
+                      Skills You Have
+                    </p>
+                    {match.matchedSkills?.length > 0 ? (
+                      <ul className="flex flex-col gap-2">
+                        {match.matchedSkills.map((s) => (
+                          <li
+                            key={s}
+                            className="flex items-start gap-2 text-sm text-zinc-200 bg-green-500/5 border border-green-500/20 rounded-lg px-3 py-2"
+                          >
+                            <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                            <span>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-zinc-500 text-sm">No matching skills found.</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-3">
+                      Skills You Need
+                    </p>
+                    {match.missingSkills?.length > 0 ? (
+                      <ul className="flex flex-col gap-2">
+                        {match.missingSkills.map((s) => (
+                          <li
+                            key={s}
+                            className="flex items-start gap-2 text-sm text-zinc-200 bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2"
+                          >
+                            <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                            <span>{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-zinc-500 text-sm">No skill gaps detected.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Top suggestions */}
+            {match.topSuggestions?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+                <h3 className="text-lg font-bold text-zinc-100 mb-4 flex items-center gap-2">
+                  <ListChecks className="w-5 h-5 text-orange-400" />
+                  Top 5 Suggestions
+                </h3>
+                <ol className="flex flex-col gap-3">
+                  {match.topSuggestions.map((s, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="shrink-0 w-6 h-6 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-bold flex items-center justify-center mt-0.5">
+                        {i + 1}
+                      </span>
+                      <p className="text-zinc-300 text-sm leading-relaxed">{s}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* WhatsApp CTA */}
+            <div className="bg-gradient-to-br from-orange-500/15 to-orange-500/5 border border-orange-500/30 rounded-2xl p-6 sm:p-8 text-center">
+              <h3 className="text-xl font-bold text-zinc-100 mb-2">
+                Want us to rewrite your resume for this specific job?
+              </h3>
+              <p className="text-zinc-400 text-sm max-w-md mx-auto mb-5">
+                We&apos;ll tailor every section to this exact JD so your match score jumps before
+                you apply.
+              </p>
+              <a
+                href={buildWhatsappLink(match.matchScore)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              >
+                <MessageCircle className="w-4 h-4" />
+                Get Resume Rewrite ₹999
+              </a>
+            </div>
+
+            <button
+              onClick={reset}
+              disabled={limitReached}
+              className="flex items-center justify-center gap-2 w-full bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed text-zinc-300 text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              {limitReached ? "Daily limit reached" : "Try another match"}
             </button>
           </div>
         )}
