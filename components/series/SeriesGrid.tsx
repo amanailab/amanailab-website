@@ -42,13 +42,15 @@ function PlaylistCard({ s, i }: { s: Playlist; i: number }) {
       <Link href={`/series/${s.id}`} className="flex flex-col flex-1">
 
         {/* Thumbnail */}
-        <div className="h-40 relative overflow-hidden">
+        <div className="h-40 relative overflow-hidden bg-black">
 
-          {/* Gradient base layer — always visible, image overlays it */}
-          <div
-            className="absolute inset-0"
-            style={{ background: `linear-gradient(135deg, ${s.gradientFrom}, ${s.gradientTo})` }}
-          />
+          {/* Gradient base layer — only shown as a fallback when no image */}
+          {!showImage && (
+            <div
+              className="absolute inset-0"
+              style={{ background: `linear-gradient(135deg, ${s.gradientFrom}, ${s.gradientTo})` }}
+            />
+          )}
 
           {/* Actual thumbnail image */}
           {showImage && (
@@ -57,7 +59,7 @@ function PlaylistCard({ s, i }: { s: Playlist; i: number }) {
               alt={s.title}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover"
+              className="object-contain"
               onError={() => setImgError(true)}
             />
           )}
