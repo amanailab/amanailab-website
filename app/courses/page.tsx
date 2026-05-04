@@ -1,0 +1,16 @@
+import type { Metadata } from "next";
+import CoursesContent from "@/components/courses/CoursesContent";
+
+export const metadata: Metadata = {
+  title: "AI Courses — Coming Soon | AmanAI Lab",
+  description:
+    "Production-grade AI courses built from real industry experience. RAG, Agents, Fine-tuning and GenAI Interview Prep — coming soon.",
+};
+
+export default function CoursesPage() {
+  return (
+    <div className="pt-16">
+      <CoursesContent />
+    </div>
+  );
+}

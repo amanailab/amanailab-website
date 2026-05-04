@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
   { kind: "link", href: "/series", label: "Series" },
   { kind: "link", href: "/resources", label: "Resources" },
   { kind: "link", href: "/interview", label: "Interview" },
+  { kind: "link", href: "/courses", label: "Courses" },
   {
     kind: "dropdown",
     label: "Tools",
