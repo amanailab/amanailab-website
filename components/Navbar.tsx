@@ -22,6 +22,7 @@ const navItems: NavItem[] = [
     label: "Tools",
     items: [
       { href: "/resume", label: "Resume Analyzer", description: "AI-powered ATS feedback" },
+      { href: "/prompt", label: "Prompt Generator", description: "Perfect prompts for any AI task" },
       { href: "/interview", label: "AI Simulator", description: "Mock interview practice" },
     ],
   },
