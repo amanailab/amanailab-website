@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
   ChevronDown, ChevronUp, BrainCircuit,
   CheckCircle2, XCircle, SkipForward, RotateCcw, ArrowRight,
+  Search, X, Dice5,
 } from "lucide-react";
 
 const supabase = createClient(
@@ -33,7 +34,18 @@ type SimStep = "settings" | "question" | "feedback";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const TOPICS_BANK = ["All", "LLM", "RAG", "Agents", "Fine-Tuning", "MLOps", "Transformers", "System Design", "Python", "Vector DB"];
+const TOPICS_BANK: { label: string; value: string }[] = [
+  { label: "All", value: "all" },
+  { label: "LLM", value: "llm" },
+  { label: "RAG", value: "rag" },
+  { label: "Agents", value: "agents" },
+  { label: "Fine-Tuning", value: "fine-tuning" },
+  { label: "MLOps", value: "mlops" },
+  { label: "Transformers", value: "transformers" },
+  { label: "System Design", value: "system-design" },
+  { label: "Python", value: "python" },
+  { label: "Vector DB", value: "vector-db" },
+];
 const TOPICS_SIM  = ["LLM", "RAG", "Agents", "Fine-Tuning", "MLOps", "Transformers", "System Design", "Python", "Vector DB"];
 const LEVELS_BANK = ["All", "Fresher", "Mid", "Senior"];
 const LEVELS_SIM  = ["Fresher", "Mid", "Senior"];
@@ -93,8 +105,8 @@ function incrementUsage() {
 
 // ─── QuestionCard (Question Bank) ─────────────────────────────────────────────
 
-function QuestionCard({ q }: { q: Question }) {
-  const [open, setOpen] = useState(false);
+function QuestionCard({ q, defaultOpen = false }: { q: Question; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
       <div className="flex flex-wrap gap-2 mb-4">
@@ -414,39 +426,155 @@ function AISimulator() {
   return null;
 }
 
+// ─── Question Bank helpers ─────────────────────────────────────────────────────
+
+const PER_PAGE = 10;
+
+function getVisiblePages(current: number, total: number): (number | "...")[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const result: (number | "...")[] = [1];
+  if (current > 3) result.push("...");
+  for (
+    let i = Math.max(2, current - 1);
+    i <= Math.min(total - 1, current + 1);
+    i++
+  ) {
+    result.push(i);
+  }
+  if (current < total - 2) result.push("...");
+  result.push(total);
+  return result;
+}
+
+function SkeletonCard() {
+  return (
+    <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-2xl p-6 animate-pulse">
+      <div className="flex gap-2 mb-4">
+        <div className="h-5 w-14 rounded-full bg-zinc-800" />
+        <div className="h-5 w-12 rounded-full bg-zinc-800" />
+      </div>
+      <div className="h-4 w-11/12 rounded bg-zinc-800 mb-2" />
+      <div className="h-4 w-9/12 rounded bg-zinc-800 mb-2" />
+      <div className="h-4 w-7/12 rounded bg-zinc-800 mb-5" />
+      <div className="h-9 w-full rounded-xl bg-zinc-800" />
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function InterviewHub() {
   const [activeTab, setActiveTab]     = useState<"bank" | "simulator">("bank");
   const [questions, setQuestions]     = useState<Question[]>([]);
+  const [totalCount, setTotalCount]   = useState(0);
+  const [topicCounts, setTopicCounts] = useState<Record<string, number>>({});
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
-  const [topicFilter, setTopicFilter] = useState("All");
+  const [topicFilter, setTopicFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [randomQuestion, setRandomQuestion] = useState<Question | null>(null);
+  const [randomLoading, setRandomLoading]   = useState(false);
 
+  // Debounce the search input → searchQuery so we don't fire a query per keystroke.
   useEffect(() => {
-    async function fetchQuestions() {
+    const handle = setTimeout(() => setSearchQuery(searchInput.trim()), 300);
+    return () => clearTimeout(handle);
+  }, [searchInput]);
+
+  // Reset to page 1 whenever any filter or the search changes.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [topicFilter, levelFilter, searchQuery]);
+
+  // Fetch the current page (with all filters applied server-side) + total count.
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchPage() {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from("interview_questions")
-        .select("id, topic, level, question, answer");
+        .select("id, topic, level, question, answer", { count: "exact" });
+      if (topicFilter !== "all") query = query.eq("topic", topicFilter);
+      if (levelFilter !== "All") query = query.eq("level", levelFilter.toLowerCase());
+      if (searchQuery) query = query.ilike("question", `%${searchQuery}%`);
+      const start = (currentPage - 1) * PER_PAGE;
+      const end = start + PER_PAGE - 1;
+      const { data, error, count } = await query.range(start, end);
+      if (cancelled) return;
       if (error) {
         setError("Failed to load questions. Please try again later.");
+        setQuestions([]);
+        setTotalCount(0);
       } else {
+        setError("");
         setQuestions(data ?? []);
+        setTotalCount(count ?? 0);
       }
       setLoading(false);
     }
-    fetchQuestions();
+    fetchPage();
+    return () => {
+      cancelled = true;
+    };
+  }, [topicFilter, levelFilter, searchQuery, currentPage]);
+
+  // Fetch counts per topic once on mount.
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchCounts() {
+      const entries = await Promise.all(
+        TOPICS_BANK.map(async (t) => {
+          let q = supabase
+            .from("interview_questions")
+            .select("*", { count: "exact", head: true });
+          if (t.value !== "all") q = q.eq("topic", t.value);
+          const { count } = await q;
+          return [t.value, count ?? 0] as const;
+        })
+      );
+      if (!cancelled) setTopicCounts(Object.fromEntries(entries));
+    }
+    fetchCounts();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const filtered = useMemo(() => {
-    return questions.filter((q) => {
-      const topicMatch = topicFilter === "All" || q.topic.toLowerCase() === topicFilter.toLowerCase();
-      const levelMatch = levelFilter === "All" || q.level.toLowerCase() === levelFilter.toLowerCase();
-      return topicMatch && levelMatch;
-    });
-  }, [questions, topicFilter, levelFilter]);
+  async function pickRandomQuestion() {
+    if (totalCount === 0) return;
+    setRandomLoading(true);
+    try {
+      const offset = Math.floor(Math.random() * totalCount);
+      let query = supabase
+        .from("interview_questions")
+        .select("id, topic, level, question, answer");
+      if (topicFilter !== "all") query = query.eq("topic", topicFilter);
+      if (levelFilter !== "All") query = query.eq("level", levelFilter.toLowerCase());
+      if (searchQuery) query = query.ilike("question", `%${searchQuery}%`);
+      const { data } = await query.range(offset, offset);
+      if (data && data.length > 0) {
+        setRandomQuestion(data[0]);
+        if (typeof window !== "undefined") {
+          requestAnimationFrame(() => {
+            randomRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+          });
+        }
+      }
+    } finally {
+      setRandomLoading(false);
+    }
+  }
+
+  const randomRef = useRef<HTMLDivElement | null>(null);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+  const currentTopicLabel =
+    TOPICS_BANK.find((t) => t.value === topicFilter)?.label ?? "";
 
   return (
     <section className="min-h-screen bg-zinc-950 text-zinc-50">
@@ -495,23 +623,63 @@ export default function InterviewHub() {
         {/* Question Bank tab */}
         {activeTab === "bank" && (
           <>
-            <div className="flex flex-col gap-4 mb-6">
+            {/* Search + Random */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-5">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search questions..."
+                  className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl pl-9 pr-9 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+                />
+                {searchInput && (
+                  <button
+                    onClick={() => setSearchInput("")}
+                    aria-label="Clear search"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded-md transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={pickRandomQuestion}
+                disabled={randomLoading || totalCount === 0}
+                className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20"
+              >
+                <Dice5 className="w-4 h-4" />
+                Random Question
+              </button>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-col gap-4 mb-5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide w-16 shrink-0">Topic</span>
                 <div className="flex flex-wrap gap-2">
-                  {TOPICS_BANK.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setTopicFilter(t)}
-                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                        topicFilter === t
-                          ? "bg-orange-500 border-orange-500 text-white"
-                          : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
+                  {TOPICS_BANK.map((t) => {
+                    const count = topicCounts[t.value];
+                    return (
+                      <button
+                        key={t.value}
+                        onClick={() => setTopicFilter(t.value)}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                          topicFilter === t.value
+                            ? "bg-orange-500 border-orange-500 text-white"
+                            : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                        }`}
+                      >
+                        {t.label}
+                        {typeof count === "number" && (
+                          <span className={`ml-1.5 ${topicFilter === t.value ? "text-white/80" : "text-zinc-500"}`}>
+                            ({count})
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -534,38 +702,114 @@ export default function InterviewHub() {
               </div>
             </div>
 
-            <div className="mb-6">
-              {!loading && !error && (
+            {/* Random question preview */}
+            {randomQuestion && (
+              <div ref={randomRef} className="mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-400 uppercase tracking-wider">
+                    <Dice5 className="w-3.5 h-3.5" /> Random pick
+                  </span>
+                  <button
+                    onClick={() => setRandomQuestion(null)}
+                    className="text-xs text-zinc-500 hover:text-zinc-200 inline-flex items-center gap-1"
+                  >
+                    <X className="w-3.5 h-3.5" /> Dismiss
+                  </button>
+                </div>
+                <QuestionCard q={randomQuestion} defaultOpen />
+              </div>
+            )}
+
+            {/* Count line */}
+            <div className="mb-5">
+              {!error && (
                 <p className="text-zinc-500 text-sm">
-                  Showing <span className="text-zinc-300 font-semibold">{filtered.length}</span>{" "}
-                  {filtered.length === 1 ? "question" : "questions"}
+                  Showing{" "}
+                  <span className="text-zinc-300 font-semibold">{questions.length}</span>{" "}
+                  of{" "}
+                  <span className="text-zinc-300 font-semibold">{totalCount}</span>{" "}
+                  {topicFilter !== "all" ? `${currentTopicLabel} ` : ""}
+                  {totalCount === 1 ? "question" : "questions"}
+                  {searchQuery && (
+                    <>
+                      {" "}matching{" "}
+                      <span className="text-zinc-300 font-semibold">
+                        &ldquo;{searchQuery}&rdquo;
+                      </span>
+                    </>
+                  )}
                 </p>
               )}
             </div>
 
             {loading && (
-              <div className="flex items-center justify-center py-24">
-                <span className="w-8 h-8 border-2 border-zinc-700 border-t-orange-500 rounded-full animate-spin" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {Array.from({ length: PER_PAGE }).map((_, i) => (
+                  <SkeletonCard key={i} />
+                ))}
               </div>
             )}
             {!loading && error && (
               <div className="text-center py-24 text-red-400 text-sm">{error}</div>
             )}
-            {!loading && !error && filtered.length === 0 && (
+            {!loading && !error && questions.length === 0 && (
               <div className="text-center py-24">
                 <BrainCircuit className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
                 <p className="text-zinc-500 text-sm">No questions match the selected filters.</p>
                 <button
-                  onClick={() => { setTopicFilter("All"); setLevelFilter("All"); }}
+                  onClick={() => {
+                    setTopicFilter("all");
+                    setLevelFilter("All");
+                    setSearchInput("");
+                  }}
                   className="mt-4 text-orange-400 text-sm hover:underline"
                 >
                   Clear filters
                 </button>
               </div>
             )}
-            {!loading && !error && filtered.length > 0 && (
+            {!loading && !error && questions.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {filtered.map((q) => <QuestionCard key={q.id} q={q} />)}
+                {questions.map((q) => <QuestionCard key={q.id} q={q} />)}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {!loading && !error && totalPages > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Previous
+                </button>
+                {getVisiblePages(currentPage, totalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span key={`gap-${i}`} className="px-2 text-zinc-600 text-xs">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`min-w-9 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                        currentPage === p
+                          ? "bg-orange-500 border-orange-500 text-white"
+                          : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next →
+                </button>
               </div>
             )}
           </>
