@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createClient } from "@supabase/supabase-js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -33,6 +34,23 @@ export async function POST(req: Request) {
         <p><strong>Message:</strong> ${message}</p>
       `,
     });
+
+    // Best-effort persistence so admins can browse messages later.
+    // Silently ignored if the contact_messages table doesn't exist.
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_KEY!
+      );
+      await supabase.from("contact_messages").insert({
+        name,
+        email,
+        subject: subject ?? null,
+        message,
+      });
+    } catch (storeErr) {
+      console.warn("[Contact] Could not persist message:", storeErr);
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

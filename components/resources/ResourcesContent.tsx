@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Download, X, FileText } from "lucide-react";
 
@@ -17,7 +17,25 @@ interface PDF {
   file: string;
 }
 
-const pdfs: PDF[] = [
+const TOPIC_COLORS: Record<string, string> = {
+  LLM: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  RAG: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  Agents: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  "Fine-Tuning": "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  Prompting: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  "System Design": "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  Python: "bg-sky-500/20 text-sky-300 border-sky-500/30",
+  Transformers: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+  MLOps: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+  "Vector DB": "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
+  General: "bg-zinc-500/20 text-zinc-300 border-zinc-500/30",
+};
+
+function topicColor(topic: string): string {
+  return TOPIC_COLORS[topic] ?? "bg-zinc-500/20 text-zinc-300 border-zinc-500/30";
+}
+
+const FALLBACK_PDFS: PDF[] = [
   {
     title: "LLM GenAI Cheat Sheet",
     description: "Tokens, sampling, models, hallucination — complete reference",
@@ -84,10 +102,36 @@ const pdfs: PDF[] = [
 ];
 
 export default function ResourcesContent() {
+  const [pdfs, setPdfs] = useState<PDF[]>(FALLBACK_PDFS);
   const [selectedPdf, setSelectedPdf] = useState<PDF | null>(null);
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("resources")
+        .select("title, description, category, file_url")
+        .order("created_at", { ascending: false });
+      if (cancelled) return;
+      if (!error && data && data.length > 0) {
+        setPdfs(
+          data.map((r) => ({
+            title: r.title,
+            description: r.description ?? "",
+            topic: r.category ?? "General",
+            topicColor: topicColor(r.category ?? "General"),
+            file: r.file_url,
+          }))
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function openModal(pdf: PDF) {
     setSelectedPdf(pdf);
