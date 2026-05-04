@@ -21,6 +21,24 @@ const CATEGORIES = [
   'General',
 ]
 
+// Pick a deterministic gradient per category so placeholders feel distinct.
+const CATEGORY_GRADIENTS: Record<string, string> = {
+  Tutorials: 'from-orange-500 via-amber-500 to-yellow-500',
+  'Interview Prep': 'from-violet-500 via-fuchsia-500 to-pink-500',
+  Tools: 'from-cyan-500 via-sky-500 to-blue-500',
+  Career: 'from-emerald-500 via-teal-500 to-cyan-500',
+  RAG: 'from-blue-500 via-indigo-500 to-violet-500',
+  Agents: 'from-pink-500 via-rose-500 to-red-500',
+  'Fine-Tuning': 'from-amber-500 via-orange-500 to-rose-500',
+  MLOps: 'from-rose-500 via-pink-500 to-purple-500',
+  'System Design': 'from-red-500 via-orange-500 to-amber-500',
+  General: 'from-zinc-600 via-zinc-700 to-zinc-800',
+}
+
+function categoryGradient(category: string): string {
+  return CATEGORY_GRADIENTS[category] ?? CATEGORY_GRADIENTS.General
+}
+
 function generateSlug(title: string) {
   return title
     .toLowerCase()
@@ -215,7 +233,7 @@ export default function ArticleForm({ post }: ArticleFormProps) {
         <label className="block text-xs font-medium text-zinc-400 mb-1">Cover Image</label>
         <div
           onClick={() => fileRef.current?.click()}
-          className="border-2 border-dashed border-zinc-700 hover:border-orange-500/50 rounded-lg p-6 text-center cursor-pointer transition-colors relative overflow-hidden"
+          className="border-2 border-dashed border-zinc-700 hover:border-orange-500/50 rounded-lg p-3 cursor-pointer transition-colors relative overflow-hidden"
         >
           {coverImage ? (
             <div className="relative w-full h-48">
@@ -229,18 +247,34 @@ export default function ArticleForm({ post }: ArticleFormProps) {
               </button>
             </div>
           ) : uploading ? (
-            <div className="flex flex-col items-center gap-2 text-zinc-400">
+            <div className="flex flex-col items-center gap-2 text-zinc-400 py-12">
               <Loader2 className="w-8 h-8 animate-spin" />
               <span className="text-sm">Uploading...</span>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2 text-zinc-500">
-              <Upload className="w-8 h-8" />
-              <span className="text-sm">Click or drag to upload cover image</span>
-              <span className="text-xs">PNG, JPG, WebP up to 10MB</span>
+            <div
+              className={`relative w-full h-48 rounded bg-gradient-to-br ${categoryGradient(category)} flex flex-col items-center justify-center text-center px-4 overflow-hidden`}
+            >
+              {/* subtle texture so placeholder doesn't look flat */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/10 pointer-events-none" />
+              <span className="relative text-[10px] font-bold tracking-[0.25em] uppercase text-white/80">
+                Default Cover
+              </span>
+              <span className="relative mt-1 text-3xl sm:text-4xl font-extrabold tracking-tight text-white drop-shadow">
+                {category}
+              </span>
+              <span className="relative mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-white/85 bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
+                <Upload className="w-3.5 h-3.5" />
+                Click to upload your own
+              </span>
             </div>
           )}
         </div>
+        <p className="mt-1.5 text-xs text-zinc-500">
+          {coverImage
+            ? 'Custom image uploaded.'
+            : `No image uploaded — the gradient placeholder above will be saved as the default cover. PNG, JPG or WebP up to 10MB.`}
+        </p>
         <input
           ref={fileRef}
           type="file"

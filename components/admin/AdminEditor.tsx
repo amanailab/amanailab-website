@@ -5,6 +5,7 @@ import StarterKit from '@tiptap/starter-kit'
 import TiptapImage from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
+import { Markdown } from 'tiptap-markdown'
 import {
   Bold,
   Italic,
@@ -59,6 +60,15 @@ export default function AdminEditor({ content, onChange }: AdminEditorProps) {
     immediatelyRender: false,
     extensions: [
       StarterKit,
+      Markdown.configure({
+        html: true,
+        tightLists: true,
+        bulletListMarker: '-',
+        linkify: true,
+        breaks: false,
+        transformPastedText: true,
+        transformCopiedText: false,
+      }),
       TiptapImage.configure({ inline: false, allowBase64: false }),
       Placeholder.configure({ placeholder: 'Start writing your article here...' }),
       CharacterCount,
