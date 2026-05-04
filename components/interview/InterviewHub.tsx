@@ -7,6 +7,7 @@ import {
   CheckCircle2, XCircle, SkipForward, RotateCcw, ArrowRight,
   Search, X, Dice5,
 } from "lucide-react";
+import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -417,6 +418,18 @@ function AISimulator() {
             <p className="text-center text-zinc-500 text-xs">
               Daily limit reached. Come back tomorrow for more questions!
             </p>
+          )}
+
+          {/* Email capture after 3 completed questions */}
+          {usedToday >= 3 && (
+            <EmailCaptureCard
+              source="interview_simulator"
+              title="Get 50 more free questions"
+              subtitle="Interview questions for RAG, Agents, LLMs and more delivered to your inbox."
+              buttonLabel="Send Questions Free"
+              successMessage="Questions sent! Check your inbox."
+              hideOnCaptured
+            />
           )}
         </div>
       </div>

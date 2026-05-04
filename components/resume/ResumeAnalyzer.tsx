@@ -30,6 +30,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { LinkedinIcon } from "@/components/icons/SocialIcons";
+import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
 
@@ -2976,6 +2977,19 @@ export default function ResumeAnalyzer() {
               <RotateCcw className="w-4 h-4" />
               Start over
             </button>
+          </div>
+        )}
+
+        {/* Email capture — appears once any result is on screen */}
+        {hasResult && (
+          <div className="mt-8">
+            <EmailCaptureCard
+              source="resume_analyzer"
+              title="Get your personalized improvement plan"
+              subtitle="We will send specific tips to improve your resume score to 90+."
+              buttonLabel="Send My Plan"
+              successMessage="Check your inbox! Tips sent to your email."
+            />
           </div>
         )}
       </div>

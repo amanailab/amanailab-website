@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { RefreshCw, Newspaper, ExternalLink } from "lucide-react";
+import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -232,6 +233,18 @@ export default function NewsFeed() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        {/* Email capture banner */}
+        <div className="mb-8">
+          <EmailCaptureCard
+            source="news_page"
+            title="Get AI news in your inbox"
+            subtitle="Daily digest of the most important AI updates for developers."
+            buttonLabel="Subscribe"
+            successMessage="Subscribed! See you in your inbox."
+            variant="banner"
+          />
+        </div>
+
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           {/* Category tabs */}

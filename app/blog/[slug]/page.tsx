@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import type { BlogPost } from '@/lib/admin'
 import { Clock, ArrowLeft, Tag } from 'lucide-react'
+import EmailCaptureCard from '@/components/shared/EmailCaptureCard'
 
 export const revalidate = 60
 
@@ -108,6 +109,18 @@ export default async function BlogPostPage({ params }: Props) {
         className="blog-content"
         dangerouslySetInnerHTML={{ __html: post.content }}
       />
+
+      {/* Newsletter capture */}
+      <div className="mt-12 border-l-4 border-orange-500 pl-1 rounded-l">
+        <EmailCaptureCard
+          source="blog"
+          title="Enjoyed this article?"
+          subtitle="Join 500+ AI developers getting weekly tips, news and resources from AmanAI Lab."
+          buttonLabel="Subscribe Free"
+          successMessage="You are subscribed! Welcome to AmanAI Lab newsletter."
+          smallText="No spam. Unsubscribe anytime."
+        />
+      </div>
     </article>
   )
 }

@@ -19,6 +19,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { LinkedinIcon } from "@/components/icons/SocialIcons";
+import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1032,6 +1033,14 @@ export default function LinkedInGenerator() {
                 hurts reach.
               </p>
             </div>
+
+            <EmailCaptureCard
+              source="linkedin_generator"
+              title="Get 10 viral post templates free"
+              subtitle="Proven LinkedIn post templates for AI developers, sent to your inbox."
+              buttonLabel="Send Templates"
+              successMessage="Templates sent! Check your inbox."
+            />
           </div>
         )}
 
