@@ -79,6 +79,36 @@ function formatTime(s: number) {
   return `${m}:${sec.toString().padStart(2, '0')}`
 }
 
+// ─── STT deduplication ───────────────────────────────────────────────────────
+// Mobile Chrome re-sends previously spoken words when it restarts after silence.
+// This strips any known prefix from the new session's transcript.
+function stripKnownPrefix(known: string, text: string): string {
+  if (!known || !text) return text
+  const k = known.trim()
+  const t = text.trim()
+  if (!k) return text
+
+  // Full prefix match (most common on mobile)
+  if (t.toLowerCase().startsWith(k.toLowerCase())) {
+    return text.slice(k.length).trimStart()
+  }
+
+  // Partial word overlap: last N words of known = first N words of text
+  const kWords = k.toLowerCase().split(/\s+/).filter(Boolean)
+  const tWords = t.toLowerCase().split(/\s+/).filter(Boolean)
+  const tOrig  = text.trim().split(/\s+/).filter(Boolean)
+
+  const maxOverlap = Math.min(kWords.length, tWords.length, 20)
+  for (let n = maxOverlap; n >= 2; n--) {
+    const avgLen = kWords.slice(-n).join('').length / n
+    if (avgLen < 3) continue // skip short filler words to avoid false positives
+    if (kWords.slice(-n).join(' ') === tWords.slice(0, n).join(' ')) {
+      return tOrig.slice(n).join(' ')
+    }
+  }
+  return text
+}
+
 // ─── Voice hook ───────────────────────────────────────────────────────────────
 
 function useTTS() {
@@ -314,17 +344,17 @@ export default function AISimulator() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, currentIdx])
 
-  // ── STT: start with auto-restart on silence + text accumulation ──
+  // ── STT: auto-restart with mobile deduplication ──
   const startListening = useCallback(() => {
     if (typeof window === 'undefined') return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SR) { setSttSupported(false); return }
 
-    cancel() // Stop TTS — can't have both running simultaneously
+    cancel() // Stop TTS — mic and speaker can't run simultaneously
 
     shouldListenRef.current = true
-    totalFinalRef.current = ''   // fresh accumulator for this answer
+    totalFinalRef.current = ''
     setTranscript('')
     setAnswer('')
     answerRef.current = ''
@@ -335,22 +365,31 @@ export default function AISimulator() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const r: any = new SR()
-      r.continuous     = true
-      r.interimResults = true
-      r.lang           = 'en-US'
+      r.continuous      = true
+      r.interimResults  = true
+      r.lang            = 'en-US'
       r.maxAlternatives = 1
 
-      let sessionFinals = '' // finals in THIS recognition session
+      // Snapshot of accumulated text at the START of this session.
+      // Mobile Chrome re-sends old words on restart — we strip this prefix.
+      const sessionBase = totalFinalRef.current.trim()
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       r.onresult = (e: any) => {
-        sessionFinals = ''
-        let interim = ''
+        let rawFinals  = ''
+        let rawInterim = ''
+
         for (let i = 0; i < e.results.length; i++) {
-          if (e.results[i].isFinal) sessionFinals += e.results[i][0].transcript + ' '
-          else interim += e.results[i][0].transcript
+          if (e.results[i].isFinal) rawFinals  += e.results[i][0].transcript + ' '
+          else                      rawInterim += e.results[i][0].transcript
         }
-        const full = (totalFinalRef.current + sessionFinals + interim).trim()
+
+        // Strip re-transmitted old content (mobile Chrome duplication fix)
+        const rawNew    = (rawFinals + rawInterim).trimStart()
+        const newOnly   = stripKnownPrefix(sessionBase, rawNew)
+        const separator = sessionBase && newOnly ? ' ' : ''
+        const full      = (sessionBase + separator + newOnly).replace(/\s{2,}/g, ' ').trim()
+
         setTranscript(full)
         setAnswer(full)
         answerRef.current = full
@@ -358,28 +397,28 @@ export default function AISimulator() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       r.onerror = (e: any) => {
-        if (e.error === 'no-speech') return  // Chrome fires on silence — handled by onend restart
-        if (e.error === 'aborted')  return  // manual stop
-        // Real error — stop trying
+        if (e.error === 'no-speech') return // normal silence — onend restarts
+        if (e.error === 'aborted')   return // manual stop
         shouldListenRef.current = false
         setIsListening(false)
       }
 
       r.onend = () => {
-        // Commit this session's finals to the global accumulator
-        totalFinalRef.current += sessionFinals
-        sessionFinals = ''
+        // Save the latest answer as the new base (includes unconfirmed interim text)
+        // so the next session knows what has already been captured
+        totalFinalRef.current = answerRef.current.trim()
 
         if (shouldListenRef.current) {
-          // Chrome stopped after silence — restart automatically
-          setTimeout(startNew, 250)
+          // 500ms delay — gives mobile audio buffer time to drain, preventing
+          // the new session from re-capturing the same audio
+          setTimeout(startNew, 500)
         } else {
           setIsListening(false)
         }
       }
 
       recognitionRef.current = r
-      try { r.start() } catch { /* already running */ }
+      try { r.start() } catch { /* already starting */ }
     }
 
     startNew()
