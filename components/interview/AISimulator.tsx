@@ -81,14 +81,15 @@ function formatTime(s: number) {
 
 // ─── STT deduplication ───────────────────────────────────────────────────────
 // Mobile Chrome re-sends previously spoken words when it restarts after silence.
-// This strips any known prefix from the new session's transcript.
+// The audio buffer holds ~0.5s of audio — the last word(s) get re-transcribed
+// in the new session. This strips overlapping words from the new session's text.
 function stripKnownPrefix(known: string, text: string): string {
   if (!known || !text) return text
   const k = known.trim()
   const t = text.trim()
   if (!k) return text
 
-  // Full prefix match (most common on mobile)
+  // Full prefix match (most common — whole sentence re-sent)
   if (t.toLowerCase().startsWith(k.toLowerCase())) {
     return text.slice(k.length).trimStart()
   }
@@ -99,10 +100,18 @@ function stripKnownPrefix(known: string, text: string): string {
   const tOrig  = text.trim().split(/\s+/).filter(Boolean)
 
   const maxOverlap = Math.min(kWords.length, tWords.length, 20)
-  for (let n = maxOverlap; n >= 2; n--) {
-    const avgLen = kWords.slice(-n).join('').length / n
-    if (avgLen < 3) continue // skip short filler words to avoid false positives
-    if (kWords.slice(-n).join(' ') === tWords.slice(0, n).join(' ')) {
+  for (let n = maxOverlap; n >= 1; n--) {
+    const kSlice = kWords.slice(-n)
+    if (n === 1) {
+      // For single-word overlaps, only strip meaningful words (not "I", "a", "is")
+      // to avoid false positives on common short words
+      if (kSlice[0].length < 4) continue
+    } else {
+      // Multi-word: skip if average word length is very short (all filler words)
+      const avgLen = kSlice.join('').length / n
+      if (avgLen < 3) continue
+    }
+    if (kSlice.join(' ') === tWords.slice(0, n).join(' ')) {
       return tOrig.slice(n).join(' ')
     }
   }
@@ -249,9 +258,10 @@ export default function AISimulator() {
   const timerRef        = useRef<ReturnType<typeof setInterval>>(undefined)
   const textareaRef     = useRef<HTMLTextAreaElement>(null)
   // ── Voice refs (no stale closures) ──
-  const shouldListenRef = useRef(false)   // whether we WANT to be listening
-  const totalFinalRef   = useRef('')      // accumulated finals across Chrome restarts
-  const answerRef       = useRef('')      // mirrors answer state for timer's handleSubmit
+  const shouldListenRef  = useRef(false)  // whether we WANT to be listening
+  const totalFinalRef    = useRef('')     // accumulated finals across Chrome restarts
+  const answerRef        = useRef('')     // mirrors answer state for timer's handleSubmit
+  const isRestartingRef  = useRef(false)  // prevents concurrent restart loops on mobile
 
   const currentQ = questions[currentIdx] ?? ''
   const topicMeta = TOPICS.find((t) => t.value === topic)!
@@ -354,7 +364,8 @@ export default function AISimulator() {
     cancel() // Stop TTS — mic and speaker can't run simultaneously
 
     shouldListenRef.current = true
-    totalFinalRef.current = ''
+    isRestartingRef.current = false
+    totalFinalRef.current   = ''
     setTranscript('')
     setAnswer('')
     answerRef.current = ''
@@ -362,6 +373,7 @@ export default function AISimulator() {
 
     function startNew() {
       if (!shouldListenRef.current) return
+      isRestartingRef.current = false
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const r: any = new SR()
@@ -404,15 +416,15 @@ export default function AISimulator() {
       }
 
       r.onend = () => {
-        // Save the latest answer as the new base (includes unconfirmed interim text)
-        // so the next session knows what has already been captured
+        // Save current answer as the new base so next session knows what's already captured
         totalFinalRef.current = answerRef.current.trim()
 
-        if (shouldListenRef.current) {
-          // 500ms delay — gives mobile audio buffer time to drain, preventing
-          // the new session from re-capturing the same audio
-          setTimeout(startNew, 500)
-        } else {
+        if (shouldListenRef.current && !isRestartingRef.current) {
+          isRestartingRef.current = true
+          // 700ms — gives mobile audio buffer time to fully drain so the
+          // new session doesn't re-capture the tail audio (prevents word duplication)
+          setTimeout(startNew, 700)
+        } else if (!shouldListenRef.current) {
           setIsListening(false)
         }
       }
@@ -425,7 +437,8 @@ export default function AISimulator() {
   }, [cancel])
 
   const stopListening = useCallback(() => {
-    shouldListenRef.current = false
+    shouldListenRef.current  = false
+    isRestartingRef.current  = false
     try { recognitionRef.current?.stop() } catch {}
     setIsListening(false)
   }, [])
