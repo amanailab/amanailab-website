@@ -46,7 +46,6 @@ const navItems: NavItem[] = [
       { href: "/series",    label: "Series",      description: "Structured AI/ML YouTube series",      icon: <YoutubeIcon className="w-4 h-4" /> },
       { href: "/news",      label: "AI News",     description: "Daily curated AI & ML news",           icon: <Newspaper className="w-4 h-4" /> },
       { href: "/resources", label: "Resources",   description: "Free cheat sheets & PDFs",             icon: <BookOpen className="w-4 h-4" /> },
-      { href: "/courses",   label: "Courses",     description: "Structured courses — join waitlist",   icon: <GraduationCap className="w-4 h-4" /> },
     ],
   },
   {
@@ -62,6 +61,7 @@ const navItems: NavItem[] = [
       { href: "/quiz",               label: "Skill Quiz",           description: "MCQ assessment on AI/ML",           icon: <BrainCircuit className="w-4 h-4" /> },
     ],
   },
+  { kind: "link", href: "/courses",   label: "Courses"   },
   { kind: "link", href: "/interview", label: "Interview" },
   {
     kind: "dropdown",
@@ -74,7 +74,8 @@ const navItems: NavItem[] = [
       { href: "/career", label: "Company Research",  description: "Interview intel on any company",   icon: <Building2 className="w-4 h-4" /> },
     ],
   },
-  { kind: "link", href: "/blog", label: "Blog" },
+  { kind: "link", href: "/blog",     label: "Blog"     },
+  { kind: "link", href: "/services", label: "Services" },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
