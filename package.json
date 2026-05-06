@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@next/third-parties": "^16.2.4",
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.0",
     "@tiptap/extension-character-count": "^3.22.5",
     "@tiptap/extension-image": "^3.22.5",

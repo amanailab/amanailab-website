@@ -6,12 +6,14 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, ChevronDown, Search,
-  BookOpen, Newspaper, FileText, GraduationCap,
+  BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
   BrainCircuit, Map, CalendarDays, Building2,
+  User, LogOut, LayoutDashboard,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
 
@@ -93,6 +95,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen]         = useState(false);
   const [openDropdown, setOpenDropdown]     = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const [userEmail, setUserEmail]           = useState<string | null>(null);
+  const [userMenuOpen, setUserMenuOpen]     = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
@@ -100,6 +104,15 @@ export default function Navbar() {
     const onScroll = () => setScrolled(window.scrollY > 16);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => setUserEmail(user?.email ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, sess) => {
+      setUserEmail(sess?.user?.email ?? null);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -266,6 +279,63 @@ export default function Navbar() {
             {/* Divider */}
             <div className="hidden lg:block w-px h-5 bg-zinc-800" />
 
+            {/* User auth button */}
+            {userEmail ? (
+              <div className="hidden lg:block relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-3 py-1.5 rounded-lg transition-all"
+                >
+                  <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-white">{userEmail[0].toUpperCase()}</span>
+                  </div>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {userMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                      transition={{ duration: 0.12 }}
+                      className="absolute right-0 top-full mt-2 w-48 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-50"
+                    >
+                      <div className="px-3 py-2 border-b border-zinc-800">
+                        <p className="text-xs text-zinc-500 truncate">{userEmail}</p>
+                      </div>
+                      <div className="p-1.5 flex flex-col gap-0.5">
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors"
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-zinc-500" /> My Progress
+                        </Link>
+                        <button
+                          onClick={async () => {
+                            setUserMenuOpen(false);
+                            const supabase = createClient();
+                            await supabase.auth.signOut();
+                            window.location.href = '/';
+                          }}
+                          className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors w-full text-left"
+                        >
+                          <LogOut className="w-4 h-4 text-zinc-500" /> Sign out
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden lg:flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-3.5 py-2 rounded-lg transition-all"
+              >
+                <User className="w-3.5 h-3.5" /> Login
+              </Link>
+            )}
+
             {/* YouTube Subscribe */}
             <a
               href="https://youtube.com/@AmanAI_lab"
@@ -386,6 +456,28 @@ export default function Navbar() {
                   >{l.label}</Link>
                 ))}
               </div>
+
+              {userEmail ? (
+                <div className="flex flex-col gap-1">
+                  <Link href="/dashboard" className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60 rounded-xl transition-colors">
+                    <LayoutDashboard className="w-4 h-4 text-zinc-500" /> My Progress
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      const supabase = createClient();
+                      await supabase.auth.signOut();
+                      window.location.href = '/';
+                    }}
+                    className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60 rounded-xl transition-colors w-full text-left"
+                  >
+                    <LogOut className="w-4 h-4 text-zinc-500" /> Sign out
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-4 py-3 rounded-xl transition-colors">
+                  <User className="w-4 h-4" /> Login / Sign up
+                </Link>
+              )}
 
               <a
                 href="https://youtube.com/@AmanAI_lab"

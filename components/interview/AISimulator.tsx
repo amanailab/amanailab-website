@@ -4,9 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Mic, MicOff, Volume2, VolumeX, SkipForward, ArrowRight,
   CheckCircle2, XCircle, RotateCcw, Trophy, Clock,
-  BrainCircuit, Lightbulb, ChevronRight, Sparkles,
+  BrainCircuit, Lightbulb, ChevronRight, Sparkles, Save, TrendingUp,
 } from 'lucide-react'
 import EmailGateModal, { isCaptured } from '@/components/shared/EmailGateModal'
+import { createClient } from '@/lib/supabase/client'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -203,6 +204,8 @@ export default function AISimulator() {
   const [showEmailGate, setShowEmailGate] = useState(false)
   const [emailUnlocked, setEmailUnlocked] = useState(false)
   const [feedbackTab, setFeedbackTab] = useState<'feedback' | 'model'>('feedback')
+  const [loggedInUser, setLoggedInUser] = useState<string | null>(null)
+  const [sessionSaved, setSessionSaved] = useState(false)
 
   const { speak, cancel, speaking } = useTTS()
   const recognitionRef = useRef<{ stop: () => void } | null>(null)
@@ -212,6 +215,49 @@ export default function AISimulator() {
   const currentQ = questions[currentIdx] ?? ''
   const topicMeta = TOPICS.find((t) => t.value === topic)!
   const currentEntry = session[currentIdx]
+
+  // ── Check auth state ──
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setLoggedInUser(user?.email ?? null)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+      setLoggedInUser(sess?.user?.email ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // ── Auto-save session when summary is reached ──
+  async function saveSession(completedSession: SessionEntry[]) {
+    if (!loggedInUser) return
+    const scored = completedSession.filter((e) => e.evaluation)
+    if (scored.length === 0) return
+    const avg = scored.reduce((a, e) => a + (e.evaluation?.score ?? 0), 0) / scored.length
+    const overallGrade = avg >= 9 ? 'A+' : avg >= 8 ? 'A' : avg >= 7 ? 'B' : avg >= 6 ? 'C' : avg >= 4 ? 'D' : 'F'
+    try {
+      await fetch('/api/user/save-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic,
+          level,
+          question_count: completedSession.length,
+          avg_score: Math.round(avg * 100) / 100,
+          grade: overallGrade,
+          entries: completedSession.map((e) => ({
+            question: e.question,
+            score: e.evaluation?.score ?? null,
+            grade: e.evaluation?.grade ?? null,
+            timeUsed: e.timeUsed,
+          })),
+        }),
+      })
+      setSessionSaved(true)
+    } catch {
+      // silent — saving is non-critical
+    }
+  }
 
   // ── Timer ──
   useEffect(() => {
@@ -353,6 +399,7 @@ export default function AISimulator() {
     }
     if (next >= questions.length) {
       setPhase('summary')
+      saveSession(session)
     } else {
       setCurrentIdx(next)
       setAnswer('')
@@ -368,6 +415,7 @@ export default function AISimulator() {
     const next = currentIdx + 1
     if (next >= questions.length) {
       setPhase('summary')
+      saveSession(session)
     } else {
       setCurrentIdx(next)
       setAnswer('')
@@ -389,6 +437,7 @@ export default function AISimulator() {
     setAnswer('')
     setTranscript('')
     setError('')
+    setSessionSaved(false)
   }
 
   const timerPct = (timeLeft / TIME_PER_Q) * 100
@@ -902,6 +951,35 @@ export default function AISimulator() {
             )
           })}
         </div>
+
+        {/* Save progress banner */}
+        {loggedInUser ? (
+          <div className={`flex items-center gap-3 rounded-2xl p-4 border ${sessionSaved ? 'bg-green-500/10 border-green-500/20' : 'bg-zinc-900 border-zinc-800'}`}>
+            <Save className={`w-4 h-4 shrink-0 ${sessionSaved ? 'text-green-400' : 'text-zinc-500'}`} />
+            <p className="text-sm text-zinc-300">
+              {sessionSaved ? 'Session saved to your progress dashboard.' : 'Saving session…'}
+            </p>
+            {sessionSaved && (
+              <a href="/dashboard" className="ml-auto text-xs text-orange-400 hover:text-orange-300 font-semibold shrink-0 flex items-center gap-1">
+                <TrendingUp className="w-3.5 h-3.5" /> View Progress
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 flex items-center gap-3">
+            <TrendingUp className="w-4 h-4 text-orange-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-zinc-300 font-semibold">Save your progress</p>
+              <p className="text-xs text-zinc-500">Create a free account to track improvement over time.</p>
+            </div>
+            <a
+              href="/signup"
+              className="text-xs bg-orange-500 hover:bg-orange-400 text-white font-semibold px-3 py-2 rounded-lg transition-colors shrink-0"
+            >
+              Sign up free
+            </a>
+          </div>
+        )}
 
         {/* Retry */}
         <div className="flex gap-3">
