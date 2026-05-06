@@ -4,18 +4,34 @@ import { Mail } from "lucide-react";
 import { YoutubeIcon, GithubIcon, TwitterIcon } from "@/components/icons/SocialIcons";
 
 const footerLinks = {
-  Pages: [
-    { href: "/", label: "Home" },
-    { href: "/series", label: "Series" },
-    { href: "/about", label: "About" },
-    { href: "/contact", label: "Contact" },
+  Tools: [
+    { href: "/resume",              label: "Resume Analyzer"       },
+    { href: "/interview",           label: "AI Interview Simulator" },
+    { href: "/linkedin-optimizer",  label: "LinkedIn Optimizer"    },
+    { href: "/cover-letter-review", label: "Cover Letter Reviewer" },
+    { href: "/paper-explainer",     label: "Paper Explainer"       },
+    { href: "/quiz",                label: "Skill Quiz"            },
+    { href: "/prompt",              label: "Prompt Generator"      },
   ],
-  Topics: [
-    { href: "/series", label: "Large Language Models" },
-    { href: "/series", label: "AI Agents" },
-    { href: "/series", label: "RAG Systems" },
-    { href: "/series", label: "Generative AI" },
-    { href: "/series", label: "Prompt Engineering" },
+  Career: [
+    { href: "/career",    label: "Career Roadmap"    },
+    { href: "/career",    label: "Study Plan"         },
+    { href: "/career",    label: "Offer Analyzer"     },
+    { href: "/career",    label: "Company Research"   },
+    { href: "/interview", label: "Interview Q&A Bank" },
+  ],
+  Learn: [
+    { href: "/series",    label: "YouTube Series"  },
+    { href: "/blog",      label: "Blog"            },
+    { href: "/news",      label: "AI News"         },
+    { href: "/resources", label: "Free Resources"  },
+    { href: "/courses",   label: "Courses"         },
+  ],
+  Company: [
+    { href: "/about",    label: "About"    },
+    { href: "/services", label: "Services" },
+    { href: "/contact",  label: "Contact"  },
+    { href: "/search",   label: "Search"   },
   ],
 };
 
@@ -25,64 +41,46 @@ export default function Footer() {
   return (
     <footer className="bg-zinc-900/60 border-t border-zinc-800 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-10">
+
           {/* Brand */}
-          <div className="md:col-span-2">
+          <div className="col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-4 w-fit">
               <Image
                 src="/logo.jpg"
                 alt="AmanAI Lab"
-                width={40}
-                height={40}
+                width={38}
+                height={38}
                 className="rounded-xl object-cover ring-1 ring-zinc-700"
               />
               <span className="font-bold text-[15px]">
                 Aman<span className="text-orange-500">AI</span> Lab
               </span>
             </Link>
-            <p className="text-zinc-400 text-sm max-w-sm leading-relaxed mb-6">
-              Teaching Generative AI, Large Language Models, and AI Agents — from fundamentals to production.
-              New videos every week.
+            <p className="text-zinc-400 text-sm max-w-xs leading-relaxed mb-5">
+              The most complete AI/ML career platform. 15+ free tools for interview prep, job search, and learning.
             </p>
-            <div className="flex items-center gap-3">
-              <a
-                href="https://youtube.com/@AmanAI_lab"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="YouTube"
-                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all"
-              >
+            <div className="flex items-center gap-2.5">
+              <a href="https://youtube.com/@AmanAI_lab" target="_blank" rel="noopener noreferrer" aria-label="YouTube"
+                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
                 <YoutubeIcon className="w-4 h-4" />
               </a>
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="GitHub"
-                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all"
-              >
+              <a href="https://github.com/amanailab" target="_blank" rel="noopener noreferrer" aria-label="GitHub"
+                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
                 <GithubIcon className="w-4 h-4" />
               </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Twitter/X"
-                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all"
-              >
+              <a href="https://twitter.com/AmanAI_lab" target="_blank" rel="noopener noreferrer" aria-label="Twitter"
+                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
                 <TwitterIcon className="w-4 h-4" />
               </a>
-              <a
-                href="mailto:hello@amanailab.com"
-                aria-label="Email"
-                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all"
-              >
+              <a href="mailto:aman.chauhan.ai71@gmail.com" aria-label="Email"
+                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
                 <Mail className="w-4 h-4" />
               </a>
             </div>
           </div>
 
-          {/* Links */}
+          {/* Link columns */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
               <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-4">
@@ -91,10 +89,8 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {links.map((link, i) => (
                   <li key={i}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-zinc-500 hover:text-orange-400 transition-colors"
-                    >
+                    <Link href={link.href}
+                      className="text-sm text-zinc-500 hover:text-orange-400 transition-colors">
                       {link.label}
                     </Link>
                   </li>
@@ -109,7 +105,7 @@ export default function Footer() {
             © {year} AmanAI Lab. All rights reserved.
           </p>
           <p className="text-zinc-600 text-xs">
-            Built with passion for AI education
+            Built for AI/ML professionals · Made with ❤️ in India
           </p>
         </div>
       </div>

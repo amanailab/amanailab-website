@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { YoutubeIcon } from "@/components/icons/SocialIcons";
 
 const techPills = [
   "LLMs", "AI Agents", "RAG", "LangChain", "OpenAI API",
@@ -48,7 +47,7 @@ export default function HeroSection() {
           className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-sm font-medium px-4 py-2 rounded-full mb-8"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          Generative AI · LLMs · AI Agents
+          The #1 AI/ML Career Platform — 100% Free
         </motion.div>
 
         {/* Headline */}
@@ -58,7 +57,7 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
         >
-          Master{" "}
+          Land Your Dream{" "}
           <span
             style={{
               backgroundImage: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
@@ -67,10 +66,10 @@ export default function HeroSection() {
               backgroundClip: "text",
             }}
           >
-            Generative AI
+            AI/ML Job
           </span>
           <br />
-          <span className="text-zinc-300">Build Intelligent Agents</span>
+          <span className="text-zinc-300">with AI-Powered Tools</span>
         </motion.h1>
 
         {/* Subtitle */}
@@ -80,8 +79,8 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          In-depth tutorials on LLMs, AI Agents, RAG systems, and Generative AI —
-          from core concepts to production-ready applications.
+          Resume analyzer, voice interview simulator, career roadmap, paper explainer,
+          offer analyzer and 10+ more tools — all free, all built for AI/ML professionals.
         </motion.p>
 
         {/* CTAs */}
@@ -92,21 +91,19 @@ export default function HeroSection() {
           className="flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
           <Link
-            href="/series"
+            href="/interview"
             className="inline-flex items-center gap-2.5 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/25 text-[15px]"
           >
-            Explore Series
+            Start Interview Prep
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <a
-            href="https://youtube.com/@AmanAI_lab"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/resume"
             className="inline-flex items-center gap-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-600 text-zinc-100 font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 text-[15px]"
           >
-            <YoutubeIcon className="w-4 h-4 text-orange-500" />
-            Watch on YouTube
-          </a>
+            Analyze My Resume
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </motion.div>
 
         {/* Tech pills */}
