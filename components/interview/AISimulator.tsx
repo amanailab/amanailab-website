@@ -354,14 +354,18 @@ export default function AISimulator() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, currentIdx])
 
-  // ── STT: auto-restart with mobile deduplication ──
+  // ── STT: continuous=false (one utterance at a time) ──
+  // This is the only reliable approach on mobile. Each session is completely
+  // independent — no cross-session text contamination, no word duplication.
+  // The user sees live interim text while speaking. When they pause, the
+  // utterance is committed and we immediately restart for the next one.
   const startListening = useCallback(() => {
     if (typeof window === 'undefined') return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SR) { setSttSupported(false); return }
 
-    cancel() // Stop TTS — mic and speaker can't run simultaneously
+    cancel()
 
     shouldListenRef.current = true
     isRestartingRef.current = false
@@ -377,31 +381,26 @@ export default function AISimulator() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const r: any = new SR()
-      r.continuous      = true
-      r.interimResults  = true
+      r.continuous      = false  // KEY: one utterance per session — eliminates duplication
+      r.interimResults  = true   // live preview while speaking
       r.lang            = 'en-US'
       r.maxAlternatives = 1
 
-      // Snapshot of accumulated text at the START of this session.
-      // Mobile Chrome re-sends old words on restart — we strip this prefix.
-      const sessionBase = totalFinalRef.current.trim()
+      let utteranceFinal = '' // confirmed text from this utterance
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       r.onresult = (e: any) => {
-        let rawFinals  = ''
-        let rawInterim = ''
-
+        let finals  = ''
+        let interim = ''
         for (let i = 0; i < e.results.length; i++) {
-          if (e.results[i].isFinal) rawFinals  += e.results[i][0].transcript + ' '
-          else                      rawInterim += e.results[i][0].transcript
+          if (e.results[i].isFinal) finals  += e.results[i][0].transcript
+          else                      interim += e.results[i][0].transcript
         }
+        utteranceFinal = finals || ''
 
-        // Strip re-transmitted old content (mobile Chrome duplication fix)
-        const rawNew    = (rawFinals + rawInterim).trimStart()
-        const newOnly   = stripKnownPrefix(sessionBase, rawNew)
-        const separator = sessionBase && newOnly ? ' ' : ''
-        const full      = (sessionBase + separator + newOnly).replace(/\s{2,}/g, ' ').trim()
-
+        // Show: everything committed so far + current utterance text
+        const current = [finals.trim(), interim.trim()].filter(Boolean).join(' ')
+        const full    = [totalFinalRef.current.trim(), current].filter(Boolean).join(' ')
         setTranscript(full)
         setAnswer(full)
         answerRef.current = full
@@ -409,28 +408,41 @@ export default function AISimulator() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       r.onerror = (e: any) => {
-        if (e.error === 'no-speech') return // normal silence — onend restarts
-        if (e.error === 'aborted')   return // manual stop
+        if (e.error === 'no-speech') {
+          // Silence — restart immediately to keep listening
+          if (shouldListenRef.current && !isRestartingRef.current) {
+            isRestartingRef.current = true
+            setTimeout(startNew, 150)
+          }
+          return
+        }
+        if (e.error === 'aborted') return
         shouldListenRef.current = false
         setIsListening(false)
       }
 
       r.onend = () => {
-        // Save current answer as the new base so next session knows what's already captured
-        totalFinalRef.current = answerRef.current.trim()
+        // Commit this utterance to the permanent total
+        if (utteranceFinal.trim()) {
+          const joined = [totalFinalRef.current.trim(), utteranceFinal.trim()].filter(Boolean).join(' ')
+          totalFinalRef.current = joined
+          // Keep answer showing the full committed text
+          setAnswer(joined)
+          setTranscript(joined)
+          answerRef.current = joined
+        }
+        utteranceFinal = ''
 
         if (shouldListenRef.current && !isRestartingRef.current) {
           isRestartingRef.current = true
-          // 700ms — gives mobile audio buffer time to fully drain so the
-          // new session doesn't re-capture the tail audio (prevents word duplication)
-          setTimeout(startNew, 700)
+          setTimeout(startNew, 150) // short delay — sessions are clean so no drain needed
         } else if (!shouldListenRef.current) {
           setIsListening(false)
         }
       }
 
       recognitionRef.current = r
-      try { r.start() } catch { /* already starting */ }
+      try { r.start() } catch { /* start race — ignored */ }
     }
 
     startNew()
