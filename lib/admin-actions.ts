@@ -127,3 +127,114 @@ export async function deleteNewsletterSubscriber(id: string | number) {
   revalidatePath("/admin/emails");
   return { success: true };
 }
+
+// ─── Companies ────────────────────────────────────────────────────────────────
+
+export interface CompanyInput {
+  name: string;
+  slug: string;
+  logo_emoji: string;
+  tagline: string;
+  description: string;
+  hq: string;
+  size: string;
+  interview_rounds: number;
+  interview_format: string;
+  what_they_look_for: string[];
+  tips: string[];
+  is_featured: boolean;
+}
+
+export async function createCompany(input: CompanyInput) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("companies").insert(input);
+  if (error) return { error: error.message };
+  revalidatePath("/companies");
+  revalidatePath("/admin/companies");
+  return { success: true };
+}
+
+export async function updateCompany(id: number, input: Partial<CompanyInput>) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("companies").update(input).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/companies");
+  revalidatePath("/admin/companies");
+  return { success: true };
+}
+
+export async function deleteCompany(id: number) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("companies").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/companies");
+  revalidatePath("/admin/companies");
+  return { success: true };
+}
+
+// ─── Company Questions ────────────────────────────────────────────────────────
+
+export interface CompanyQuestionInput {
+  company_id: number;
+  question: string;
+  model_answer: string;
+  topic: string;
+  level: string;
+}
+
+export async function createCompanyQuestion(input: CompanyQuestionInput) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("company_questions").insert(input);
+  if (error) return { error: error.message };
+  revalidatePath("/questions");
+  revalidatePath("/admin/company-questions");
+  return { success: true };
+}
+
+export async function updateCompanyQuestion(id: number, input: Partial<CompanyQuestionInput>) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("company_questions").update(input).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/questions");
+  revalidatePath("/admin/company-questions");
+  return { success: true };
+}
+
+export async function deleteCompanyQuestion(id: number) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("company_questions").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/questions");
+  revalidatePath("/admin/company-questions");
+  return { success: true };
+}
+
+export async function bulkInsertCompanyQuestions(rows: CompanyQuestionInput[]) {
+  if (rows.length === 0) return { error: "No rows to insert." };
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("company_questions").insert(rows);
+  if (error) return { error: error.message };
+  revalidatePath("/questions");
+  revalidatePath("/admin/company-questions");
+  return { success: true, count: rows.length };
+}
+
+// ─── Community ────────────────────────────────────────────────────────────────
+
+export async function approveCommunityPost(id: string) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("community_posts").update({ approved: true }).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/community");
+  revalidatePath("/admin/community");
+  return { success: true };
+}
+
+export async function deleteCommunityPost(id: string) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("community_posts").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/community");
+  revalidatePath("/admin/community");
+  return { success: true };
+}

@@ -9,7 +9,7 @@ import {
   BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
   BrainCircuit, Map, CalendarDays, Building2,
-  User, LogOut, LayoutDashboard, Briefcase,
+  User, LogOut, LayoutDashboard, Briefcase, MessageSquare,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -66,7 +66,18 @@ const navItems: NavItem[] = [
     ],
   },
   { kind: "link", href: "/courses",   label: "Courses"   },
-  { kind: "link", href: "/interview", label: "Interview" },
+  {
+    kind: "dropdown",
+    label: "Interview",
+    columns: 1,
+    items: [
+      { href: "/interview",  label: "AI Simulator",    description: "Timed interview with AI scoring",         icon: <BrainCircuit className="w-4 h-4" /> },
+      { href: "/job-prep",   label: "Job Prep",        description: "Paste a JD, get tailored questions",      icon: <Briefcase className="w-4 h-4" /> },
+      { href: "/companies",  label: "Companies",       description: "Google, Meta, OpenAI & more",             icon: <Building2 className="w-4 h-4" /> },
+      { href: "/questions",  label: "Question Bank",   description: "Browse 500+ AI/ML questions",             icon: <BookOpen className="w-4 h-4" /> },
+      { href: "/community",  label: "Community",       description: "Share interview experiences",             icon: <MessageSquare className="w-4 h-4" /> },
+    ],
+  },
   {
     kind: "dropdown",
     label: "Career",

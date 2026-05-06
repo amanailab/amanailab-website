@@ -12,15 +12,21 @@ import {
   Mail,
   ExternalLink,
   LogOut,
+  Building2,
+  MessageSquare,
+  Library,
 } from 'lucide-react'
 
 const navLinks = [
-  { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/blog', label: 'Blog Posts', icon: FileText },
-  { href: '/admin/questions', label: "Interview Q's", icon: HelpCircle },
-  { href: '/admin/resources', label: 'Cheat Sheets', icon: BookOpen },
-  { href: '/admin/news', label: 'News', icon: Newspaper },
-  { href: '/admin/emails', label: 'Emails & Waitlist', icon: Mail },
+  { href: '/admin/dashboard',         label: 'Dashboard',       icon: LayoutDashboard },
+  { href: '/admin/blog',              label: 'Blog Posts',      icon: FileText },
+  { href: '/admin/questions',         label: "Interview Q's",   icon: HelpCircle },
+  { href: '/admin/company-questions', label: 'Company Q\'s',    icon: Library },
+  { href: '/admin/companies',         label: 'Companies',       icon: Building2 },
+  { href: '/admin/community',         label: 'Community',       icon: MessageSquare },
+  { href: '/admin/resources',         label: 'Cheat Sheets',    icon: BookOpen },
+  { href: '/admin/news',              label: 'News',            icon: Newspaper },
+  { href: '/admin/emails',            label: 'Emails & Waitlist', icon: Mail },
 ]
 
 export default function AdminNav() {

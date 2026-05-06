@@ -1,0 +1,239 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { MessageSquare, Plus, X, Loader2, Users, Lightbulb, HelpCircle, Building2 } from 'lucide-react'
+import Link from 'next/link'
+
+interface Post {
+  id: string; author_name: string; title: string; body: string
+  type: string; company_slug: string | null; created_at: string
+}
+
+const TYPE_CONFIG = {
+  experience: { label: 'Interview Experience', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30', icon: Building2 },
+  question:   { label: 'Question',             color: 'bg-orange-500/20 text-orange-300 border-orange-500/30', icon: HelpCircle },
+  tip:        { label: 'Tip',                  color: 'bg-green-500/20 text-green-300 border-green-500/30', icon: Lightbulb },
+}
+
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  return `${Math.floor(h / 24)}d ago`
+}
+
+function PostCard({ post }: { post: Post }) {
+  const cfg = TYPE_CONFIG[post.type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.experience
+  const Icon = cfg.icon
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-5 transition-colors">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-xs font-bold text-zinc-300 shrink-0">
+          {post.author_name[0].toUpperCase()}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.color}`}>
+              <Icon className="w-2.5 h-2.5" /> {cfg.label}
+            </span>
+            {post.company_slug && (
+              <Link href={`/companies/${post.company_slug}`} className="text-[10px] text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full hover:bg-orange-500/20 transition-colors">
+                {post.company_slug}
+              </Link>
+            )}
+          </div>
+          <p className="text-xs text-zinc-500">{post.author_name} · {timeAgo(post.created_at)}</p>
+        </div>
+      </div>
+      <h3 className="text-sm font-bold text-zinc-100 mb-2">{post.title}</h3>
+      <p className="text-sm text-zinc-400 leading-relaxed line-clamp-4">{post.body}</p>
+    </div>
+  )
+}
+
+function NewPostModal({ onClose, companies }: { onClose: () => void; companies: { slug: string; name: string }[] }) {
+  const [form, setForm] = useState({ author_name: '', author_email: '', title: '', body: '', type: 'experience', company_slug: '' })
+  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true); setError('')
+    try {
+      const res = await fetch('/api/community/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setDone(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+          <h2 className="text-sm font-bold text-zinc-100">Share with the Community</h2>
+          <button onClick={onClose}><X className="w-5 h-5 text-zinc-500 hover:text-zinc-300" /></button>
+        </div>
+
+        {done ? (
+          <div className="p-8 text-center">
+            <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <MessageSquare className="w-6 h-6 text-green-400" />
+            </div>
+            <p className="text-zinc-100 font-bold mb-2">Post submitted!</p>
+            <p className="text-sm text-zinc-400 mb-4">Your post will appear after admin review. Usually within 24 hours.</p>
+            <button onClick={onClose} className="text-sm text-orange-400 hover:text-orange-300 font-semibold">Close</button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Your Name *</label>
+                <input value={form.author_name} onChange={e => setForm(f => ({ ...f, author_name: e.target.value }))} required placeholder="Aman" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Email (optional)</label>
+                <input value={form.author_email} onChange={e => setForm(f => ({ ...f, author_email: e.target.value }))} type="email" placeholder="not shown publicly" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Post Type *</label>
+                <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 outline-none">
+                  <option value="experience">Interview Experience</option>
+                  <option value="question">Question</option>
+                  <option value="tip">Tip / Resource</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Company (optional)</label>
+                <select value={form.company_slug} onChange={e => setForm(f => ({ ...f, company_slug: e.target.value }))} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 outline-none">
+                  <option value="">No specific company</option>
+                  {companies.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Title *</label>
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required placeholder="What questions did they ask me at Google…" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors" />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Your Post *</label>
+              <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} required rows={5} placeholder="Share your experience, question, or tip in detail…" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none resize-none transition-colors" />
+            </div>
+
+            {error && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+
+            <button type="submit" disabled={loading} className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white text-sm font-semibold py-3 rounded-xl transition-colors">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
+              Submit Post
+            </button>
+            <p className="text-xs text-zinc-600 text-center">Posts are reviewed before publishing — usually within 24 hours.</p>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function CommunityPage() {
+  const [posts, setPosts] = useState<Post[]>([])
+  const [companies, setCompanies] = useState<{ slug: string; name: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
+  const [showModal, setShowModal] = useState(false)
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/community/posts${filter !== 'all' ? `?type=${filter}` : ''}`).then(r => r.json()),
+      fetch('/api/admin/companies-list').then(r => r.json()),
+    ]).then(([postsData, companiesData]) => {
+      setPosts(postsData.posts ?? [])
+      setCompanies((companiesData.companies ?? []).map((c: { slug: string; name: string }) => ({ slug: c.slug, name: c.name })))
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [filter])
+
+  return (
+    <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
+      {showModal && <NewPostModal onClose={() => setShowModal(false)} companies={companies} />}
+
+      <div className="max-w-3xl mx-auto px-4">
+
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 mb-3">
+              <Users className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-xs font-semibold text-blue-400 uppercase tracking-wide">Community</span>
+            </div>
+            <h1 className="text-2xl font-extrabold text-zinc-100 mb-1">AI/ML Interview Community</h1>
+            <p className="text-zinc-500 text-sm">Share interview experiences, ask questions, and help each other get hired.</p>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20 shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Share
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {[
+            { value: 'all', label: 'All Posts', icon: MessageSquare },
+            { value: 'experience', label: 'Experiences', icon: Building2 },
+            { value: 'question', label: 'Questions', icon: HelpCircle },
+            { value: 'tip', label: 'Tips', icon: Lightbulb },
+          ].map(({ value, label, icon: Icon }) => (
+            <button
+              key={value}
+              onClick={() => { setFilter(value); setLoading(true) }}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border transition-colors ${
+                filter === value
+                  ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" /> {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Posts */}
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <div className="w-8 h-8 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="text-center py-16">
+            <MessageSquare className="w-10 h-10 text-zinc-700 mx-auto mb-4" />
+            <p className="text-zinc-400 font-semibold mb-2">No posts yet</p>
+            <p className="text-zinc-600 text-sm mb-6">Be the first to share your interview experience!</p>
+            <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors">
+              <Plus className="w-4 h-4" /> Share Your Experience
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {posts.map(p => <PostCard key={p.id} post={p} />)}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
