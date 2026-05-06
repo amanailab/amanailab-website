@@ -50,18 +50,11 @@ export default function EmailsManager({
   return (
     <div className="flex flex-col gap-6">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
-          Icon={Mail}
-          label="Newsletter Subscribers"
-          value={newsletter.length}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard Icon={Mail} label="Total Subscribers" value={newsletter.length} />
+        <StatCard Icon={CheckCircle2} label="Verified" value={newsletter.filter(r => r.verified).length} accent="green" />
         <StatCard Icon={Users} label="Course Waitlist" value={waitlist.length} />
-        <StatCard
-          Icon={MessageSquare}
-          label="Contact Messages"
-          value={contacts.length}
-        />
+        <StatCard Icon={MessageSquare} label="Contact Messages" value={contacts.length} />
       </div>
 
       {/* Tabs */}
@@ -90,6 +83,7 @@ export default function EmailsManager({
           rows={newsletter}
           empty="No newsletter subscribers yet."
           exportFilename="newsletter_subscribers.csv"
+          showVerified
         />
       )}
 
@@ -163,16 +157,20 @@ function StatCard({
   Icon,
   label,
   value,
+  accent = 'orange',
 }: {
   Icon: React.ComponentType<{ className?: string }>
   label: string
   value: number
+  accent?: 'orange' | 'green'
 }) {
+  const bg = accent === 'green' ? 'bg-green-500/10 border-green-500/20' : 'bg-orange-500/10 border-orange-500/20'
+  const iconColor = accent === 'green' ? 'text-green-400' : 'text-orange-400'
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-9 h-9 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-          <Icon className="w-5 h-5 text-orange-400" />
+        <div className={`w-9 h-9 rounded-lg ${bg} flex items-center justify-center`}>
+          <Icon className={`w-5 h-5 ${iconColor}`} />
         </div>
         <span className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
           {label}
@@ -187,21 +185,25 @@ function SimpleTable({
   rows,
   empty,
   exportFilename,
+  showVerified = false,
 }: {
-  rows: { id: string | number; email: string; created_at: string }[]
+  rows: { id: string | number; email: string; verified?: boolean; created_at: string }[]
   empty: string
   exportFilename: string
+  showVerified?: boolean
 }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-        <p className="text-sm text-zinc-300">{rows.length} entries</p>
+        <p className="text-sm text-zinc-300">{rows.length} entries{showVerified && ` · ${rows.filter(r => r.verified).length} verified`}</p>
         <button
           onClick={() =>
             downloadCsv(
               exportFilename,
-              ['email', 'date_joined'],
-              rows.map((r) => [r.email, new Date(r.created_at).toISOString()])
+              showVerified ? ['email', 'verified', 'date_joined'] : ['email', 'date_joined'],
+              rows.map((r) => showVerified
+                ? [r.email, r.verified ? 'yes' : 'no', new Date(r.created_at).toISOString()]
+                : [r.email, new Date(r.created_at).toISOString()])
             )
           }
           disabled={rows.length === 0}
@@ -216,6 +218,7 @@ function SimpleTable({
           <thead className="bg-zinc-950/40 text-left text-xs uppercase tracking-wide text-zinc-500">
             <tr>
               <th className="px-4 py-3 font-semibold">Email</th>
+              {showVerified && <th className="px-4 py-3 font-semibold">Status</th>}
               <th className="px-4 py-3 font-semibold">Date joined</th>
             </tr>
           </thead>
@@ -230,6 +233,14 @@ function SimpleTable({
               rows.map((r) => (
                 <tr key={r.id} className="border-t border-zinc-800">
                   <td className="px-4 py-3 text-zinc-100">{r.email}</td>
+                  {showVerified && (
+                    <td className="px-4 py-3">
+                      {r.verified
+                        ? <span className="text-xs font-semibold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">Verified</span>
+                        : <span className="text-xs font-semibold text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded-full">Pending</span>
+                      }
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-zinc-400 tabular-nums">
                     {new Date(r.created_at).toLocaleString()}
                   </td>

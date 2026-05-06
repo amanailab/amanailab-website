@@ -76,14 +76,15 @@ export default function EmailCaptureCard(props: BaseProps) {
       return;
     }
     setWorking(true);
-    const ok = await saveEmail(email, source);
-    setWorking(false);
-    if (!ok) {
-      setError("Could not subscribe. Please try again.");
-      return;
+    try {
+      await saveEmail(email, source);
+      markCaptured();
+      setDone(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not subscribe. Please try again.");
+    } finally {
+      setWorking(false);
     }
-    markCaptured();
-    setDone(true);
   }
 
   // Already-captured (from a previous visit) → show condensed thank-you.

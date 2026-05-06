@@ -5,6 +5,7 @@ import { getAdminSupabase } from '@/lib/admin'
 export interface NewsletterRow {
   id: string | number
   email: string
+  verified: boolean
   created_at: string
 }
 
@@ -43,7 +44,7 @@ async function safeFetch<T>(table: string, columns: string): Promise<T[]> {
 
 export default async function AdminEmailsPage() {
   const [newsletter, waitlist, contacts] = await Promise.all([
-    safeFetch<NewsletterRow>('newsletter_subscribers', 'id, email, created_at'),
+    safeFetch<NewsletterRow>('newsletter_subscribers', 'id, email, verified, created_at'),
     safeFetch<WaitlistRow>('course_waitlist', 'id, email, created_at'),
     safeFetch<ContactRow>(
       'contact_messages',

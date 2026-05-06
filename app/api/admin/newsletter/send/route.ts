@@ -26,13 +26,14 @@ export async function POST(req: Request) {
     const { data: subscribers, error } = await supabase
       .from('newsletter_subscribers')
       .select('email')
+      .eq('verified', true)   // only send to verified emails
 
     if (error) {
       return NextResponse.json({ error: 'Failed to fetch subscribers.' }, { status: 500 })
     }
 
     if (!subscribers || subscribers.length === 0) {
-      return NextResponse.json({ error: 'No subscribers found.' }, { status: 400 })
+      return NextResponse.json({ error: 'No verified subscribers found.' }, { status: 400 })
     }
 
     const emails = subscribers.map((s: { email: string }) => s.email)

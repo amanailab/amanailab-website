@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, X, Loader2, CheckCircle2, Lock } from 'lucide-react'
+import { Mail, X, Loader2, CheckCircle2, Lock, InboxIcon } from 'lucide-react'
 import { saveEmail, markCaptured, isCaptured, type EmailSource } from '@/lib/email-capture'
 
 interface Props {
@@ -29,17 +29,53 @@ export default function EmailGateModal({
   const [email, setEmail] = useState('')
   const [working, setWorking] = useState(false)
   const [error, setError] = useState('')
+  const [pendingEmail, setPendingEmail] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) { setError('Please enter your email.'); return }
     setError('')
     setWorking(true)
-    const ok = await saveEmail(email.trim(), source)
-    setWorking(false)
-    if (!ok) { setError('Could not save email. Please try again.'); return }
-    markCaptured()
-    onSuccess()
+    try {
+      await saveEmail(email.trim(), source)
+      markCaptured()
+      setPendingEmail(email.trim())
+      onSuccess()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not save email. Please try again.')
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  if (pendingEmail) {
+    return (
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden text-center p-8"
+            >
+              <div className="h-1 w-full bg-gradient-to-r from-orange-500 via-orange-400 to-orange-600 absolute top-0 left-0" />
+              <InboxIcon className="w-12 h-12 text-orange-400 mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-zinc-100 mb-2">Check your inbox!</h2>
+              <p className="text-sm text-zinc-400 leading-relaxed mb-1">
+                We sent a verification link to
+              </p>
+              <p className="text-sm font-semibold text-orange-400 mb-4">{pendingEmail}</p>
+              <p className="text-xs text-zinc-500">Click the link to confirm your email. Link expires in 48 hours.</p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    )
   }
 
   return (
@@ -132,14 +168,23 @@ export function EmailGateInline({
   const [email, setEmail] = useState('')
   const [working, setWorking] = useState(false)
   const [error, setError] = useState('')
-  const [done, setDone] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState('')
 
-  if (done) {
+  if (pendingEmail) {
     return (
-      <div className="flex items-center gap-3 bg-green-500/10 border border-green-500/20 rounded-2xl px-5 py-4">
-        <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
-        <p className="text-sm font-semibold text-zinc-100">Unlocked! Access granted.</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-zinc-900 border border-orange-500/20 rounded-2xl p-6 text-center"
+      >
+        <InboxIcon className="w-8 h-8 text-orange-400 mx-auto mb-3" />
+        <p className="text-sm font-semibold text-zinc-100 mb-1">Check your inbox!</p>
+        <p className="text-xs text-zinc-400">
+          We sent a verification link to{' '}
+          <span className="text-orange-400 font-medium">{pendingEmail}</span>
+        </p>
+        <p className="text-xs text-zinc-600 mt-2">Click it to confirm. Link expires in 48 hours.</p>
+      </motion.div>
     )
   }
 
@@ -148,12 +193,16 @@ export function EmailGateInline({
     if (!email.trim()) { setError('Please enter your email.'); return }
     setError('')
     setWorking(true)
-    const ok = await saveEmail(email.trim(), source)
-    setWorking(false)
-    if (!ok) { setError('Could not save email. Please try again.'); return }
-    markCaptured()
-    setDone(true)
-    onSuccess()
+    try {
+      await saveEmail(email.trim(), source)
+      markCaptured()
+      setPendingEmail(email.trim())
+      onSuccess()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Could not save email. Please try again.')
+    } finally {
+      setWorking(false)
+    }
   }
 
   return (
