@@ -146,12 +146,12 @@ async function downloadRoadmapPDF(result: RoadmapResult, targetRole: string) {
   })
   y += 8
 
-  // Trending in 2025
-  if (result.trendingIn2025?.length) {
+  // Trending in 2026
+  if (result.trendingIn2026?.length) {
     checkPage(20)
-    heading('🔥 Trending in 2025', 11, [251, 191, 36])
+    heading('🔥 Trending in 2026', 11, [251, 191, 36])
     let tx = margin
-    result.trendingIn2025.forEach(t => {
+    result.trendingIn2026.forEach(t => {
       doc.setTextColor(251, 191, 36)
       if (tx + doc.getTextWidth(t) + 12 > pageW - margin) { tx = margin; y += 6 }
       doc.setFontSize(7.5); doc.setFont('helvetica', 'bold')
@@ -234,7 +234,7 @@ interface RoadmapPhase {
 }
 interface RoadmapResult {
   totalDuration: string; overview: string; phases: RoadmapPhase[]
-  keySkills: string[]; jobReadySignals: string[]; trendingIn2025: string[]; tips: string[]
+  keySkills: string[]; jobReadySignals: string[]; trendingIn2026: string[]; tips: string[]
 }
 
 function RoadmapTab() {
@@ -372,11 +372,11 @@ function RoadmapTab() {
                 </div>
               </Section>
 
-              {/* Trending in 2025 */}
-              {result.trendingIn2025?.length > 0 && (
-                <Section title="🔥 Trending in 2025 — Must Know">
+              {/* Trending in 2026 */}
+              {result.trendingIn2026?.length > 0 && (
+                <Section title="🔥 Trending in 2026 — Must Know">
                   <div className="flex flex-wrap gap-2">
-                    {result.trendingIn2025.map(t => (
+                    {result.trendingIn2026.map(t => (
                       <span key={t} className="text-xs font-semibold px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
                         {t}
                       </span>

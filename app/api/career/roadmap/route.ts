@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         messages: [
           {
             role: 'system',
-            content: `You are a world-class AI/ML career coach in 2025. You have deep expertise in the modern AI ecosystem including:
+            content: `You are a world-class AI/ML career coach in 2026. You have deep expertise in the modern AI ecosystem including:
 - Generative AI (LLMs, diffusion models, multimodal AI)
 - Agentic AI (AI agents, multi-agent systems, tool use, autonomous workflows)
 - RAG (Retrieval-Augmented Generation, vector databases, embeddings)
@@ -37,22 +37,22 @@ export async function POST(req: Request) {
 - Deep Learning (PyTorch, transformers, attention mechanisms)
 - Cloud AI (AWS Bedrock, GCP Vertex AI, Azure AI)
 
-Generate highly specific, up-to-date 2025 roadmaps. Include actual tool names, libraries, courses, and projects. Return ONLY valid JSON. No markdown fences.`,
+Generate highly specific, up-to-date 2026 roadmaps. Include actual tool names, libraries, courses, and projects. Return ONLY valid JSON. No markdown fences.`,
           },
           {
             role: 'user',
-            content: `Create a detailed 2025 career roadmap for someone who wants to become a ${targetRole}.
+            content: `Create a detailed 2026 career roadmap for someone who wants to become a ${targetRole}.
 
 Current Skills: ${currentSkills || 'Not specified'}
 Current Level: ${currentLevel || 'Beginner'}
 Available Time: ${timePerWeek || '10'} hours per week
 
 IMPORTANT:
-- Include the LATEST 2025 AI tools, frameworks, and concepts
+- Include the LATEST 2026 AI tools, frameworks, and concepts
 - Cover Generative AI, Agentic AI, LLMs, RAG wherever relevant to the role
 - Name SPECIFIC resources (courses, books, GitHub repos, YouTube channels)
 - Each phase must have real, buildable project ideas
-- Topics must include cutting-edge 2025 skills employers look for
+- Topics must include cutting-edge 2026 skills employers look for
 
 Return this exact JSON:
 {
@@ -72,7 +72,7 @@ Return this exact JSON:
   ],
   "keySkills": ["specific skill 1", "specific skill 2", "specific skill 3", "specific skill 4", "specific skill 5", "specific skill 6"],
   "jobReadySignals": ["concrete signal 1", "concrete signal 2", "concrete signal 3", "concrete signal 4"],
-  "trendingIn2025": ["trending skill/tool 1", "trending skill/tool 2", "trending skill/tool 3", "trending skill/tool 4"],
+  "trendingIn2026": ["trending skill/tool 1", "trending skill/tool 2", "trending skill/tool 3", "trending skill/tool 4"],
   "tips": ["specific actionable tip 1", "tip 2", "tip 3"]
 }
 
