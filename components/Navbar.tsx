@@ -9,7 +9,7 @@ import {
   BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
   BrainCircuit, Map, CalendarDays, Building2,
-  User, LogOut, LayoutDashboard, Briefcase, MessageSquare,
+  User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -75,6 +75,8 @@ const navItems: NavItem[] = [
       { href: "/job-prep",   label: "Job Prep",        description: "Paste a JD, get tailored questions",      icon: <Briefcase className="w-4 h-4" /> },
       { href: "/companies",  label: "Companies",       description: "Google, Meta, OpenAI & more",             icon: <Building2 className="w-4 h-4" /> },
       { href: "/questions",  label: "Question Bank",   description: "Browse 500+ AI/ML questions",             icon: <BookOpen className="w-4 h-4" /> },
+      { href: "/topics",     label: "Topic Guides",    description: "Deep-dive guides by topic",               icon: <Layers className="w-4 h-4" /> },
+      { href: "/flashcards", label: "Flashcards",      description: "5-min daily concept practice",            icon: <Library className="w-4 h-4" /> },
       { href: "/community",  label: "Community",       description: "Share interview experiences",             icon: <MessageSquare className="w-4 h-4" /> },
     ],
   },
@@ -322,6 +324,13 @@ export default function Navbar() {
                           className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors"
                         >
                           <LayoutDashboard className="w-4 h-4 text-zinc-500" /> My Progress
+                        </Link>
+                        <Link
+                          href="/profile"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors"
+                        >
+                          <User className="w-4 h-4 text-zinc-500" /> Profile
                         </Link>
                         <button
                           onClick={async () => {

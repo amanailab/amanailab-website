@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 import { getAdminSupabase } from '@/lib/admin'
+import { TOPICS } from '@/lib/topic-data'
 
 const BASE = 'https://amanailab.com'
 
@@ -9,6 +10,8 @@ const staticPages: MetadataRoute.Sitemap = [
   { url: `${BASE}/companies`,              priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/questions`,              priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/job-prep`,              priority: 0.9, changeFrequency: 'weekly'  },
+  { url: `${BASE}/topics`,               priority: 0.9, changeFrequency: 'weekly'  },
+  { url: `${BASE}/flashcards`,           priority: 0.8, changeFrequency: 'monthly' },
   { url: `${BASE}/resume`,                priority: 0.9, changeFrequency: 'monthly' },
   { url: `${BASE}/career`,                priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/blog`,                  priority: 0.9, changeFrequency: 'daily'   },
@@ -54,8 +57,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly',
     }))
 
-    return [...staticPages, ...companyPages, ...blogPages]
+    const topicPages: MetadataRoute.Sitemap = TOPICS.map(t => ({
+      url: `${BASE}/topics/${t.slug}`,
+      priority: 0.9,
+      changeFrequency: 'monthly' as const,
+    }))
+
+    const flashcardPages: MetadataRoute.Sitemap = TOPICS.map(t => ({
+      url: `${BASE}/flashcards/${t.slug}`,
+      priority: 0.7,
+      changeFrequency: 'monthly' as const,
+    }))
+
+    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages]
   } catch {
-    return staticPages
+    const topicPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/topics/${t.slug}`, priority: 0.9, changeFrequency: 'monthly' as const }))
+    const flashcardPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/flashcards/${t.slug}`, priority: 0.7, changeFrequency: 'monthly' as const }))
+    return [...staticPages, ...topicPages, ...flashcardPages]
   }
 }

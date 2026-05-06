@@ -6,105 +6,26 @@ import {
   FileText, BrainCircuit, Map, Sparkles,
   BookOpen, BarChart2, Wand2, CalendarDays,
   Building2, GraduationCap, Mail, ArrowRight,
+  Briefcase, Library, MessageSquare, Layers,
 } from "lucide-react";
 
 const tools = [
-  {
-    icon: <FileText className="w-5 h-5" />,
-    label: "Resume Analyzer",
-    description: "ATS score, missing keywords & rewritten summary",
-    href: "/resume",
-    color: "text-orange-400",
-    bg: "bg-orange-500/10 border-orange-500/20",
-  },
-  {
-    icon: <BrainCircuit className="w-5 h-5" />,
-    label: "AI Interview Simulator",
-    description: "Voice-enabled mock interviews with instant scoring",
-    href: "/interview",
-    color: "text-violet-400",
-    bg: "bg-violet-500/10 border-violet-500/20",
-  },
-  {
-    icon: <Map className="w-5 h-5" />,
-    label: "Career Roadmap",
-    description: "Personalized week-by-week AI/ML learning path",
-    href: "/career",
-    color: "text-blue-400",
-    bg: "bg-blue-500/10 border-blue-500/20",
-  },
-  {
-    icon: <BookOpen className="w-5 h-5" />,
-    label: "Paper Explainer",
-    description: "Any arXiv paper explained in plain English",
-    href: "/paper-explainer",
-    color: "text-purple-400",
-    bg: "bg-purple-500/10 border-purple-500/20",
-  },
-  {
-    icon: <BarChart2 className="w-5 h-5" />,
-    label: "LinkedIn Optimizer",
-    description: "AI-rewritten profile with recruiter keywords",
-    href: "/linkedin-optimizer",
-    color: "text-sky-400",
-    bg: "bg-sky-500/10 border-sky-500/20",
-  },
-  {
-    icon: <Mail className="w-5 h-5" />,
-    label: "Cover Letter Reviewer",
-    description: "Score vs JD + complete AI rewrite",
-    href: "/cover-letter-review",
-    color: "text-pink-400",
-    bg: "bg-pink-500/10 border-pink-500/20",
-  },
-  {
-    icon: <Building2 className="w-5 h-5" />,
-    label: "Company Research",
-    description: "Interview intel, tech stack & insider tips",
-    href: "/career",
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/10 border-emerald-500/20",
-  },
-  {
-    icon: <CalendarDays className="w-5 h-5" />,
-    label: "Study Plan Generator",
-    description: "Day-by-day prep schedule for your interview date",
-    href: "/career",
-    color: "text-yellow-400",
-    bg: "bg-yellow-500/10 border-yellow-500/20",
-  },
-  {
-    icon: <Wand2 className="w-5 h-5" />,
-    label: "Prompt Generator",
-    description: "Perfect AI prompts for any task or model",
-    href: "/prompt",
-    color: "text-rose-400",
-    bg: "bg-rose-500/10 border-rose-500/20",
-  },
-  {
-    icon: <Sparkles className="w-5 h-5" />,
-    label: "Skill Assessment Quiz",
-    description: "AI-generated MCQ quiz with explanations",
-    href: "/quiz",
-    color: "text-green-400",
-    bg: "bg-green-500/10 border-green-500/20",
-  },
-  {
-    icon: <FileText className="w-5 h-5" />,
-    label: "Offer Letter Analyzer",
-    description: "Salary fairness + word-for-word negotiation script",
-    href: "/career",
-    color: "text-amber-400",
-    bg: "bg-amber-500/10 border-amber-500/20",
-  },
-  {
-    icon: <GraduationCap className="w-5 h-5" />,
-    label: "LinkedIn Post Generator",
-    description: "Viral AI/ML posts for 5 different styles",
-    href: "/linkedin",
-    color: "text-cyan-400",
-    bg: "bg-cyan-500/10 border-cyan-500/20",
-  },
+  { icon: <BrainCircuit className="w-5 h-5" />, label: "AI Interview Simulator",  description: "Voice-enabled mock interviews with instant scoring",    href: "/interview",          color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
+  { icon: <Building2 className="w-5 h-5" />,   label: "Company Prep",             description: "Google, Meta, OpenAI & 6 more — real questions",       href: "/companies",          color: "text-blue-400",   bg: "bg-blue-500/10 border-blue-500/20"   },
+  { icon: <Library className="w-5 h-5" />,     label: "Question Bank",            description: "Browse & filter 500+ AI/ML interview questions",       href: "/questions",          color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20"},
+  { icon: <Briefcase className="w-5 h-5" />,   label: "Job Prep",                 description: "Paste a JD → get 6 tailored questions instantly",      href: "/job-prep",           color: "text-teal-400",   bg: "bg-teal-500/10 border-teal-500/20"   },
+  { icon: <BookOpen className="w-5 h-5" />,    label: "Flashcards",               description: "Key concepts for daily 5-minute practice",             href: "/flashcards",         color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20"},
+  { icon: <Layers className="w-5 h-5" />,      label: "Topic Guides",             description: "Deep-dive prep guides for every AI/ML topic",          href: "/topics",             color: "text-rose-400",   bg: "bg-rose-500/10 border-rose-500/20"   },
+  { icon: <MessageSquare className="w-5 h-5" />,label: "Community",               description: "Real interview experiences from engineers",             href: "/community",          color: "text-green-400",  bg: "bg-green-500/10 border-green-500/20" },
+  { icon: <FileText className="w-5 h-5" />,    label: "Resume Analyzer",          description: "ATS score, missing keywords & rewritten summary",      href: "/resume",             color: "text-yellow-400", bg: "bg-yellow-500/10 border-yellow-500/20"},
+  { icon: <BarChart2 className="w-5 h-5" />,   label: "LinkedIn Optimizer",       description: "AI-rewritten profile with recruiter keywords",         href: "/linkedin-optimizer", color: "text-sky-400",    bg: "bg-sky-500/10 border-sky-500/20"     },
+  { icon: <Mail className="w-5 h-5" />,        label: "Cover Letter Reviewer",    description: "Score vs JD + complete AI rewrite",                    href: "/cover-letter-review",color: "text-pink-400",   bg: "bg-pink-500/10 border-pink-500/20"   },
+  { icon: <Map className="w-5 h-5" />,         label: "Career Roadmap",           description: "Personalized week-by-week AI/ML learning path",        href: "/career",             color: "text-emerald-400",bg: "bg-emerald-500/10 border-emerald-500/20"},
+  { icon: <CalendarDays className="w-5 h-5" />,label: "Study Plan",               description: "Day-by-day prep schedule for your interview date",     href: "/career",             color: "text-amber-400",  bg: "bg-amber-500/10 border-amber-500/20" },
+  { icon: <Wand2 className="w-5 h-5" />,       label: "Prompt Generator",         description: "Perfect AI prompts for any task or model",             href: "/prompt",             color: "text-cyan-400",   bg: "bg-cyan-500/10 border-cyan-500/20"   },
+  { icon: <Sparkles className="w-5 h-5" />,    label: "Skill Quiz",               description: "AI-generated MCQ quiz with explanations",              href: "/quiz",               color: "text-lime-400",   bg: "bg-lime-500/10 border-lime-500/20"   },
+  { icon: <BookOpen className="w-5 h-5" />,    label: "Paper Explainer",          description: "Any arXiv paper explained in plain English",           href: "/paper-explainer",    color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20"},
+  { icon: <GraduationCap className="w-5 h-5" />,label: "LinkedIn Posts",          description: "Viral AI/ML posts for 5 different styles",             href: "/linkedin",           color: "text-fuchsia-400",bg: "bg-fuchsia-500/10 border-fuchsia-500/20"},
 ];
 
 export default function ToolsShowcase() {
@@ -121,7 +42,7 @@ export default function ToolsShowcase() {
         >
           <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-4 uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
-            15+ Free AI Tools
+            20+ Free AI Tools
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-3">
             Everything You Need to Land an AI/ML Job
