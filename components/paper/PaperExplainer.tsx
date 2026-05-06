@@ -20,7 +20,9 @@ interface PaperResult {
   simpleExplanation: string
   problemSolved: string
   howItWorks: string
+  architectureDetails: string
   keyContributions: KeyContribution[]
+  experimentResults: string
   practicalApplications: string[]
   limitations: string[]
   keyTerms: KeyTerm[]
@@ -297,12 +299,12 @@ export default function PaperExplainer() {
                   <p className="text-sm text-zinc-300 leading-relaxed">{result.problemSolved}</p>
                 </Section>
                 {result.keyTerms?.length > 0 && (
-                  <Section title="Key Terms Explained" icon={<Brain className="w-4 h-4" />} defaultOpen={false}>
-                    <div className="flex flex-col gap-3">
+                  <Section title="Key Terms Explained" icon={<Brain className="w-4 h-4" />} defaultOpen={true}>
+                    <div className="flex flex-col gap-4">
                       {result.keyTerms.map((t, i) => (
-                        <div key={i} className="flex flex-col gap-0.5">
-                          <span className="text-xs font-bold text-violet-400">{t.term}</span>
-                          <span className="text-xs text-zinc-400 leading-relaxed">{t.definition}</span>
+                        <div key={i} className="border-l-2 border-violet-500/40 pl-4">
+                          <span className="text-sm font-bold text-violet-400 block mb-1">{t.term}</span>
+                          <span className="text-sm text-zinc-400 leading-relaxed">{t.definition}</span>
                         </div>
                       ))}
                     </div>
@@ -317,26 +319,39 @@ export default function PaperExplainer() {
                   <p className="text-sm text-zinc-300 leading-relaxed">{result.howItWorks}</p>
                 </Section>
 
+                {result.architectureDetails && (
+                  <Section title="Architecture & Technical Details" icon={<Zap className="w-4 h-4" />}>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{result.architectureDetails}</p>
+                  </Section>
+                )}
+
                 <Section title="Key Contributions" icon={<Zap className="w-4 h-4" />}>
-                  <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-5">
                     {result.keyContributions?.map((c, i) => (
                       <div key={i} className="flex gap-3">
                         <div className="w-6 h-6 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-400 text-xs font-bold shrink-0 mt-0.5">{i + 1}</div>
                         <div>
-                          <p className="text-sm font-semibold text-zinc-100">{c.point}</p>
-                          <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">{c.detail}</p>
+                          <p className="text-sm font-semibold text-zinc-100 mb-1">{c.point}</p>
+                          <p className="text-sm text-zinc-400 leading-relaxed">{c.detail}</p>
                         </div>
                       </div>
                     ))}
                   </div>
                 </Section>
 
+                {result.experimentResults && (
+                  <Section title="Experiments & Results" icon={<Target className="w-4 h-4" />}>
+                    <p className="text-sm text-zinc-300 leading-relaxed">{result.experimentResults}</p>
+                  </Section>
+                )}
+
                 {result.limitations?.length > 0 && (
                   <Section title="Limitations" icon={<AlertTriangle className="w-4 h-4" />} defaultOpen={false}>
-                    <ul className="flex flex-col gap-2">
+                    <ul className="flex flex-col gap-3">
                       {result.limitations.map((l, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm text-zinc-400">
-                          <span className="text-yellow-400 shrink-0 mt-0.5">•</span>{l}
+                          <span className="text-yellow-400 shrink-0 mt-0.5">•</span>
+                          <span className="leading-relaxed">{l}</span>
                         </li>
                       ))}
                     </ul>
