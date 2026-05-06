@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 import MockInterviewChat from "@/components/interview/MockInterviewChat";
+import AISimulator from "@/components/interview/AISimulator";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -148,9 +149,9 @@ function scoreBg(score: number) {
   return "bg-red-500/10 border-red-500/30";
 }
 
-// ─── AI Simulator ─────────────────────────────────────────────────────────────
+// ─── AI Simulator — replaced by AISimulator component ─────────────────────────
 
-function AISimulator() {
+function _OldAISimulator_UNUSED() {
   const [step, setStep]               = useState<SimStep>("settings");
   const [topic, setTopic]             = useState(TOPICS_SIM[0]);
   const [level, setLevel]             = useState(LEVELS_SIM[0]);
