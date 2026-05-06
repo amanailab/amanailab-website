@@ -204,6 +204,7 @@ export default function AISimulator() {
   const [answer, setAnswer] = useState('')
   const [transcript, setTranscript] = useState('')
   const [isListening, setIsListening] = useState(false)
+  const [sttSupported, setSttSupported] = useState(true)
   const [timeLeft, setTimeLeft] = useState(TIME_PER_Q)
   const [error, setError] = useState('')
   const [showEmailGate, setShowEmailGate] = useState(false)
@@ -213,9 +214,14 @@ export default function AISimulator() {
   const [sessionSaved, setSessionSaved] = useState(false)
 
   const { speak, cancel, speaking } = useTTS()
-  const recognitionRef = useRef<{ stop: () => void } | null>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef  = useRef<any>(null)
+  const timerRef        = useRef<ReturnType<typeof setInterval>>(undefined)
+  const textareaRef     = useRef<HTMLTextAreaElement>(null)
+  // ── Voice refs (no stale closures) ──
+  const shouldListenRef = useRef(false)   // whether we WANT to be listening
+  const totalFinalRef   = useRef('')      // accumulated finals across Chrome restarts
+  const answerRef       = useRef('')      // mirrors answer state for timer's handleSubmit
 
   const currentQ = questions[currentIdx] ?? ''
   const topicMeta = TOPICS.find((t) => t.value === topic)!
@@ -277,51 +283,111 @@ export default function AISimulator() {
     return () => clearInterval(timerRef.current)
   }, [phase, currentIdx])
 
-  // ── Auto-speak question ──
+  // ── Auto-speak question, then auto-start STT when done ──
   useEffect(() => {
     if (phase === 'question' && ttsEnabled && currentQ) {
-      speak(currentQ)
+      // Stop any active mic before TTS (prevents feedback loop)
+      if (shouldListenRef.current) stopListening()
+
+      if (sttEnabled) {
+        // Speak question first, then auto-open mic after a short gap
+        speak(currentQ, () => {
+          setTimeout(() => {
+            if (phase === 'question' && !shouldListenRef.current) startListening()
+          }, 400)
+        })
+      } else {
+        speak(currentQ)
+      }
+    } else if (phase === 'question' && !ttsEnabled && sttEnabled) {
+      // No TTS — start listening immediately when question appears
+      setTimeout(() => {
+        if (phase === 'question' && !shouldListenRef.current) startListening()
+      }, 300)
     }
-    return () => { if (phase !== 'question') cancel() }
+    return () => {
+      if (phase !== 'question') {
+        cancel()
+        shouldListenRef.current = false
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, currentIdx])
 
-  // ── Merge transcript into answer ──
-  useEffect(() => {
-    if (transcript) setAnswer(transcript)
-  }, [transcript])
-
-  // ── STT setup ──
+  // ── STT: start with auto-restart on silence + text accumulation ──
   const startListening = useCallback(() => {
     if (typeof window === 'undefined') return
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SR) return
-    cancel()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const r: any = new SR()
-    r.continuous = true
-    r.interimResults = true
-    r.lang = 'en-US'
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    r.onresult = (e: any) => {
-      let final = ''
-      let interim = ''
-      for (let i = 0; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript
-        if (e.results[i].isFinal) final += t + ' '
-        else interim += t
-      }
-      setTranscript(final + interim)
-    }
-    r.onend = () => setIsListening(false)
-    r.onerror = () => setIsListening(false)
-    recognitionRef.current = r
-    r.start()
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) { setSttSupported(false); return }
+
+    cancel() // Stop TTS — can't have both running simultaneously
+
+    shouldListenRef.current = true
+    totalFinalRef.current = ''   // fresh accumulator for this answer
+    setTranscript('')
+    setAnswer('')
+    answerRef.current = ''
     setIsListening(true)
+
+    function startNew() {
+      if (!shouldListenRef.current) return
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r: any = new SR()
+      r.continuous     = true
+      r.interimResults = true
+      r.lang           = 'en-US'
+      r.maxAlternatives = 1
+
+      let sessionFinals = '' // finals in THIS recognition session
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      r.onresult = (e: any) => {
+        sessionFinals = ''
+        let interim = ''
+        for (let i = 0; i < e.results.length; i++) {
+          if (e.results[i].isFinal) sessionFinals += e.results[i][0].transcript + ' '
+          else interim += e.results[i][0].transcript
+        }
+        const full = (totalFinalRef.current + sessionFinals + interim).trim()
+        setTranscript(full)
+        setAnswer(full)
+        answerRef.current = full
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      r.onerror = (e: any) => {
+        if (e.error === 'no-speech') return  // Chrome fires on silence — handled by onend restart
+        if (e.error === 'aborted')  return  // manual stop
+        // Real error — stop trying
+        shouldListenRef.current = false
+        setIsListening(false)
+      }
+
+      r.onend = () => {
+        // Commit this session's finals to the global accumulator
+        totalFinalRef.current += sessionFinals
+        sessionFinals = ''
+
+        if (shouldListenRef.current) {
+          // Chrome stopped after silence — restart automatically
+          setTimeout(startNew, 250)
+        } else {
+          setIsListening(false)
+        }
+      }
+
+      recognitionRef.current = r
+      try { r.start() } catch { /* already running */ }
+    }
+
+    startNew()
   }, [cancel])
 
   const stopListening = useCallback(() => {
-    recognitionRef.current?.stop()
+    shouldListenRef.current = false
+    try { recognitionRef.current?.stop() } catch {}
     setIsListening(false)
   }, [])
 
@@ -347,6 +413,8 @@ export default function AISimulator() {
       setCurrentIdx(0)
       setAnswer('')
       setTranscript('')
+      answerRef.current = ''
+      totalFinalRef.current = ''
       setPhase('countdown')
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
@@ -357,10 +425,12 @@ export default function AISimulator() {
   // ── Submit answer ──
   async function handleSubmit() {
     clearInterval(timerRef.current)
-    const finalAnswer = answer.trim() || transcript.trim()
+    // Use answerRef to avoid stale closure when called from timer
+    const finalAnswer = answerRef.current.trim() || answer.trim() || transcript.trim()
     const timeUsed = TIME_PER_Q - timeLeft
     stopListening()
     cancel()
+    answerRef.current = ''
 
     setSession((prev) => {
       const updated = [...prev]
@@ -409,6 +479,8 @@ export default function AISimulator() {
       setCurrentIdx(next)
       setAnswer('')
       setTranscript('')
+      answerRef.current = ''
+      totalFinalRef.current = ''
       setIsListening(false)
       setPhase('question')
     }
@@ -425,6 +497,8 @@ export default function AISimulator() {
       setCurrentIdx(next)
       setAnswer('')
       setTranscript('')
+      answerRef.current = ''
+      totalFinalRef.current = ''
       setIsListening(false)
       setPhase('question')
     }
@@ -661,11 +735,32 @@ export default function AISimulator() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-5">
           {sttEnabled ? (
             <div className="flex flex-col gap-4">
-              {/* Mic button */}
+
+              {/* STT not supported warning */}
+              {!sttSupported && (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 text-xs text-yellow-400">
+                  Voice input is not supported in your browser. Please use Chrome or Edge, or type your answer below.
+                </div>
+              )}
+
+              {/* Status + mic button */}
               <div className="flex flex-col items-center gap-3">
+                {/* Status label */}
+                <p className="text-xs text-zinc-500 font-semibold">
+                  {speaking
+                    ? '🔊 AI reading question — mic opens after…'
+                    : isListening
+                    ? '🎤 Listening — speak your answer'
+                    : answer
+                    ? '✅ Answer captured — review below'
+                    : 'Tap mic to speak, or type below'}
+                </p>
+
+                {/* Mic button — disabled while TTS is speaking */}
                 <button
                   onClick={toggleMic}
-                  className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+                  disabled={speaking}
+                  className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                     isListening
                       ? 'bg-red-500 shadow-xl shadow-red-500/40'
                       : 'bg-zinc-800 border-2 border-zinc-600 hover:border-zinc-400'
@@ -680,26 +775,36 @@ export default function AISimulator() {
                     <span className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping opacity-60" />
                   )}
                 </button>
+
                 <MicWaveform active={isListening} />
-                <p className="text-xs text-zinc-500">
-                  {isListening ? 'Listening… tap to stop' : 'Tap mic to speak your answer'}
-                </p>
               </div>
 
-              {/* Live transcript */}
+              {/* Live transcript / captured answer */}
               {(transcript || answer) && (
-                <div className="bg-zinc-800 rounded-xl p-4">
-                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Your Answer</p>
+                <div className={`rounded-xl p-4 border ${isListening ? 'bg-red-500/5 border-red-500/20' : 'bg-zinc-800 border-zinc-700'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">
+                      {isListening ? 'Live Transcript' : 'Your Answer'}
+                    </p>
+                    {!isListening && answer && (
+                      <button
+                        onClick={() => { setAnswer(''); setTranscript(''); answerRef.current = ''; totalFinalRef.current = '' }}
+                        className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">{transcript || answer}</p>
                 </div>
               )}
 
-              {/* Also allow typing */}
-              {!isListening && (
+              {/* Typing fallback — shown when not listening */}
+              {!isListening && !answer && (
                 <textarea
                   ref={textareaRef}
                   value={answer}
-                  onChange={(e) => { setAnswer(e.target.value); setTranscript('') }}
+                  onChange={(e) => { setAnswer(e.target.value); answerRef.current = e.target.value }}
                   placeholder="Or type your answer here…"
                   rows={3}
                   className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-none"
@@ -710,7 +815,7 @@ export default function AISimulator() {
             <textarea
               ref={textareaRef}
               value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
+              onChange={(e) => { setAnswer(e.target.value); answerRef.current = e.target.value }}
               placeholder="Type your answer here…"
               rows={8}
               className="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none resize-none"
