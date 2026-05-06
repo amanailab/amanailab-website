@@ -54,6 +54,7 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
   },
   alternates: { canonical: "https://amanailab.com" },
+  verification: { google: "googleb0b3cb9c8ec37740" },
 };
 
 const jsonLd = {
