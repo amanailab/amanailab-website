@@ -31,6 +31,16 @@ const navItems: NavItem[] = [
       { href: "/interview", label: "AI Simulator", description: "Mock interview practice" },
     ],
   },
+  {
+    kind: "dropdown",
+    label: "Career",
+    items: [
+      { href: "/career", label: "Career Roadmap", description: "Personalized AI/ML learning path" },
+      { href: "/career", label: "Study Plan", description: "Day-by-day interview prep schedule" },
+      { href: "/career", label: "Offer Analyzer", description: "Analyze offers + negotiation scripts" },
+      { href: "/career", label: "Company Research", description: "Interview intel on any company" },
+    ],
+  },
   { kind: "link", href: "/services", label: "Services" },
   { kind: "link", href: "/news", label: "News" },
   { kind: "link", href: "/blog", label: "Blog" },
