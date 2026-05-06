@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { GoogleAnalytics } from '@next/third-parties/google'
 import MicrosoftClarity from "@/components/analytics/MicrosoftClarity";
 import { headers } from 'next/headers'
+import Script from 'next/script'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -102,6 +103,19 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <Script
+          id="clarity-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "wmuvds88dj");
+            `,
+          }}
         />
       </head>
       <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased" suppressHydrationWarning={true}>
