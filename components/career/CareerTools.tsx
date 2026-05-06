@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Map, CalendarDays, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp } from 'lucide-react'
-import { EmailGateInline, isCaptured } from '@/components/shared/EmailGateModal'
+import { Map, CalendarDays, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail } from 'lucide-react'
+import { isCaptured, saveEmail, markCaptured } from '@/lib/email-capture'
 
 type Tab = 'roadmap' | 'study-plan' | 'offer' | 'company'
 
@@ -294,6 +294,42 @@ function ErrorState({ msg }: { msg: string }) {
   )
 }
 
+// ─── Email Form Field ─────────────────────────────────────────────────────────
+// Shown inside the form when email not yet captured. Hidden when already captured.
+function EmailFormField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  if (isCaptured()) return null
+  return (
+    <div className="flex flex-col gap-1.5 md:col-span-2">
+      <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide flex items-center gap-1.5">
+        <Mail className="w-3.5 h-3.5 text-orange-400" />
+        Your Email <span className="text-orange-400">*</span>
+        <span className="normal-case font-normal text-zinc-500 ml-1">— get your result + AI career tips</span>
+      </label>
+      <input
+        type="email"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="your@email.com"
+        className="w-full bg-zinc-800 border border-orange-500/30 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+      />
+      <p className="text-xs text-zinc-600">No spam. Unsubscribe anytime.</p>
+    </div>
+  )
+}
+
+// Saves email if not already captured. Returns true if ok to proceed.
+async function ensureEmail(email: string): Promise<string | null> {
+  if (isCaptured()) return null // already captured, no error
+  if (!email.trim()) return 'Please enter your email to generate your result.'
+  try {
+    await saveEmail(email.trim(), 'career_tools')
+    markCaptured()
+    return null
+  } catch (e: unknown) {
+    return e instanceof Error ? e.message : 'Invalid email. Please try again.'
+  }
+}
+
 // ════════════════════════════════════════════════════════════════
 // TAB 1 — CAREER ROADMAP
 // ════════════════════════════════════════════════════════════════
@@ -312,15 +348,15 @@ function RoadmapTab() {
   const [currentSkills, setCurrentSkills] = useState('')
   const [currentLevel, setCurrentLevel] = useState('Beginner')
   const [timePerWeek, setTimePerWeek] = useState('10')
+  const [email, setEmail] = useState('')
   const [result, setResult] = useState<RoadmapResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [unlocked, setUnlocked] = useState(false)
-
-  const canSee = unlocked || isCaptured()
 
   async function generate() {
     if (!targetRole.trim()) { setError('Please enter your target role.'); return }
+    const emailErr = await ensureEmail(email)
+    if (emailErr) { setError(emailErr); return }
     setError(''); setLoading(true); setResult(null)
     try {
       const res = await fetch('/api/career/roadmap', {
@@ -365,6 +401,7 @@ function RoadmapTab() {
               placeholder="e.g. Python, basic ML, some PyTorch..."
               className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-none" />
           </div>
+          <EmailFormField value={email} onChange={setEmail} />
         </div>
         {error && <ErrorState msg={error} />}
         <button onClick={generate} disabled={loading}
@@ -394,12 +431,7 @@ function RoadmapTab() {
             <p className="text-sm text-zinc-300 leading-relaxed">{result.overview}</p>
           </div>
 
-          {!canSee ? (
-            <EmailGateInline onSuccess={() => setUnlocked(true)} source="resume_analyzer"
-              title="Unlock Your Full Roadmap" subtitle="Enter your email to see all phases, resources, milestones and projects."
-              benefit="Unlock all phases + milestones" emoji="🗺️" />
-          ) : (
-            <>
+          <>
               {/* Phases */}
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Learning Phases</p>
@@ -477,7 +509,6 @@ function RoadmapTab() {
                 </ul>
               </Section>
             </>
-          )}
         </>
       )}
     </div>
@@ -501,16 +532,16 @@ function StudyPlanTab() {
   const [currentLevel, setCurrentLevel] = useState('Mid')
   const [weakTopics, setWeakTopics] = useState('')
   const [hoursPerDay, setHoursPerDay] = useState('2')
+  const [email, setEmail] = useState('')
   const [result, setResult] = useState<StudyPlanResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [openWeek, setOpenWeek] = useState(0)
-  const [unlocked, setUnlocked] = useState(false)
-
-  const canSee = unlocked || isCaptured()
 
   async function generate() {
     if (!targetRole.trim() || !interviewDate) { setError('Target role and interview date are required.'); return }
+    const emailErr = await ensureEmail(email)
+    if (emailErr) { setError(emailErr); return }
     setError(''); setLoading(true); setResult(null)
     try {
       const res = await fetch('/api/career/study-plan', {
@@ -562,6 +593,7 @@ function StudyPlanTab() {
             <input value={weakTopics} onChange={e => setWeakTopics(e.target.value)} placeholder="e.g. transformers, system design, probability"
               className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors" />
           </div>
+          <EmailFormField value={email} onChange={setEmail} />
         </div>
         {error && <ErrorState msg={error} />}
         <button onClick={generate} disabled={loading}
@@ -582,12 +614,7 @@ function StudyPlanTab() {
             </div>
           </div>
 
-          {!canSee ? (
-            <EmailGateInline onSuccess={() => setUnlocked(true)} source="resume_analyzer"
-              title="Unlock Your Full Study Plan" subtitle="Enter your email to see your complete day-by-day schedule."
-              benefit="Unlock full schedule + daily routine" emoji="📅" />
-          ) : (
-            <>
+          <>
               {/* Priority Topics */}
               <Section title="Priority Topics">
                 <div className="flex flex-wrap gap-2">
@@ -646,7 +673,6 @@ function StudyPlanTab() {
                 </Section>
               </div>
             </>
-          )}
         </>
       )}
     </div>
@@ -670,15 +696,15 @@ function OfferTab() {
   const [targetRole, setTargetRole] = useState('')
   const [location, setLocation] = useState('')
   const [yearsOfExperience, setYearsOfExperience] = useState('')
+  const [email, setEmail] = useState('')
   const [result, setResult] = useState<OfferResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [unlocked, setUnlocked] = useState(false)
-
-  const canSee = unlocked || isCaptured()
 
   async function analyze() {
     if (!offerText.trim()) { setError('Please paste your offer letter.'); return }
+    const emailErr = await ensureEmail(email)
+    if (emailErr) { setError(emailErr); return }
     setError(''); setLoading(true); setResult(null)
     try {
       const res = await fetch('/api/career/offer-analyze', {
@@ -728,6 +754,9 @@ function OfferTab() {
             placeholder="Paste your offer letter, compensation details, or key terms here..."
             className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-none" />
         </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <EmailFormField value={email} onChange={setEmail} />
+        </div>
         {error && <ErrorState msg={error} />}
         <button onClick={analyze} disabled={loading}
           className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-orange-500/50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
@@ -758,12 +787,7 @@ function OfferTab() {
             <p className="text-sm text-zinc-300">{result.recommendationReason}</p>
           </div>
 
-          {!canSee ? (
-            <EmailGateInline onSuccess={() => setUnlocked(true)} source="cover_letter_reviewer"
-              title="Unlock Full Offer Analysis" subtitle="Enter your email to see compensation breakdown, red flags, negotiation script and more."
-              benefit="Unlock negotiation script + full breakdown" emoji="📄" />
-          ) : (
-            <>
+          <>
               {/* Compensation */}
               <Section title="Compensation Breakdown">
                 <div className="grid grid-cols-2 gap-3 mb-3">
@@ -825,7 +849,6 @@ function OfferTab() {
                 </ul>
               </Section>
             </>
-          )}
         </>
       )}
     </div>
@@ -849,15 +872,15 @@ interface CompanyResult {
 function CompanyTab() {
   const [companyName, setCompanyName] = useState('')
   const [targetRole, setTargetRole] = useState('')
+  const [email, setEmail] = useState('')
   const [result, setResult] = useState<CompanyResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [unlocked, setUnlocked] = useState(false)
-
-  const canSee = unlocked || isCaptured()
 
   async function research() {
     if (!companyName.trim()) { setError('Please enter a company name.'); return }
+    const emailErr = await ensureEmail(email)
+    if (emailErr) { setError(emailErr); return }
     setError(''); setLoading(true); setResult(null)
     try {
       const res = await fetch('/api/career/company-research', {
@@ -886,6 +909,7 @@ function CompanyTab() {
             <input value={targetRole} onChange={e => setTargetRole(e.target.value)} placeholder="e.g. ML Engineer"
               className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors" />
           </div>
+          <EmailFormField value={email} onChange={setEmail} />
         </div>
         {error && <ErrorState msg={error} />}
         <button onClick={research} disabled={loading}
@@ -916,12 +940,7 @@ function CompanyTab() {
             </div>
           </Section>
 
-          {!canSee ? (
-            <EmailGateInline onSuccess={() => setUnlocked(true)} source="linkedin_optimizer"
-              title="Unlock Full Company Intel" subtitle="Enter your email to see the interview process, insider tips, common questions and more."
-              benefit="Unlock interview process + insider tips" emoji="🏢" />
-          ) : (
-            <>
+          <>
               {/* Interview Process */}
               <Section title="Interview Process">
                 <div className="flex flex-col gap-3">
@@ -982,7 +1001,6 @@ function CompanyTab() {
 
               <p className="text-xs text-zinc-600 italic">{result.disclaimer}</p>
             </>
-          )}
         </>
       )}
     </div>

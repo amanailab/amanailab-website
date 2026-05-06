@@ -7,7 +7,8 @@ export type EmailSource =
   | "linkedin_optimizer"
   | "cover_letter_reviewer"
   | "skill_quiz"
-  | "prompt_generator";
+  | "prompt_generator"
+  | "career_tools";
 
 export const EMAIL_CAPTURED_KEY = "email_captured";
 
