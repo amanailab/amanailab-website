@@ -4,129 +4,174 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, Search } from "lucide-react";
+import {
+  Menu, X, ChevronDown, Search,
+  BookOpen, Newspaper, FileText, GraduationCap,
+  BarChart2, Mail, Wand2,
+  BrainCircuit, Map, CalendarDays, Building2,
+} from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
 
-type NavItem =
-  | { kind: "link"; href: string; label: string }
-  | { kind: "dropdown"; label: string; items: { href: string; label: string; description?: string }[] };
+// ─── Nav structure ────────────────────────────────────────────────────────────
+
+interface DropdownItem {
+  href: string
+  label: string
+  description: string
+  icon: React.ReactNode
+}
+
+interface NavDropdown {
+  kind: "dropdown"
+  label: string
+  items: DropdownItem[]
+  columns?: 1 | 2
+}
+
+interface NavLink {
+  kind: "link"
+  href: string
+  label: string
+}
+
+type NavItem = NavLink | NavDropdown
 
 const navItems: NavItem[] = [
-  { kind: "link", href: "/", label: "Home" },
-  { kind: "link", href: "/series", label: "Series" },
-  { kind: "link", href: "/resources", label: "Resources" },
-  { kind: "link", href: "/interview", label: "Interview" },
-  { kind: "link", href: "/courses", label: "Courses" },
+  {
+    kind: "dropdown",
+    label: "Learn",
+    columns: 1,
+    items: [
+      { href: "/series",    label: "Series",      description: "Structured AI/ML YouTube series",      icon: <YoutubeIcon className="w-4 h-4" /> },
+      { href: "/news",      label: "AI News",     description: "Daily curated AI & ML news",           icon: <Newspaper className="w-4 h-4" /> },
+      { href: "/resources", label: "Resources",   description: "Free cheat sheets & PDFs",             icon: <BookOpen className="w-4 h-4" /> },
+      { href: "/courses",   label: "Courses",     description: "Structured courses — join waitlist",   icon: <GraduationCap className="w-4 h-4" /> },
+    ],
+  },
   {
     kind: "dropdown",
     label: "Tools",
+    columns: 2,
     items: [
-      { href: "/resume", label: "Resume Analyzer", description: "AI-powered ATS feedback" },
-      { href: "/prompt", label: "Prompt Generator", description: "Perfect prompts for any AI task" },
-      { href: "/linkedin", label: "LinkedIn Post Generator", description: "Viral posts for AI/ML devs" },
-      { href: "/linkedin-optimizer", label: "LinkedIn Optimizer", description: "Rewrite your profile for recruiters" },
-      { href: "/cover-letter-review", label: "Cover Letter Reviewer", description: "AI scores & rewrites your cover letter" },
-      { href: "/quiz", label: "Skill Assessment Quiz", description: "MCQ quiz on AI/ML topics" },
-      { href: "/interview", label: "AI Simulator", description: "Mock interview practice" },
+      { href: "/resume",             label: "Resume Analyzer",      description: "ATS score & improvements",          icon: <FileText className="w-4 h-4" /> },
+      { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   description: "AI-rewritten profile",              icon: <BarChart2 className="w-4 h-4" /> },
+      { href: "/cover-letter-review",label: "Cover Letter Review",  description: "Score & rewrite your cover letter", icon: <Mail className="w-4 h-4" /> },
+      { href: "/linkedin",           label: "LinkedIn Posts",       description: "Viral post generator",              icon: <BarChart2 className="w-4 h-4" /> },
+      { href: "/prompt",             label: "Prompt Generator",     description: "Perfect prompts for any AI",        icon: <Wand2 className="w-4 h-4" /> },
+      { href: "/quiz",               label: "Skill Quiz",           description: "MCQ assessment on AI/ML",           icon: <BrainCircuit className="w-4 h-4" /> },
     ],
   },
+  { kind: "link", href: "/interview", label: "Interview" },
   {
     kind: "dropdown",
     label: "Career",
+    columns: 1,
     items: [
-      { href: "/career", label: "Career Roadmap", description: "Personalized AI/ML learning path" },
-      { href: "/career", label: "Study Plan", description: "Day-by-day interview prep schedule" },
-      { href: "/career", label: "Offer Analyzer", description: "Analyze offers + negotiation scripts" },
-      { href: "/career", label: "Company Research", description: "Interview intel on any company" },
+      { href: "/career", label: "Career Roadmap",   description: "Week-by-week AI/ML learning path", icon: <Map className="w-4 h-4" /> },
+      { href: "/career", label: "Study Plan",        description: "Day-by-day interview prep",        icon: <CalendarDays className="w-4 h-4" /> },
+      { href: "/career", label: "Offer Analyzer",    description: "Salary & negotiation insights",    icon: <FileText className="w-4 h-4" /> },
+      { href: "/career", label: "Company Research",  description: "Interview intel on any company",   icon: <Building2 className="w-4 h-4" /> },
     ],
   },
-  { kind: "link", href: "/services", label: "Services" },
-  { kind: "link", href: "/news", label: "News" },
   { kind: "link", href: "/blog", label: "Blog" },
-  { kind: "link", href: "/about", label: "About" },
-  { kind: "link", href: "/contact", label: "Contact" },
 ];
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function isActive(pathname: string, items: { href: string }[]) {
+  return items.some((i) => i.href === pathname);
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [mobileDropdownOpen, setMobileDropdownOpen] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [scrolled, setScrolled]             = useState(false);
+  const [mobileOpen, setMobileOpen]         = useState(false);
+  const [openDropdown, setOpenDropdown]     = useState<string | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
+  const navRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 16);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+    const handler = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
         setOpenDropdown(null);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const isDropdownActive = (items: { href: string }[]) =>
-    items.some((i) => i.href === pathname);
+  // Close mobile menu on route change
+  useEffect(() => { setMobileOpen(false); setMobileExpanded(null); }, [pathname]);
 
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/80"
+          ? "bg-zinc-950/95 backdrop-blur-md shadow-lg shadow-black/20 border-b border-zinc-800/60"
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" ref={navRef}>
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <Image
-              src="/logo.jpg"
-              alt="AmanAI Lab"
-              width={40}
-              height={40}
-              className="rounded-xl object-cover ring-1 ring-zinc-700"
-              priority
-            />
-            <span className="font-bold text-[15px] tracking-tight">
-              Aman<span className="text-orange-500">AI</span> Lab
+
+          {/* ── Logo ── */}
+          <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+            <div className="relative">
+              <Image
+                src="/logo.jpg"
+                alt="AmanAI Lab"
+                width={36}
+                height={36}
+                className="rounded-xl object-cover ring-1 ring-zinc-700 group-hover:ring-orange-500/50 transition-all duration-200"
+                priority
+              />
+            </div>
+            <span className="font-bold text-[15px] tracking-tight text-zinc-100 group-hover:text-white transition-colors">
+              Aman<span className="text-orange-500">AI</span>
+              <span className="text-zinc-400 font-normal"> Lab</span>
             </span>
           </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-1" ref={dropdownRef}>
+          {/* ── Desktop Nav ── */}
+          <div className="hidden lg:flex items-center gap-0.5">
             {navItems.map((item) => {
               if (item.kind === "link") {
+                const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`relative px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      pathname === item.href
-                        ? "text-orange-400"
-                        : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                    className={`relative px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
+                      active
+                        ? "text-orange-400 bg-orange-500/8"
+                        : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
                     }`}
                   >
                     {item.label}
-                    {pathname === item.href && (
+                    {active && (
                       <motion.span
-                        layoutId="nav-indicator"
-                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full"
+                        layoutId="nav-dot"
+                        className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full"
                       />
                     )}
                   </Link>
                 );
               }
 
-              const isOpen = openDropdown === item.label;
-              const active = isDropdownActive(item.items);
+              // Dropdown
+              const isOpen  = openDropdown === item.label;
+              const active  = isActive(pathname, item.items);
+              const cols    = item.columns ?? 1;
+
               return (
                 <div
                   key={item.label}
@@ -137,23 +182,20 @@ export default function Navbar() {
                   <button
                     onClick={() => setOpenDropdown(isOpen ? null : item.label)}
                     aria-expanded={isOpen}
-                    aria-haspopup="true"
-                    className={`relative flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    className={`relative flex items-center gap-1 px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
                       active
-                        ? "text-orange-400"
-                        : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                        ? "text-orange-400 bg-orange-500/8"
+                        : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
                     }`}
                   >
                     {item.label}
                     <ChevronDown
-                      className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                     />
                     {active && (
                       <motion.span
-                        layoutId="nav-indicator"
-                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full"
+                        layoutId="nav-dot"
+                        className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-orange-500 rounded-full"
                       />
                     )}
                   </button>
@@ -161,30 +203,43 @@ export default function Navbar() {
                   <AnimatePresence>
                     {isOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute top-full left-1/2 -translate-x-1/2 pt-2 min-w-[260px]"
+                        initial={{ opacity: 0, y: -8, scale: 0.97 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                        transition={{ duration: 0.15, ease: "easeOut" }}
+                        className="absolute top-full left-1/2 -translate-x-1/2 pt-2"
+                        style={{ minWidth: cols === 2 ? 440 : 260 }}
                       >
-                        <div className="bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl shadow-black/50 overflow-hidden p-1.5">
-                          {item.items.map((sub) => (
-                            <Link
-                              key={sub.href}
-                              href={sub.href}
-                              onClick={() => setOpenDropdown(null)}
-                              className={`flex flex-col gap-0.5 px-3 py-2.5 rounded-lg transition-colors ${
-                                pathname === sub.href
-                                  ? "bg-orange-500/10 text-orange-400"
-                                  : "text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100"
-                              }`}
-                            >
-                              <span className="text-sm font-semibold">{sub.label}</span>
-                              {sub.description && (
-                                <span className="text-xs text-zinc-500">{sub.description}</span>
-                              )}
-                            </Link>
-                          ))}
+                        <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
+                          {/* Dropdown header accent */}
+                          <div className="h-0.5 w-full bg-gradient-to-r from-orange-500/0 via-orange-500 to-orange-500/0" />
+                          <div className={`p-2 ${cols === 2 ? "grid grid-cols-2 gap-0.5" : "flex flex-col gap-0.5"}`}>
+                            {item.items.map((sub) => {
+                              const subActive = pathname === sub.href;
+                              return (
+                                <Link
+                                  key={`${sub.href}-${sub.label}`}
+                                  href={sub.href}
+                                  onClick={() => setOpenDropdown(null)}
+                                  className={`flex items-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+                                    subActive
+                                      ? "bg-orange-500/10 text-orange-400"
+                                      : "text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100"
+                                  }`}
+                                >
+                                  <div className={`mt-0.5 shrink-0 transition-colors ${subActive ? "text-orange-400" : "text-zinc-500 group-hover:text-orange-400"}`}>
+                                    {sub.icon}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold leading-tight">{sub.label}</p>
+                                    <p className="text-xs text-zinc-500 mt-0.5 leading-tight group-hover:text-zinc-400 transition-colors">
+                                      {sub.description}
+                                    </p>
+                                  </div>
+                                </Link>
+                              );
+                            })}
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -194,28 +249,36 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* CTA + Mobile Toggle */}
-          <div className="flex items-center gap-3">
+          {/* ── Right side actions ── */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
             <Link
               href="/search"
               aria-label="Search"
-              className="hidden md:flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/70 rounded-lg transition-colors"
+              className="hidden lg:flex items-center justify-center w-8 h-8 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/70 rounded-lg transition-all"
             >
               <Search className="w-4 h-4" />
             </Link>
+
+            {/* Divider */}
+            <div className="hidden lg:block w-px h-5 bg-zinc-800" />
+
+            {/* YouTube Subscribe */}
             <a
               href="https://youtube.com/@AmanAI_lab"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden md:flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-all hover:shadow-lg hover:shadow-orange-500/25"
+              className="hidden lg:flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-3.5 py-2 rounded-lg transition-all hover:shadow-lg hover:shadow-orange-500/25 whitespace-nowrap"
             >
               <YoutubeIcon className="w-4 h-4" />
               Subscribe
             </a>
+
+            {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
-              className="md:hidden p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              className="lg:hidden flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -223,28 +286,29 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* ── Mobile Menu ── */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden overflow-hidden bg-zinc-950 border-b border-zinc-800"
+            transition={{ duration: 0.22 }}
+            className="lg:hidden overflow-hidden bg-zinc-950 border-b border-zinc-800"
           >
-            <div className="px-4 py-5 flex flex-col gap-1">
+            <div className="px-4 pt-3 pb-5 flex flex-col gap-1 max-h-[80vh] overflow-y-auto">
+
               {navItems.map((item) => {
                 if (item.kind === "link") {
+                  const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                        pathname === item.href
+                      className={`px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${
+                        active
                           ? "text-orange-400 bg-orange-500/10"
-                          : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                          : "text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60"
                       }`}
                     >
                       {item.label}
@@ -252,29 +316,27 @@ export default function Navbar() {
                   );
                 }
 
-                const open = mobileDropdownOpen === item.label;
-                const active = isDropdownActive(item.items);
+                const isExp = mobileExpanded === item.label;
+                const active = isActive(pathname, item.items);
+
                 return (
-                  <div key={item.label} className="flex flex-col">
+                  <div key={item.label}>
                     <button
-                      onClick={() => setMobileDropdownOpen(open ? null : item.label)}
-                      aria-expanded={open}
-                      className={`flex items-center justify-between px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                      onClick={() => setMobileExpanded(isExp ? null : item.label)}
+                      className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${
                         active
                           ? "text-orange-400 bg-orange-500/10"
-                          : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                          : "text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60"
                       }`}
                     >
                       <span>{item.label}</span>
                       <ChevronDown
-                        className={`w-4 h-4 transition-transform duration-200 ${
-                          open ? "rotate-180" : ""
-                        }`}
+                        className={`w-4 h-4 transition-transform duration-200 ${isExp ? "rotate-180" : ""}`}
                       />
                     </button>
 
                     <AnimatePresence>
-                      {open && (
+                      {isExp && (
                         <motion.div
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: "auto" }}
@@ -282,25 +344,22 @@ export default function Navbar() {
                           transition={{ duration: 0.18 }}
                           className="overflow-hidden"
                         >
-                          <div className="pl-4 pt-1 pb-1 flex flex-col gap-1">
+                          <div className="ml-3 mt-1 mb-1 border-l border-zinc-800 pl-3 flex flex-col gap-0.5">
                             {item.items.map((sub) => (
                               <Link
-                                key={sub.href}
+                                key={`${sub.href}-${sub.label}`}
                                 href={sub.href}
-                                onClick={() => {
-                                  setMobileOpen(false);
-                                  setMobileDropdownOpen(null);
-                                }}
-                                className={`flex flex-col gap-0.5 px-4 py-2.5 rounded-lg transition-colors ${
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors group ${
                                   pathname === sub.href
                                     ? "text-orange-400 bg-orange-500/10"
-                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                                    : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
                                 }`}
                               >
-                                <span className="text-sm font-medium">{sub.label}</span>
-                                {sub.description && (
-                                  <span className="text-xs text-zinc-500">{sub.description}</span>
-                                )}
+                                <span className="text-zinc-500 group-hover:text-orange-400 transition-colors shrink-0">{sub.icon}</span>
+                                <div>
+                                  <p className="text-sm font-medium">{sub.label}</p>
+                                  <p className="text-xs text-zinc-600">{sub.description}</p>
+                                </div>
                               </Link>
                             ))}
                           </div>
@@ -310,17 +369,30 @@ export default function Navbar() {
                   </div>
                 );
               })}
-              <div className="pt-2 mt-1 border-t border-zinc-800">
-                <a
-                  href="https://youtube.com/@AmanAI_lab"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-3 rounded-lg transition-colors w-full justify-center mt-2"
-                >
-                  <YoutubeIcon className="w-4 h-4" />
-                  Subscribe on YouTube
-                </a>
+
+              {/* Mobile secondary links */}
+              <div className="flex gap-2 flex-wrap pt-2 border-t border-zinc-800 mt-1">
+                {[
+                  { href: '/about', label: 'About' },
+                  { href: '/services', label: 'Services' },
+                  { href: '/contact', label: 'Contact' },
+                  { href: '/search', label: 'Search' },
+                ].map(l => (
+                  <Link key={l.href} href={l.href}
+                    className="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-lg hover:bg-zinc-800/50 transition-colors"
+                  >{l.label}</Link>
+                ))}
               </div>
+
+              <a
+                href="https://youtube.com/@AmanAI_lab"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors mt-1"
+              >
+                <YoutubeIcon className="w-4 h-4" />
+                Subscribe on YouTube
+              </a>
             </div>
           </motion.div>
         )}
