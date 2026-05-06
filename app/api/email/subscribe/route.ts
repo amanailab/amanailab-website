@@ -109,7 +109,7 @@ export async function POST(req: Request) {
 
     // ── Send verification email ──
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
-    const verifyUrl = `${baseUrl}/verify-email?token=${token}`
+    const verifyUrl = `${baseUrl}/api/email/confirm?token=${token}`
 
     await resend.emails.send({
       from: 'AmanAI Lab <onboarding@resend.dev>',
