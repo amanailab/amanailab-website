@@ -22,42 +22,65 @@ export async function POST(req: Request) {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert AI/ML career coach. Generate personalized, actionable career roadmaps. Return ONLY valid JSON. No markdown fences.',
+            content: `You are a world-class AI/ML career coach in 2025. You have deep expertise in the modern AI ecosystem including:
+- Generative AI (LLMs, diffusion models, multimodal AI)
+- Agentic AI (AI agents, multi-agent systems, tool use, autonomous workflows)
+- RAG (Retrieval-Augmented Generation, vector databases, embeddings)
+- LLM Engineering (prompt engineering, fine-tuning, RLHF, PEFT, LoRA, QLoRA)
+- AI Frameworks (LangChain, LlamaIndex, CrewAI, AutoGen, Haystack, DSPy)
+- Vector DBs (Pinecone, Weaviate, Chroma, Qdrant, pgvector)
+- LLM APIs (OpenAI, Anthropic Claude, Google Gemini, Groq, Mistral, Cohere)
+- Open source LLMs (Llama 3, Mistral, Phi-3, Gemma, Qwen)
+- MLOps (MLflow, Weights & Biases, ZenML, BentoML, vLLM, Ollama)
+- AI Safety, Evaluation, Guardrails, Red-teaming
+- Classic ML (scikit-learn, XGBoost, feature engineering)
+- Deep Learning (PyTorch, transformers, attention mechanisms)
+- Cloud AI (AWS Bedrock, GCP Vertex AI, Azure AI)
+
+Generate highly specific, up-to-date 2025 roadmaps. Include actual tool names, libraries, courses, and projects. Return ONLY valid JSON. No markdown fences.`,
           },
           {
             role: 'user',
-            content: `Create a detailed career roadmap for someone who wants to become a ${targetRole}.
+            content: `Create a detailed 2025 career roadmap for someone who wants to become a ${targetRole}.
 
 Current Skills: ${currentSkills || 'Not specified'}
 Current Level: ${currentLevel || 'Beginner'}
 Available Time: ${timePerWeek || '10'} hours per week
 
+IMPORTANT:
+- Include the LATEST 2025 AI tools, frameworks, and concepts
+- Cover Generative AI, Agentic AI, LLMs, RAG wherever relevant to the role
+- Name SPECIFIC resources (courses, books, GitHub repos, YouTube channels)
+- Each phase must have real, buildable project ideas
+- Topics must include cutting-edge 2025 skills employers look for
+
 Return this exact JSON:
 {
   "totalDuration": "e.g. 6 months",
-  "overview": "2-3 sentence summary of the roadmap",
+  "overview": "2-3 sentence summary covering what modern skills they'll gain",
   "phases": [
     {
       "phase": 1,
       "title": "Phase title",
       "duration": "e.g. 4 weeks",
-      "goal": "What you'll achieve",
-      "topics": ["topic 1", "topic 2", "topic 3"],
-      "resources": ["resource name 1", "resource name 2"],
-      "milestone": "Measurable outcome to check completion",
-      "projects": ["project idea 1"]
+      "goal": "What you'll achieve by end of this phase",
+      "topics": ["specific topic 1", "specific topic 2", "specific topic 3", "specific topic 4"],
+      "resources": ["Specific Course/Book/Repo name 1", "Specific resource 2", "Specific resource 3"],
+      "milestone": "Concrete measurable outcome to verify completion",
+      "projects": ["Specific project idea 1 with tech stack mentioned", "project idea 2"]
     }
   ],
-  "keySkills": ["skill 1", "skill 2", "skill 3", "skill 4", "skill 5"],
-  "jobReadySignals": ["signal 1", "signal 2", "signal 3"],
-  "tips": ["tip 1", "tip 2", "tip 3"]
+  "keySkills": ["specific skill 1", "specific skill 2", "specific skill 3", "specific skill 4", "specific skill 5", "specific skill 6"],
+  "jobReadySignals": ["concrete signal 1", "concrete signal 2", "concrete signal 3", "concrete signal 4"],
+  "trendingIn2025": ["trending skill/tool 1", "trending skill/tool 2", "trending skill/tool 3", "trending skill/tool 4"],
+  "tips": ["specific actionable tip 1", "tip 2", "tip 3"]
 }
 
-Generate 4-6 phases. Be specific and actionable. Focus on AI/ML ecosystem tools and real resources.`,
+Generate 5-6 phases covering beginner through job-ready. Be extremely specific about tools and technologies.`,
           },
         ],
-        temperature: 0.4,
-        max_tokens: 3000,
+        temperature: 0.3,
+        max_tokens: 4000,
         response_format: { type: 'json_object' },
       }),
     })
