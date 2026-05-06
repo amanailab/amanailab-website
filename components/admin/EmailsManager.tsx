@@ -1,14 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Users, MessageSquare, Download, X } from 'lucide-react'
+import { Mail, Users, MessageSquare, Download, X, Send, CheckCircle2, AlertCircle } from 'lucide-react'
 import type {
   NewsletterRow,
   WaitlistRow,
   ContactRow,
 } from '@/app/admin/emails/page'
 
-type Tab = 'newsletter' | 'waitlist' | 'contacts'
+type Tab = 'newsletter' | 'waitlist' | 'contacts' | 'send'
 
 function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return ''
@@ -66,10 +66,9 @@ export default function EmailsManager({
 
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-zinc-800">
-        {(['newsletter', 'waitlist', 'contacts'] as Tab[]).map((t) => {
+        {(['newsletter', 'waitlist', 'contacts', 'send'] as Tab[]).map((t) => {
           const active = tab === t
-          const label =
-            t === 'newsletter' ? 'Newsletter' : t === 'waitlist' ? 'Waitlist' : 'Contacts'
+          const labels: Record<Tab, string> = { newsletter: 'Subscribers', waitlist: 'Waitlist', contacts: 'Contacts', send: '📨 Send Newsletter' }
           return (
             <button
               key={t}
@@ -80,7 +79,7 @@ export default function EmailsManager({
                   : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              {label}
+              {labels[t]}
             </button>
           )
         })}
@@ -108,6 +107,10 @@ export default function EmailsManager({
           onOpen={(row) => setOpenContact(row)}
           empty="No contact messages stored yet. (They are still emailed via Resend.)"
         />
+      )}
+
+      {tab === 'send' && (
+        <NewsletterComposer recipientCount={newsletter.length} />
       )}
 
       {/* Contact message modal */}
@@ -314,6 +317,112 @@ function ContactsTable({
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+function NewsletterComposer({ recipientCount }: { recipientCount: number }) {
+  const [subject, setSubject] = useState('')
+  const [body, setBody] = useState('')
+  const [previewText, setPreviewText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null)
+  const [error, setError] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
+
+  async function send() {
+    if (!subject.trim() || !body.trim()) { setError('Subject and body are required.'); return }
+    if (!confirmed) { setError('Please confirm you want to send to all subscribers.'); return }
+    setError('')
+    setSending(true)
+    setResult(null)
+    try {
+      const res = await fetch('/api/admin/newsletter/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, body, previewText }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to send.')
+      setResult(data)
+      setConfirmed(false)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex flex-col gap-5 max-w-2xl">
+      <div>
+        <h2 className="text-base font-bold text-zinc-100 mb-1">Compose Newsletter</h2>
+        <p className="text-xs text-zinc-500">Will be sent to <span className="text-zinc-200 font-semibold">{recipientCount} subscribers</span></p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Subject Line</label>
+        <input
+          type="text"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder="e.g. 🔥 This week in AI/ML — 5 things you missed"
+          className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Preview Text <span className="normal-case font-normal text-zinc-600">(shown in inbox preview)</span></label>
+        <input
+          type="text"
+          value={previewText}
+          onChange={(e) => setPreviewText(e.target.value)}
+          placeholder="Short teaser shown under subject line..."
+          className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Body <span className="normal-case font-normal text-zinc-600">(plain text — each line becomes a paragraph)</span></label>
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Write your newsletter content here..."
+          rows={12}
+          className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-none font-mono"
+        />
+      </div>
+
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)}
+          className="mt-0.5 w-4 h-4 rounded border border-zinc-600 bg-zinc-800 accent-orange-500"
+        />
+        <span className="text-sm text-zinc-400">I confirm I want to send this email to all <strong className="text-zinc-200">{recipientCount}</strong> newsletter subscribers.</span>
+      </label>
+
+      {error && (
+        <div className="flex items-start gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
+        </div>
+      )}
+
+      {result && (
+        <div className="flex items-start gap-2 text-green-400 text-sm bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
+          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+          Sent to {result.sent} of {result.total} subscribers.{result.failed > 0 ? ` (${result.failed} failed)` : ''}
+        </div>
+      )}
+
+      <button
+        onClick={send}
+        disabled={sending || !subject.trim() || !body.trim() || !confirmed}
+        className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-orange-500/40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all"
+      >
+        {sending
+          ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</>
+          : <><Send className="w-4 h-4" /> Send Newsletter</>
+        }
+      </button>
     </div>
   )
 }

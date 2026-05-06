@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { BlogPost } from '@/lib/admin'
 import { Clock, ArrowLeft, Tag } from 'lucide-react'
 import EmailCaptureCard from '@/components/shared/EmailCaptureCard'
+import ReadingProgress from '@/components/blog/ReadingProgress'
 
 export const revalidate = 60
 
@@ -49,6 +50,8 @@ export default async function BlogPostPage({ params }: Props) {
   if (!post) notFound()
 
   return (
+    <>
+    <ReadingProgress />
     <article className="pt-24 pb-16 px-4 max-w-3xl mx-auto">
       <Link
         href="/blog"
@@ -122,5 +125,6 @@ export default async function BlogPostPage({ params }: Props) {
         />
       </div>
     </article>
+    </>
   )
 }

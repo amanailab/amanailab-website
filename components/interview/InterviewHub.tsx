@@ -5,9 +5,10 @@ import { createClient } from "@supabase/supabase-js";
 import {
   ChevronDown, ChevronUp, BrainCircuit,
   CheckCircle2, XCircle, SkipForward, RotateCcw, ArrowRight,
-  Search, X, Dice5,
+  Search, X, Dice5, MessageCircle,
 } from "lucide-react";
 import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
+import MockInterviewChat from "@/components/interview/MockInterviewChat";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -479,7 +480,7 @@ function SkeletonCard() {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function InterviewHub() {
-  const [activeTab, setActiveTab]     = useState<"bank" | "simulator">("bank");
+  const [activeTab, setActiveTab]     = useState<"bank" | "simulator" | "chat">("bank");
   const [questions, setQuestions]     = useState<Question[]>([]);
   const [totalCount, setTotalCount]   = useState(0);
   const [topicCounts, setTopicCounts] = useState<Record<string, number>>({});
@@ -630,6 +631,17 @@ export default function InterviewHub() {
             }`}
           >
             AI Simulator
+          </button>
+          <button
+            onClick={() => setActiveTab("chat")}
+            className={`flex items-center gap-1.5 px-5 py-3 text-sm font-semibold transition-colors ${
+              activeTab === "chat"
+                ? "text-orange-400 border-b-2 border-orange-500"
+                : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Chat Interview
           </button>
         </div>
 
@@ -830,6 +842,9 @@ export default function InterviewHub() {
 
         {/* AI Simulator tab */}
         {activeTab === "simulator" && <AISimulator />}
+
+        {/* Chat Interview tab */}
+        {activeTab === "chat" && <MockInterviewChat />}
       </div>
     </section>
   );

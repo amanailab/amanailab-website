@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Search } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
 
@@ -25,6 +25,9 @@ const navItems: NavItem[] = [
       { href: "/resume", label: "Resume Analyzer", description: "AI-powered ATS feedback" },
       { href: "/prompt", label: "Prompt Generator", description: "Perfect prompts for any AI task" },
       { href: "/linkedin", label: "LinkedIn Post Generator", description: "Viral posts for AI/ML devs" },
+      { href: "/linkedin-optimizer", label: "LinkedIn Optimizer", description: "Rewrite your profile for recruiters" },
+      { href: "/cover-letter-review", label: "Cover Letter Reviewer", description: "AI scores & rewrites your cover letter" },
+      { href: "/quiz", label: "Skill Assessment Quiz", description: "MCQ quiz on AI/ML topics" },
       { href: "/interview", label: "AI Simulator", description: "Mock interview practice" },
     ],
   },
@@ -183,6 +186,13 @@ export default function Navbar() {
 
           {/* CTA + Mobile Toggle */}
           <div className="flex items-center gap-3">
+            <Link
+              href="/search"
+              aria-label="Search"
+              className="hidden md:flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/70 rounded-lg transition-colors"
+            >
+              <Search className="w-4 h-4" />
+            </Link>
             <a
               href="https://youtube.com/@AmanAI_lab"
               target="_blank"
