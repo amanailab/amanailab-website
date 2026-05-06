@@ -112,7 +112,7 @@ export async function POST(req: Request) {
     const verifyUrl = `${baseUrl}/verify-email?token=${token}`
 
     await resend.emails.send({
-      from: 'AmanAI Lab <noreply@amanailab.com>',
+      from: 'AmanAI Lab <onboarding@resend.dev>',
       to: email,
       subject: 'Confirm your AmanAI Lab subscription',
       html: `<!DOCTYPE html>
