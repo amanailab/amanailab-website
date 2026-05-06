@@ -59,6 +59,7 @@ const navItems: NavItem[] = [
       { href: "/linkedin",           label: "LinkedIn Posts",       description: "Viral post generator",              icon: <BarChart2 className="w-4 h-4" /> },
       { href: "/prompt",             label: "Prompt Generator",     description: "Perfect prompts for any AI",        icon: <Wand2 className="w-4 h-4" /> },
       { href: "/quiz",               label: "Skill Quiz",           description: "MCQ assessment on AI/ML",           icon: <BrainCircuit className="w-4 h-4" /> },
+      { href: "/paper-explainer",    label: "Paper Explainer",      description: "Understand any AI research paper",   icon: <BookOpen className="w-4 h-4" /> },
     ],
   },
   { kind: "link", href: "/courses",   label: "Courses"   },
