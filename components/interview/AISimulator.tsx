@@ -6,6 +6,7 @@ import {
   CheckCircle2, XCircle, RotateCcw, Trophy, Clock,
   BrainCircuit, Lightbulb, ChevronRight, Sparkles,
 } from 'lucide-react'
+import EmailGateModal, { isCaptured } from '@/components/shared/EmailGateModal'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -199,6 +200,8 @@ export default function AISimulator() {
   const [isListening, setIsListening] = useState(false)
   const [timeLeft, setTimeLeft] = useState(TIME_PER_Q)
   const [error, setError] = useState('')
+  const [showEmailGate, setShowEmailGate] = useState(false)
+  const [emailUnlocked, setEmailUnlocked] = useState(false)
   const [feedbackTab, setFeedbackTab] = useState<'feedback' | 'model'>('feedback')
 
   const { speak, cancel, speaking } = useTTS()
@@ -341,8 +344,27 @@ export default function AISimulator() {
     setPhase('feedback')
   }
 
-  // ── Next question ──
+  // ── Next question ── (email gate after Q1 if not captured)
   function nextQuestion() {
+    const next = currentIdx + 1
+    if (currentIdx === 0 && !isCaptured() && !emailUnlocked) {
+      setShowEmailGate(true)
+      return
+    }
+    if (next >= questions.length) {
+      setPhase('summary')
+    } else {
+      setCurrentIdx(next)
+      setAnswer('')
+      setTranscript('')
+      setIsListening(false)
+      setPhase('question')
+    }
+  }
+
+  function handleEmailSuccess() {
+    setEmailUnlocked(true)
+    setShowEmailGate(false)
     const next = currentIdx + 1
     if (next >= questions.length) {
       setPhase('summary')
@@ -685,6 +707,16 @@ export default function AISimulator() {
     const skipped = !currentEntry?.answer
 
     return (
+      <>
+      <EmailGateModal
+        open={showEmailGate}
+        onSuccess={handleEmailSuccess}
+        source="interview_simulator"
+        title="Great job on Question 1! 🎉"
+        subtitle="Enter your email to unlock your full interview session. We'll also send you 50 curated AI/ML questions straight to your inbox — free."
+        benefit="Unlock remaining questions + 50 bonus Q&As"
+        emoji="🎯"
+      />
       <div className="max-w-2xl mx-auto py-6 px-4 flex flex-col gap-5">
         {/* Question recap */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
@@ -788,6 +820,7 @@ export default function AISimulator() {
           )}
         </button>
       </div>
+      </>
     )
   }
 

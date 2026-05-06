@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Sparkles, Copy, Check, TrendingUp, AlertCircle, CheckCircle2, Lightbulb } from 'lucide-react'
+import { EmailGateInline, isCaptured } from '@/components/shared/EmailGateModal'
 
 interface OptimizeResult {
   optimizedHeadline: string
@@ -50,6 +51,9 @@ export default function LinkedInOptimizer() {
   const [result, setResult] = useState<OptimizeResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [unlocked, setUnlocked] = useState(false)
+
+  const canSeeDetails = unlocked || isCaptured()
 
   async function handleOptimize() {
     if (!headline.trim() && !about.trim()) {
@@ -212,7 +216,19 @@ export default function LinkedInOptimizer() {
                   </span>
                 </div>
 
+                {!canSeeDetails && (
+                  <EmailGateInline
+                    onSuccess={() => setUnlocked(true)}
+                    source="linkedin_optimizer"
+                    title="Unlock Your Optimized Profile"
+                    subtitle="Enter your email to get your AI-rewritten headline, About section, keywords added, and tips."
+                    benefit="Unlock optimized headline + About section"
+                    emoji="💼"
+                  />
+                )}
+
                 {/* Optimized Headline */}
+                {canSeeDetails && (
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Optimized Headline</span>
@@ -220,7 +236,10 @@ export default function LinkedInOptimizer() {
                   </div>
                   <p className="text-sm text-zinc-100 font-medium">{result.optimizedHeadline}</p>
                 </div>
+                )}
 
+                {canSeeDetails && (
+                <>
                 {/* Optimized About */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-3">
@@ -276,6 +295,8 @@ export default function LinkedInOptimizer() {
                     ))}
                   </ul>
                 </div>
+                </>
+                )}
               </>
             )}
           </div>

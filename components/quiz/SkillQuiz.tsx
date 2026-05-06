@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Brain, CheckCircle2, XCircle, RotateCcw, Trophy, ChevronRight, Sparkles } from 'lucide-react'
+import { EmailGateInline, isCaptured } from '@/components/shared/EmailGateModal'
 
 const TOPICS = ['LLM', 'RAG', 'Agents', 'Fine-Tuning', 'MLOps', 'Transformers', 'System Design', 'Python', 'Vector DB']
 const LEVELS = ['Fresher', 'Mid', 'Senior']
@@ -278,12 +279,23 @@ export default function SkillQuiz() {
             })}
           </div>
 
-          <button
-            onClick={restart}
-            className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all"
-          >
-            <RotateCcw className="w-4 h-4" /> Take Another Quiz
-          </button>
+          {isCaptured() ? (
+            <button
+              onClick={restart}
+              className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all"
+            >
+              <RotateCcw className="w-4 h-4" /> Take Another Quiz
+            </button>
+          ) : (
+            <EmailGateInline
+              onSuccess={restart}
+              source="skill_quiz"
+              title="Want to keep practicing?"
+              subtitle="Enter your email to take unlimited AI/ML quizzes. We'll also send you weekly AI interview tips."
+              benefit="Unlock unlimited quizzes"
+              emoji="🧠"
+            />
+          )}
         </div>
       </section>
     )

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { EmailGateInline, isCaptured } from "@/components/shared/EmailGateModal";
 import {
   Sparkles,
   MessageCircle,
@@ -880,6 +881,20 @@ export default function PromptGenerator() {
                 )}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Email gate after first generation */}
+        {generated && !isCaptured() && (
+          <div className="mt-4">
+            <EmailGateInline
+              onSuccess={() => {}}
+              source="prompt_generator"
+              title="Unlock More Prompt Modes"
+              subtitle="Enter your email to keep generating — plus get our AI Prompt Engineering Cheat Sheet sent to your inbox free."
+              benefit="Unlock unlimited generations + free cheat sheet"
+              emoji="✨"
+            />
           </div>
         )}
 

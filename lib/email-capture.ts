@@ -5,7 +5,11 @@ export type EmailSource =
   | "interview_simulator"
   | "blog"
   | "news_page"
-  | "linkedin_generator";
+  | "linkedin_generator"
+  | "linkedin_optimizer"
+  | "cover_letter_reviewer"
+  | "skill_quiz"
+  | "prompt_generator";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const EMAIL_CAPTURED_KEY = "email_captured";

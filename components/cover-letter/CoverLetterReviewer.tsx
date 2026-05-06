@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { FileText, Sparkles, Copy, Check, CheckCircle2, XCircle, AlertCircle, Zap } from 'lucide-react'
+import { EmailGateInline, isCaptured } from '@/components/shared/EmailGateModal'
 
 interface ReviewResult {
   overallScore: number
@@ -49,6 +50,9 @@ export default function CoverLetterReviewer() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'feedback' | 'rewrite'>('feedback')
+  const [unlocked, setUnlocked] = useState(false)
+
+  const canSeeDetails = unlocked || isCaptured()
 
   async function handleReview() {
     if (!coverLetter.trim()) { setError('Please paste your cover letter.'); return }
@@ -184,13 +188,26 @@ export default function CoverLetterReviewer() {
                   <p className="text-sm text-zinc-400 mt-3">{result.summary}</p>
                 </div>
 
+                {!canSeeDetails && (
+                  <EmailGateInline
+                    onSuccess={() => setUnlocked(true)}
+                    source="cover_letter_reviewer"
+                    title="Unlock Your Full Review"
+                    subtitle="Enter your email to see quick fixes, detailed feedback, missing keywords, and the AI-rewritten version."
+                    benefit="Unlock feedback + AI rewrite"
+                    emoji="📄"
+                  />
+                )}
+
                 {/* Tabs */}
+                {canSeeDetails && (
                 <div className="flex border-b border-zinc-800 gap-4">
                   <button onClick={() => setTab('feedback')} className={`pb-2 text-sm font-semibold transition-colors ${tab === 'feedback' ? 'text-purple-400 border-b-2 border-purple-500' : 'text-zinc-500 hover:text-zinc-300'}`}>Feedback</button>
                   <button onClick={() => setTab('rewrite')} className={`pb-2 text-sm font-semibold transition-colors ${tab === 'rewrite' ? 'text-purple-400 border-b-2 border-purple-500' : 'text-zinc-500 hover:text-zinc-300'}`}>AI Rewrite</button>
                 </div>
+                )}
 
-                {tab === 'feedback' && (
+                {canSeeDetails && tab === 'feedback' && (
                   <>
                     {/* Quick Fixes */}
                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
@@ -244,7 +261,7 @@ export default function CoverLetterReviewer() {
                   </>
                 )}
 
-                {tab === 'rewrite' && (
+                {canSeeDetails && tab === 'rewrite' && (
                   <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">AI-Optimized Version</span>
