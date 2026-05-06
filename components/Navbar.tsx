@@ -9,7 +9,7 @@ import {
   BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
   BrainCircuit, Map, CalendarDays, Building2,
-  User, LogOut, LayoutDashboard,
+  User, LogOut, LayoutDashboard, Briefcase,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -62,6 +62,7 @@ const navItems: NavItem[] = [
       { href: "/prompt",             label: "Prompt Generator",     description: "Perfect prompts for any AI",        icon: <Wand2 className="w-4 h-4" /> },
       { href: "/quiz",               label: "Skill Quiz",           description: "MCQ assessment on AI/ML",           icon: <BrainCircuit className="w-4 h-4" /> },
       { href: "/paper-explainer",    label: "Paper Explainer",      description: "Understand any AI research paper",   icon: <BookOpen className="w-4 h-4" /> },
+      { href: "/job-prep",           label: "Job Prep",             description: "Paste a JD, get tailored questions",  icon: <Briefcase className="w-4 h-4" /> },
     ],
   },
   { kind: "link", href: "/courses",   label: "Courses"   },

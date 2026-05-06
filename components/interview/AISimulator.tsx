@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Mic, MicOff, Volume2, VolumeX, SkipForward, ArrowRight,
   CheckCircle2, XCircle, RotateCcw, Trophy, Clock,
-  BrainCircuit, Lightbulb, ChevronRight, Sparkles, Save, TrendingUp,
+  BrainCircuit, Lightbulb, ChevronRight, Sparkles, Save, TrendingUp, Share2,
 } from 'lucide-react'
 import EmailGateModal, { isCaptured } from '@/components/shared/EmailGateModal'
 import { createClient } from '@/lib/supabase/client'
@@ -34,15 +34,20 @@ type Phase = 'setup' | 'generating' | 'countdown' | 'question' | 'evaluating' | 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TOPICS = [
-  { label: 'LLM', value: 'LLM', color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  { label: 'RAG', value: 'RAG', color: 'bg-violet-500/20 text-violet-300 border-violet-500/30' },
-  { label: 'Agents', value: 'Agents', color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
-  { label: 'Fine-Tuning', value: 'Fine-Tuning', color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
-  { label: 'MLOps', value: 'MLOps', color: 'bg-green-500/20 text-green-300 border-green-500/30' },
-  { label: 'Transformers', value: 'Transformers', color: 'bg-teal-500/20 text-teal-300 border-teal-500/30' },
-  { label: 'System Design', value: 'System Design', color: 'bg-red-500/20 text-red-300 border-red-500/30' },
-  { label: 'Python', value: 'Python', color: 'bg-lime-500/20 text-lime-300 border-lime-500/30' },
-  { label: 'Vector DB', value: 'Vector DB', color: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
+  { label: 'LLM',            value: 'LLM',            color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+  { label: 'RAG',            value: 'RAG',            color: 'bg-violet-500/20 text-violet-300 border-violet-500/30' },
+  { label: 'Agents',         value: 'Agents',         color: 'bg-orange-500/20 text-orange-300 border-orange-500/30' },
+  { label: 'Fine-Tuning',    value: 'Fine-Tuning',    color: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' },
+  { label: 'MLOps',          value: 'MLOps',          color: 'bg-green-500/20 text-green-300 border-green-500/30' },
+  { label: 'Transformers',   value: 'Transformers',   color: 'bg-teal-500/20 text-teal-300 border-teal-500/30' },
+  { label: 'System Design',  value: 'System Design',  color: 'bg-red-500/20 text-red-300 border-red-500/30' },
+  { label: 'Python',         value: 'Python',         color: 'bg-lime-500/20 text-lime-300 border-lime-500/30' },
+  { label: 'Vector DB',      value: 'Vector DB',      color: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
+  { label: 'Computer Vision',value: 'Computer Vision',color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
+  { label: 'NLP',            value: 'NLP',            color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  { label: 'Statistics',     value: 'Statistics',     color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+  { label: 'SQL & Data',     value: 'SQL & Data',     color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+  { label: 'Behavioral',     value: 'Behavioral',     color: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
 ]
 
 const LEVELS = ['Fresher', 'Mid', 'Senior']
@@ -981,7 +986,23 @@ export default function AISimulator() {
           </div>
         )}
 
-        {/* Retry */}
+        {/* Share + Retry */}
+        {(() => {
+          const avg2 = avgScore(session)
+          const grade2 = avg2 >= 9 ? 'A+' : avg2 >= 8 ? 'A' : avg2 >= 7 ? 'B' : avg2 >= 6 ? 'C' : avg2 >= 4 ? 'D' : 'F'
+          const shareUrl = `/share?t=${encodeURIComponent(topic)}&s=${avg2.toFixed(1)}&g=${encodeURIComponent(grade2)}&l=${encodeURIComponent(level)}`
+          return (
+            <a
+              href={shareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-sm font-semibold px-4 py-3.5 rounded-xl transition-colors"
+            >
+              <Share2 className="w-4 h-4 text-blue-400" /> Share My Score on LinkedIn
+            </a>
+          )
+        })()}
+
         <div className="flex gap-3">
           <button
             onClick={reset}

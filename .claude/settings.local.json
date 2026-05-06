@@ -9,7 +9,32 @@
       "Bash(npm install *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(npx tsc *)",
+      "Bash(git check-ignore *)",
+      "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "PowerShell(head *)",
+      "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\\\\node_modules\\\\next\\\\dist\\\\docs\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Name)",
+      "Bash(Format-List)",
+      "PowerShell(Get-ChildItem \"E:\\\\amanailab-website\\\\amanailab-website\\\\node_modules\\\\next\\\\dist\\\\docs\\\\\" | Where-Object { $_.PSIsContainer -eq $false } | Select-Object Name)",
+      "Bash(Remove-Item *)",
+      "Bash(git ls-remote *)",
+      "Bash(npx next *)",
+      "Bash(npx eslint *)",
+      "Bash(npm uninstall *)",
+      "Bash(grep -iE \"^\\(rocket|trophy|flame|book-open|graduation|brain|lightbulb\\)\\\\.js$\")",
+      "Bash(grep -iE \"^\\(award|briefcase|certificate|users|graduation|book-open\\)\\\\.js$\")",
+      "Bash(npm view *)",
+      "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\" -Recurse -Force)",
+      "Bash(Select-Object -Property FullName)",
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(git *)",
+      "Bash(python -c \"import sys,json; print\\(json.load\\(sys.stdin\\)['version']\\)\")",
+      "Bash(grep -E \"metadata\\\\.ts$\")",
+      "Bash(xargs -I {} basename {} route.ts)"
     ]
   }
 }
