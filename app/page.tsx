@@ -1,6 +1,7 @@
 import { getChannelStats, getLatestVideos, getPlaylists, formatStats } from "@/lib/youtube";
 import HeroSection from "@/components/home/HeroSection";
 import SocialProofBar from "@/components/home/SocialProofBar";
+import DailyChallengeWidget from "@/components/home/DailyChallengeWidget";
 import ToolsShowcase from "@/components/home/ToolsShowcase";
 import StatsSection from "@/components/home/StatsSection";
 import FeaturedSeries from "@/components/home/FeaturedSeries";
@@ -23,6 +24,7 @@ export default async function HomePage() {
     <>
       <HeroSection />
       <SocialProofBar />
+      <DailyChallengeWidget />
       <ToolsShowcase />
       <StatsSection stats={formattedStats} />
       <FeaturedSeries playlists={featured} />

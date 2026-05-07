@@ -5,7 +5,7 @@ import {
   Trophy, BrainCircuit, TrendingUp, LogOut,
   Target, Flame, Star, AlertTriangle, ArrowRight,
   CheckCircle2, BookOpen, Building2, MessageSquare,
-  Briefcase, Map, Library, Sparkles,
+  Briefcase, Map, Library, Sparkles, CalendarDays,
 } from 'lucide-react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
@@ -152,12 +152,20 @@ function ReadinessArc({ score }: { score: number }) {
 
 const TOOLKIT = [
   {
+    href: '/daily',
+    icon: Flame,
+    label: 'Daily Challenge',
+    desc: 'One AI/ML question every day',
+    color: 'text-orange-400',
+    bg: 'bg-orange-500/10 border-orange-500/20',
+  },
+  {
     href: '/interview',
     icon: BrainCircuit,
     label: 'AI Simulator',
     desc: 'Timed sessions with voice + AI scoring',
-    color: 'text-orange-400',
-    bg: 'bg-orange-500/10 border-orange-500/20',
+    color: 'text-violet-400',
+    bg: 'bg-violet-500/10 border-violet-500/20',
   },
   {
     href: '/companies',
@@ -305,6 +313,14 @@ export default async function DashboardPage() {
       accent: 'border-orange-500/30 bg-orange-500/5',
     })
   }
+
+  nextActions.unshift({
+    label: "Today's Daily Challenge",
+    sub: 'One question every day — builds streaks and sharp recall',
+    href: '/daily',
+    icon: <Flame className="w-4 h-4" />,
+    accent: 'border-orange-500/30 bg-orange-500/5',
+  })
 
   nextActions.push({
     label: 'Practice for a specific company',

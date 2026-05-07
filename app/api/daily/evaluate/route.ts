@@ -1,0 +1,110 @@
+import { NextResponse } from 'next/server'
+import { getAdminSupabase } from '@/lib/admin'
+
+export const runtime = 'nodejs'
+export const maxDuration = 30
+
+function todayIndex(): number {
+  return Math.floor(Date.now() / 86400000)
+}
+
+export async function POST(req: Request) {
+  try {
+    const { questionId, userAnswer } = await req.json()
+
+    if (!questionId || !userAnswer?.trim()) {
+      return NextResponse.json({ error: 'Question ID and answer are required' }, { status: 400 })
+    }
+
+    const supabase = getAdminSupabase()
+
+    const { data: questions } = await supabase
+      .from('interview_questions')
+      .select('id, question, answer, topic, level')
+      .order('id', { ascending: true })
+
+    if (!questions || questions.length === 0) {
+      return NextResponse.json({ error: 'Questions not found' }, { status: 404 })
+    }
+
+    const idx = todayIndex() % questions.length
+    const today = questions[idx]
+
+    if (String(today.id) !== String(questionId)) {
+      return NextResponse.json({ error: "Not today's question" }, { status: 400 })
+    }
+
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert AI/ML interviewer evaluating a candidate's written answer.
+Score strictly. Return ONLY valid JSON, no markdown fences.`,
+          },
+          {
+            role: 'user',
+            content: `Question: ${today.question}
+
+Candidate's Answer: ${userAnswer}
+
+Reference Answer (for your use only — do not quote verbatim): ${today.answer}
+
+Return this exact JSON:
+{
+  "score": <integer 1-10>,
+  "verdict": "<one of: Excellent | Good | Needs Work | Incomplete>",
+  "feedback": "<2-3 sentences of specific, constructive feedback>",
+  "key_points_covered": ["<point 1>", "<point 2>"],
+  "key_points_missed": ["<point 1>", "<point 2>"],
+  "model_answer_highlight": "<the 2-3 most important sentences from the ideal answer, in your own words>"
+}`,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 600,
+        response_format: { type: 'json_object' },
+      }),
+    })
+
+    if (!groqRes.ok) {
+      return NextResponse.json({ error: 'Evaluation failed' }, { status: 500 })
+    }
+
+    const groqData = await groqRes.json()
+    const raw = groqData.choices?.[0]?.message?.content?.trim() ?? '{}'
+
+    let ev: {
+      score?: number
+      verdict?: string
+      feedback?: string
+      key_points_covered?: string[]
+      key_points_missed?: string[]
+      model_answer_highlight?: string
+    }
+    try {
+      ev = JSON.parse(raw)
+    } catch {
+      ev = { score: 5, verdict: 'Good', feedback: raw }
+    }
+
+    return NextResponse.json({
+      score: ev.score ?? 5,
+      verdict: ev.verdict ?? 'Good',
+      feedback: ev.feedback ?? '',
+      key_points_covered: ev.key_points_covered ?? [],
+      key_points_missed: ev.key_points_missed ?? [],
+      model_answer_highlight: ev.model_answer_highlight ?? '',
+      model_answer: today.answer,
+    })
+  } catch (err) {
+    console.error('[Daily Evaluate]', err)
+    return NextResponse.json({ error: 'Evaluation failed' }, { status: 500 })
+  }
+}
