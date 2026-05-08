@@ -29,7 +29,16 @@ interface QuestionResult {
   level: string
 }
 
-type Result = BlogResult | QuestionResult
+interface CodeProblemResult {
+  type: 'problem'
+  id: string
+  title: string
+  slug: string
+  difficulty: string
+  topic: string
+}
+
+type Result = BlogResult | QuestionResult | CodeProblemResult
 
 export default function GlobalSearch() {
   const router = useRouter()
@@ -49,23 +58,29 @@ export default function GlobalSearch() {
   async function runSearch(q: string) {
     setLoading(true)
     try {
-      const [blogRes, questionsRes] = await Promise.all([
+      const [blogRes, questionsRes, codeRes] = await Promise.all([
         supabase
           .from('blog_posts')
           .select('id, title, description, slug, category, read_time')
           .eq('published', true)
           .or(`title.ilike.%${q}%,description.ilike.%${q}%,tags.cs.{${q}}`)
-          .limit(6),
+          .limit(5),
         supabase
           .from('interview_questions')
           .select('id, question, topic, level')
           .ilike('question', `%${q}%`)
-          .limit(6),
+          .limit(5),
+        supabase
+          .from('code_problems')
+          .select('id, title, slug, difficulty, topic')
+          .or(`title.ilike.%${q}%,topic.ilike.%${q}%`)
+          .limit(4),
       ])
 
       const combined: Result[] = [
         ...(blogRes.data ?? []).map((p) => ({ type: 'blog' as const, ...p })),
         ...(questionsRes.data ?? []).map((q) => ({ type: 'question' as const, ...q })),
+        ...(codeRes.data ?? []).map((p) => ({ type: 'problem' as const, ...p })),
       ]
       setResults(combined)
     } finally {
@@ -86,8 +101,9 @@ export default function GlobalSearch() {
     }, 400)
   }
 
-  const blogResults = results.filter((r) => r.type === 'blog') as BlogResult[]
+  const blogResults     = results.filter((r) => r.type === 'blog')     as BlogResult[]
   const questionResults = results.filter((r) => r.type === 'question') as QuestionResult[]
+  const problemResults  = results.filter((r) => r.type === 'problem')  as CodeProblemResult[]
   const hasResults = results.length > 0
   const searched = query.trim().length >= 2
 
@@ -190,6 +206,29 @@ export default function GlobalSearch() {
                       <p className="text-sm font-medium text-zinc-200 group-hover:text-purple-300 transition-colors">
                         {q.question}
                       </p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {problemResults.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-[10px]">💻</span>
+                  <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Code Lab Problems ({problemResults.length})</span>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {problemResults.map((p) => (
+                    <Link key={p.id} href={`/code-lab/${p.slug}`}
+                      className="block bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-4 transition-all hover:-translate-y-0.5 group">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${p.difficulty === 'Easy' ? 'text-green-400 bg-green-500/10 border-green-500/20' : p.difficulty === 'Medium' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
+                          {p.difficulty}
+                        </span>
+                        <span className="text-xs text-zinc-600">{p.topic}</span>
+                      </div>
+                      <p className="text-sm font-semibold text-zinc-200 group-hover:text-orange-400 transition-colors">{p.title}</p>
                     </Link>
                   ))}
                 </div>

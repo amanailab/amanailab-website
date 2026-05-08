@@ -8,6 +8,7 @@ const staticPages: MetadataRoute.Sitemap = [
   { url: BASE,                             priority: 1.0, changeFrequency: 'daily'   },
   { url: `${BASE}/code-lab`,               priority: 0.95, changeFrequency: 'weekly' },
   { url: `${BASE}/daily`,                  priority: 0.85, changeFrequency: 'daily'  },
+  { url: `${BASE}/skill-gap`,              priority: 0.85, changeFrequency: 'monthly'},
   { url: `${BASE}/playground`,             priority: 0.75, changeFrequency: 'monthly'},
   { url: `${BASE}/interview`,              priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/companies`,              priority: 0.9, changeFrequency: 'weekly'  },

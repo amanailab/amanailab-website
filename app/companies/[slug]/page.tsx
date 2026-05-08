@@ -57,8 +57,29 @@ export default async function CompanyPage({ params }: Props) {
 
   const { company, questions } = data
 
+  const orgSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: company.name,
+    description: company.description ?? company.tagline,
+    url: `https://amanailab.com/companies/${company.slug}`,
+    address: { '@type': 'PostalAddress', addressLocality: company.hq },
+  }
+
+  const faqSchema = questions.length > 0 ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: questions.slice(0, 10).map((q: { question: string; model_answer: string }) => ({
+      '@type': 'Question',
+      name: `${company.name} Interview: ${q.question}`,
+      acceptedAnswer: { '@type': 'Answer', text: q.model_answer },
+    })),
+  } : null
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
+      {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
       <div className="max-w-4xl mx-auto px-4">
 
         {/* Back */}

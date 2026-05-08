@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -143,7 +143,23 @@ function PlaylistCard({ s, i }: { s: Playlist; i: number }) {
 // ─── Grid ─────────────────────────────────────────────────────────────────────
 
 export default function SeriesGrid({ playlists }: { playlists: Playlist[] }) {
-  const [active, setActive] = useState("all");
+  const [active, setActive]       = useState("all")
+  const [visited, setVisited]     = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    try {
+      const stored: string[] = JSON.parse(localStorage.getItem('series_visited') ?? '[]')
+      setVisited(new Set(stored))
+    } catch { /* ignore */ }
+  }, [])
+
+  function markVisited(id: string) {
+    setVisited(prev => {
+      const next = new Set(prev); next.add(id)
+      try { localStorage.setItem('series_visited', JSON.stringify([...next])) } catch { /* ignore */ }
+      return next
+    })
+  }
 
   const filtered =
     active === "all" ? playlists : playlists.filter((s) => s.category === active);
@@ -192,7 +208,14 @@ export default function SeriesGrid({ playlists }: { playlists: Playlist[] }) {
       <motion.div layout className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
         <AnimatePresence mode="popLayout">
           {filtered.map((s, i) => (
-            <PlaylistCard key={s.id} s={s} i={i} />
+            <div key={s.id} onClick={() => markVisited(s.id)} className="relative">
+              {visited.has(s.id) && (
+                <div className="absolute top-2 left-2 z-10 flex items-center gap-1 bg-green-500/80 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none">
+                  ✓ Visited
+                </div>
+              )}
+              <PlaylistCard s={s} i={i} />
+            </div>
           ))}
         </AnimatePresence>
       </motion.div>

@@ -1,7 +1,8 @@
 export const revalidate = 86400 // questions rarely change — rebuild once a day
 
 import type { Metadata } from 'next'
-import { Library } from 'lucide-react'
+import { Library, BookmarkCheck } from 'lucide-react'
+import Link from 'next/link'
 import { getAdminSupabase } from '@/lib/admin'
 import QuestionsClient from '@/components/questions/QuestionsClient'
 
@@ -77,7 +78,11 @@ export default async function QuestionsPage() {
             <span className="text-xs font-semibold text-orange-400 uppercase tracking-wide">Question Bank</span>
           </div>
           <h1 className="text-3xl font-extrabold text-zinc-100 mb-2">AI/ML Interview Question Bank</h1>
-          <p className="text-zinc-400 text-sm">{questions.length} questions · Browse, filter, and study at your own pace</p>
+          <p className="text-zinc-400 text-sm mb-3">{questions.length} questions · Browse, filter, and study at your own pace</p>
+          <Link href="/questions/saved"
+            className="inline-flex items-center gap-1.5 text-xs text-orange-400 hover:text-orange-300 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full transition-colors">
+            <BookmarkCheck className="w-3.5 h-3.5" /> View Saved Questions
+          </Link>
         </div>
 
         <QuestionsClient

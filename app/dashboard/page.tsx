@@ -13,6 +13,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import ScoreLineChart from '@/components/dashboard/ScoreLineChart'
 import DailyChallengeStrip from '@/components/dashboard/DailyChallengeStrip'
+import XPCard from '@/components/dashboard/XPCard'
 import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap'
 import CompanyReadiness from '@/components/dashboard/CompanyReadiness'
 import InterviewCountdown from '@/components/dashboard/InterviewCountdown'
@@ -732,6 +733,7 @@ export default async function DashboardPage() {
             <div className="flex flex-col gap-4 lg:sticky lg:top-20">
               <LeaderboardCard entries={displayedEntries} nameMap={nameMap} userRank={userRank} totalUsers={totalUsers} />
               <CodeLabCard stats={codeStats} />
+              <XPCard />
             </div>
           </div>
 

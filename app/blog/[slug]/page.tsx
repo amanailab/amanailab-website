@@ -7,6 +7,7 @@ import type { BlogPost } from '@/lib/admin'
 import { Clock, ArrowLeft, Tag, Share2 } from 'lucide-react'
 import EmailCaptureCard from '@/components/shared/EmailCaptureCard'
 import ReadingProgress from '@/components/blog/ReadingProgress'
+import GiscusComments from '@/components/blog/GiscusComments'
 import sanitizeHtml from 'sanitize-html'
 
 const ALLOWED_TAGS = [
@@ -194,6 +195,9 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         </div>
       )}
+
+      {/* Comments */}
+      <GiscusComments slug={post.slug} />
     </article>
     </>
   )

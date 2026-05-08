@@ -8,7 +8,7 @@ import {
   Menu, X, ChevronDown, Search,
   BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
-  BrainCircuit, Map, CalendarDays, Building2,
+  BrainCircuit, Map, CalendarDays, Building2, Target,
   User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2,
 } from "lucide-react";
 import Image from "next/image";
@@ -88,6 +88,7 @@ const navItems: NavItem[] = [
     label: "Career",
     columns: 1,
     items: [
+      { href: "/skill-gap",             label: "Skill Gap Analyzer ✨", description: "Paste JD → see exact gaps vs your scores", icon: <Target className="w-4 h-4" /> },
       { href: "/career?tab=roadmap",    label: "Career Roadmap",   description: "Week-by-week AI/ML learning path", icon: <Map className="w-4 h-4" /> },
       { href: "/career?tab=study-plan", label: "Study Plan",        description: "Day-by-day interview prep",        icon: <CalendarDays className="w-4 h-4" /> },
       { href: "/career?tab=offer",      label: "Offer Analyzer",    description: "Salary & negotiation insights",    icon: <FileText className="w-4 h-4" /> },
