@@ -214,6 +214,14 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
       const status  = passed === total ? 'Accepted' : 'Wrong Answer'
       const elapsed = Date.now() - t0
 
+      if (status === 'Accepted') {
+        import('canvas-confetti').then(({ default: confetti }) => {
+          const colors = ['#4ade80', '#22c55e', '#86efac', '#f97316', '#fbbf24']
+          confetti({ particleCount: 100, angle: 60,  spread: 55, origin: { x: 0,   y: 0.7 }, colors })
+          setTimeout(() => confetti({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors }), 150)
+        })
+      }
+
       setSubmitResult({
         status, passed_tests: passed, total_tests: total,
         runtime_ms: elapsed,

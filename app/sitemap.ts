@@ -6,6 +6,9 @@ const BASE = 'https://amanailab.com'
 
 const staticPages: MetadataRoute.Sitemap = [
   { url: BASE,                             priority: 1.0, changeFrequency: 'daily'   },
+  { url: `${BASE}/code-lab`,               priority: 0.95, changeFrequency: 'weekly' },
+  { url: `${BASE}/daily`,                  priority: 0.85, changeFrequency: 'daily'  },
+  { url: `${BASE}/playground`,             priority: 0.75, changeFrequency: 'monthly'},
   { url: `${BASE}/interview`,              priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/companies`,              priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/questions`,              priority: 0.9, changeFrequency: 'weekly'  },
@@ -38,9 +41,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [
       { data: posts },
       { data: companies },
+      { data: codeProblems },
     ] = await Promise.all([
       supabase.from('blog_posts').select('slug, updated_at, created_at').eq('published', true),
       supabase.from('companies').select('slug, created_at'),
+      supabase.from('code_problems').select('slug, created_at').order('order_index', { ascending: true }),
     ])
 
     const blogPages: MetadataRoute.Sitemap = (posts ?? []).map(p => ({
@@ -69,7 +74,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
     }))
 
-    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages]
+    const codeLabPages: MetadataRoute.Sitemap = (codeProblems ?? []).map(p => ({
+      url: `${BASE}/code-lab/${p.slug}`,
+      lastModified: new Date(p.created_at),
+      priority: 0.85,
+      changeFrequency: 'monthly' as const,
+    }))
+
+    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages, ...codeLabPages]
   } catch {
     const topicPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/topics/${t.slug}`, priority: 0.9, changeFrequency: 'monthly' as const }))
     const flashcardPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/flashcards/${t.slug}`, priority: 0.7, changeFrequency: 'monthly' as const }))

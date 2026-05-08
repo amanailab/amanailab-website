@@ -13,6 +13,10 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import ScoreLineChart from '@/components/dashboard/ScoreLineChart'
 import DailyChallengeStrip from '@/components/dashboard/DailyChallengeStrip'
+import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap'
+import CompanyReadiness from '@/components/dashboard/CompanyReadiness'
+import InterviewCountdown from '@/components/dashboard/InterviewCountdown'
+import AchievementAlert from '@/components/dashboard/AchievementAlert'
 
 export const metadata: Metadata = { title: 'My Dashboard | AmanAI Lab' }
 
@@ -550,6 +554,12 @@ export default async function DashboardPage() {
                   </div>
                 </div>
 
+                {/* Interview countdown */}
+                <InterviewCountdown
+                  weakTopics={topicStats.slice(-3).map(t => t.topic)}
+                  strongTopics={topicStats.slice(0, 3).map(t => t.topic)}
+                />
+
                 {/* Daily challenge strip */}
                 <DailyChallengeStrip />
 
@@ -574,6 +584,12 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Activity Heatmap */}
+                <ActivityHeatmap sessions={s} totalSessions={totalSessions} />
+
+                {/* Company Readiness */}
+                <CompanyReadiness topicMap={topicMap} />
 
                 {/* Topic mastery + Achievements */}
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4">
@@ -684,6 +700,9 @@ export default async function DashboardPage() {
               </Link>
             </div>
           </div>
+
+          {/* Achievement alert overlay */}
+          <AchievementAlert achievements={achievements.map(a => ({ id: a.id, emoji: a.emoji, label: a.label, unlocked: a.unlocked }))} />
 
           {/* ──────── RIGHT: sticky sidebar ──────── */}
           <div className="w-full lg:w-[300px] shrink-0">

@@ -174,6 +174,16 @@ export default function DailyChallengePage() {
       setResult(ev)
       setAlreadyDone(true)
 
+      // Fire confetti on good scores
+      if (ev.score >= 7) {
+        import('canvas-confetti').then(({ default: confetti }) => {
+          const colors = ev.score >= 9
+            ? ['#facc15', '#f97316', '#ec4899', '#8b5cf6']
+            : ['#f97316', '#fb923c', '#fbbf24', '#ffffff']
+          confetti({ particleCount: ev.score >= 9 ? 150 : 100, spread: 70, origin: { y: 0.6 }, colors })
+        })
+      }
+
       // Persist to localStorage
       const entry: StoredEntry = { date: todayDate, questionId: question.id, answer, result: ev }
       localStorage.setItem(STORAGE_ENTRY, JSON.stringify(entry))
