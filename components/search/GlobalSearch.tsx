@@ -178,7 +178,7 @@ export default function GlobalSearch() {
                   {questionResults.map((q) => (
                     <Link
                       key={q.id}
-                      href="/interview?tab=simulator"
+                      href="/questions"
                       className="block bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 transition-all hover:-translate-y-0.5 group"
                     >
                       <div className="flex items-center gap-2 mb-2">

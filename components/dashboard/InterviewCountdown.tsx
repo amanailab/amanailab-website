@@ -144,8 +144,8 @@ function PlanModal({ data, onClose, onRegenerate }: {
       }
 
       doc.save(`${data.company.replace(/\s+/g, '_')}_${data.plan.length}Day_AI_ML_Plan.pdf`)
-    } catch (e) {
-      console.error('PDF error', e)
+    } catch {
+      // PDF generation failed silently — user can retry
     } finally {
       setDownloading(false)
     }

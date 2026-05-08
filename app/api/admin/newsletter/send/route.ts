@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     </div>
     <div style="margin-top:24px;padding-top:24px;border-top:1px solid #27272a;text-align:center">
       <p style="margin:0;font-size:12px;color:#52525b">You are receiving this because you subscribed at amanailab.com</p>
-      <p style="margin:8px 0 0 0;font-size:12px;color:#52525b">© 2025 AmanAI Lab</p>
+      <p style="margin:8px 0 0 0;font-size:12px;color:#52525b">© ${new Date().getFullYear()} AmanAI Lab</p>
     </div>
   </div>
 </body>

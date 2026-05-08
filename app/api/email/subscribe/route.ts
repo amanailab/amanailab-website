@@ -148,7 +148,7 @@ export async function POST(req: Request) {
         Can&apos;t click the button? Copy this link:<br>
         <a href="${verifyUrl}" style="color:#f97316;word-break:break-all;font-size:11px">${verifyUrl}</a>
       </p>
-      <p style="margin:12px 0 0;font-size:11px;color:#3f3f46">© 2025 AmanAI Lab · No spam, ever.</p>
+      <p style="margin:12px 0 0;font-size:11px;color:#3f3f46">© ${new Date().getFullYear()} AmanAI Lab · No spam, ever.</p>
     </div>
   </div>
 </body>

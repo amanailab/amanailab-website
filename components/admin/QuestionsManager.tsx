@@ -261,8 +261,7 @@ export default function QuestionsManager({
         ...prev,
       ])
       showSuccess(`${res.count} question${res.count === 1 ? '' : 's'} added.`)
-    } catch (err) {
-      console.error(err)
+    } catch {
       showError('Failed to parse CSV.')
     } finally {
       setBulkBusy(false)

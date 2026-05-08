@@ -1255,8 +1255,7 @@ export default function ResumeAnalyzer() {
 
       const safeName = (builder.fullName || "Resume").replace(/[^a-z0-9]+/gi, "_");
       doc.save(`${safeName}_Resume_AmanAI_Lab.pdf`);
-    } catch (err) {
-      console.error("[Resume PDF] Error:", err);
+    } catch {
       setError("Could not generate PDF. Please try again.");
     } finally {
       setPdfWorking(false);

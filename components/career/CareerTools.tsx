@@ -280,7 +280,8 @@ function LoadingState({ label }: { label: string }) {
         <span className="absolute inset-0 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
         <Sparkles className="absolute inset-0 m-auto w-5 h-5 text-orange-400" />
       </div>
-      <p className="text-zinc-500 text-sm">{label}</p>
+      <p className="text-zinc-400 text-sm font-medium">{label}</p>
+      <p className="text-zinc-600 text-xs">This usually takes 15–30 seconds — AI is working hard ✨</p>
     </div>
   )
 }
