@@ -119,12 +119,12 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
       (filterCompany === 'all' || (filterCompany === 'general' ? !x.company : x.company_slug === filterCompany)) &&
       (!q || x.question.toLowerCase().includes(q))
     )
-  }, [initialQuestions, filterTopic, filterLevel, filterCompany, search])
+  }, [initialQuestions, filterTopic, filterLevel, filterCompany, search, showSaved, bookmarks])
 
   const paginated   = filtered.slice(page * PAGE, (page + 1) * PAGE)
   const totalPages  = Math.ceil(filtered.length / PAGE)
 
-  function reset() { setFilterTopic('all'); setFilterLevel('all'); setFilterCompany('all'); setSearch(''); setPage(0) }
+  function reset() { setFilterTopic('all'); setFilterLevel('all'); setFilterCompany('all'); setSearch(''); setPage(0); setShowSaved(false) }
 
   const hasFilters = filterTopic !== 'all' || filterLevel !== 'all' || filterCompany !== 'all' || search
 

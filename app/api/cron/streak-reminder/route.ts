@@ -112,6 +112,6 @@ export async function GET(request: Request) {
     }
   }
 
-  console.log(`[streak-reminder] sent=${sent.length} errors=${errors.length}`)
+  console.info(`[streak-reminder] sent=${sent.length} errors=${errors.length}`)
   return NextResponse.json({ sent: sent.length, errors: errors.length })
 }

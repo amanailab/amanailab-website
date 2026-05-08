@@ -10,8 +10,8 @@ import {
 } from "lucide-react";
 
 const tools = [
-  { icon: <Code2 className="w-5 h-5" />,        label: "Code Playground",          description: "Monaco editor + AI for RAG, Agents, LoRA & more", href: "/playground",         color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
-  { icon: <BrainCircuit className="w-5 h-5" />, label: "AI Interview Simulator",  description: "Voice-enabled mock interviews with instant scoring",    href: "/interview",          color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
+  { icon: <Code2 className="w-5 h-5" />,        label: "Code Playground",          description: "Monaco editor + AI for RAG, Agents, LoRA & more", href: "/playground",                color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
+  { icon: <BrainCircuit className="w-5 h-5" />, label: "AI Interview Simulator",  description: "Voice-enabled mock interviews with instant scoring",    href: "/interview?tab=simulator",          color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
   { icon: <Building2 className="w-5 h-5" />,   label: "Company Prep",             description: "Google, Meta, OpenAI & 6 more — real questions",       href: "/companies",          color: "text-blue-400",   bg: "bg-blue-500/10 border-blue-500/20"   },
   { icon: <Library className="w-5 h-5" />,     label: "Question Bank",            description: "Browse & filter 500+ AI/ML interview questions",       href: "/questions",          color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20"},
   { icon: <Briefcase className="w-5 h-5" />,   label: "Job Prep",                 description: "Paste a JD → get 6 tailored questions instantly",      href: "/job-prep",           color: "text-teal-400",   bg: "bg-teal-500/10 border-teal-500/20"   },
@@ -91,7 +91,7 @@ export default function ToolsShowcase() {
           className="text-center"
         >
           <Link
-            href="/interview"
+            href="/interview?tab=simulator"
             className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/25 text-sm"
           >
             Start with AI Interview Prep

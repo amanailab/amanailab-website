@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import PageTransition from "@/components/ui/PageTransition";
 import { GoogleAnalytics } from '@next/third-parties/google'
 import MicrosoftClarity from "@/components/analytics/MicrosoftClarity";
 import { headers } from 'next/headers'
@@ -120,7 +121,9 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased" suppressHydrationWarning={true}>
         {!isAdmin && <Navbar />}
-        <main className="flex-1">{children}</main>
+        <main className="flex-1">
+          <PageTransition>{children}</PageTransition>
+        </main>
         {!isAdmin && <Footer />}
         {!isAdmin && <GoogleAnalytics gaId="G-1H3YS42SXP" />}
         {!isAdmin && <MicrosoftClarity />}

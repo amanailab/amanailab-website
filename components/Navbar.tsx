@@ -375,7 +375,7 @@ export default function Navbar() {
             <Link href="/search"
               className="lg:hidden flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
               aria-label="Search">
-              <Search className="w-4.5 h-4.5" />
+              <Search className="w-4 h-4" />
             </Link>
 
             {/* Mobile hamburger */}
