@@ -1190,4 +1190,148 @@ def log_softmax(logits: list) -> list:
       { id: 4, function_call: 'ndcg([1,0,0,0],1)', expected_output: '1.0', is_hidden: true, description: 'K=1 perfect' },
     ],
   },
+
+  // ── 31 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 31, title: 'Mean, Median, Mode', slug: 'mean-median-mode', difficulty: 'Easy', topic: 'Math',
+    tags: ['Math', 'Statistics', 'Classical ML'], companies: ['Google', 'Amazon'],
+    hints: ['Mean = sum / count', 'Median = middle value of sorted list (or avg of two middle values)', 'Mode = most frequent value'],
+    description: `## Mean, Median, Mode\n\nCompute all three central tendency measures — foundational statistics used everywhere in ML.\n\n### Definitions\n- **Mean**: average value\n- **Median**: middle value when sorted\n- **Mode**: most frequently occurring value\n\n### Example\n\`\`\`\nstats([1,2,2,3,4]) → {'mean': 2.4, 'median': 2, 'mode': 2}\n\`\`\`\n\nRound mean to **5 decimal places**.`,
+    starter_code: `def stats(values: list) -> dict:\n    """\n    Compute mean, median, and mode.\n    Returns: {'mean': float, 'median': float|int, 'mode': int|float}\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'stats([1,2,2,3,4])', expected_output: "{'mean': 2.4, 'median': 2, 'mode': 2}", is_hidden: false, description: 'Basic case' },
+      { id: 2, function_call: 'stats([1,3,5,7])', expected_output: "{'mean': 4.0, 'median': 4.0, 'mode': 1}", is_hidden: false, description: 'Even length, all unique (first element as mode)' },
+      { id: 3, function_call: 'stats([5,5,5,5])', expected_output: "{'mean': 5.0, 'median': 5, 'mode': 5}", is_hidden: true, description: 'All same' },
+    ],
+  },
+
+  // ── 32 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 32, title: 'Standard Deviation', slug: 'standard-deviation', difficulty: 'Easy', topic: 'Math',
+    tags: ['Math', 'Statistics', 'ML'], companies: ['Google', 'Meta', 'Amazon'],
+    hints: ['Population std: sqrt(mean of squared deviations)', 'variance = mean((x - mean(x))^2)', 'std = sqrt(variance)', 'Round to 5 decimal places'],
+    description: `## Standard Deviation (Population)\n\nMeasures spread/variability of data. Used everywhere in ML: normalization, evaluation, monitoring.\n\n### Formula\n\`variance = (1/n) × Σ(x_i - μ)²\`\n\`std = √variance\`\n\n### Example\n\`\`\`\nstd([2,4,4,4,5,5,7,9]) → 2.0\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def std(values: list) -> float:\n    """Population standard deviation."""\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'std([2,4,4,4,5,5,7,9])', expected_output: '2.0', is_hidden: false, description: 'Classic example' },
+      { id: 2, function_call: 'std([5,5,5,5])', expected_output: '0.0', is_hidden: false, description: 'No variation' },
+      { id: 3, function_call: 'std([1,2,3,4,5])', expected_output: '1.41421', is_hidden: true, description: 'Linear sequence' },
+      { id: 4, function_call: 'std([0,100])', expected_output: '50.0', is_hidden: true, description: 'Two values' },
+    ],
+  },
+
+  // ── 33 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 33, title: 'Confusion Matrix', slug: 'confusion-matrix', difficulty: 'Easy', topic: 'Math',
+    tags: ['Math', 'Evaluation', 'Classification'], companies: ['Google', 'Meta', 'Amazon'],
+    hints: ['TP: y_true=1 and y_pred=1', 'FP: y_true=0 and y_pred=1', 'FN: y_true=1 and y_pred=0', 'TN: y_true=0 and y_pred=0'],
+    description: `## Confusion Matrix\n\nThe building block of all classification metrics.\n\n### Definitions\n- **TP** (True Positive): predicted 1, actually 1\n- **FP** (False Positive): predicted 1, actually 0\n- **FN** (False Negative): predicted 0, actually 1\n- **TN** (True Negative): predicted 0, actually 0\n\n### Example\n\`\`\`\nconfusion_matrix([1,0,1,1,0,1],[1,0,0,1,1,1])\n→ {'TP': 3, 'FP': 1, 'FN': 1, 'TN': 1}\n\`\`\``,
+    starter_code: `def confusion_matrix(y_true: list, y_pred: list) -> dict:\n    """\n    Returns {'TP': int, 'FP': int, 'FN': int, 'TN': int}\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: "confusion_matrix([1,0,1,1,0,1],[1,0,0,1,1,1])", expected_output: "{'TP': 3, 'FP': 1, 'FN': 1, 'TN': 1}", is_hidden: false, description: 'Mixed predictions' },
+      { id: 2, function_call: "confusion_matrix([1,1,1],[1,1,1])", expected_output: "{'TP': 3, 'FP': 0, 'FN': 0, 'TN': 0}", is_hidden: false, description: 'All positive, perfect' },
+      { id: 3, function_call: "confusion_matrix([0,0,1,1],[1,0,1,0])", expected_output: "{'TP': 1, 'FP': 1, 'FN': 1, 'TN': 1}", is_hidden: true, description: 'Balanced errors' },
+    ],
+  },
+
+  // ── 34 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 34, title: 'One-Hot Encoding', slug: 'one-hot-encoding', difficulty: 'Easy', topic: 'Classical ML',
+    tags: ['Classical ML', 'Preprocessing', 'NLP'], companies: ['Google', 'Amazon', 'Microsoft'],
+    hints: ['Create a zero vector of length n_classes for each label', 'Set index = label to 1'],
+    description: `## One-Hot Encoding\n\nConverts integer class labels into binary vectors. Used in neural network outputs and categorical feature encoding.\n\n### Example\n\`\`\`\none_hot([0,2,1,2], n_classes=3)\n→ [[1,0,0],[0,0,1],[0,1,0],[0,0,1]]\n\`\`\``,
+    starter_code: `def one_hot(labels: list, n_classes: int) -> list:\n    """\n    Convert integer labels to one-hot encoded matrix.\n    Returns: list of lists of 0s and 1s\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'one_hot([0,2,1,2],3)', expected_output: '[[1, 0, 0], [0, 0, 1], [0, 1, 0], [0, 0, 1]]', is_hidden: false, description: '3-class example' },
+      { id: 2, function_call: 'one_hot([0,1],2)', expected_output: '[[1, 0], [0, 1]]', is_hidden: false, description: 'Binary classification' },
+      { id: 3, function_call: 'one_hot([3],4)', expected_output: '[[0, 0, 0, 1]]', is_hidden: true, description: 'Last class' },
+    ],
+  },
+
+  // ── 35 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 35, title: 'Gradient Clipping', slug: 'gradient-clipping', difficulty: 'Easy', topic: 'MLOps',
+    tags: ['MLOps', 'Training', 'Optimization'], companies: ['Google', 'Meta', 'Nvidia'],
+    hints: ['Compute L2 norm of the gradient vector: sqrt(sum of squares)', 'If norm > max_norm: scale = max_norm / norm; multiply each component', 'Round to 5 decimal places'],
+    description: `## Gradient Clipping\n\nPrevents exploding gradients by scaling down large gradient vectors. Standard technique in RNN and Transformer training.\n\n### Algorithm\n1. Compute L2 norm: \`||g|| = sqrt(Σg_i²)\`\n2. If \`||g|| > max_norm\`: scale gradient by \`max_norm / ||g||\`\n\n### Example\n\`\`\`\ngradient_clip([3.0,4.0], max_norm=2.0)\n# ||g|| = 5.0, scale = 2/5 = 0.4\n→ [1.2, 1.6]\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def gradient_clip(gradients: list, max_norm: float) -> list:\n    """\n    Clip gradient vector by L2 norm.\n    Returns: scaled gradient (or unchanged if norm <= max_norm)\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'gradient_clip([3.0,4.0],2.0)', expected_output: '[1.2, 1.6]', is_hidden: false, description: 'Classic 3-4-5 triangle' },
+      { id: 2, function_call: 'gradient_clip([0.5,0.5],2.0)', expected_output: '[0.5, 0.5]', is_hidden: false, description: 'Norm < max, no clipping' },
+      { id: 3, function_call: 'gradient_clip([1.0,0.0,0.0],0.5)', expected_output: '[0.5, 0.0, 0.0]', is_hidden: true, description: 'Unit vector clipped' },
+    ],
+  },
+
+  // ── 36 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 36, title: 'ROUGE-1 Score', slug: 'rouge-1-score', difficulty: 'Medium', topic: 'NLP',
+    tags: ['NLP', 'Evaluation', 'Summarization'], companies: ['Google', 'Amazon', 'Meta'],
+    hints: ['ROUGE-1 = F1 of unigram overlap', 'precision = matches / len(hypothesis_tokens)', 'recall = matches / len(reference_tokens)', 'F1 = 2*P*R/(P+R)'],
+    description: `## ROUGE-1 Score\n\nStandard metric for text summarization evaluation. Measures unigram overlap between reference and generated text.\n\n### Formula\n\`precision = |ref ∩ hyp| / |hyp|\`\n\`recall    = |ref ∩ hyp| / |ref|\`\n\`ROUGE-1   = 2 × P × R / (P + R)\`\n\n### Example\n\`\`\`\nrouge1(reference="the cat sat on mat",\n       hypothesis="the cat on mat")\n→ 0.88889\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def rouge1(reference: str, hypothesis: str) -> float:\n    """\n    Compute ROUGE-1 F1 score between reference and hypothesis.\n    Tokenize by splitting on whitespace.\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'rouge1("the cat sat on mat","the cat on mat")', expected_output: '0.88889', is_hidden: false, description: 'One word missing from hyp' },
+      { id: 2, function_call: 'rouge1("hello world","hello world")', expected_output: '1.0', is_hidden: false, description: 'Perfect match' },
+      { id: 3, function_call: 'rouge1("a b c d","e f g h")', expected_output: '0.0', is_hidden: true, description: 'No overlap' },
+      { id: 4, function_call: 'rouge1("the cat","the big cat")', expected_output: '0.8', is_hidden: true, description: 'Extra word in hypothesis' },
+    ],
+  },
+
+  // ── 37 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 37, title: 'Mean Reciprocal Rank', slug: 'mean-reciprocal-rank', difficulty: 'Medium', topic: 'RAG',
+    tags: ['RAG', 'Evaluation', 'Information Retrieval'], companies: ['Google', 'Pinecone', 'Elastic'],
+    hints: ['For each query, find the rank of the first relevant result', 'MRR = mean(1/rank_i) over all queries', 'If no relevant result found, reciprocal rank = 0'],
+    description: `## Mean Reciprocal Rank (MRR)\n\nMeasures how high the first relevant result appears in retrieval lists. Standard for QA and search evaluation.\n\n### Formula\n\`MRR = (1/|Q|) × Σ (1 / rank_i)\`\n\nWhere rank_i = position of first relevant result for query i.\n\n### Example\n\`\`\`\nfirst_relevant_ranks = [1, 2, 4]\nMRR = (1/1 + 1/2 + 1/4) / 3 = 1.75/3 → 0.58333\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def mrr(first_relevant_ranks: list) -> float:\n    """\n    Compute Mean Reciprocal Rank.\n    first_relevant_ranks: rank (1-indexed) of first relevant result per query.\n                         Use 0 if no relevant result found.\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'mrr([1,2,4])', expected_output: '0.58333', is_hidden: false, description: 'Standard MRR' },
+      { id: 2, function_call: 'mrr([1,1,1])', expected_output: '1.0', is_hidden: false, description: 'Always rank 1' },
+      { id: 3, function_call: 'mrr([0,0,0])', expected_output: '0.0', is_hidden: true, description: 'No relevant results' },
+      { id: 4, function_call: 'mrr([2,4])', expected_output: '0.375', is_hidden: true, description: '1/2 + 1/4 = 0.75/2' },
+    ],
+  },
+
+  // ── 38 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 38, title: 'Attention Scaling', slug: 'attention-scaling', difficulty: 'Easy', topic: 'Transformers',
+    tags: ['Transformers', 'Attention', 'Math'], companies: ['OpenAI', 'Google', 'Meta'],
+    hints: ['score(Q, K) = dot(Q, K) / sqrt(len(Q))', 'This prevents softmax saturation in high dimensions'],
+    description: `## Attention Scaling\n\nCompute the scaled dot-product score between a query and key vector — the fundamental operation before softmax in attention.\n\n### Formula\n\`score(Q, K) = Q · K / √d_k\`\n\nWhere d_k = length of Q (and K).\n\n### Why scale?\nWithout scaling, dot products grow large in high dimensions → softmax becomes peaky → vanishing gradients.\n\n### Example\n\`\`\`\nattention_score([1,0,1,0],[0,1,0,1]) → 0.0\nattention_score([1,1],[1,1]) → 1.41421\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def attention_score(query: list, key: list) -> float:\n    """\n    Scaled dot-product attention score: dot(Q,K) / sqrt(d_k)\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'attention_score([1,0,1,0],[0,1,0,1])', expected_output: '0.0', is_hidden: false, description: 'Orthogonal vectors' },
+      { id: 2, function_call: 'attention_score([1,1],[1,1])', expected_output: '1.41421', is_hidden: false, description: '2D parallel' },
+      { id: 3, function_call: 'attention_score([1,0,0],[1,0,0])', expected_output: '1.0', is_hidden: true, description: 'Unit vectors' },
+      { id: 4, function_call: 'attention_score([2,0,2,0],[2,0,2,0])', expected_output: '4.0', is_hidden: true, description: 'Larger magnitude' },
+    ],
+  },
+
+  // ── 39 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 39, title: 'Sliding Window Maximum', slug: 'sliding-window-maximum', difficulty: 'Medium', topic: 'Python',
+    tags: ['Python', 'Algorithms', 'MLOps'], companies: ['Google', 'Meta', 'Amazon'],
+    hints: ['For each window of size k, find the max', 'Result has len(values) - k + 1 elements', 'A deque (collections.deque) gives O(n) solution — or just use a simple loop'],
+    description: `## Sliding Window Maximum\n\nUsed in ML monitoring: compute rolling maximum of a metric (loss, accuracy, latency) over a sliding window.\n\n### Example\n\`\`\`\nsliding_max([1,3,-1,-3,5,3,6,7], k=3)\n→ [3, 3, 5, 5, 6, 7]\n\`\`\`\n\n### Explanation\nWindows: [1,3,-1]→3, [3,-1,-3]→3, [-1,-3,5]→5, [-3,5,3]→5, [5,3,6]→6, [3,6,7]→7`,
+    starter_code: `def sliding_max(values: list, k: int) -> list:\n    """\n    Return maximum of each sliding window of size k.\n    Result length = len(values) - k + 1\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'sliding_max([1,3,-1,-3,5,3,6,7],3)', expected_output: '[3, 3, 5, 5, 6, 7]', is_hidden: false, description: 'Classic example' },
+      { id: 2, function_call: 'sliding_max([1,2,3],1)', expected_output: '[1, 2, 3]', is_hidden: false, description: 'k=1 returns same' },
+      { id: 3, function_call: 'sliding_max([5,4,3,2,1],3)', expected_output: '[5, 4, 3]', is_hidden: true, description: 'Decreasing sequence' },
+    ],
+  },
+
+  // ── 40 ──────────────────────────────────────────────────────────────────────
+  {
+    order_index: 40, title: 'Exponential Decay LR Schedule', slug: 'exponential-decay-lr', difficulty: 'Easy', topic: 'MLOps',
+    tags: ['MLOps', 'Optimization', 'Training'], companies: ['Google', 'Nvidia', 'Meta'],
+    hints: ['lr_t = initial_lr * decay_rate ^ t', 'where t is the step number (0-indexed)', 'Round to 5 decimal places'],
+    description: `## Exponential Decay Learning Rate Schedule\n\nOne of the most common LR schedules. The learning rate decays exponentially at each training step.\n\n### Formula\n\`lr_t = initial_lr × decay_rate^t\`\n\n### Properties\n- t=0: full learning rate\n- Decays smoothly and continuously\n- Used in Adam, AdaGrad, etc.\n\n### Example\n\`\`\`\nexponential_lr_schedule(initial_lr=0.1, decay_rate=0.9, steps=5)\n→ [0.1, 0.09, 0.081, 0.0729, 0.06561]\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def exponential_lr_schedule(initial_lr: float, decay_rate: float, steps: int) -> list:\n    """\n    Return learning rate at each step t = 0, 1, ..., steps-1.\n    lr_t = initial_lr * decay_rate^t\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'exponential_lr_schedule(0.1,0.9,5)', expected_output: '[0.1, 0.09, 0.081, 0.0729, 0.06561]', is_hidden: false, description: 'Basic schedule' },
+      { id: 2, function_call: 'exponential_lr_schedule(1.0,0.5,3)', expected_output: '[1.0, 0.5, 0.25]', is_hidden: false, description: 'Halving each step' },
+      { id: 3, function_call: 'exponential_lr_schedule(0.01,1.0,3)', expected_output: '[0.01, 0.01, 0.01]', is_hidden: true, description: 'No decay (rate=1.0)' },
+    ],
+  },
 ]

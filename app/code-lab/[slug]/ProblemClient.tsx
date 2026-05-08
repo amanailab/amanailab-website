@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Play, Send, CheckCircle2, XCircle, Loader2,
   Lightbulb, ChevronDown, ChevronUp, ArrowLeft,
-  Clock, Trophy, AlertCircle, Code2, Cpu,
+  Clock, Trophy, AlertCircle, Code2, Cpu, History,
+  RotateCcw, CalendarDays,
 } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 import LoginPromptModal from '@/components/ui/LoginPromptModal'
@@ -138,21 +139,38 @@ function MarkdownDesc({ text }: { text: string }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+interface Submission {
+  id: string; status: string; passed_tests: number; total_tests: number
+  runtime_ms: number; created_at: string; code: string
+}
+
 export default function ProblemClient({ problem }: { problem: Problem }) {
-  const user    = useUser()
+  const user     = useUser()
   const pathname = usePathname()
-  const [authModal, setAuthModal]       = useState(false)
-  const [code, setCode]                 = useState(problem.starter_code)
-  const [tab, setTab]                   = useState<'description' | 'hints'>('description')
-  const [pyStatus, setPyStatus]         = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
-  const [running,  setRunning]          = useState(false)
-  const [submitting, setSubmitting]     = useState(false)
-  const [runResults, setRunResults]     = useState<TestResult[] | null>(null)
-  const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null)
-  const [shownHints, setShownHints]     = useState<number[]>([])
-  const [resultTab, setResultTab]       = useState<'results' | 'submit'>('results')
+  const [authModal, setAuthModal]           = useState(false)
+  const [code, setCode]                     = useState(problem.starter_code)
+  const [tab, setTab]                       = useState<'description' | 'hints'>('description')
+  const [pyStatus, setPyStatus]             = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [running,  setRunning]              = useState(false)
+  const [submitting, setSubmitting]         = useState(false)
+  const [runResults, setRunResults]         = useState<TestResult[] | null>(null)
+  const [submitResult, setSubmitResult]     = useState<SubmitResult | null>(null)
+  const [shownHints, setShownHints]         = useState<number[]>([])
+  const [resultTab, setResultTab]           = useState<'results' | 'submit' | 'history'>('results')
+  const [submissions, setSubmissions]       = useState<Submission[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [elapsed, setElapsed]               = useState(0)
+  const timerRef                            = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const visibleTests = problem.test_cases.filter(tc => !tc.is_hidden)
+
+  // Timer — starts when page loads
+  useEffect(() => {
+    timerRef.current = setInterval(() => setElapsed(s => s + 1), 1000)
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [])
+
+  const timeDisplay = `${Math.floor(elapsed / 60).toString().padStart(2, '0')}:${(elapsed % 60).toString().padStart(2, '0')}`
 
   // Warm up Pyodide when component mounts (background, no blocking)
   useEffect(() => {
@@ -161,6 +179,18 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
       .then(() => setPyStatus('ready'))
       .catch(() => setPyStatus('error'))
   }, [])
+
+  // Fetch submission history when history tab is selected
+  useEffect(() => {
+    if (resultTab !== 'history' || submissions.length > 0) return
+    if (user === null || user === 'loading') return
+    setLoadingHistory(true)
+    fetch(`/api/code-lab/submissions/${problem.slug}`)
+      .then(r => r.json())
+      .then(d => setSubmissions(d.submissions ?? []))
+      .catch(() => {})
+      .finally(() => setLoadingHistory(false))
+  }, [resultTab, problem.slug, user, submissions.length])
 
   const runTests = useCallback(async (tests: TestCase[]): Promise<TestResult[]> => {
     const results: TestResult[] = []
@@ -179,6 +209,20 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
     }
     return results
   }, [code])
+
+  // Keyboard shortcut: Ctrl+Enter = Run, Ctrl+Shift+Enter = Submit
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') {
+        e.preventDefault(); handleSubmit()
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault(); handleRun()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleRun = useCallback(async () => {
     if (user === null) { setAuthModal(true); return }
@@ -241,7 +285,8 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
         })),
       })
 
-      // Save to DB (fire and forget)
+      // Save to DB + reset history so it refetches
+      setSubmissions([])
       fetch('/api/code-lab/save-submission', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -280,21 +325,29 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Timer */}
+          <div className="flex items-center gap-1 text-[10px] text-zinc-600 font-mono bg-zinc-800/50 px-2 py-1 rounded-lg">
+            <Clock className="w-3 h-3" />{timeDisplay}
+          </div>
+
           {/* Python runtime status */}
           <div className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-lg bg-zinc-800 border border-zinc-700">
             <Cpu className="w-3 h-3 text-zinc-500" />
-            {pyStatus === 'loading' && <><div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" /><span className="text-zinc-500">Loading Python…</span></>}
-            {pyStatus === 'ready'   && <><div className="w-2 h-2 rounded-full bg-green-500" /><span className="text-zinc-500">Python ready</span></>}
-            {pyStatus === 'error'   && <><div className="w-2 h-2 rounded-full bg-red-500" /><span className="text-red-400">Runtime error</span></>}
+            {pyStatus === 'loading' && <><div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" /><span className="text-zinc-500">Loading…</span></>}
+            {pyStatus === 'ready'   && <><div className="w-2 h-2 rounded-full bg-green-500" /><span className="text-zinc-500">Ready</span></>}
+            {pyStatus === 'error'   && <><div className="w-2 h-2 rounded-full bg-red-500" /><span className="text-red-400">Error</span></>}
             {pyStatus === 'idle'    && <span className="text-zinc-600">Python</span>}
           </div>
 
           <button onClick={handleRun} disabled={running || submitting || pyStatus === 'error'}
+            title="Run visible tests (Ctrl+Enter)"
             className="flex items-center gap-1.5 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
             {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 text-green-400" />}
             Run
+            <kbd className="hidden sm:block text-[9px] text-zinc-600 font-mono ml-0.5">⌘↵</kbd>
           </button>
           <button onClick={handleSubmit} disabled={running || submitting || pyStatus === 'error'}
+            title="Submit all tests (Ctrl+Shift+Enter)"
             className="flex items-center gap-1.5 text-xs font-semibold bg-orange-500 hover:bg-orange-400 text-white px-4 py-1.5 rounded-lg transition-colors disabled:opacity-40">
             {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
             Submit
@@ -406,6 +459,10 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
                 className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${resultTab === 'submit' ? 'border-orange-500 text-orange-400' : 'border-transparent text-zinc-500'}`}>
                 Submission
               </button>
+              <button onClick={() => setResultTab('history')}
+                className={`flex items-center gap-1 px-4 py-2 text-xs font-semibold border-b-2 transition-colors ${resultTab === 'history' ? 'border-orange-500 text-orange-400' : 'border-transparent text-zinc-500'}`}>
+                <History className="w-3 h-3" /> History
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -484,13 +541,58 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
                 </div>
               )}
 
+              {/* History panel */}
+              {resultTab === 'history' && (
+                <div>
+                  {loadingHistory ? (
+                    <div className="flex items-center gap-2 text-zinc-500 text-xs py-4">
+                      <Loader2 className="w-4 h-4 animate-spin text-orange-400" /> Loading history…
+                    </div>
+                  ) : user === null ? (
+                    <p className="text-xs text-zinc-600 text-center py-6">Sign in to see your submission history</p>
+                  ) : submissions.length === 0 ? (
+                    <div className="text-center py-6">
+                      <History className="w-7 h-7 text-zinc-800 mx-auto mb-2" />
+                      <p className="text-xs text-zinc-600">No submissions yet — submit your solution to see history</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      {submissions.map((s, i) => (
+                        <div key={s.id} className={`flex items-center gap-3 p-2.5 rounded-xl border ${s.status === 'Accepted' ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                          <div className="shrink-0">
+                            {s.status === 'Accepted'
+                              ? <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />
+                              : <XCircle className="w-3.5 h-3.5 text-red-400" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-xs font-semibold ${s.status === 'Accepted' ? 'text-green-400' : 'text-red-400'}`}>{s.status}</span>
+                            <span className="text-[10px] text-zinc-600 ml-2">{s.passed_tests}/{s.total_tests} tests</span>
+                          </div>
+                          <div className="shrink-0 flex items-center gap-2 text-[10px] text-zinc-600">
+                            <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" />{s.runtime_ms}ms</span>
+                            <span className="flex items-center gap-0.5"><CalendarDays className="w-3 h-3" />{new Date(s.created_at).toLocaleDateString('en-IN', {month:'short',day:'numeric'})}</span>
+                          </div>
+                          {i === 0 && (
+                            <button onClick={() => setCode(s.code)} title="Restore this code"
+                              className="p-1 hover:bg-zinc-700 rounded transition-colors shrink-0">
+                              <RotateCcw className="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Empty state */}
-              {!running && !submitting && !runResults && !submitResult && (
+              {resultTab !== 'history' && !running && !submitting && !runResults && !submitResult && (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
                     <Code2 className="w-8 h-8 text-zinc-800 mx-auto mb-2" />
                     <p className="text-xs text-zinc-600">
-                      Click <strong className="text-zinc-500">Run</strong> to test · <strong className="text-zinc-500">Submit</strong> to check all cases
+                      Click <strong className="text-zinc-500">Run</strong> <kbd className="text-[9px] bg-zinc-800 border border-zinc-700 px-1 rounded font-mono">⌘↵</kbd> to test
+                      {' · '}<strong className="text-zinc-500">Submit</strong> <kbd className="text-[9px] bg-zinc-800 border border-zinc-700 px-1 rounded font-mono">⌘⇧↵</kbd> to check all
                     </p>
                     {pyStatus === 'loading' && (
                       <p className="text-[10px] text-zinc-700 mt-1 flex items-center justify-center gap-1">

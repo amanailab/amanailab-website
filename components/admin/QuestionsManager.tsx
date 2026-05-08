@@ -98,6 +98,48 @@ interface BannerState {
   text: string
 }
 
+function SeedQuestionsPanel({ onSeeded }: { onSeeded: (count: number) => void }) {
+  const [password, setPassword] = useState('')
+  const [loading, setLoading]   = useState(false)
+  const [msg, setMsg]           = useState('')
+
+  async function seed() {
+    if (!password) { setMsg('Enter admin password'); return }
+    setLoading(true); setMsg('')
+    try {
+      const res = await fetch('/api/admin/seed-questions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      const data = await res.json()
+      if (data.seeded) { onSeeded(data.seeded as number); setMsg(`✓ ${data.seeded} questions seeded!`) }
+      else setMsg((data.error as string) ?? 'Failed')
+    } catch { setMsg('Network error') }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="bg-zinc-900 border border-blue-500/20 rounded-xl p-5 flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <HelpCircle className="w-4 h-4 text-blue-400" />
+        <h2 className="text-base font-bold text-zinc-100">Seed 50 Curated AI/ML Questions</h2>
+      </div>
+      <p className="text-xs text-zinc-500">Load a curated set of 50 real AI/ML interview questions covering LLM, RAG, Agents, Fine-Tuning, MLOps, Transformers, Python & more.</p>
+      <div className="flex gap-2 flex-wrap">
+        <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+          placeholder="Admin password"
+          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-blue-500/50 transition-colors w-40" />
+        <button onClick={seed} disabled={loading}
+          className="flex items-center gap-1.5 text-sm font-semibold bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors">
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          Seed Questions
+        </button>
+      </div>
+      {msg && <p className={`text-xs font-medium ${msg.startsWith('✓') ? 'text-green-400' : 'text-red-400'}`}>{msg}</p>}
+    </div>
+  )
+}
+
 export default function QuestionsManager({
   initialQuestions,
 }: {
@@ -386,6 +428,9 @@ export default function QuestionsManager({
           Save Question
         </button>
       </form>
+
+      {/* Seed 50 curated questions */}
+      <SeedQuestionsPanel onSeeded={(count) => setBanner({ type: 'success', text: `Seeded ${count} AI/ML questions! Refresh page to see them.` })} />
 
       {/* Bulk upload */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col gap-4">
