@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Download, X, FileText } from "lucide-react";
 
+// Read-only client for fetching resources list from DB
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -160,12 +161,22 @@ export default function ResourcesContent() {
     setStatus("loading");
     setErrorMsg("");
 
-    const { error } = await supabase
-      .from("newsletter_subscribers")
-      .insert({ email: trimmed });
-
-    // Ignore duplicate email errors so the user can still download
-    if (error && !error.message.includes("duplicate")) {
+    // Use the proper subscribe API — validates email, blocks disposable domains,
+    // saves with source + verified:false + verification_token, sends verify email
+    try {
+      const res = await fetch("/api/email/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed, source: "resources" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok && res.status !== 409) {
+        // 409 = already subscribed, still allow download
+        setStatus("error");
+        setErrorMsg(data.error ?? "Something went wrong. Please try again.");
+        return;
+      }
+    } catch {
       setStatus("error");
       setErrorMsg("Something went wrong. Please try again.");
       return;
