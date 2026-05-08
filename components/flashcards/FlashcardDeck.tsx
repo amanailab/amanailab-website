@@ -71,7 +71,7 @@ export default function FlashcardDeck({ topic }: Props) {
                 <RotateCcw className="w-4 h-4" /> Practice Again
               </button>
             )}
-            <Link href="/interview" className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold py-3 rounded-xl transition-colors">
+            <Link href="/interview?tab=simulator" className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold py-3 rounded-xl transition-colors">
               <BrainCircuit className="w-4 h-4" /> Test Yourself with Real Questions
             </Link>
             <Link href="/flashcards" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">

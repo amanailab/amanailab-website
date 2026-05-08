@@ -54,7 +54,7 @@ export default function FlashcardsPage() {
             <p className="text-sm font-bold text-zinc-100 mb-1">Want to test yourself with real questions?</p>
             <p className="text-xs text-zinc-500">The AI Simulator gives you timed questions with instant AI feedback.</p>
           </div>
-          <Link href="/interview" className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0">
+          <Link href="/interview?tab=simulator" className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0">
             Practice <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

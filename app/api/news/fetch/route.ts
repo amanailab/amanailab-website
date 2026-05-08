@@ -91,7 +91,7 @@ async function fetchRSSFeed(url: string, sourceName: string): Promise<RawArticle
     }
 
     if (articles.length === 0) {
-      console.log(`[RSS] No matching items from ${url}`);
+      console.info(`[RSS] No matching items from ${url}`);
     }
     return articles;
   } catch (err) {

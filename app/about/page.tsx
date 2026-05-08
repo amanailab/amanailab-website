@@ -17,7 +17,7 @@ export default async function AboutPage() {
   const viewCount = `${fmt.views.value}${fmt.views.suffix}`;
 
   return (
-    <div className="pt-16">
+    <div className="pt-20">
       <AboutContent
         videoCount={videoCount}
         subscriberCount={subscriberCount}

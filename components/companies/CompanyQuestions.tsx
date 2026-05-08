@@ -96,7 +96,7 @@ export default function CompanyQuestions({ questions }: { questions: Question[] 
           <BrainCircuit className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
           <p className="text-zinc-500 text-sm">No questions yet for this company.</p>
           <p className="text-zinc-600 text-xs mt-1">Questions are being added — check back soon.</p>
-          <Link href="/interview" className="inline-flex items-center gap-1.5 mt-4 text-xs text-orange-400 hover:text-orange-300 font-semibold">
+          <Link href="/interview?tab=simulator" className="inline-flex items-center gap-1.5 mt-4 text-xs text-orange-400 hover:text-orange-300 font-semibold">
             Practice general AI/ML questions →
           </Link>
         </div>

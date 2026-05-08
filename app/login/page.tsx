@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useEffect } from 'react'
 import { login } from '@/app/actions/auth'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -67,13 +67,11 @@ function DemoCard() {
 export default function LoginPage() {
   const [error, action, pending] = useActionState(login, null)
   const [nextPath, setNextPath] = useState('/dashboard')
-  // Read ?next= from URL (client-only, no Suspense needed)
-  const [initialized, setInitialized] = useState(false)
-  if (typeof window !== 'undefined' && !initialized) {
+  // Read ?next= from URL safely inside useEffect (avoids hydration mismatch)
+  useEffect(() => {
     const n = new URLSearchParams(window.location.search).get('next')
-    if (n?.startsWith('/')) { setNextPath(n); setInitialized(true) }
-    else setInitialized(true)
-  }
+    if (n?.startsWith('/')) setNextPath(n)
+  }, [])
 
   return (
     <div className="min-h-screen flex bg-zinc-950">

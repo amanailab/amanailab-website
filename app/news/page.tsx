@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function NewsPage() {
   return (
-    <div className="pt-16">
+    <div className="pt-20">
       <NewsFeed />
     </div>
   );

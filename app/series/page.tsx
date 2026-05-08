@@ -14,7 +14,7 @@ export default async function SeriesPage() {
   const playlists = await getPlaylists(20);
 
   return (
-    <div className="pt-16">
+    <div className="pt-20">
       <SeriesGrid playlists={playlists} />
     </div>
   );

@@ -78,6 +78,15 @@ export default function SkillQuiz() {
     setShowExplanation(false)
   }
 
+  async function retakeSameTopic() {
+    setQuestions([])
+    setAnswers([])
+    setCurrent(0)
+    setShowExplanation(false)
+    // topic and level are unchanged — call startQuiz directly
+    await startQuiz()
+  }
+
   const score = answers.filter((a, i) => a === questions[i]?.correctIndex).length
 
   if (phase === 'setup') {
@@ -280,12 +289,22 @@ export default function SkillQuiz() {
           </div>
 
           {isCaptured() ? (
-            <button
-              onClick={restart}
-              className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-500 text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all"
-            >
-              <RotateCcw className="w-4 h-4" /> Take Another Quiz
-            </button>
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={retakeSameTopic}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all"
+              >
+                <RotateCcw className="w-4 h-4" />
+                {loading ? 'Generating…' : `Retake ${topic} · ${level}`}
+              </button>
+              <button
+                onClick={restart}
+                className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-4 py-3.5 rounded-xl transition-all"
+              >
+                Change Topic or Level
+              </button>
+            </div>
           ) : (
             <EmailGateInline
               onSuccess={restart}

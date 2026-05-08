@@ -54,8 +54,20 @@ async function getQuestions() {
 export default async function QuestionsPage() {
   const { questions, companies } = await getQuestions()
 
+  // FAQ schema — first 25 questions for rich results in Google
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: questions.slice(0, 25).map(q => ({
+      '@type': 'Question',
+      name: q.question,
+      acceptedAnswer: { '@type': 'Answer', text: q.model_answer },
+    })),
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 mb-4">

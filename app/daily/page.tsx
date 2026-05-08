@@ -420,7 +420,7 @@ export default function DailyChallengePage() {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               {alreadyDone ? (
                 <>
-                  <Link href="/interview" className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
+                  <Link href="/interview?tab=simulator" className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
                     Practice Full Interview <ArrowRight className="w-4 h-4" />
                   </Link>
                   <Link href="/questions" className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-5 py-3 rounded-xl transition-colors">

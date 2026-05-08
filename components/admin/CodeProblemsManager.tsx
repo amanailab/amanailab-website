@@ -49,7 +49,7 @@ export default function CodeProblemsManager({ problems: initial }: { problems: P
           <p className="text-zinc-500 text-sm mt-1">{problems.length} problems loaded</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/code-lab" target="_blank"
+          <Link href="/code-lab" target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-800 border border-zinc-700 px-3 py-2 rounded-lg transition-colors">
             <ExternalLink className="w-3.5 h-3.5" /> View Live
           </Link>
@@ -125,7 +125,7 @@ export default function CodeProblemsManager({ problems: initial }: { problems: P
                 {p.difficulty}
               </span>
               <span className="text-xs text-zinc-500">{p.topic}</span>
-              <Link href={`/code-lab/${p.slug}`} target="_blank"
+              <Link href={`/code-lab/${p.slug}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 transition-colors">
                 <ExternalLink className="w-3 h-3" /> Open
               </Link>

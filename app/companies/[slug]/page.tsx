@@ -81,7 +81,7 @@ export default async function CompanyPage({ params }: Props) {
                 <span className="text-xs text-zinc-500">{company.interview_rounds} interview rounds</span>
               </div>
             </div>
-            <Link href="/interview" className="hidden sm:flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors shrink-0">
+            <Link href="/interview?tab=simulator" className="hidden sm:flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors shrink-0">
               <BrainCircuit className="w-3.5 h-3.5" /> Practice Now
             </Link>
           </div>
@@ -135,7 +135,7 @@ export default async function CompanyPage({ params }: Props) {
         <CompanyQuestions questions={questions} />
 
         <div className="mt-8 flex gap-3">
-          <Link href="/interview" className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
+          <Link href="/interview?tab=simulator" className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
             <BrainCircuit className="w-4 h-4" /> Practice Interview
           </Link>
           <Link href="/companies" className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-5 py-3.5 rounded-xl transition-colors">

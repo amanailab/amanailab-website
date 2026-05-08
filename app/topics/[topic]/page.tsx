@@ -129,7 +129,7 @@ export default async function TopicPage({ params }: Props) {
               className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
               <BookOpen className="w-3.5 h-3.5" /> Flashcards
             </Link>
-            <Link href="/interview"
+            <Link href="/interview?tab=simulator"
               className="flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors">
               <BrainCircuit className="w-3.5 h-3.5" /> Practice Now
             </Link>
@@ -151,7 +151,7 @@ export default async function TopicPage({ params }: Props) {
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center">
               <BrainCircuit className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
               <p className="text-zinc-500 text-sm mb-4">Questions for this topic coming soon.</p>
-              <Link href="/interview" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+              <Link href="/interview?tab=simulator" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
                 <BrainCircuit className="w-4 h-4" /> Practice {meta.label} Now
               </Link>
             </div>

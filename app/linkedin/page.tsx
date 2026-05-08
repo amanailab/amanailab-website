@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function LinkedInPage() {
   return (
-    <div className="pt-16">
+    <div className="pt-20">
       <LinkedInGenerator />
     </div>
   );

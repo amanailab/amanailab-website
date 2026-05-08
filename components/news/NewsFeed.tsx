@@ -80,14 +80,31 @@ function timeAgo(dateStr: string): string {
 
 // ─── NewsCard ─────────────────────────────────────────────────────────────────
 
-function NewsCard({ article }: { article: NewsArticle }) {
+const NEWS_READ_KEY = 'news_read_ids'
+
+function useReadArticles() {
+  const [readIds, setReadIds] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    try { setReadIds(new Set(JSON.parse(localStorage.getItem(NEWS_READ_KEY) ?? '[]'))) } catch { /* ignore */ }
+  }, [])
+  const markRead = useCallback((id: string) => {
+    setReadIds(prev => {
+      const next = new Set(prev); next.add(id)
+      try { localStorage.setItem(NEWS_READ_KEY, JSON.stringify([...next])) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+  return { readIds, markRead }
+}
+
+function NewsCard({ article, isRead, onRead }: { article: NewsArticle; isRead: boolean; onRead: (id: string) => void }) {
   const impact = IMPACT_CONFIG[article.impact_score] ?? IMPACT_CONFIG.good_to_know;
   const catLabel = article.category === "india_ai"
     ? "India AI"
     : article.category.charAt(0).toUpperCase() + article.category.slice(1);
 
   return (
-    <article className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200 gap-4">
+    <article className={`flex flex-col bg-zinc-900 border rounded-2xl p-6 transition-all duration-200 gap-4 ${isRead ? 'border-zinc-800/40 opacity-60 hover:opacity-80' : 'border-zinc-800 hover:border-zinc-700'}`}>
       {/* Header badges */}
       <div className="flex flex-wrap items-center gap-2">
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${impact.classes}`}>
@@ -103,6 +120,7 @@ function NewsCard({ article }: { article: NewsArticle }) {
         href={article.source_url}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => onRead(String(article.id))}
         className="group flex items-start gap-2"
       >
         <h2 className="text-zinc-100 font-semibold text-sm leading-snug group-hover:text-orange-400 transition-colors flex-1">
@@ -150,6 +168,7 @@ function lastUpdatedLabel(iso: string): string {
 }
 
 export default function NewsFeed() {
+  const { readIds, markRead }       = useReadArticles()
   const [articles, setArticles]     = useState<NewsArticle[]>([]);
   const [loading, setLoading]       = useState(true);
   const [category, setCategory]     = useState<Category>("all");
@@ -316,7 +335,7 @@ export default function NewsFeed() {
         {!loading && articles.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {articles.map((article) => (
-              <NewsCard key={article.id} article={article} />
+              <NewsCard key={article.id} article={article} isRead={readIds.has(String(article.id))} onRead={markRead} />
             ))}
           </div>
         )}

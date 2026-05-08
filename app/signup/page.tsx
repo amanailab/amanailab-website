@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useEffect } from 'react'
 import { signup } from '@/app/actions/auth'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -65,12 +65,10 @@ function CheckEmailScreen() {
 export default function SignupPage() {
   const [state, action, pending] = useActionState(signup, null)
   const [nextPath, setNextPath] = useState('/dashboard')
-  const [initialized, setInitialized] = useState(false)
-  if (typeof window !== 'undefined' && !initialized) {
+  useEffect(() => {
     const n = new URLSearchParams(window.location.search).get('next')
-    if (n?.startsWith('/')) { setNextPath(n); setInitialized(true) }
-    else setInitialized(true)
-  }
+    if (n?.startsWith('/')) setNextPath(n)
+  }, [])
 
   if (state === 'check_email') return <CheckEmailScreen />
 

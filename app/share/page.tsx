@@ -122,7 +122,7 @@ export default async function SharePage({ searchParams }: Props) {
               Practice AI/ML interview questions free — track your score, improve over time.
             </p>
             <Link
-              href="/interview"
+              href="/interview?tab=simulator"
               className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20"
             >
               <BrainCircuit className="w-4 h-4" /> Try it yourself — it&apos;s free

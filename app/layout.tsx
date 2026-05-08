@@ -42,13 +42,14 @@ export const metadata: Metadata = {
     siteName: "AmanAI Lab",
     title: "AmanAI Lab — AI/ML Career Platform",
     description: "Free AI-powered tools for AI/ML job seekers. Resume analyzer, interview simulator, LinkedIn optimizer, career roadmap & more.",
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "AmanAI Lab" }],
+    images: [{ url: "/logo.jpg", width: 512, height: 512, alt: "AmanAI Lab" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "AmanAI Lab — AI/ML Career Platform",
     description: "Free AI-powered tools for AI/ML job seekers.",
     creator: "@AmanAI_lab",
+    images: ["/logo.jpg"],
   },
   robots: {
     index: true,
