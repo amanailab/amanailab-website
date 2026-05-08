@@ -10,18 +10,46 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const sb = getAdminSupabase()
   const { data } = await sb.from('code_problems').select('title, difficulty, topic').eq('slug', slug).single()
   if (!data) return { title: 'Problem | AmanAI Lab' }
-  return { title: `${data.title} (${data.difficulty}) | AI Code Lab`, description: `Solve ${data.title} — ${data.topic} problem for AI/ML engineers.` }
+  return {
+    title: `${data.title} (${data.difficulty}) | AI Code Lab`,
+    description: `Solve ${data.title} — ${data.topic} coding problem for AI/ML engineers. Free.`,
+  }
 }
 
 export default async function ProblemPage({ params }: Props) {
   const { slug } = await params
   const sb = getAdminSupabase()
-  const { data: problem } = await sb
-    .from('code_problems')
-    .select('*')
-    .eq('slug', slug)
-    .single()
 
+  const { data: problem } = await sb.from('code_problems').select('*').eq('slug', slug).single()
   if (!problem) notFound()
-  return <ProblemClient problem={problem} />
+
+  // Fetch adjacent problems for prev/next navigation
+  const [{ data: prevArr }, { data: nextArr }, { data: allProblems }] = await Promise.all([
+    sb.from('code_problems')
+      .select('slug, title, difficulty')
+      .lt('order_index', problem.order_index)
+      .order('order_index', { ascending: false })
+      .limit(1),
+    sb.from('code_problems')
+      .select('slug, title, difficulty')
+      .gt('order_index', problem.order_index)
+      .order('order_index', { ascending: true })
+      .limit(1),
+    sb.from('code_problems')
+      .select('id')
+      .order('order_index'),
+  ])
+
+  const prevProblem = prevArr?.[0] ?? null
+  const nextProblem = nextArr?.[0] ?? null
+  const totalProblems = allProblems?.length ?? 0
+
+  return (
+    <ProblemClient
+      problem={problem}
+      prevProblem={prevProblem}
+      nextProblem={nextProblem}
+      totalProblems={totalProblems}
+    />
+  )
 }

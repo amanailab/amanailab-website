@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, Code2, Flame, CheckCircle2, Lock } from 'lucide-react'
+import { Search, Code2, Flame, CheckCircle2, Lock, Minus } from 'lucide-react'
 
 interface Problem {
   id: string; title: string; slug: string; difficulty: string
@@ -22,6 +22,15 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
   const [topic, setTopic]   = useState('All')
   const [diff,  setDiff]    = useState('All')
   const [search, setSearch] = useState('')
+  const [solvedIds, setSolvedIds]     = useState<Set<string>>(new Set())
+  const [attemptedIds, setAttemptedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    fetch('/api/code-lab/progress').then(r => r.json()).then(d => {
+      setSolvedIds(new Set(d.solved ?? []))
+      setAttemptedIds(new Set(d.attempted ?? []))
+    }).catch(() => {})
+  }, [])
 
   const filtered = problems.filter(p => {
     const matchTopic  = topic === 'All'  || p.topic === topic
@@ -135,7 +144,14 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
                   href={`/code-lab/${p.slug}`}
                   className="grid grid-cols-[40px_1fr_100px_120px_160px] gap-4 px-5 py-4 border-b border-zinc-800/60 hover:bg-zinc-800/40 transition-colors items-center group"
                 >
-                  <span className="text-xs text-zinc-600 font-mono">{p.order_index}</span>
+                  <div className="flex items-center justify-center" title={solvedIds.has(p.id)?'Solved':attemptedIds.has(p.id)?'Attempted':''}>
+                    {solvedIds.has(p.id)
+                      ? <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      : attemptedIds.has(p.id)
+                        ? <Minus className="w-4 h-4 text-yellow-400" />
+                        : <span className="text-xs text-zinc-600 font-mono">{p.order_index}</span>
+                    }
+                  </div>
 
                   <div>
                     <p className="text-sm font-semibold text-zinc-200 group-hover:text-white transition-colors">
