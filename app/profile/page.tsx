@@ -72,11 +72,16 @@ export default function ProfilePage() {
   }
 
   async function handleDeleteAccount() {
-    if (!confirm('This will permanently delete your account and all progress data. Are you sure?')) return
-    // Sign out — actual deletion requires server-side admin API in production
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/')
+    if (!confirm('This will permanently delete your account and ALL progress data (sessions, submissions, subscriptions). This cannot be undone. Are you sure?')) return
+    try {
+      const res = await fetch('/api/user/delete-account', { method: 'DELETE' })
+      if (!res.ok) { const d = await res.json(); alert(d.error ?? 'Failed to delete account'); return }
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      router.push('/?deleted=1')
+    } catch {
+      alert('Failed to delete account. Please try again or contact support.')
+    }
   }
 
   if (loading) return (

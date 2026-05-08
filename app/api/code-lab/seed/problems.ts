@@ -1041,4 +1041,153 @@ def log_softmax(logits: list) -> list:
       { id: 4, function_call: 'log_softmax([1.0,2.0,3.0])',        expected_output: '[-2.40761, -1.40761, -0.40761]', is_hidden: true, description: 'Log softmax' },
     ],
   },
+
+  // ── 21 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 21, title: 'F1 Score', slug: 'f1-score', difficulty: 'Easy', topic: 'Math',
+    tags: ['Math','Evaluation','Classification'], companies: ['Google','Meta'],
+    hints: ['F1 = 2 * precision * recall / (precision + recall)', 'precision = TP/(TP+FP), recall = TP/(TP+FN)'],
+    description: `## F1 Score\n\nThe harmonic mean of precision and recall. The standard metric when class imbalance matters.\n\n### Formula\n\`F1 = 2 × (precision × recall) / (precision + recall)\`\n\n### Example\n\`\`\`\nf1_score(tp=8, fp=2, fn=1) → 0.88889\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def f1_score(tp: int, fp: int, fn: int) -> float:\n    """\n    Compute F1 score from confusion matrix values.\n    tp: True Positives, fp: False Positives, fn: False Negatives\n    Returns: F1 score in [0, 1]\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'f1_score(8, 2, 1)', expected_output: '0.88889', is_hidden: false, description: 'Standard case' },
+      { id: 2, function_call: 'f1_score(10, 0, 0)', expected_output: '1.0', is_hidden: false, description: 'Perfect score' },
+      { id: 3, function_call: 'f1_score(0, 5, 5)', expected_output: '0.0', is_hidden: true, description: 'Zero F1' },
+      { id: 4, function_call: 'f1_score(5, 5, 5)', expected_output: '0.5', is_hidden: true, description: 'Equal errors' },
+    ],
+  },
+
+  // ── 22 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 22, title: 'Mean Squared Error', slug: 'mean-squared-error', difficulty: 'Easy', topic: 'Math',
+    tags: ['Math','Loss Functions','Regression'], companies: ['Google','Amazon'],
+    hints: ['MSE = mean((y_true[i] - y_pred[i])^2)', 'Use a list comprehension or sum()'],
+    description: `## Mean Squared Error\n\nThe standard regression loss. Penalizes large errors more than MAE.\n\n### Formula\n\`MSE = (1/n) × Σ (y_true[i] - y_pred[i])²\`\n\n### Example\n\`\`\`\nmse([1,2,3], [1,2,4]) → 0.33333\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def mse(y_true: list, y_pred: list) -> float:\n    """Mean Squared Error between true and predicted values."""\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'mse([1,2,3],[1,2,4])', expected_output: '0.33333', is_hidden: false, description: 'One wrong prediction' },
+      { id: 2, function_call: 'mse([1,2,3],[1,2,3])', expected_output: '0.0', is_hidden: false, description: 'Perfect predictions' },
+      { id: 3, function_call: 'mse([0,0,0],[1,1,1])', expected_output: '1.0', is_hidden: true, description: 'All off by 1' },
+      { id: 4, function_call: 'mse([3,2,1],[1,2,3])', expected_output: '2.66667', is_hidden: true, description: 'Reversed predictions' },
+    ],
+  },
+
+  // ── 23 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 23, title: 'L2 Normalization', slug: 'l2-normalization', difficulty: 'Easy', topic: 'Vector DB',
+    tags: ['Vector DB','Embeddings','Math'], companies: ['Pinecone','OpenAI'],
+    hints: ['Divide each element by the L2 norm: sqrt(sum of squares)', 'After normalization, the vector has magnitude 1'],
+    description: `## L2 Normalization\n\nNormalize a vector to unit length. Essential before cosine similarity — ensures dot product equals cosine similarity.\n\n### Formula\n\`x_norm[i] = x[i] / ||x||\`  where  \`||x|| = sqrt(Σ x[i]²)\`\n\n### Example\n\`\`\`\nl2_normalize([3, 4]) → [0.6, 0.8]  # magnitude = 5 → 3/5, 4/5\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def l2_normalize(vector: list) -> list:\n    """Normalize vector to unit length (L2 norm = 1.0)."""\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'l2_normalize([3,4])', expected_output: '[0.6, 0.8]', is_hidden: false, description: '3-4-5 right triangle' },
+      { id: 2, function_call: 'l2_normalize([1,0,0])', expected_output: '[1.0, 0.0, 0.0]', is_hidden: false, description: 'Already unit vector' },
+      { id: 3, function_call: 'l2_normalize([1,1,1])', expected_output: '[0.57735, 0.57735, 0.57735]', is_hidden: true, description: 'Equal components' },
+      { id: 4, function_call: 'l2_normalize([0,3,4])', expected_output: '[0.0, 0.6, 0.8]', is_hidden: true, description: 'Zero component' },
+    ],
+  },
+
+  // ── 24 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 24, title: 'KL Divergence', slug: 'kl-divergence', difficulty: 'Medium', topic: 'Math',
+    tags: ['Math','Probability','LLM'], companies: ['OpenAI','Anthropic','Google'],
+    hints: ['KL(P||Q) = sum(P[i] * log(P[i] / Q[i]))', 'Skip terms where P[i] == 0', 'Use math.log (natural log)'],
+    description: `## KL Divergence\n\nMeasures how distribution P differs from Q. Used in RLHF (KL penalty), VAEs, and information theory.\n\n### Formula\n\`KL(P || Q) = Σ P[i] × log(P[i] / Q[i])\`\n\n### Key properties\n- KL(P || Q) ≠ KL(Q || P) — not symmetric\n- KL = 0 when P = Q\n- Always ≥ 0 (Gibbs inequality)\n\n### Example\n\`\`\`\nkl_divergence([0.5,0.5],[0.4,0.6]) → 0.02041\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def kl_divergence(p: list, q: list) -> float:\n    """\n    KL divergence from distribution P to Q.\n    p, q: probability distributions (sum to 1.0)\n    Returns: float ≥ 0\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'kl_divergence([0.5,0.5],[0.4,0.6])', expected_output: '0.02041', is_hidden: false, description: 'Close distributions' },
+      { id: 2, function_call: 'kl_divergence([0.5,0.5],[0.5,0.5])', expected_output: '0.0', is_hidden: false, description: 'Identical distributions' },
+      { id: 3, function_call: 'kl_divergence([0.9,0.1],[0.5,0.5])', expected_output: '0.36798', is_hidden: true, description: 'Divergent distributions' },
+      { id: 4, function_call: 'kl_divergence([0.0,1.0],[0.5,0.5])', expected_output: '0.69315', is_hidden: true, description: 'One zero probability' },
+    ],
+  },
+
+  // ── 25 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 25, title: 'Recall@K', slug: 'recall-at-k', difficulty: 'Easy', topic: 'RAG',
+    tags: ['RAG','Evaluation','Retrieval'], companies: ['Pinecone','Cohere','Anthropic'],
+    hints: ['Recall@K = |relevant ∩ retrieved[:K]| / |relevant|', 'Divide by total number of relevant docs (not K)'],
+    description: `## Recall@K\n\nCompanion to Precision@K. Measures what fraction of ALL relevant documents appear in the top-K results.\n\n### Formula\n\`Recall@K = |relevant ∩ retrieved[:K]| / |relevant|\`\n\n### Example\n\`\`\`\nrelevant  = [1, 2, 3]\nretrieved = [1, 4, 2, 5, 6]\nK = 3 → top-3 = [1, 4, 2]\n→ 2 relevant in top-3 out of 3 total → 2/3 = 0.66667\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def recall_at_k(relevant: list, retrieved: list, k: int) -> float:\n    """\n    Compute Recall@K.\n    relevant:  list of relevant doc IDs\n    retrieved: retrieved doc IDs in rank order\n    k:         cutoff rank\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'recall_at_k([1,2,3],[1,4,2,5,6],3)', expected_output: '0.66667', is_hidden: false, description: '2/3 found in top-3' },
+      { id: 2, function_call: 'recall_at_k([1,2],[1,2,3,4,5],2)', expected_output: '1.0', is_hidden: false, description: 'All found in top-2' },
+      { id: 3, function_call: 'recall_at_k([1,2,3],[4,5,6],3)', expected_output: '0.0', is_hidden: true, description: 'Nothing relevant retrieved' },
+      { id: 4, function_call: 'recall_at_k([1,2,3,4],[1,2,5,6],4)', expected_output: '0.5', is_hidden: true, description: 'Half retrieved' },
+    ],
+  },
+
+  // ── 26 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 26, title: 'Moving Average', slug: 'moving-average', difficulty: 'Easy', topic: 'MLOps',
+    tags: ['MLOps','Statistics','Monitoring'], companies: ['Google','Amazon','Microsoft'],
+    hints: ['For each window of size k, compute the mean', 'Result length = len(values) - k + 1'],
+    description: `## Moving Average\n\nUsed in ML to smooth training curves, monitor model metrics, and detect drift in production.\n\n### Formula\n\`MA[i] = mean(values[i : i+k])\`\n\n### Example\n\`\`\`\nmoving_average([1,2,3,4,5], k=3) → [2.0, 3.0, 4.0]\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def moving_average(values: list, k: int) -> list:\n    """Compute simple moving average with window size k."""\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'moving_average([1,2,3,4,5],3)', expected_output: '[2.0, 3.0, 4.0]', is_hidden: false, description: 'Basic window=3' },
+      { id: 2, function_call: 'moving_average([1,1,1,1],2)', expected_output: '[1.0, 1.0, 1.0]', is_hidden: false, description: 'Constant sequence' },
+      { id: 3, function_call: 'moving_average([10,20,30,40,50],2)', expected_output: '[15.0, 25.0, 35.0, 45.0]', is_hidden: true, description: 'Window=2' },
+      { id: 4, function_call: 'moving_average([5],1)', expected_output: '[5.0]', is_hidden: true, description: 'Single element' },
+    ],
+  },
+
+  // ── 27 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 27, title: 'Nucleus (Top-p) Sampling', slug: 'nucleus-sampling', difficulty: 'Medium', topic: 'LLM',
+    tags: ['LLM','Sampling','Decoding'], companies: ['OpenAI','Anthropic','Mistral'],
+    hints: ['Sort probabilities descending', 'Find smallest set of tokens whose cumulative prob >= p', 'Return the indices of that set'],
+    description: `## Nucleus (Top-p) Sampling\n\nUsed by GPT-4, Claude, and all modern LLMs. Selects the smallest set of tokens whose cumulative probability exceeds threshold p.\n\n### Algorithm\n1. Sort tokens by probability (descending)\n2. Accumulate until sum ≥ p\n3. Return the selected token indices\n\n### Why better than top-k\nAdapts vocabulary size based on confidence — uses fewer tokens when model is confident, more when uncertain.\n\n### Example\n\`\`\`\nnucleus_indices([0.5, 0.3, 0.15, 0.05], p=0.8)\n# cumsum: 0.5, 0.8 → stop after 2 tokens\n→ [0, 1]  (indices sorted by probability)\n\`\`\``,
+    starter_code: `def nucleus_indices(probs: list, p: float) -> list:\n    """\n    Return indices of tokens in the nucleus (top-p) set.\n    probs: probability distribution (sums to 1.0)\n    p:     cumulative probability threshold (0 < p <= 1.0)\n    Returns: sorted list of indices (by original position)\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'nucleus_indices([0.5,0.3,0.15,0.05],0.8)', expected_output: '[0, 1]', is_hidden: false, description: 'p=0.8 selects top 2' },
+      { id: 2, function_call: 'nucleus_indices([0.5,0.3,0.15,0.05],1.0)', expected_output: '[0, 1, 2, 3]', is_hidden: false, description: 'p=1.0 selects all' },
+      { id: 3, function_call: 'nucleus_indices([0.25,0.25,0.25,0.25],0.5)', expected_output: '[0, 1]', is_hidden: true, description: 'Uniform distribution' },
+      { id: 4, function_call: 'nucleus_indices([0.9,0.05,0.03,0.02],0.9)', expected_output: '[0]', is_hidden: true, description: 'One dominant token' },
+    ],
+  },
+
+  // ── 28 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 28, title: 'Transformer Feed-Forward Layer', slug: 'transformer-ffn', difficulty: 'Medium', topic: 'Transformers',
+    tags: ['Transformers','Architecture','Deep Learning'], companies: ['OpenAI','Google','Meta'],
+    hints: ['FFN(x) = W2 * GELU(W1 * x + b1) + b2', 'W1: d_model → d_ff, W2: d_ff → d_model', 'GELU(x) = x * 0.5 * (1 + erf(x / sqrt(2)))'],
+    description: `## Transformer Feed-Forward Layer\n\nEvery transformer block has two sub-layers: attention + this FFN. The FFN expands then contracts the representation.\n\n### Architecture\n\`FFN(x) = W2 × GELU(W1 × x + b1) + b2\`\n\n- W1: d_model → d_ff (typically 4×)\n- W2: d_ff → d_model\n- GELU activation (smoother than ReLU)\n\n### Example (d_model=2, d_ff=4)\nWith random weights, verify output shape matches input shape.\n\nRound to **5 decimal places**.`,
+    starter_code: `def gelu(x: float) -> float:\n    """GELU activation: x * 0.5 * (1 + erf(x / sqrt(2)))"""\n    import math\n    return x * 0.5 * (1.0 + math.erf(x / math.sqrt(2)))\n\ndef ffn_forward(x: list, W1: list, b1: list, W2: list, b2: list) -> list:\n    """\n    Transformer FFN forward pass.\n    x:  input vector (d_model,)\n    W1: weight matrix (d_ff x d_model)\n    b1: bias (d_ff,)\n    W2: weight matrix (d_model x d_ff)\n    b2: bias (d_model,)\n    Returns: output vector (d_model,)\n    """\n    # Step 1: h = GELU(W1 @ x + b1)\n    # Step 2: out = W2 @ h + b2\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'gelu(0.0)', expected_output: '0.0', is_hidden: false, description: 'GELU at 0' },
+      { id: 2, function_call: 'gelu(1.0)', expected_output: '0.84134', is_hidden: false, description: 'GELU at 1' },
+      { id: 3, function_call: 'ffn_forward([1.0,0.0],[[1.0,0.0],[0.0,1.0]],[0.0,0.0],[[1.0,0.0],[0.0,1.0]],[0.0,0.0])', expected_output: '[0.84134, 0.0]', is_hidden: true, description: 'Identity weights' },
+    ],
+  },
+
+  // ── 29 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 29, title: 'Exponential Moving Average', slug: 'exponential-moving-average', difficulty: 'Easy', topic: 'MLOps',
+    tags: ['MLOps','Optimization','Training'], companies: ['Google','Meta','Nvidia'],
+    hints: ['EMA[0] = values[0]', 'EMA[i] = alpha * values[i] + (1-alpha) * EMA[i-1]', 'Higher alpha = more weight on recent values'],
+    description: `## Exponential Moving Average (EMA)\n\nUsed everywhere in ML: Adam optimizer (EMA of gradients), batch norm (EMA of statistics), model EMA for stable training.\n\n### Formula\n\`EMA[0] = values[0]\`\n\`EMA[i] = α × values[i] + (1-α) × EMA[i-1]\`\n\n### Example\n\`\`\`\nema([1.0, 2.0, 3.0, 4.0], alpha=0.5)\n→ [1.0, 1.5, 2.25, 3.125]\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def ema(values: list, alpha: float) -> list:\n    """\n    Compute exponential moving average.\n    alpha: smoothing factor in (0, 1]. Higher = more responsive.\n    """\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'ema([1.0,2.0,3.0,4.0],0.5)', expected_output: '[1.0, 1.5, 2.25, 3.125]', is_hidden: false, description: 'alpha=0.5' },
+      { id: 2, function_call: 'ema([5.0,5.0,5.0],0.3)', expected_output: '[5.0, 5.0, 5.0]', is_hidden: false, description: 'Constant series' },
+      { id: 3, function_call: 'ema([0.0,10.0],0.9)', expected_output: '[0.0, 9.0]', is_hidden: true, description: 'High alpha fast response' },
+      { id: 4, function_call: 'ema([1.0],0.5)', expected_output: '[1.0]', is_hidden: true, description: 'Single value' },
+    ],
+  },
+
+  // ── 30 ───────────────────────────────────────────────────────────────────────
+  {
+    order_index: 30, title: 'NDCG (Normalized DCG)', slug: 'ndcg', difficulty: 'Hard', topic: 'RAG',
+    tags: ['RAG','Evaluation','Information Retrieval'], companies: ['Google','Meta','Elastic'],
+    hints: ['DCG = sum(rel[i] / log2(i+2)) for i in range(k)', 'NDCG = DCG / IDCG where IDCG is DCG of perfect ranking', 'log2(pos+1) where pos is 1-indexed'],
+    description: `## NDCG — Normalized Discounted Cumulative Gain\n\nThe gold-standard retrieval metric used by search engines and RAG evaluations. Rewards highly relevant results appearing at the top.\n\n### Formula\n\`DCG@K = Σ rel[i] / log₂(i+2)\` (i is 0-indexed)\n\`NDCG@K = DCG@K / IDCG@K\`\n\nWhere IDCG is the DCG of the ideal (perfectly sorted) ranking.\n\n### Example\n\`\`\`\n# relevance scores: [3, 2, 3, 0, 1, 2]\nndcg([3,2,3,0,1,2], k=4)\n# DCG = 3/log2(2) + 2/log2(3) + 3/log2(4) + 0/log2(5)\n# IDCG = ideal DCG for sorted [3,3,2,2,1,0]\n→ 0.78514\n\`\`\`\n\nRound to **5 decimal places**.`,
+    starter_code: `def ndcg(relevances: list, k: int) -> float:\n    """\n    Compute NDCG@K.\n    relevances: list of relevance scores for retrieved docs (in rank order)\n    k:          cutoff rank\n    Returns: float in [0, 1]\n    """\n    import math\n    # Your code here\n    pass`,
+    test_cases: [
+      { id: 1, function_call: 'ndcg([3,2,3,0,1,2],4)', expected_output: '0.78514', is_hidden: false, description: 'Standard NDCG' },
+      { id: 2, function_call: 'ndcg([3,3,2,2],4)', expected_output: '1.0', is_hidden: false, description: 'Perfect ranking' },
+      { id: 3, function_call: 'ndcg([0,0,3,3],4)', expected_output: '0.55691', is_hidden: true, description: 'Relevant at bottom' },
+      { id: 4, function_call: 'ndcg([1,0,0,0],1)', expected_output: '1.0', is_hidden: true, description: 'K=1 perfect' },
+    ],
+  },
 ]

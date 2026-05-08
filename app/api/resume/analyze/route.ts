@@ -96,8 +96,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: SHORT_TEXT_MESSAGE }, { status: 400 });
     }
 
-    const truncated =
-      resumeText.length > MAX_RESUME_CHARS ? resumeText.slice(0, MAX_RESUME_CHARS) : resumeText;
+    const wasTruncated = resumeText.length > MAX_RESUME_CHARS
+    const truncated = wasTruncated ? resumeText.slice(0, MAX_RESUME_CHARS) : resumeText
 
     const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -164,7 +164,7 @@ Return ONLY valid JSON. No markdown fences. No commentary.`,
       return NextResponse.json({ error: "Failed to parse analysis." }, { status: 500 });
     }
 
-    return NextResponse.json(analysis);
+    return NextResponse.json({ ...analysis, truncated: wasTruncated });
   } catch (err) {
     console.error("[Resume] Error:", err);
     return NextResponse.json({ error: "Something went wrong." }, { status: 500 });

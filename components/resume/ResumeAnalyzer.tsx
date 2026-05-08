@@ -2099,6 +2099,15 @@ export default function ResumeAnalyzer() {
         {/* ── Analyze results ── */}
         {analysis && mode === "analyze" && (
           <div className="flex flex-col gap-5">
+            {/* Truncation warning */}
+            {(analysis as { truncated?: boolean }).truncated && (
+              <div className="flex items-start gap-2.5 bg-yellow-500/8 border border-yellow-500/25 rounded-xl px-4 py-3">
+                <span className="text-yellow-400 text-sm shrink-0">⚠️</span>
+                <p className="text-xs text-yellow-300 leading-relaxed">
+                  Your resume was longer than our analysis limit (12,000 characters). The last portion was not analyzed — consider shortening your resume or submitting key sections separately.
+                </p>
+              </div>
+            )}
             {/* Score */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
               <ScoreCircle score={analysis.score} />

@@ -128,8 +128,12 @@ export default function LinkedInOptimizer() {
                   onChange={(e) => setAbout(e.target.value)}
                   placeholder="Paste your current LinkedIn About section here..."
                   rows={7}
+                  maxLength={2600}
                   className="w-full bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-none"
                 />
+                <p className={`text-xs text-right ${about.length > 2400 ? 'text-yellow-400' : 'text-zinc-600'}`}>
+                  {about.length}/2,600 <span className="text-zinc-700">· LinkedIn About limit</span>
+                </p>
               </div>
 
               <div className="flex flex-col gap-2">

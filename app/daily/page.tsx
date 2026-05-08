@@ -109,6 +109,12 @@ function ScoreCircle({ score }: { score: number }) {
 
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
+// Clean up history entries older than 60 days to prevent localStorage bloat
+function pruneHistory(history: string[]): string[] {
+  const cutoff = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0]
+  return history.filter(d => d >= cutoff)
+}
+
 export default function DailyChallengePage() {
   const [question, setQuestion]         = useState<DailyQuestion | null>(null)
   const [todayDate, setTodayDate]       = useState('')
@@ -190,7 +196,7 @@ export default function DailyChallengePage() {
 
       const history = loadHistory()
       if (!history.includes(todayDate)) {
-        const updated = [...history, todayDate]
+        const updated = pruneHistory([...history, todayDate])
         localStorage.setItem(STORAGE_HISTORY, JSON.stringify(updated))
         setStreak(calcStreak(updated, todayDate))
       }

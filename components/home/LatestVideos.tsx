@@ -53,6 +53,8 @@ export default function LatestVideos({ videos }: { videos: Video[] }) {
                 src={featured.thumbnail}
                 alt={featured.title}
                 fill
+                priority
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
             ) : (
@@ -109,6 +111,8 @@ export default function LatestVideos({ videos }: { videos: Video[] }) {
                     src={video.thumbnail}
                     alt={video.title}
                     fill
+                    loading="lazy"
+                    sizes="112px"
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, RotateCcw, CheckCircle2, XCircle, BookOpen, BrainCircuit } from 'lucide-react'
 import type { TopicMeta } from '@/lib/topic-data'
@@ -29,6 +29,20 @@ export default function FlashcardDeck({ topic }: Props) {
   function restart() {
     setIndex(0); setFlipped(false); setKnown(new Set()); setLearning(new Set()); setDone(false)
   }
+
+  // Keyboard shortcuts: Space = flip, → = known, ← = learning
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (done || (e.target as HTMLElement).tagName === 'INPUT') return
+      if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault(); setFlipped(v => !v)
+      }
+      if (e.key === 'ArrowRight') { e.preventDefault(); next('known') }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); next('learning') }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [done, next])
 
   if (done) {
     return (
