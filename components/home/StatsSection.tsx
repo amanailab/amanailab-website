@@ -18,19 +18,19 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
 
   useEffect(() => {
     if (!inView) return;
-    const steps = 50;
-    const increment = value / steps;
-    let current = 0;
-    const interval = setInterval(() => {
-      current += increment;
-      if (current >= value) {
-        setCount(value);
-        clearInterval(interval);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, 1800 / steps);
-    return () => clearInterval(interval);
+    const duration = 1600;
+    const start = performance.now();
+    let raf: number;
+    function animate(now: number) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(eased * value));
+      if (progress < 1) raf = requestAnimationFrame(animate);
+      else setCount(value);
+    }
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
   }, [inView, value]);
 
   return (

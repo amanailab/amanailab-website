@@ -79,8 +79,7 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          Resume analyzer, voice interview simulator, career roadmap, paper explainer,
-          offer analyzer and 10+ more tools — all free, all built for AI/ML professionals.
+          The only free platform built specifically for AI/ML engineers — from mock interviews and code practice to resume scoring and skill gap analysis. Everything you need, all in one place.
         </motion.p>
 
         {/* CTAs */}

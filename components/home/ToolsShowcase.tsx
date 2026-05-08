@@ -7,6 +7,7 @@ import {
   BookOpen, BarChart2, Wand2, CalendarDays,
   Building2, GraduationCap, Mail, ArrowRight,
   Briefcase, Library, MessageSquare, Layers, Code2,
+  ScrollText,
 } from "lucide-react";
 
 const tools = [
@@ -25,7 +26,7 @@ const tools = [
   { icon: <CalendarDays className="w-5 h-5" />,label: "Study Plan",               description: "Day-by-day prep schedule for your interview date",     href: "/career",             color: "text-amber-400",  bg: "bg-amber-500/10 border-amber-500/20" },
   { icon: <Wand2 className="w-5 h-5" />,       label: "Prompt Generator",         description: "Perfect AI prompts for any task or model",             href: "/prompt",             color: "text-cyan-400",   bg: "bg-cyan-500/10 border-cyan-500/20"   },
   { icon: <Sparkles className="w-5 h-5" />,    label: "Skill Quiz",               description: "AI-generated MCQ quiz with explanations",              href: "/quiz",               color: "text-lime-400",   bg: "bg-lime-500/10 border-lime-500/20"   },
-  { icon: <BookOpen className="w-5 h-5" />,    label: "Paper Explainer",          description: "Any arXiv paper explained in plain English",           href: "/paper-explainer",    color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20"},
+  { icon: <ScrollText className="w-5 h-5" />,  label: "Paper Explainer",          description: "Any arXiv paper explained in plain English",           href: "/paper-explainer",    color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20"},
   { icon: <GraduationCap className="w-5 h-5" />,label: "LinkedIn Posts",          description: "Viral AI/ML posts for 5 different styles",             href: "/linkedin",           color: "text-fuchsia-400",bg: "bg-fuchsia-500/10 border-fuchsia-500/20"},
 ];
 
@@ -43,7 +44,7 @@ export default function ToolsShowcase() {
         >
           <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-4 uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5" />
-            20+ Free AI Tools
+            17 Free AI Tools
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-3">
             Everything You Need to Land an AI/ML Job

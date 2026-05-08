@@ -11,7 +11,7 @@ interface Props {
 export default function SocialProofBar({ subscriberCount, videoCount }: Props) {
   const stats = [
     { icon: <Users className="w-5 h-5" />,       value: subscriberCount ?? "10K+", label: "Developers Learning" },
-    { icon: <Wrench className="w-5 h-5" />,       value: "20+",                      label: "Free AI Tools"       },
+    { icon: <Wrench className="w-5 h-5" />,       value: "17",                       label: "Free AI Tools"       },
     { icon: <BrainCircuit className="w-5 h-5" />, value: "500+",                     label: "Interview Questions" },
     { icon: <BookOpen className="w-5 h-5" />,     value: videoCount ?? "150+",       label: "Videos & Articles"   },
   ]

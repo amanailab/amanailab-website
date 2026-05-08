@@ -65,11 +65,11 @@ const footerLinks = {
     { href: "/prompt",              label: "Prompt Generator"      },
   ],
   Career: [
-    { href: "/career",    label: "Career Roadmap"    },
-    { href: "/career",    label: "Study Plan"         },
-    { href: "/career",    label: "Offer Analyzer"     },
-    { href: "/career",    label: "Company Research"   },
-    { href: "/interview", label: "Interview Q&A Bank" },
+    { href: "/career?tab=roadmap",    label: "Career Roadmap"    },
+    { href: "/career?tab=study-plan", label: "Study Plan"         },
+    { href: "/career?tab=offer",      label: "Offer Analyzer"     },
+    { href: "/career?tab=company",    label: "Company Research"   },
+    { href: "/skill-gap",             label: "Skill Gap Analyzer" },
   ],
   Learn: [
     { href: "/series",    label: "YouTube Series"  },
@@ -156,9 +156,11 @@ export default function Footer() {
           <p className="text-zinc-600 text-xs">
             © {year} AmanAI Lab. All rights reserved.
           </p>
-          <p className="text-zinc-600 text-xs">
-            Built for AI/ML professionals · Made with ❤️ in India
-          </p>
+          <div className="flex items-center gap-4">
+            <Link href="/contact" className="text-zinc-600 hover:text-zinc-400 text-xs transition-colors">Privacy</Link>
+            <Link href="/contact" className="text-zinc-600 hover:text-zinc-400 text-xs transition-colors">Terms</Link>
+            <p className="text-zinc-700 text-xs">Built for AI/ML professionals</p>
+          </div>
         </div>
       </div>
     </footer>

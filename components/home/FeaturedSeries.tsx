@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { ArrowRight, Play, BookOpen } from "lucide-react";
 import type { Playlist } from "@/lib/types";
 
@@ -34,6 +35,21 @@ export default function FeaturedSeries({ playlists }: { playlists: Playlist[] })
 
       <div className="grid md:grid-cols-3 gap-5">
         {playlists.map((s, i) => (
+          <SeriesCard key={s.id} s={s} i={i} />
+        ))}
+      </div>
+      <div className="text-center mt-8 md:hidden">
+        <Link href="/series" className="inline-flex items-center gap-1.5 text-zinc-400 hover:text-orange-400 transition-colors text-sm font-medium">
+          View all series <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function SeriesCard({ s, i }: { s: Playlist; i: number }) {
+  const [imgError, setImgError] = useState(false);
+  return (
           <motion.div
             key={s.id}
             initial={{ opacity: 0, y: 24 }}
@@ -50,11 +66,12 @@ export default function FeaturedSeries({ playlists }: { playlists: Playlist[] })
                 background: `linear-gradient(135deg, ${s.gradientFrom}22 0%, ${s.gradientTo}22 100%)`,
               }}
             >
-              {s.thumbnail ? (
+              {s.thumbnail && !imgError ? (
                 <Image
                   src={s.thumbnail}
                   alt={s.title}
                   fill
+                  onError={() => setImgError(true)}
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               ) : (
@@ -105,14 +122,5 @@ export default function FeaturedSeries({ playlists }: { playlists: Playlist[] })
               </div>
             </div>
           </motion.div>
-        ))}
-      </div>
-
-      <div className="mt-8 md:hidden text-center">
-        <Link href="/series" className="inline-flex items-center gap-1.5 text-orange-400 hover:text-orange-300 font-medium text-sm">
-          View all series <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
-    </section>
   );
 }
