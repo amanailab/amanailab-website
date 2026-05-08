@@ -1,3 +1,5 @@
+export const revalidate = 86400 // questions rarely change — rebuild once a day
+
 import type { Metadata } from 'next'
 import { Library } from 'lucide-react'
 import { getAdminSupabase } from '@/lib/admin'

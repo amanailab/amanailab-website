@@ -51,7 +51,9 @@
       "Bash(grep -v \"node_modules\\\\|//.*any\\\\|company\\\\|many\\\\|botany\\\\|Germany\\\\|testimony\\\\|harmony\\\\|accompany\\\\|company\")",
       "Bash(grep -v \"//.*window\\\\.\")",
       "Bash(grep -v \"node_modules\\\\|typeof window\\\\|'use client'\\\\|useEffect\\\\|//.*local\")",
-      "Bash(grep -v \"node_modules\\\\|//.*fetch\\\\|useEffect\\\\|'use client'\")"
+      "Bash(grep -v \"node_modules\\\\|//.*fetch\\\\|useEffect\\\\|'use client'\")",
+      "Bash(grep -rn \"key=.*index\\\\|\\\\.map.*idx\\\\|\\\\.map.*i,\\\\b\\\\|key={i}\" E:/amanailab-website/amanailab-website/components/ --include=\"*.tsx\")",
+      "Bash(grep -v \"node_modules\\\\|//.*key\")"
     ]
   }
 }

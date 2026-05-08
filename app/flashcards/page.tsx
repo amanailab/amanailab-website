@@ -1,3 +1,5 @@
+export const revalidate = false
+
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Layers, BookOpen, ArrowRight } from 'lucide-react'

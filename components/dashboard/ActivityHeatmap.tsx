@@ -82,7 +82,7 @@ export default function ActivityHeatmap({ sessions, totalSessions }: Props) {
             {weeks.map((_, wi) => {
               const ml = monthLabels.find(m => m.col === wi)
               return (
-                <div key={wi} className="w-3 shrink-0 text-[9px] text-zinc-600 font-medium">
+                <div key={wi} className="w-3 shrink-0 text-[10px] text-zinc-600 font-medium">
                   {ml ? ml.label : ''}
                 </div>
               )

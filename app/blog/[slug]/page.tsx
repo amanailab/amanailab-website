@@ -7,6 +7,18 @@ import type { BlogPost } from '@/lib/admin'
 import { Clock, ArrowLeft, Tag, Share2 } from 'lucide-react'
 import EmailCaptureCard from '@/components/shared/EmailCaptureCard'
 import ReadingProgress from '@/components/blog/ReadingProgress'
+import sanitizeHtml from 'sanitize-html'
+
+const ALLOWED_TAGS = [
+  ...sanitizeHtml.defaults.allowedTags,
+  'img','h1','h2','h3','h4','pre','code','figure','figcaption','mark','del','ins',
+]
+const ALLOWED_ATTRS: sanitizeHtml.IOptions['allowedAttributes'] = {
+  ...sanitizeHtml.defaults.allowedAttributes,
+  '*':   ['class','id','style'],
+  'a':   ['href','target','rel','title'],
+  'img': ['src','alt','width','height','loading'],
+}
 
 export const revalidate = 60
 
@@ -120,10 +132,15 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
       )}
 
-      {/* Content */}
+      {/* Content — sanitized to prevent XSS */}
       <div
         className="blog-content"
-        dangerouslySetInnerHTML={{ __html: post.content }}
+        dangerouslySetInnerHTML={{
+          __html: sanitizeHtml(post.content, {
+            allowedTags: ALLOWED_TAGS,
+            allowedAttributes: ALLOWED_ATTRS,
+          }),
+        }}
       />
 
       {/* Newsletter capture */}

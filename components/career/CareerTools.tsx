@@ -450,11 +450,11 @@ function RoadmapTab() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <p className="text-xs font-semibold text-zinc-500 mb-1.5">Topics</p>
-                        <ul className="flex flex-col gap-1">{phase.topics.map((t, i) => <li key={i} className="text-xs text-zinc-300 flex items-start gap-1.5"><span className="text-orange-500 shrink-0">•</span>{t}</li>)}</ul>
+                        <ul className="flex flex-col gap-1">{phase.topics.map((t) => <li key={t} className="text-xs text-zinc-300 flex items-start gap-1.5"><span className="text-orange-500 shrink-0">•</span>{t}</li>)}</ul>
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-zinc-500 mb-1.5">Resources</p>
-                        <ul className="flex flex-col gap-1">{phase.resources.map((r, i) => <li key={i} className="text-xs text-zinc-300 flex items-start gap-1.5"><span className="text-blue-400 shrink-0">→</span>{r}</li>)}</ul>
+                        <ul className="flex flex-col gap-1">{phase.resources.map((r) => <li key={r} className="text-xs text-zinc-300 flex items-start gap-1.5"><span className="text-blue-400 shrink-0">→</span>{r}</li>)}</ul>
                       </div>
                     </div>
                     {phase.milestone && (
@@ -646,7 +646,7 @@ function StudyPlanTab() {
                             <div className="flex-1">
                               <p className="text-sm font-semibold text-zinc-200">{day.topic}</p>
                               <ul className="mt-1 flex flex-col gap-0.5">
-                                {day.tasks.map((t, i) => <li key={i} className="text-xs text-zinc-400 flex items-start gap-1.5"><span className="text-orange-500 shrink-0">•</span>{t}</li>)}
+                                {day.tasks.map((t, i) => <li key={t + i} className="text-xs text-zinc-400 flex items-start gap-1.5"><span className="text-orange-500 shrink-0">•</span>{t}</li>)}
                               </ul>
                               <p className="text-xs text-blue-400 mt-1">Practice: {day.practice}</p>
                             </div>
@@ -663,12 +663,12 @@ function StudyPlanTab() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Section title="Daily Routine">
                   <ul className="flex flex-col gap-2">
-                    {result.dailyRoutine.map((r, i) => <li key={i} className="text-xs text-zinc-300 flex items-start gap-2"><Clock className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />{r}</li>)}
+                    {result.dailyRoutine.map((r, i) => <li key={r + i} className="text-xs text-zinc-300 flex items-start gap-2"><Clock className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />{r}</li>)}
                   </ul>
                 </Section>
                 <Section title="Don't Forget">
                   <ul className="flex flex-col gap-2">
-                    {result.doNotForget.map((r, i) => <li key={i} className="text-xs text-zinc-300 flex items-start gap-2"><AlertCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />{r}</li>)}
+                    {result.doNotForget.map((r, i) => <li key={r + i} className="text-xs text-zinc-300 flex items-start gap-2"><AlertCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />{r}</li>)}
                   </ul>
                 </Section>
               </div>
@@ -811,14 +811,14 @@ function OfferTab() {
                 {result.greenFlags.length > 0 && (
                   <Section title="Green Flags ✅">
                     <ul className="flex flex-col gap-2">
-                      {result.greenFlags.map((f, i) => <li key={i} className="flex items-start gap-2 text-xs text-zinc-300"><CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0 mt-0.5" />{f}</li>)}
+                      {result.greenFlags.map((f, i) => <li key={f + i} className="flex items-start gap-2 text-xs text-zinc-300"><CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0 mt-0.5" />{f}</li>)}
                     </ul>
                   </Section>
                 )}
                 {result.redFlags.length > 0 && (
                   <Section title="Red Flags ⚠️">
                     <ul className="flex flex-col gap-2">
-                      {result.redFlags.map((f, i) => <li key={i} className="flex items-start gap-2 text-xs text-zinc-300"><XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />{f}</li>)}
+                      {result.redFlags.map((f, i) => <li key={f + i} className="flex items-start gap-2 text-xs text-zinc-300"><XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />{f}</li>)}
                     </ul>
                   </Section>
                 )}
@@ -828,7 +828,7 @@ function OfferTab() {
               {result.missingClauses.length > 0 && (
                 <Section title="Missing Clauses">
                   <ul className="flex flex-col gap-2">
-                    {result.missingClauses.map((c, i) => <li key={i} className="flex items-start gap-2 text-xs text-zinc-300"><AlertCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />{c}</li>)}
+                    {result.missingClauses.map((c, i) => <li key={c + i} className="flex items-start gap-2 text-xs text-zinc-300"><AlertCircle className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />{c}</li>)}
                   </ul>
                 </Section>
               )}
@@ -845,7 +845,7 @@ function OfferTab() {
               {/* Questions to Ask */}
               <Section title="Questions to Ask Them">
                 <ul className="flex flex-col gap-2">
-                  {result.questionsToAsk.map((q, i) => <li key={i} className="flex items-start gap-2 text-sm text-zinc-300"><span className="text-orange-400 shrink-0 font-bold">{i + 1}.</span>{q}</li>)}
+                  {result.questionsToAsk.map((q, i) => <li key={q + i} className="flex items-start gap-2 text-sm text-zinc-300"><span className="text-orange-400 shrink-0 font-bold">{i + 1}.</span>{q}</li>)}
                 </ul>
               </Section>
             </>
@@ -961,12 +961,12 @@ function CompanyTab() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Section title="Topics to Study">
                   <ul className="flex flex-col gap-2">
-                    {result.topicsToStudy.map((t, i) => <li key={i} className="flex items-start gap-2 text-xs text-zinc-300"><BookOpen className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />{t}</li>)}
+                    {result.topicsToStudy.map((t, i) => <li key={t + i} className="flex items-start gap-2 text-xs text-zinc-300"><BookOpen className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />{t}</li>)}
                   </ul>
                 </Section>
                 <Section title="Common Interview Questions">
                   <ul className="flex flex-col gap-2">
-                    {result.commonInterviewQuestions.map((q, i) => <li key={i} className="flex items-start gap-2 text-xs text-zinc-300"><span className="text-orange-400 shrink-0 font-bold">{i + 1}.</span>{q}</li>)}
+                    {result.commonInterviewQuestions.map((q, i) => <li key={q + i} className="flex items-start gap-2 text-xs text-zinc-300"><span className="text-orange-400 shrink-0 font-bold">{i + 1}.</span>{q}</li>)}
                   </ul>
                 </Section>
               </div>
@@ -975,13 +975,13 @@ function CompanyTab() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Section title="Culture Signals">
                   <ul className="flex flex-col gap-2">
-                    {result.cultureSignals.map((c, i) => <li key={i} className="text-xs text-zinc-300 flex items-start gap-2"><span className="text-zinc-500 shrink-0">•</span>{c}</li>)}
+                    {result.cultureSignals.map((c, i) => <li key={c + i} className="text-xs text-zinc-300 flex items-start gap-2"><span className="text-zinc-500 shrink-0">•</span>{c}</li>)}
                   </ul>
                 </Section>
                 <Section title="Pros & Cons">
                   <div className="flex flex-col gap-2">
-                    {result.prosAndCons.pros.map((p, i) => <div key={i} className="flex items-start gap-2 text-xs text-green-300"><CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" />{p}</div>)}
-                    {result.prosAndCons.cons.map((c, i) => <div key={i} className="flex items-start gap-2 text-xs text-red-300"><XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />{c}</div>)}
+                    {result.prosAndCons.pros.map((p, i) => <div key={p + i} className="flex items-start gap-2 text-xs text-green-300"><CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5" />{p}</div>)}
+                    {result.prosAndCons.cons.map((c, i) => <div key={c + i} className="flex items-start gap-2 text-xs text-red-300"><XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />{c}</div>)}
                   </div>
                 </Section>
               </div>
@@ -989,13 +989,13 @@ function CompanyTab() {
               {/* Insider Tips + Questions to Ask */}
               <Section title="Insider Tips">
                 <ul className="flex flex-col gap-2">
-                  {result.insiderTips.map((t, i) => <li key={i} className="flex items-start gap-2 text-xs text-zinc-300"><Lightbulb className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />{t}</li>)}
+                  {result.insiderTips.map((t, i) => <li key={t + i} className="flex items-start gap-2 text-xs text-zinc-300"><Lightbulb className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />{t}</li>)}
                 </ul>
               </Section>
 
               <Section title="Questions to Ask the Interviewer">
                 <ul className="flex flex-col gap-2">
-                  {result.questionsToAskThem.map((q, i) => <li key={i} className="flex items-start gap-2 text-xs text-zinc-300"><span className="text-orange-400 shrink-0 font-bold">{i + 1}.</span>{q}</li>)}
+                  {result.questionsToAskThem.map((q, i) => <li key={q + i} className="flex items-start gap-2 text-xs text-zinc-300"><span className="text-orange-400 shrink-0 font-bold">{i + 1}.</span>{q}</li>)}
                 </ul>
               </Section>
 

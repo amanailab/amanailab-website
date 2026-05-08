@@ -1,3 +1,5 @@
+export const revalidate = 3600
+
 import { getAdminSupabase } from '@/lib/admin'
 import Link from 'next/link'
 import { ArrowRight, Building2, Star } from 'lucide-react'

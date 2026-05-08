@@ -40,6 +40,16 @@ interface AnalysisResult {
 
 
 export async function POST(req: Request) {
+  // Rate limit: 5 analyses per minute per IP
+  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:resume`, 5, 60_000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
+    )
+  }
+
   try {
     const form = await req.formData();
     const file = form.get("file");

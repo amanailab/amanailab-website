@@ -4,6 +4,15 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(req: Request) {
+  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:quiz`, 8, 60_000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
+    )
+  }
+
   try {
     const { topic, level, count = 5 } = await req.json()
 

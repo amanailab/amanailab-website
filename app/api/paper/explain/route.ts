@@ -55,6 +55,15 @@ async function fetchArxivMeta(id: string) {
 }
 
 export async function POST(req: Request) {
+  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:paper`, 5, 60_000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
+    )
+  }
+
   try {
     const { input } = await req.json()
     if (!input?.trim()) {
