@@ -15,6 +15,7 @@ import {
   Building2,
   MessageSquare,
   Library,
+  Code2,
 } from 'lucide-react'
 
 const navLinks = [
@@ -23,6 +24,7 @@ const navLinks = [
   { href: '/admin/questions',         label: "Interview Q's",   icon: HelpCircle },
   { href: '/admin/company-questions', label: 'Company Q\'s',    icon: Library },
   { href: '/admin/companies',         label: 'Companies',       icon: Building2 },
+  { href: '/admin/code-problems',     label: 'Code Lab',        icon: Code2 },
   { href: '/admin/community',         label: 'Community',       icon: MessageSquare },
   { href: '/admin/resources',         label: 'Cheat Sheets',    icon: BookOpen },
   { href: '/admin/news',              label: 'News',            icon: Newspaper },
