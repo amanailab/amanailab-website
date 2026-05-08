@@ -360,7 +360,7 @@ function AchievementsPanel({ achievements }: { achievements: Achievement[] }) {
 
 const TOOLKIT = [
   { href: '/daily',         icon: FlameIcon,    label: 'Daily Challenge', desc: 'One question every day',           color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
-  { href: '/interview',     icon: BrainCircuit, label: 'AI Simulator',    desc: 'Timed sessions with AI scoring',   color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/20' },
+  { href: '/interview?tab=simulator', icon: BrainCircuit, label: 'AI Simulator', desc: 'Timed sessions with AI scoring', color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/20' },
   { href: '/companies',     icon: Building2,    label: 'Company Prep',    desc: 'Google, Meta, OpenAI & more',      color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20'   },
   { href: '/questions',     icon: Library,      label: 'Question Bank',   desc: 'Browse 500+ questions',            color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20'},
   { href: '/job-prep',      icon: Briefcase,    label: 'Job Prep',        desc: 'Paste JD → tailored questions',    color: 'text-teal-400',   bg: 'bg-teal-500/10 border-teal-500/20'   },
@@ -479,9 +479,9 @@ export default async function DashboardPage() {
   nextActions.push({ label: "Today's Daily Challenge", sub: 'One question every day — builds streaks', href: '/daily', icon: <Flame className="w-4 h-4" />, accent: 'border-orange-500/30 bg-orange-500/5' })
   if (weakTopic && topicMap[weakTopic]) {
     const weakAvg = (topicMap[weakTopic].reduce((a, b) => a + b, 0) / topicMap[weakTopic].length).toFixed(1)
-    nextActions.push({ label: `Improve ${weakTopic}`, sub: `Current score: ${weakAvg}/10 — your weakest topic`, href: '/interview', icon: <BrainCircuit className="w-4 h-4" />, accent: 'border-red-500/30 bg-red-500/5' })
+    nextActions.push({ label: `Improve ${weakTopic}`, sub: `Current score: ${weakAvg}/10 — your weakest topic`, href: '/interview?tab=simulator', icon: <BrainCircuit className="w-4 h-4" />, accent: 'border-red-500/30 bg-red-500/5' })
   } else if (uncoveredTopics.length > 0) {
-    nextActions.push({ label: `Try ${uncoveredTopics[0]}`, sub: "Haven't practiced this yet", href: '/interview', icon: <BrainCircuit className="w-4 h-4" />, accent: 'border-orange-500/30 bg-orange-500/5' })
+    nextActions.push({ label: `Try ${uncoveredTopics[0]}`, sub: "Haven't practiced this yet", href: '/interview?tab=simulator', icon: <BrainCircuit className="w-4 h-4" />, accent: 'border-orange-500/30 bg-orange-500/5' })
   }
   nextActions.push({ label: 'Practice for a specific company', sub: 'Google, Meta, OpenAI & more', href: '/companies', icon: <Building2 className="w-4 h-4" />, accent: 'border-blue-500/30 bg-blue-500/5' })
 
@@ -522,7 +522,7 @@ export default async function DashboardPage() {
                 </div>
                 <h2 className="text-lg font-bold text-zinc-100 mb-2">Start your first session</h2>
                 <p className="text-zinc-500 text-sm mb-6 max-w-sm mx-auto">Complete one interview to unlock your readiness score, topic mastery, and full progress tracking.</p>
-                <Link href="/interview" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
+                <Link href="/interview?tab=simulator" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
                   Start Interview Practice <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -692,7 +692,7 @@ export default async function DashboardPage() {
             <PreparationToolkit />
 
             <div className="flex gap-3">
-              <Link href="/interview" className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
+              <Link href="/interview?tab=simulator" className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
                 <BrainCircuit className="w-4 h-4" /> New Practice Session
               </Link>
               <Link href="/questions" className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-5 py-3.5 rounded-xl transition-colors">

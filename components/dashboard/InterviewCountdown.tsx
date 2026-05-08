@@ -101,10 +101,13 @@ export default function InterviewCountdown({ weakTopics, strongTopics }: { weakT
         {!setting ? (
           <div className="flex flex-col items-center py-4 gap-3">
             <Calendar className="w-8 h-8 text-zinc-700" />
-            <p className="text-sm text-zinc-400 text-center">Set your interview date and get a personalized day-by-day prep plan.</p>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-zinc-300 mb-1">Got an interview coming up?</p>
+              <p className="text-xs text-zinc-500">Enter your date → get an AI-generated day-by-day prep plan tailored to your weak topics.</p>
+            </div>
             <button onClick={() => setSetting(true)}
               className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
-              <Sparkles className="w-3.5 h-3.5" /> Set Interview Date
+              <Sparkles className="w-3.5 h-3.5" /> Plan My Interview Prep
             </button>
           </div>
         ) : (

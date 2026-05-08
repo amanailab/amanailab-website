@@ -11,6 +11,7 @@ export default function AchievementAlert({ achievements }: { achievements: Achie
   const [toasts, setToasts] = useState<Achievement[]>([])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
     const unlockedIds  = achievements.filter(a => a.unlocked).map(a => a.id)
     const seen: string[] = (() => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]') } catch { return [] } })()
 

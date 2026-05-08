@@ -481,7 +481,15 @@ function SkeletonCard() {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function InterviewHub() {
-  const [activeTab, setActiveTab]     = useState<"bank" | "simulator" | "chat">("bank");
+  // Default to simulator — "New Practice Session" from dashboard should land on simulator
+  // Support ?tab=bank URL param for direct links to question bank
+  const [activeTab, setActiveTab]     = useState<"bank" | "simulator" | "chat">(() => {
+    if (typeof window !== 'undefined') {
+      const tab = new URLSearchParams(window.location.search).get('tab')
+      if (tab === 'bank' || tab === 'chat') return tab
+    }
+    return 'simulator'
+  });
   const [questions, setQuestions]     = useState<Question[]>([]);
   const [totalCount, setTotalCount]   = useState(0);
   const [topicCounts, setTopicCounts] = useState<Record<string, number>>({});

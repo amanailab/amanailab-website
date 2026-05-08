@@ -159,7 +159,7 @@ export default function ProfilePage() {
           <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-colors">
             <LayoutDashboard className="w-4 h-4 text-zinc-500" /> My Progress Dashboard
           </Link>
-          <Link href="/interview" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-colors">
+          <Link href="/interview?tab=simulator" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-colors">
             <BrainCircuit className="w-4 h-4 text-zinc-500" /> Practice Interview
           </Link>
         </div>
