@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { login } from '@/app/actions/auth'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -66,6 +66,14 @@ function DemoCard() {
 
 export default function LoginPage() {
   const [error, action, pending] = useActionState(login, null)
+  const [nextPath, setNextPath] = useState('/dashboard')
+  // Read ?next= from URL (client-only, no Suspense needed)
+  const [initialized, setInitialized] = useState(false)
+  if (typeof window !== 'undefined' && !initialized) {
+    const n = new URLSearchParams(window.location.search).get('next')
+    if (n?.startsWith('/')) { setNextPath(n); setInitialized(true) }
+    else setInitialized(true)
+  }
 
   return (
     <div className="min-h-screen flex bg-zinc-950">
@@ -137,6 +145,7 @@ export default function LoginPage() {
           </div>
 
           <form action={action} className="flex flex-col gap-4">
+            <input type="hidden" name="next" value={nextPath} />
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
                 Email
@@ -186,7 +195,7 @@ export default function LoginPage() {
 
           <p className="text-center text-sm text-zinc-500 mt-6">
             Don&apos;t have an account?{' '}
-            <Link href="/signup" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+            <Link href={nextPath !== '/dashboard' ? `/signup?next=${encodeURIComponent(nextPath)}` : '/signup'} className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
               Sign up free
             </Link>
           </p>

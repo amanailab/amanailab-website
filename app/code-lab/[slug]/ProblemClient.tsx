@@ -3,11 +3,14 @@
 import { useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   Play, Send, CheckCircle2, XCircle, Loader2,
   Lightbulb, ChevronDown, ChevronUp, ArrowLeft,
   Clock, Trophy, AlertCircle, Code2, Cpu,
 } from 'lucide-react'
+import { useUser } from '@/hooks/useUser'
+import LoginPromptModal from '@/components/ui/LoginPromptModal'
 
 const MonacoEditor = dynamic(
   () => import('@monaco-editor/react').then(m => m.default),
@@ -136,6 +139,9 @@ function MarkdownDesc({ text }: { text: string }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ProblemClient({ problem }: { problem: Problem }) {
+  const user    = useUser()
+  const pathname = usePathname()
+  const [authModal, setAuthModal]       = useState(false)
   const [code, setCode]                 = useState(problem.starter_code)
   const [tab, setTab]                   = useState<'description' | 'hints'>('description')
   const [pyStatus, setPyStatus]         = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
@@ -175,6 +181,7 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
   }, [code])
 
   const handleRun = useCallback(async () => {
+    if (user === null) { setAuthModal(true); return }
     if (running || pyStatus === 'error') return
     setRunning(true); setRunResults(null); setSubmitResult(null); setResultTab('results')
     try {
@@ -193,6 +200,7 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
   }, [running, pyStatus, runTests, visibleTests])
 
   const handleSubmit = useCallback(async () => {
+    if (user === null) { setAuthModal(true); return }
     if (submitting || pyStatus === 'error') return
     setSubmitting(true); setRunResults(null); setSubmitResult(null); setResultTab('submit')
     const t0 = Date.now()
@@ -250,6 +258,12 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
 
   return (
     <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
+      <LoginPromptModal
+        isOpen={authModal}
+        onClose={() => setAuthModal(false)}
+        feature="run & submit code"
+        returnPath={pathname}
+      />
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900 border-b border-zinc-800 shrink-0">

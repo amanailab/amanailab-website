@@ -2,12 +2,15 @@
 
 import { useState, useCallback, useRef } from 'react'
 import dynamic from 'next/dynamic'
+import { usePathname } from 'next/navigation'
 import {
   Sparkles, Bug, Zap, BarChart2, HelpCircle, Wand2,
   Copy, Check, ChevronDown, ChevronUp, ExternalLink,
   Search, X, Play, Loader2, ChevronRight,
 } from 'lucide-react'
 import { TEMPLATES, CATEGORIES, type Template } from './templates'
+import { useUser } from '@/hooks/useUser'
+import LoginPromptModal from '@/components/ui/LoginPromptModal'
 
 // Lazy-load Monaco — it's ~2MB, don't block initial render
 const MonacoEditor = dynamic(
@@ -121,6 +124,9 @@ function InlineFormat({ text }: { text: string }) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PlaygroundClient() {
+  const user     = useUser()
+  const pathname = usePathname()
+  const [authModal, setAuthModal]           = useState(false)
   const [activeTemplate, setActiveTemplate] = useState<Template>(TEMPLATES[0])
   const [code, setCode]                     = useState(TEMPLATES[0].code)
   const [category, setCategory]             = useState('All')
@@ -153,6 +159,7 @@ export default function PlaygroundClient() {
 
   // Call AI assistant
   const callAI = useCallback(async (action: Action) => {
+    if (user === null) { setAuthModal(true); return }
     if (action !== 'generate' && !code.trim()) return
     if (action === 'generate' && !generateDesc.trim()) return
 
@@ -207,6 +214,12 @@ export default function PlaygroundClient() {
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-16 flex flex-col">
+      <LoginPromptModal
+        isOpen={authModal}
+        onClose={() => setAuthModal(false)}
+        feature="use AI tools"
+        returnPath={pathname}
+      />
 
       {/* ── Top header bar ── */}
       <div className="flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800 shrink-0">

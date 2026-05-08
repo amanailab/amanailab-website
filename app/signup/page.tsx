@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { signup } from '@/app/actions/auth'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -64,6 +64,13 @@ function CheckEmailScreen() {
 
 export default function SignupPage() {
   const [state, action, pending] = useActionState(signup, null)
+  const [nextPath, setNextPath] = useState('/dashboard')
+  const [initialized, setInitialized] = useState(false)
+  if (typeof window !== 'undefined' && !initialized) {
+    const n = new URLSearchParams(window.location.search).get('next')
+    if (n?.startsWith('/')) { setNextPath(n); setInitialized(true) }
+    else setInitialized(true)
+  }
 
   if (state === 'check_email') return <CheckEmailScreen />
 
@@ -142,6 +149,7 @@ export default function SignupPage() {
           </div>
 
           <form action={action} className="flex flex-col gap-4">
+            <input type="hidden" name="next" value={nextPath} />
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
                 Email
@@ -196,7 +204,7 @@ export default function SignupPage() {
 
           <p className="text-center text-sm text-zinc-500 mt-4">
             Already have an account?{' '}
-            <Link href="/login" className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+            <Link href={nextPath !== '/dashboard' ? `/login?next=${encodeURIComponent(nextPath)}` : '/login'} className="text-orange-400 hover:text-orange-300 font-semibold transition-colors">
               Sign in
             </Link>
           </p>

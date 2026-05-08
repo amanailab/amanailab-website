@@ -515,16 +515,45 @@ export default async function DashboardPage() {
           {/* ──────── LEFT: main content ──────── */}
           <div className="flex-1 min-w-0 flex flex-col gap-5">
 
+            {/* Interview countdown — always visible for all users */}
+            <InterviewCountdown
+              weakTopics={topicStats.slice(-3).map(t => t.topic)}
+              strongTopics={topicStats.slice(0, 3).map(t => t.topic)}
+            />
+
             {totalSessions === 0 ? (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center">
-                <div className="w-16 h-16 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5">
-                  <BrainCircuit className="w-7 h-7 text-orange-400" />
+              /* ── Better empty state with quick start cards ── */
+              <div className="flex flex-col gap-4">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center">
+                  <div className="w-14 h-14 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <BrainCircuit className="w-6 h-6 text-orange-400" />
+                  </div>
+                  <h2 className="text-base font-bold text-zinc-100 mb-1">Complete your first session</h2>
+                  <p className="text-zinc-500 text-xs mb-0">Practice any topic below to unlock your readiness score, progress chart, and leaderboard rank.</p>
                 </div>
-                <h2 className="text-lg font-bold text-zinc-100 mb-2">Start your first session</h2>
-                <p className="text-zinc-500 text-sm mb-6 max-w-sm mx-auto">Complete one interview to unlock your readiness score, topic mastery, and full progress tracking.</p>
-                <Link href="/interview?tab=simulator" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
-                  Start Interview Practice <ArrowRight className="w-4 h-4" />
-                </Link>
+
+                {/* Quick start cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { href: '/interview?tab=simulator', icon: BrainCircuit, label: 'AI Interview', desc: 'Timed mock with scoring', color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/20', cta: 'Start Session' },
+                    { href: '/daily',                   icon: FlameIcon,    label: 'Daily Challenge', desc: "Today's AI/ML question", color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20', cta: 'Answer Now' },
+                    { href: '/code-lab',                icon: Code2,        label: 'Code Lab',        desc: 'Solve coding problems',  color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20',  cta: 'View Problems' },
+                  ].map(({ href, icon: Icon, label, desc, color, bg, cta }) => (
+                    <Link key={href} href={href}
+                      className="group flex flex-col gap-3 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-2xl p-5 transition-all hover:-translate-y-0.5">
+                      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${bg}`}>
+                        <Icon className={`w-5 h-5 ${color}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-zinc-100">{label}</p>
+                        <p className="text-xs text-zinc-500 mt-0.5">{desc}</p>
+                      </div>
+                      <span className={`text-xs font-semibold ${color} flex items-center gap-1`}>
+                        {cta} <ArrowRight className="w-3 h-3" />
+                      </span>
+                    </Link>
+                  ))}
+                </div>
               </div>
             ) : (
               <>
@@ -553,12 +582,6 @@ export default async function DashboardPage() {
                     ))}
                   </div>
                 </div>
-
-                {/* Interview countdown */}
-                <InterviewCountdown
-                  weakTopics={topicStats.slice(-3).map(t => t.topic)}
-                  strongTopics={topicStats.slice(0, 3).map(t => t.topic)}
-                />
 
                 {/* Daily challenge strip */}
                 <DailyChallengeStrip />
