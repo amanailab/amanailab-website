@@ -9,7 +9,7 @@ import {
   BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
   BrainCircuit, Map, CalendarDays, Building2,
-  User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame,
+  User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -55,6 +55,7 @@ const navItems: NavItem[] = [
     label: "Tools",
     columns: 2,
     items: [
+      { href: "/playground",          label: "Code Playground",      description: "Monaco editor + AI for ML code",    icon: <Code2 className="w-4 h-4" /> },
       { href: "/resume",             label: "Resume Analyzer",      description: "ATS score & improvements",          icon: <FileText className="w-4 h-4" /> },
       { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   description: "AI-rewritten profile",              icon: <BarChart2 className="w-4 h-4" /> },
       { href: "/cover-letter-review",label: "Cover Letter Review",  description: "Score & rewrite your cover letter", icon: <Mail className="w-4 h-4" /> },
