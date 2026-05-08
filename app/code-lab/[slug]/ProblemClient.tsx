@@ -9,8 +9,9 @@ import {
   ChevronDown, ChevronUp, ArrowLeft, ArrowRight, Clock, Trophy,
   AlertCircle, Code2, Cpu, History, RotateCcw, CalendarDays,
   Bug, BarChart2, HelpCircle, BookOpen, ZoomIn, ZoomOut,
-  Maximize2, Minimize2, Copy, Check, Sparkles,
-  ChevronLeft, ChevronRight as ChevronRightIcon,
+  Maximize2, Minimize2, Copy, Check, Sparkles, Star, Save,
+  ChevronLeft, ChevronRight as ChevronRightIcon, Plus, Trash2,
+  Palette, Zap, FlaskConical,
 } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 import LoginPromptModal from '@/components/ui/LoginPromptModal'
@@ -30,6 +31,8 @@ interface TestResult { id: number; description: string; passed: boolean; input: 
 interface SubmitResult { status: string; passed_tests: number; total_tests: number; runtime_ms: number; results: TestResult[] }
 interface Submission { id: string; status: string; passed_tests: number; total_tests: number; runtime_ms: number; created_at: string; code: string }
 interface ComplexityResult { time_complexity: string; time_explanation: string; space_complexity: string; space_explanation: string; interview_ready: boolean; interview_note: string; improvements: string[]; edge_cases_missed: string[] }
+interface SimilarProblem { slug: string; title: string; difficulty: string; topic: string }
+interface CustomTest { id: string; input: string; output: string | null; status: 'idle' | 'running' | 'done' | 'error' }
 
 const DIFF_COLOR = { Easy: 'text-green-400 bg-green-500/10 border-green-500/25', Medium: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/25', Hard: 'text-red-400 bg-red-500/10 border-red-500/25' }
 
@@ -93,10 +96,18 @@ function DiffHighlight({ a, b, colorA }: { a: string; b: string; colorA: string 
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+const XP_MAP = { Easy: 10, Medium: 25, Hard: 50 }
+
+function parseErrorLine(stderr: string): number | null {
+  const m = stderr.match(/line\s+(\d+)/i)
+  return m ? parseInt(m[1]) : null
+}
+
 export default function ProblemClient({
-  problem, prevProblem, nextProblem, totalProblems,
+  problem, prevProblem, nextProblem, totalProblems, similarProblems = [],
 }: {
-  problem: Problem; prevProblem: AdjacentProblem | null; nextProblem: AdjacentProblem | null; totalProblems: number
+  problem: Problem; prevProblem: AdjacentProblem | null; nextProblem: AdjacentProblem | null
+  totalProblems: number; similarProblems?: SimilarProblem[]
 }) {
   const user      = useUser()
   const pathname  = usePathname()
@@ -137,14 +148,35 @@ export default function ProblemClient({
 
   // AI assist
   const [aiLoading, setAiLoading]     = useState(false)
-  const [aiMode, setAiMode]           = useState<'debug'|'complexity'|'approach'|null>(null)
-  const [aiDebug, setAiDebug]         = useState('')
+  const [aiMode, setAiMode]             = useState<'debug'|'complexity'|'approach'|'review'|null>(null)
+  const [aiDebug, setAiDebug]           = useState('')
   const [aiComplexity, setAiComplexity] = useState<ComplexityResult|null>(null)
-  const [aiHint, setAiHint]           = useState('')
+  const [aiHint, setAiHint]             = useState('')
 
   // Post-solve
   const [firstSolve, setFirstSolve] = useState(false)
   const [solvedCount, setSolvedCount] = useState(0)
+
+  // Auto-save
+  const [saveStatus, setSaveStatus] = useState<'saving'|'saved'|null>(null)
+
+  // Editor theme
+  const [editorTheme, setEditorTheme] = useState<'vs-dark'|'vs'|'hc-black'>('vs-dark')
+
+  // Monaco ref for error highlighting
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const editorRef       = useRef<any>(null)
+  const decorationsRef  = useRef<string[]>([])
+
+  // Custom test cases
+  const [customTests, setCustomTests] = useState<CustomTest[]>([])
+  const [showCustom, setShowCustom]   = useState(false)
+
+  // XP earned on last solve
+  const [xpEarned, setXpEarned] = useState<number|null>(null)
+
+  // AI review result
+  const [aiReview, setAiReview] = useState('')
 
   const visibleTests = problem.test_cases.filter(t => !t.is_hidden)
   const topicSlug    = TOPIC_SLUGS[problem.topic]
@@ -164,6 +196,24 @@ export default function ProblemClient({
     setPyStatus('loading')
     getPyodide().then(() => setPyStatus('ready')).catch(() => setPyStatus('error'))
   }, [])
+
+  // Auto-save: restore saved code on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`codesave_${problem.slug}`)
+      if (saved && saved !== problem.starter_code) { setCode(saved); setSaveStatus('saved') }
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Auto-save: debounced persist on code change
+  useEffect(() => {
+    setSaveStatus('saving')
+    const t = setTimeout(() => {
+      try { localStorage.setItem(`codesave_${problem.slug}`, code); setSaveStatus('saved') } catch { /* ignore */ }
+    }, 1500)
+    return () => clearTimeout(t)
+  }, [code, problem.slug])
 
   // History
   useEffect(() => {
@@ -204,6 +254,20 @@ export default function ProblemClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Error line highlighting (declared before handleRun so it can be referenced)
+  const highlightErrorLine = useCallback((lineNum: number) => {
+    if (!editorRef.current || !lineNum) return
+    decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, [{
+      range: { startLineNumber: lineNum, startColumn: 1, endLineNumber: lineNum, endColumn: 9999 },
+      options: { isWholeLine: true, className: 'monaco-error-line' },
+    }])
+  }, [])
+
+  const clearErrorHighlight = useCallback(() => {
+    if (!editorRef.current) return
+    decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, [])
+  }, [])
+
   // Run tests
   const runTests = useCallback(async (tests: TestCase[]): Promise<TestResult[]> => {
     const results: TestResult[] = []
@@ -220,11 +284,19 @@ export default function ProblemClient({
     if (user === null) { setAuthModal(true); return }
     if (running || pyStatus === 'error') return
     setRunning(true); setRunResults(null); setSubmitResult(null); setResultTab('results')
+    clearErrorHighlight()
     try {
       if (pyStatus !== 'ready') { setPyStatus('loading'); await getPyodide(); setPyStatus('ready') }
-      setRunResults(await runTests(visibleTests))
+      const results = await runTests(visibleTests)
+      setRunResults(results)
+      // Highlight error line if any test has an error
+      const errorResult = results.find(r => r.got.startsWith('Error:'))
+      if (errorResult) {
+        const lineNum = parseErrorLine(errorResult.got)
+        if (lineNum) highlightErrorLine(lineNum)
+      }
     } catch { setRunResults([]) } finally { setRunning(false) }
-  }, [user, running, pyStatus, runTests, visibleTests])
+  }, [user, running, pyStatus, runTests, visibleTests, clearErrorHighlight, highlightErrorLine])
 
   const handleSubmit = useCallback(async () => {
     if (user === null) { setAuthModal(true); return }
@@ -244,8 +316,21 @@ export default function ProblemClient({
           c({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors })
           setTimeout(() => c({ particleCount: 100, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors }), 150)
         })
-        setFirstSolve(submissions.filter(s => s.status === 'Accepted').length === 0)
+        const isFirst = submissions.filter(s => s.status === 'Accepted').length === 0
+        setFirstSolve(isFirst)
         setSolvedCount(c => c + 1)
+        clearErrorHighlight()
+        // XP calculation
+        const base  = XP_MAP[problem.difficulty as keyof typeof XP_MAP] ?? 10
+        const speed = elapsed < 300 ? Math.round(base * 0.5) : 0
+        const first = isFirst ? base : 0
+        const xp    = base + speed + first
+        setXpEarned(xp)
+        try {
+          const cur = parseInt(localStorage.getItem('codelab_xp') ?? '0')
+          localStorage.setItem('codelab_xp', String(cur + xp))
+        } catch { /* ignore */ }
+        toast(`+${xp} XP earned! ${isFirst ? '🎉 First solve!' : ''}`, 'success')
       }
       setSubmitResult({ status, passed_tests: passed, total_tests: total, runtime_ms: runtime,
         results: results.map(r => ({ ...r, expected: r.is_hidden&&r.passed ? '(hidden)' : r.expected, got: r.is_hidden&&r.passed ? '(hidden)' : r.got })) })
@@ -256,7 +341,7 @@ export default function ProblemClient({
   }, [user, submitting, pyStatus, runTests, problem.slug, code, submissions])
 
   // AI assist
-  const callAI = useCallback(async (mode: 'debug'|'complexity'|'approach') => {
+  const callAI = useCallback(async (mode: 'debug'|'complexity'|'approach'|'review') => {
     if (user === null) { setAuthModal(true); return }
     setAiLoading(true); setAiMode(mode); setResultTab('ai')
     const failedCases = runResults?.filter(r => !r.passed).slice(0, 3).map(r => ({ input: r.input, expected: r.expected, got: r.got })) ?? []
@@ -265,11 +350,32 @@ export default function ProblemClient({
         body: JSON.stringify({ mode, code, problem_title: problem.title, problem_description: problem.description, failed_cases: failedCases }) })
       const data = await res.json()
       if (mode === 'complexity') setAiComplexity(data.result as ComplexityResult)
-      else if (mode === 'debug') setAiDebug(data.result as string)
+      else if (mode === 'debug')  setAiDebug(data.result as string)
+      else if (mode === 'review') setAiReview(data.result as string)
       else setAiHint(data.result as string)
     } catch { toast('AI assist failed. Try again.', 'error') }
     finally { setAiLoading(false) }
   }, [user, code, problem.title, problem.description, runResults, toast])
+
+  // Custom test runners
+  const addCustomTest = useCallback(() => {
+    setCustomTests(prev => [...prev, { id: Date.now().toString(), input: '', output: null, status: 'idle' }])
+  }, [])
+
+  const removeCustomTest = useCallback((id: string) => {
+    setCustomTests(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  const runCustomTest = useCallback(async (id: string) => {
+    if (user === null) { setAuthModal(true); return }
+    if (pyStatus !== 'ready') return
+    const test = customTests.find(t => t.id === id)
+    if (!test || !test.input.trim()) return
+    setCustomTests(prev => prev.map(t => t.id === id ? {...t, status: 'running', output: null} : t))
+    const fullCode = buildTestCode(code, test.input.trim())
+    const { stdout, stderr } = await runWithPyodide(fullCode)
+    setCustomTests(prev => prev.map(t => t.id === id ? {...t, status: stderr ? 'error' : 'done', output: stderr ? `Error: ${stderr}` : stdout} : t))
+  }, [user, code, customTests, pyStatus])
 
   const copyCode = useCallback(() => {
     navigator.clipboard.writeText(code); setCopied(true); toast('Code copied!', 'success')
@@ -377,6 +483,22 @@ export default function ProblemClient({
                     </Link>
                   )}
 
+                  {similarProblems.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider mb-2">Similar Problems</p>
+                      <div className="flex flex-col gap-1.5">
+                        {similarProblems.map(sp => (
+                          <Link key={sp.slug} href={`/code-lab/${sp.slug}`}
+                            className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800/60 border border-zinc-800 hover:border-zinc-700 rounded-xl px-3 py-2 transition-colors group">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${DIFF_COLOR[sp.difficulty as keyof typeof DIFF_COLOR] ?? ''}`}>{sp.difficulty[0]}</span>
+                            <span className="text-xs text-zinc-300 group-hover:text-zinc-100 flex-1 truncate transition-colors">{sp.title}</span>
+                            <ArrowRight className="w-3 h-3 text-zinc-700 group-hover:text-zinc-400 shrink-0 transition-colors" />
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="border-t border-zinc-800 pt-4">
                     <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider mb-2.5">
                       Test Cases ({visibleTests.length} visible · {problem.test_cases.filter(t => t.is_hidden).length} hidden)
@@ -453,15 +575,36 @@ export default function ProblemClient({
 
           {/* Code action bar */}
           <div className="flex items-center justify-between px-3 py-1 bg-zinc-900/50 border-b border-zinc-800/50 shrink-0">
-            <span className="text-[10px] text-zinc-600">Python 3.11 · Pyodide</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-zinc-600">Python 3.11</span>
+              {saveStatus === 'saving' && <span className="text-[9px] text-zinc-700 flex items-center gap-0.5"><Save className="w-2.5 h-2.5" />Saving…</span>}
+              {saveStatus === 'saved'  && <span className="text-[9px] text-zinc-700 flex items-center gap-0.5"><Save className="w-2.5 h-2.5" />Saved</span>}
+            </div>
             <div className="flex items-center gap-0.5">
+              {/* Theme */}
+              <div className="relative group">
+                <button className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-600 hover:text-zinc-300"><Palette className="w-3 h-3" /></button>
+                <div className="absolute right-0 bottom-6 bg-zinc-900 border border-zinc-700 rounded-lg p-1 hidden group-hover:flex flex-col gap-0.5 z-10 min-w-[120px] shadow-xl">
+                  {([['vs-dark','Dark'],['vs','Light'],['hc-black','High Contrast']] as const).map(([val,label]) => (
+                    <button key={val} onClick={() => setEditorTheme(val)}
+                      className={`text-[10px] text-left px-2 py-1 rounded transition-colors ${editorTheme===val?'bg-orange-500/20 text-orange-400':'text-zinc-400 hover:bg-zinc-800'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="w-px h-3 bg-zinc-700 mx-0.5" />
               <button onClick={() => setFontSize(s => Math.max(10,s-1))} className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-600 hover:text-zinc-300"><ZoomOut className="w-3 h-3" /></button>
               <span className="text-[10px] text-zinc-600 w-5 text-center tabular-nums">{fontSize}</span>
               <button onClick={() => setFontSize(s => Math.min(20,s+1))} className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-600 hover:text-zinc-300"><ZoomIn className="w-3 h-3" /></button>
-              <div className="w-px h-3 bg-zinc-700 mx-1" />
+              <div className="w-px h-3 bg-zinc-700 mx-0.5" />
               <button onClick={() => { setCode(problem.starter_code); toast('Reset to starter','info') }} title="Reset to starter" className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-600 hover:text-zinc-300"><RotateCcw className="w-3 h-3" /></button>
               <button onClick={copyCode} title="Copy" className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-600 hover:text-zinc-300">
                 {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+              </button>
+              <button onClick={() => setShowCustom(v => !v)} title="Custom test cases"
+                className={`p-1 rounded transition-colors ${showCustom?'bg-blue-500/15 text-blue-400':'hover:bg-zinc-800 text-zinc-600 hover:text-zinc-300'}`}>
+                <FlaskConical className="w-3 h-3" />
               </button>
             </div>
           </div>
@@ -469,9 +612,48 @@ export default function ProblemClient({
           {/* Monaco */}
           <div className="flex-1 min-h-0">
             <MonacoEditor height="100%" defaultLanguage="python" value={code}
-              onChange={v => setCode(v??'')} theme="vs-dark"
+              onChange={v => { setCode(v??''); clearErrorHighlight() }}
+              theme={editorTheme}
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onMount={(editor: any) => { editorRef.current = editor }}
               options={{ fontSize, fontFamily:"'JetBrains Mono','Fira Code',monospace", fontLigatures:true, lineNumbers:'on', minimap:{enabled:false}, scrollBeyondLastLine:false, wordWrap:'on', tabSize:4, renderLineHighlight:'all', bracketPairColorization:{enabled:true}, padding:{top:10,bottom:10}, scrollbar:{verticalScrollbarSize:5}, cursorBlinking:'smooth', smoothScrolling:true }} />
           </div>
+
+          {/* Custom test cases panel */}
+          {showCustom && (
+            <div className="bg-zinc-900/60 border-t border-zinc-800/50 px-3 py-2 shrink-0 max-h-40 overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-400">
+                  <FlaskConical className="w-3 h-3" /> Custom Test Cases
+                </div>
+                <button onClick={addCustomTest} className="flex items-center gap-0.5 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors">
+                  <Plus className="w-3 h-3" /> Add
+                </button>
+              </div>
+              {customTests.length === 0 && (
+                <p className="text-[10px] text-zinc-600">Add your own function calls to test edge cases. e.g. <code className="bg-zinc-800 px-1 rounded">softmax([])</code></p>
+              )}
+              {customTests.map(ct => (
+                <div key={ct.id} className="flex items-center gap-1.5 mb-1.5">
+                  <input value={ct.input} onChange={e => setCustomTests(p => p.map(t => t.id===ct.id?{...t,input:e.target.value,output:null,status:'idle'}:t))}
+                    placeholder="softmax([1.0, 2.0, 3.0])"
+                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-[10px] text-zinc-300 font-mono placeholder:text-zinc-600 outline-none focus:border-blue-500/50 transition-colors" />
+                  <button onClick={() => runCustomTest(ct.id)} disabled={ct.status==='running'||!ct.input.trim()||pyStatus!=='ready'}
+                    className="p-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 rounded transition-colors disabled:opacity-40">
+                    {ct.status==='running'?<Loader2 className="w-3 h-3 animate-spin"/>:<Play className="w-3 h-3"/>}
+                  </button>
+                  <button onClick={() => removeCustomTest(ct.id)} className="p-1 hover:bg-zinc-800 text-zinc-600 hover:text-zinc-400 rounded transition-colors">
+                    <Trash2 className="w-3 h-3"/>
+                  </button>
+                  {ct.output !== null && (
+                    <span className={`text-[10px] font-mono max-w-[120px] truncate ${ct.status==='error'?'text-red-400':'text-green-400'}`}>
+                      → {ct.output}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* AI action bar */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/50 border-t border-zinc-800/50 shrink-0 flex-wrap">
@@ -551,6 +733,14 @@ export default function ProblemClient({
                       <p className="text-xs text-zinc-500">{submitResult.passed_tests}/{submitResult.total_tests} tests · {submitResult.runtime_ms}ms</p>
                     </div>
                     {accepted&&firstSolve&&<div className="text-right text-xs"><p className="text-orange-400 font-bold">First Solve! 🎉</p><p className="text-zinc-600">{timeDisplay}</p></div>}
+                    {accepted&&xpEarned&&<div className="flex items-center gap-1 text-xs font-bold text-yellow-400 shrink-0"><Zap className="w-3.5 h-3.5"/>+{xpEarned} XP</div>}
+                    {accepted&&(
+                      <button onClick={() => callAI('review')} disabled={aiLoading}
+                        className="flex items-center gap-1 text-xs font-semibold bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/25 text-purple-400 px-2.5 py-1.5 rounded-lg transition-colors shrink-0 disabled:opacity-50">
+                        {aiLoading&&aiMode==='review'?<Loader2 className="w-3 h-3 animate-spin"/>:<Star className="w-3 h-3"/>}
+                        Review
+                      </button>
+                    )}
                     {accepted&&nextProblem&&(
                       <Link href={`/code-lab/${nextProblem.slug}`}
                         className="flex items-center gap-1 text-xs font-semibold bg-green-500/10 hover:bg-green-500/20 border border-green-500/25 text-green-400 px-2.5 py-1.5 rounded-lg transition-colors shrink-0">
@@ -643,12 +833,19 @@ export default function ProblemClient({
                     <div className="flex items-center gap-2 mb-2"><HelpCircle className="w-4 h-4 text-yellow-400"/><p className="text-xs font-bold text-yellow-400">Approach Hint</p></div>
                     <p className="text-xs text-zinc-300 leading-relaxed">{aiHint}</p>
                   </div>
+                )
+                : aiMode==='review'&&aiReview ? (
+                  <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-3.5">
+                    <div className="flex items-center gap-2 mb-2"><Star className="w-4 h-4 text-purple-400"/><p className="text-xs font-bold text-purple-400">Solution Review</p></div>
+                    <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">{aiReview}</p>
+                  </div>
                 ) : (
                   <div className="py-2 flex flex-col gap-1.5">
                     <p className="text-[10px] text-zinc-600 mb-1">Use the AI action buttons above ↑</p>
                     <p className="text-[10px] text-zinc-600"><span className="text-red-400 font-semibold">🐛 Debug</span> — finds what's wrong (run first to see failing tests)</p>
                     <p className="text-[10px] text-zinc-600"><span className="text-purple-400 font-semibold">📊 Complexity</span> — Big-O time & space analysis of your code</p>
                     <p className="text-[10px] text-zinc-600"><span className="text-yellow-400 font-semibold">💡 Hint</span> — Socratic guidance without giving the answer</p>
+                    <p className="text-[10px] text-zinc-600"><span className="text-purple-400 font-semibold">⭐ Review</span> — after Accepted, get professional code review</p>
                   </div>
                 )
               )}

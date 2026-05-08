@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-type AssistMode = 'debug' | 'complexity' | 'approach'
+type AssistMode = 'debug' | 'complexity' | 'approach' | 'review'
 
 const SYSTEM: Record<AssistMode, string> = {
   debug: `You are an expert AI/ML coding interviewer reviewing a student's Python solution.
@@ -25,6 +25,17 @@ Analyze the given Python function and return ONLY valid JSON, no markdown.`,
 The student is stuck and needs guidance on the approach — NOT the solution.
 Give ONE key insight that points toward the right approach without revealing it.
 Keep it under 80 words. Reference the relevant AI/ML concept if applicable.`,
+
+  review: `You are a senior AI/ML engineer at a top company (Google, OpenAI, Meta) doing a code review.
+The student's solution PASSES all test cases. Give professional feedback on their accepted code.
+
+Cover:
+1. Code quality / Pythonic style
+2. Would an interviewer accept this? Why/why not?
+3. One more elegant alternative approach (brief)
+4. What to say when presenting this in an interview
+
+Keep it concise, encouraging, and specific. Under 200 words. Reference the relevant ML concept.`,
 }
 
 export async function POST(req: Request) {
@@ -84,6 +95,17 @@ Description: ${problem_description?.slice(0, 500)}
 The student has been stuck for a while. Give ONE Socratic hint about the approach — not the solution.`
     }
 
+    if (mode === 'review') {
+      userPrompt = `Problem: ${problem_title}
+
+Accepted solution:
+\`\`\`python
+${code}
+\`\`\`
+
+This solution passes all test cases. Give professional code review feedback.`
+    }
+
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
@@ -94,7 +116,7 @@ The student has been stuck for a while. Give ONE Socratic hint about the approac
           { role: 'user',   content: userPrompt },
         ],
         temperature: 0.3,
-        max_tokens: mode === 'complexity' ? 400 : 200,
+        max_tokens: mode === 'complexity' ? 400 : mode === 'review' ? 350 : 200,
         ...(mode === 'complexity' ? { response_format: { type: 'json_object' } } : {}),
       }),
     })

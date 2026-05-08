@@ -23,8 +23,8 @@ export default async function ProblemPage({ params }: Props) {
   const { data: problem } = await sb.from('code_problems').select('*').eq('slug', slug).single()
   if (!problem) notFound()
 
-  // Fetch adjacent problems for prev/next navigation
-  const [{ data: prevArr }, { data: nextArr }, { data: allProblems }] = await Promise.all([
+  // Fetch adjacent + similar problems
+  const [{ data: prevArr }, { data: nextArr }, { data: allProblems }, { data: similarArr }] = await Promise.all([
     sb.from('code_problems')
       .select('slug, title, difficulty')
       .lt('order_index', problem.order_index)
@@ -38,11 +38,18 @@ export default async function ProblemPage({ params }: Props) {
     sb.from('code_problems')
       .select('id')
       .order('order_index'),
+    sb.from('code_problems')
+      .select('slug, title, difficulty, topic')
+      .eq('topic', problem.topic)
+      .neq('slug', slug)
+      .order('order_index')
+      .limit(3),
   ])
 
-  const prevProblem = prevArr?.[0] ?? null
-  const nextProblem = nextArr?.[0] ?? null
-  const totalProblems = allProblems?.length ?? 0
+  const prevProblem    = prevArr?.[0] ?? null
+  const nextProblem    = nextArr?.[0] ?? null
+  const totalProblems  = allProblems?.length ?? 0
+  const similarProblems = similarArr ?? []
 
   return (
     <ProblemClient
@@ -50,6 +57,7 @@ export default async function ProblemPage({ params }: Props) {
       prevProblem={prevProblem}
       nextProblem={nextProblem}
       totalProblems={totalProblems}
+      similarProblems={similarProblems}
     />
   )
 }

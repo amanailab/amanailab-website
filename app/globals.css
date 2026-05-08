@@ -27,6 +27,12 @@ html {
   animation: slide-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+/* Monaco error line highlight */
+.monaco-error-line {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+  border-left: 3px solid rgba(239, 68, 68, 0.8) !important;
+}
+
 body {
   background-color: #09090b;
   color: #fafafa;
