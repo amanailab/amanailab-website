@@ -53,7 +53,13 @@
       "Bash(grep -v \"node_modules\\\\|typeof window\\\\|'use client'\\\\|useEffect\\\\|//.*local\")",
       "Bash(grep -v \"node_modules\\\\|//.*fetch\\\\|useEffect\\\\|'use client'\")",
       "Bash(grep -rn \"key=.*index\\\\|\\\\.map.*idx\\\\|\\\\.map.*i,\\\\b\\\\|key={i}\" E:/amanailab-website/amanailab-website/components/ --include=\"*.tsx\")",
-      "Bash(grep -v \"node_modules\\\\|//.*key\")"
+      "Bash(grep -v \"node_modules\\\\|//.*key\")",
+      "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\\\\app\\\\api\" -Recurse -Filter \"*.ts\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(grep -v \"node_modules\\\\|next/dist\\\\|comment\\\\|//\")",
+      "Bash(sed -n '211,215p' E:/amanailab-website/amanailab-website/app/api/linkedin/generate/route.ts)",
+      "Bash(sed -n '167,171p' E:/amanailab-website/amanailab-website/app/api/prompt/generate/route.ts)",
+      "Bash(sed -n '11,15p' E:/amanailab-website/amanailab-website/app/api/interview/chat/route.ts)"
     ]
   }
 }

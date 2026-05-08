@@ -166,6 +166,16 @@ Output: ${output}`,
 
 export async function POST(req: Request) {
   try {
+  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:prompt`, 8, 60_000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
+    )
+  }
+
+
     const body = (await req.json()) as Body;
     const mode = body.mode;
     const formData = body.formData ?? {};

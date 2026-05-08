@@ -35,10 +35,11 @@ export default function ProfilePage() {
 
       if (sessions?.length) {
         const avg = sessions.reduce((a, b) => a + b.avg_score, 0) / sessions.length
-        // Simple streak
+        // Simple streak — use local date to avoid UTC timezone issues
+        const localDate = (d: Date) => d.toLocaleDateString('en-CA')
         const dates = [...new Set(sessions.map(s => s.created_at.split('T')[0]))].sort((a, b) => b.localeCompare(a))
-        const today = new Date().toISOString().split('T')[0]
-        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+        const today     = localDate(new Date())
+        const yesterday = localDate(new Date(Date.now() - 86400000))
         let streak = 0
         if (dates[0] === today || dates[0] === yesterday) {
           streak = 1

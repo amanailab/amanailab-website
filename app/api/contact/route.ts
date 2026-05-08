@@ -4,6 +4,16 @@ import { createClient } from "@supabase/supabase-js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Prevent HTML injection in email body
+function esc(s: string): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -28,10 +38,11 @@ export async function POST(req: Request) {
       subject: `New message from ${name}${subject ? `: ${subject}` : ""}`,
       html: `
         <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong> ${message}</p>
+        <p><strong>Name:</strong> ${esc(name)}</p>
+        <p><strong>Email:</strong> ${esc(email)}</p>
+        <p><strong>Subject:</strong> ${esc(subject ?? '')}</p>
+        <p><strong>Message:</strong></p>
+        <pre style="white-space:pre-wrap;font-family:sans-serif">${esc(message)}</pre>
       `,
     });
 

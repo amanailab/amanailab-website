@@ -210,6 +210,16 @@ function parseResponse(raw: string): { post: string; hashtags: string } {
 
 export async function POST(req: Request) {
   try {
+  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:linkedin-gen`, 6, 60_000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
+    )
+  }
+
+
     const body = (await req.json()) as Body;
     const postType = body.postType;
     const variation = body.variation ?? null;

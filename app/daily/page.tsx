@@ -43,17 +43,22 @@ function loadHistory(): string[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_HISTORY) ?? '[]') } catch { return [] }
 }
 
+// Use local date (YYYY-MM-DD) to avoid timezone issues — toISOString() uses UTC
+function localDateStr(date: Date = new Date()): string {
+  return date.toLocaleDateString('en-CA') // en-CA gives YYYY-MM-DD format
+}
+
 function calcStreak(history: string[], todayDate: string): number {
   const dates = [...new Set([...history])].sort((a, b) => b.localeCompare(a))
   const today = todayDate
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  const yesterday = localDateStr(new Date(Date.now() - 86400000))
   if (!dates.includes(today) && !dates.includes(yesterday)) return 0
   let streak = 0
   let cursor = today
   for (let i = 0; i < 365; i++) {
     if (dates.includes(cursor)) {
       streak++
-      cursor = new Date(new Date(cursor).getTime() - 86400000).toISOString().split('T')[0]
+      cursor = localDateStr(new Date(new Date(cursor).getTime() - 86400000))
     } else {
       if (cursor === today) { cursor = yesterday; continue }
       break
@@ -111,7 +116,7 @@ function ScoreCircle({ score }: { score: number }) {
 
 // Clean up history entries older than 60 days to prevent localStorage bloat
 function pruneHistory(history: string[]): string[] {
-  const cutoff = new Date(Date.now() - 60 * 86400000).toISOString().split('T')[0]
+  const cutoff = localDateStr(new Date(Date.now() - 60 * 86400000))
   return history.filter(d => d >= cutoff)
 }
 

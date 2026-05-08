@@ -5,6 +5,16 @@ export const maxDuration = 60
 
 export async function POST(req: Request) {
   try {
+  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:company-res`, 5, 60_000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
+    )
+  }
+
+
     const { companyName, targetRole } = await req.json()
 
     if (!companyName?.trim()) {
