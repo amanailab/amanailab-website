@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Map, CalendarDays, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail } from 'lucide-react'
 import { isCaptured, saveEmail, markCaptured } from '@/lib/email-capture'
 
@@ -1020,6 +1020,13 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode; description: string
 
 export default function CareerTools() {
   const [activeTab, setActiveTab] = useState<Tab>('roadmap')
+
+  // Read ?tab= from URL so Navbar deep links work
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const tab = new URLSearchParams(window.location.search).get('tab') as Tab
+    if (tab && ['roadmap','study-plan','offer','company'].includes(tab)) setActiveTab(tab)
+  }, [])
 
   return (
     <section className="min-h-screen bg-zinc-950 text-zinc-50">

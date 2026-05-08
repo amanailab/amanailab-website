@@ -88,10 +88,10 @@ const navItems: NavItem[] = [
     label: "Career",
     columns: 1,
     items: [
-      { href: "/career", label: "Career Roadmap",   description: "Week-by-week AI/ML learning path", icon: <Map className="w-4 h-4" /> },
-      { href: "/career", label: "Study Plan",        description: "Day-by-day interview prep",        icon: <CalendarDays className="w-4 h-4" /> },
-      { href: "/career", label: "Offer Analyzer",    description: "Salary & negotiation insights",    icon: <FileText className="w-4 h-4" /> },
-      { href: "/career", label: "Company Research",  description: "Interview intel on any company",   icon: <Building2 className="w-4 h-4" /> },
+      { href: "/career?tab=roadmap",    label: "Career Roadmap",   description: "Week-by-week AI/ML learning path", icon: <Map className="w-4 h-4" /> },
+      { href: "/career?tab=study-plan", label: "Study Plan",        description: "Day-by-day interview prep",        icon: <CalendarDays className="w-4 h-4" /> },
+      { href: "/career?tab=offer",      label: "Offer Analyzer",    description: "Salary & negotiation insights",    icon: <FileText className="w-4 h-4" /> },
+      { href: "/career?tab=company",    label: "Company Research",  description: "Interview intel on any company",   icon: <Building2 className="w-4 h-4" /> },
     ],
   },
   { kind: "link", href: "/blog",     label: "Blog"     },
@@ -370,6 +370,13 @@ export default function Navbar() {
               <YoutubeIcon className="w-4 h-4" />
               Subscribe
             </a>
+
+            {/* Mobile search icon */}
+            <Link href="/search"
+              className="lg:hidden flex items-center justify-center w-9 h-9 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg transition-colors"
+              aria-label="Search">
+              <Search className="w-4.5 h-4.5" />
+            </Link>
 
             {/* Mobile hamburger */}
             <button

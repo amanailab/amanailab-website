@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { MessageSquare, Plus, X, Loader2, Users, Lightbulb, HelpCircle, Building2, Clock, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -36,9 +36,46 @@ function timeAgo(iso: string) {
 
 // ─── Post card ────────────────────────────────────────────────────────────────
 
+const REACTIONS = [
+  { emoji: '👍', label: 'helpful' },
+  { emoji: '🔥', label: 'fire' },
+  { emoji: '💡', label: 'insightful' },
+]
+const REACTIONS_KEY = 'community_reactions'
+
+function useReactions(postId: string) {
+  const key = `${REACTIONS_KEY}_${postId}`
+  const [counts, setCounts] = useState<Record<string, number>>({})
+  const [mine, setMine]     = useState<string | null>(null)
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(key) ?? '{}')
+      setCounts(stored.counts ?? {})
+      setMine(stored.mine ?? null)
+    } catch { /* ignore */ }
+  }, [key])
+
+  const react = useCallback((label: string) => {
+    setCounts(prev => {
+      const next = { ...prev }
+      if (mine) next[mine] = Math.max(0, (next[mine] ?? 1) - 1)
+      const newMine = mine === label ? null : label
+      if (newMine) next[newMine] = (next[newMine] ?? 0) + 1
+      setMine(newMine)
+      try { localStorage.setItem(key, JSON.stringify({ counts: next, mine: newMine })) } catch { /* ignore */ }
+      return next
+    })
+  }, [mine, key])
+
+  return { counts, mine, react }
+}
+
 function PostCard({ post, pending = false }: { post: Post; pending?: boolean }) {
-  const cfg  = TYPE_CONFIG[post.type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.experience
-  const Icon = cfg.icon
+  const cfg    = TYPE_CONFIG[post.type as keyof typeof TYPE_CONFIG] ?? TYPE_CONFIG.experience
+  const Icon   = cfg.icon
+  const { counts, mine, react } = useReactions(post.id)
+
   return (
     <div className={`bg-zinc-900 border rounded-2xl p-5 transition-colors ${pending ? 'border-zinc-700/50 opacity-70' : 'border-zinc-800 hover:border-zinc-700'}`}>
       <div className="flex items-start gap-3 mb-3">
@@ -66,6 +103,19 @@ function PostCard({ post, pending = false }: { post: Post; pending?: boolean }) 
       </div>
       <h3 className="text-sm font-bold text-zinc-100 mb-2">{post.title}</h3>
       <p className="text-sm text-zinc-400 leading-relaxed line-clamp-4">{post.body}</p>
+
+      {/* Reactions */}
+      {!pending && (
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-zinc-800/50">
+          {REACTIONS.map(r => (
+            <button key={r.label} onClick={() => react(r.label)}
+              className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border transition-all ${mine === r.label ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600'}`}>
+              <span>{r.emoji}</span>
+              {(counts[r.label] ?? 0) > 0 && <span className="font-semibold">{counts[r.label]}</span>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -1,8 +1,29 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Search, ChevronDown, ChevronUp, Lightbulb, Library } from 'lucide-react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { Search, ChevronDown, ChevronUp, Lightbulb, Library, Bookmark, BookmarkCheck } from 'lucide-react'
 import Link from 'next/link'
+
+const BOOKMARKS_KEY = 'bookmarked_questions'
+
+function useBookmarks() {
+  const [bookmarks, setBookmarks] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(BOOKMARKS_KEY) ?? '[]') as string[]
+      setBookmarks(new Set(stored))
+    } catch { /* ignore */ }
+  }, [])
+  const toggle = useCallback((id: string) => {
+    setBookmarks(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      try { localStorage.setItem(BOOKMARKS_KEY, JSON.stringify([...next])) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+  return { bookmarks, toggle }
+}
 
 interface Question {
   id: string; question: string; model_answer: string
@@ -30,7 +51,7 @@ const ALL_TOPICS = ['LLM','RAG','Agents','Fine-Tuning','MLOps','Transformers','S
 const LEVELS = ['Fresher','Mid','Senior']
 const PAGE = 20
 
-function QuestionCard({ q }: { q: Question }) {
+function QuestionCard({ q, bookmarked, onBookmark }: { q: Question; bookmarked: boolean; onBookmark: (id: string) => void }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 transition-colors">
@@ -48,7 +69,16 @@ function QuestionCard({ q }: { q: Question }) {
           </div>
           <p className="text-sm text-zinc-200 leading-relaxed">{q.question}</p>
         </div>
-        {open ? <ChevronUp className="w-4 h-4 text-zinc-600 shrink-0 mt-0.5" /> : <ChevronDown className="w-4 h-4 text-zinc-600 shrink-0 mt-0.5" />}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={e => { e.stopPropagation(); onBookmark(q.id) }}
+            className={`p-1.5 rounded-lg transition-colors ${bookmarked ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'}`}
+            title={bookmarked ? 'Remove bookmark' : 'Bookmark this question'}
+          >
+            {bookmarked ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+          </button>
+          {open ? <ChevronUp className="w-4 h-4 text-zinc-600" /> : <ChevronDown className="w-4 h-4 text-zinc-600" />}
+        </div>
       </button>
       {open && (
         <div className="px-4 pb-4 border-t border-zinc-800">
@@ -72,15 +102,18 @@ interface Props {
 }
 
 export default function QuestionsClient({ initialQuestions, companies, totalCount }: Props) {
-  const [search, setSearch]             = useState('')
-  const [filterTopic, setFilterTopic]   = useState('all')
-  const [filterLevel, setFilterLevel]   = useState('all')
+  const { bookmarks, toggle: toggleBookmark } = useBookmarks()
+  const [search, setSearch]               = useState('')
+  const [filterTopic, setFilterTopic]     = useState('all')
+  const [filterLevel, setFilterLevel]     = useState('all')
   const [filterCompany, setFilterCompany] = useState('all')
-  const [page, setPage]                 = useState(0)
+  const [showSaved, setShowSaved]         = useState(false)
+  const [page, setPage]                   = useState(0)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
     return initialQuestions.filter(x =>
+      (showSaved ? bookmarks.has(x.id) : true) &&
       (filterTopic   === 'all' || x.topic === filterTopic) &&
       (filterLevel   === 'all' || x.level === filterLevel) &&
       (filterCompany === 'all' || (filterCompany === 'general' ? !x.company : x.company_slug === filterCompany)) &&
@@ -119,7 +152,11 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
             <option value="general">General</option>
             {companies.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
           </select>
-          {hasFilters && <button onClick={reset} className="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-2 rounded-lg hover:bg-zinc-800 transition-colors">Clear</button>}
+          <button onClick={() => { setShowSaved(v => !v); setPage(0) }}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition-all ${showSaved ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'}`}>
+            <BookmarkCheck className="w-3.5 h-3.5" /> Saved {bookmarks.size > 0 && `(${bookmarks.size})`}
+          </button>
+          {(hasFilters || showSaved) && <button onClick={() => { reset(); setShowSaved(false) }} className="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-2 rounded-lg hover:bg-zinc-800 transition-colors">Clear</button>}
           <span className="text-xs text-zinc-600 ml-auto">{filtered.length} of {totalCount} questions</span>
         </div>
       </div>
@@ -134,7 +171,7 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
       ) : (
         <>
           <div className="flex flex-col gap-2.5 mb-6">
-            {paginated.map(q => <QuestionCard key={q.id} q={q} />)}
+            {paginated.map(q => <QuestionCard key={q.id} q={q} bookmarked={bookmarks.has(q.id)} onBookmark={toggleBookmark} />)}
           </div>
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-3">

@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import type { BlogPost } from '@/lib/admin'
-import { Clock, ArrowLeft, Tag } from 'lucide-react'
+import { Clock, ArrowLeft, Tag, Share2 } from 'lucide-react'
 import EmailCaptureCard from '@/components/shared/EmailCaptureCard'
 import ReadingProgress from '@/components/blog/ReadingProgress'
 
@@ -72,6 +72,19 @@ export default async function BlogPostPage({ params }: Props) {
             {post.read_time}
           </span>
           <span className="text-xs text-zinc-600">{formatDate(post.created_at)}</span>
+          {/* Share buttons */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(`https://amanailab.com/blog/${post.slug}`)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] font-semibold text-zinc-500 hover:text-sky-400 bg-zinc-800 hover:bg-sky-500/10 border border-zinc-700 hover:border-sky-500/30 px-2 py-1 rounded-lg transition-all" title="Share on X">
+              <Share2 className="w-3 h-3" /> X
+            </a>
+            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://amanailab.com/blog/${post.slug}`)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] font-semibold text-zinc-500 hover:text-blue-400 bg-zinc-800 hover:bg-blue-500/10 border border-zinc-700 hover:border-blue-500/30 px-2 py-1 rounded-lg transition-all" title="Share on LinkedIn">
+              <Share2 className="w-3 h-3" /> in
+            </a>
+          </div>
         </div>
 
         <h1 className="text-3xl md:text-4xl font-bold text-zinc-100 leading-tight mb-4">
