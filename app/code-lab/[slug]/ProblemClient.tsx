@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import {
@@ -241,7 +241,7 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
   const accepted = submitResult?.status === 'Accepted'
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-950 pt-16 overflow-hidden">
+    <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
 
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900 border-b border-zinc-800 shrink-0">
@@ -414,7 +414,13 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
                           <div className="font-mono text-[10px] flex flex-col gap-0.5 pl-5">
                             <span className="text-zinc-500">Input:    <span className="text-zinc-300">{r.input}</span></span>
                             <span className="text-zinc-500">Expected: <span className="text-green-400">{r.expected}</span></span>
-                            <span className="text-zinc-500">Got:      <span className="text-red-400">{r.got || 'None'}</span></span>
+                            <span className="text-zinc-500">Got:      <span className="text-red-400">
+                              {!r.got || r.got === 'None'
+                                ? 'None — function returns nothing (add a return statement)'
+                                : r.got.startsWith('Error:')
+                                  ? r.got
+                                  : r.got}
+                            </span></span>
                           </div>
                         )}
                       </div>
@@ -443,7 +449,10 @@ export default function ProblemClient({ problem }: { problem: Problem }) {
                           </span>
                           {!r.passed && r.expected !== '(hidden)' && (
                             <div className="font-mono text-[10px] mt-0.5 text-zinc-500">
-                              Expected: <span className="text-green-400">{r.expected}</span> · Got: <span className="text-red-400">{r.got || 'None'}</span>
+                              Expected: <span className="text-green-400">{r.expected}</span>
+                              {' · '}Got: <span className="text-red-400">
+                                {!r.got || r.got === 'None' ? 'None (add return statement)' : r.got}
+                              </span>
                             </div>
                           )}
                         </div>
