@@ -40,6 +40,21 @@ async function getPost(slug: string): Promise<BlogPost | null> {
   return data
 }
 
+async function getRelatedPosts(category: string, currentSlug: string): Promise<Pick<BlogPost,'slug'|'title'|'category'|'read_time'|'cover_image'>[]> {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const { data } = await supabase
+    .from('blog_posts')
+    .select('slug, title, category, read_time, cover_image')
+    .eq('published', true)
+    .eq('category', category)
+    .neq('slug', currentSlug)
+    .limit(3)
+  return data ?? []
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const post = await getPost(slug)
@@ -58,8 +73,8 @@ function formatDate(iso: string) {
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params
   const post = await getPost(slug)
-
   if (!post) notFound()
+  const related = await getRelatedPosts(post.category, slug)
 
   return (
     <>
@@ -154,6 +169,31 @@ export default async function BlogPostPage({ params }: Props) {
           smallText="No spam. Unsubscribe anytime."
         />
       </div>
+
+      {/* Related articles */}
+      {related.length > 0 && (
+        <div className="mt-12 pt-8 border-t border-zinc-800">
+          <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-5">
+            More in {post.category}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {related.map(r => (
+              <Link key={r.slug} href={`/blog/${r.slug}`}
+                className="group flex flex-col gap-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl p-4 transition-all hover:-translate-y-0.5">
+                <p className="text-sm font-semibold text-zinc-200 group-hover:text-white leading-snug line-clamp-2 transition-colors">
+                  {r.title}
+                </p>
+                <div className="flex items-center gap-2 mt-auto pt-2">
+                  <span className="text-[10px] font-semibold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">
+                    {r.category}
+                  </span>
+                  {r.read_time && <span className="text-[10px] text-zinc-600">{r.read_time}</span>}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </article>
     </>
   )

@@ -3,14 +3,19 @@
 import { motion } from "framer-motion";
 import { Users, Wrench, BookOpen, BrainCircuit } from "lucide-react";
 
-const stats = [
-  { icon: <Users className="w-5 h-5" />,       value: "10,000+",  label: "Developers Learning" },
-  { icon: <Wrench className="w-5 h-5" />,       value: "15+",      label: "Free AI Tools"       },
-  { icon: <BrainCircuit className="w-5 h-5" />, value: "500+",     label: "Interview Questions" },
-  { icon: <BookOpen className="w-5 h-5" />,     value: "50+",      label: "Blog Articles"       },
-];
+interface Props {
+  subscriberCount?: string  // real YouTube subs e.g. "52K+"
+  videoCount?: string       // real YouTube videos e.g. "148+"
+}
 
-export default function SocialProofBar() {
+export default function SocialProofBar({ subscriberCount, videoCount }: Props) {
+  const stats = [
+    { icon: <Users className="w-5 h-5" />,       value: subscriberCount ?? "10K+", label: "Developers Learning" },
+    { icon: <Wrench className="w-5 h-5" />,       value: "20+",                      label: "Free AI Tools"       },
+    { icon: <BrainCircuit className="w-5 h-5" />, value: "500+",                     label: "Interview Questions" },
+    { icon: <BookOpen className="w-5 h-5" />,     value: videoCount ?? "150+",       label: "Videos & Articles"   },
+  ]
+
   return (
     <section className="py-8 px-4 border-y border-zinc-800/60 bg-zinc-900/30">
       <div className="max-w-5xl mx-auto">

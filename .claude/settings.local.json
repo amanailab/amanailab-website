@@ -59,7 +59,8 @@
       "Bash(grep -v \"node_modules\\\\|next/dist\\\\|comment\\\\|//\")",
       "Bash(sed -n '211,215p' E:/amanailab-website/amanailab-website/app/api/linkedin/generate/route.ts)",
       "Bash(sed -n '167,171p' E:/amanailab-website/amanailab-website/app/api/prompt/generate/route.ts)",
-      "Bash(sed -n '11,15p' E:/amanailab-website/amanailab-website/app/api/interview/chat/route.ts)"
+      "Bash(sed -n '11,15p' E:/amanailab-website/amanailab-website/app/api/interview/chat/route.ts)",
+      "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\" -Directory)"
     ]
   }
 }

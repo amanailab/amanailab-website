@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -96,10 +96,15 @@ function levelColor(level: string) {
 }
 
 export default function CoursesContent() {
-  const [email, setEmail] = useState("");
-  const [working, setWorking] = useState(false);
-  const [error, setError] = useState("");
-  const [joined, setJoined] = useState(false);
+  const [email, setEmail]       = useState("");
+  const [working, setWorking]   = useState(false);
+  const [error, setError]       = useState("");
+  const [joined, setJoined]     = useState(false);
+  const [waitlistCount, setWaitlistCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/courses/waitlist-count').then(r => r.json()).then(d => setWaitlistCount(d.count)).catch(() => {})
+  }, []);
 
   async function joinWaitlist(e: React.FormEvent) {
     e.preventDefault();
@@ -200,6 +205,12 @@ export default function CoursesContent() {
             Get notified when courses launch
           </h2>
           <p className="text-zinc-400 max-w-md mx-auto mb-6">
+            {waitlistCount !== null && waitlistCount > 0 && (
+              <div className="inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                {waitlistCount.toLocaleString()} people already on the waitlist
+              </div>
+            )}
             Join the waitlist and get early bird discount of{" "}
             <span className="text-orange-400 font-semibold">40%</span>.
           </p>

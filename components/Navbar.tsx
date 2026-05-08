@@ -55,8 +55,8 @@ const navItems: NavItem[] = [
     label: "Tools",
     columns: 2,
     items: [
-      { href: "/code-lab",             label: "Code Lab",             description: "LeetCode-style AI/ML coding judge",  icon: <Code2 className="w-4 h-4" /> },
-      { href: "/playground",          label: "Code Playground",      description: "Monaco editor + AI for ML code",    icon: <Code2 className="w-4 h-4" /> },
+      { href: "/code-lab",    label: "Code Lab ✨",       description: "LeetCode-style AI/ML coding judge",  icon: <Code2 className="w-4 h-4" /> },
+      { href: "/playground", label: "Code Playground ✨", description: "Monaco editor + AI for ML code",    icon: <Code2 className="w-4 h-4" /> },
       { href: "/resume",             label: "Resume Analyzer",      description: "ATS score & improvements",          icon: <FileText className="w-4 h-4" /> },
       { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   description: "AI-rewritten profile",              icon: <BarChart2 className="w-4 h-4" /> },
       { href: "/cover-letter-review",label: "Cover Letter Review",  description: "Score & rewrite your cover letter", icon: <Mail className="w-4 h-4" /> },
@@ -284,14 +284,21 @@ export default function Navbar() {
 
           {/* ── Right side actions ── */}
           <div className="flex items-center gap-2">
-            {/* Search */}
-            <Link
-              href="/search"
-              aria-label="Search"
-              className="hidden lg:flex items-center justify-center w-8 h-8 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/70 rounded-lg transition-all"
+            {/* Cmd+K search trigger */}
+            <button
+              onClick={() => {
+                const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true })
+                document.dispatchEvent(event)
+              }}
+              aria-label="Open command palette"
+              className="hidden lg:flex items-center gap-2 bg-zinc-800/60 hover:bg-zinc-800 border border-zinc-700/60 text-zinc-500 hover:text-zinc-300 text-xs px-2.5 py-1.5 rounded-lg transition-all"
             >
-              <Search className="w-4 h-4" />
-            </Link>
+              <Search className="w-3.5 h-3.5" />
+              <span>Search</span>
+              <kbd className="ml-1 flex items-center gap-0.5 text-[9px] text-zinc-600 font-mono">
+                <span>⌘</span><span>K</span>
+              </kbd>
+            </button>
 
             {/* Divider */}
             <div className="hidden lg:block w-px h-5 bg-zinc-800" />

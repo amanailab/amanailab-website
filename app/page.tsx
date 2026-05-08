@@ -23,7 +23,10 @@ export default async function HomePage() {
   return (
     <>
       <HeroSection />
-      <SocialProofBar />
+      <SocialProofBar
+        subscriberCount={`${formattedStats.subs.value}${formattedStats.subs.suffix}`}
+        videoCount={`${formattedStats.videos.value}${formattedStats.videos.suffix}`}
+      />
       <DailyChallengeWidget />
       <ToolsShowcase />
       <StatsSection stats={formattedStats} />
