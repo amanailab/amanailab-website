@@ -31,7 +31,7 @@ export default function XPCard() {
     fetch('/api/code-lab/progress').then(r => r.json()).then(d => setSolved((d.solved ?? []).length)).catch(() => {})
   }, [])
 
-  if (xp === null) return null
+  if (xp === null || xp === 0) return null // hide until user earns XP
 
   const level   = getLevel(xp)
   const nextXp  = nextLevelXp(xp)

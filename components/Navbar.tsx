@@ -118,6 +118,7 @@ export default function Navbar() {
   const [openDropdown, setOpenDropdown]     = useState<string | null>(null);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [userEmail, setUserEmail]           = useState<string | null>(null);
+  const [authLoading, setAuthLoading]       = useState(true);
   const [userMenuOpen, setUserMenuOpen]     = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -130,9 +131,13 @@ export default function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => setUserEmail(user?.email ?? null));
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserEmail(user?.email ?? null);
+      setAuthLoading(false);
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, sess) => {
       setUserEmail(sess?.user?.email ?? null);
+      setAuthLoading(false);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -308,8 +313,10 @@ export default function Navbar() {
             {/* Divider */}
             <div className="hidden lg:block w-px h-5 bg-zinc-800" />
 
-            {/* User auth button */}
-            {userEmail ? (
+            {/* User auth button — authLoading prevents flash of wrong content */}
+            {authLoading ? (
+              <div className="hidden lg:block w-8 h-8 bg-zinc-800 rounded-lg animate-pulse" />
+            ) : userEmail ? (
               <div className="hidden lg:block relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}

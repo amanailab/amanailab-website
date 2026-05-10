@@ -266,21 +266,23 @@ export default function NewsFeed() {
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          {/* Category tabs */}
-          <div className="flex items-center gap-1 flex-wrap border-b border-zinc-800 w-full sm:w-auto sm:border-b-0">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => setCategory(cat.value)}
-                className={`px-4 py-2.5 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg sm:rounded-lg ${
-                  category === cat.value
-                    ? "text-orange-400 border-b-2 border-orange-500 sm:border-b-0 sm:bg-orange-500/10"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+          {/* Category tabs — scrollable on mobile */}
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 pb-0">
+            <div className="flex items-center gap-1 border-b border-zinc-800 w-max sm:w-auto sm:flex-wrap sm:border-b-0">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => setCategory(cat.value)}
+                  className={`px-4 py-2.5 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg sm:rounded-lg ${
+                    category === cat.value
+                      ? "text-orange-400 border-b-2 border-orange-500 sm:border-b-0 sm:bg-orange-500/10"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Refresh button + status */}

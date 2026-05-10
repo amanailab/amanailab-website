@@ -88,6 +88,7 @@ export default function JobTrackerClient() {
   const user = useUser()
   const [apps, setApps]           = useState<Application[]>([])
   const [loading, setLoading]     = useState(true)
+  const [tableReady, setTableReady] = useState(false)
   const [authModal, setAuthModal] = useState(false)
   const [showForm, setShowForm]   = useState(false)
   const [editApp, setEditApp]     = useState<Application | null>(null)
@@ -98,8 +99,11 @@ export default function JobTrackerClient() {
     setLoading(true)
     try {
       const res = await fetch('/api/user/job-tracker')
-      const d = await res.json()
-      setApps(d.applications ?? [])
+      if (res.ok) {
+        const d = await res.json()
+        setApps(d.applications ?? [])
+        setTableReady(true) // table exists — hide SQL notice
+      }
     } catch { /* silent */ }
     finally { setLoading(false) }
   }, [user])
@@ -171,14 +175,14 @@ export default function JobTrackerClient() {
           </button>
         </div>
 
-        {/* SQL notice */}
-        <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 mb-6 flex items-start gap-3">
+        {/* SQL notice — hidden once table is confirmed working */}
+        {!tableReady && <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4 mb-6 flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-bold text-blue-400">Run SQL migration first (once)</p>
             <p className="text-xs text-zinc-500 mt-0.5">Supabase Dashboard → SQL Editor → paste <code className="text-zinc-400 font-mono">supabase/job_tracker_schema.sql</code> → Run</p>
           </div>
-        </div>
+        </div>}
 
         {/* Add/Edit form */}
         {showForm && (

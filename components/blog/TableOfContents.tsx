@@ -9,7 +9,11 @@ interface Props { headings: Heading[] }
 
 export default function TableOfContents({ headings }: Props) {
   const [active, setActive] = useState('')
-  const [open, setOpen]     = useState(true)
+  const [open, setOpen]     = useState(false) // collapsed by default; opens on md+ via useEffect
+
+  useEffect(() => {
+    setOpen(window.matchMedia('(min-width: 768px)').matches)
+  }, [])
 
   useEffect(() => {
     if (headings.length === 0) return

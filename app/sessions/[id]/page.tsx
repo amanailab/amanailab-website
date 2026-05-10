@@ -9,10 +9,16 @@ import {
 } from 'lucide-react'
 
 interface Entry {
-  question: string
-  score: number | null
-  grade: string | null
-  timeUsed: number
+  question:    string
+  answer:      string | null
+  score:       number | null
+  grade:       string | null
+  verdict:     string | null
+  correct:     string[]
+  missing:     string[]
+  modelAnswer: string | null
+  tip:         string | null
+  timeUsed:    number
 }
 
 interface Session {
@@ -194,20 +200,59 @@ export default function SessionReplayPage() {
                 </button>
 
                 {expandedIdx === i && (
-                  <div className="px-4 pb-4 border-t border-zinc-800 pt-3">
-                    <div className="flex flex-col gap-2.5">
-                      <p className="text-sm text-zinc-300 leading-relaxed font-medium">{entry.question}</p>
-                      <div className="flex gap-2 flex-wrap">
-                        {entry.score !== null && (
-                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${entry.score >= 8 ? 'bg-green-500/15 text-green-400' : entry.score >= 6 ? 'bg-blue-500/15 text-blue-400' : entry.score >= 4 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'}`}>
-                            {entry.score >= 8 ? '✓ Strong answer' : entry.score >= 6 ? '◑ Good answer' : entry.score >= 4 ? '△ Needs work' : '✗ Weak answer'}
-                          </span>
-                        )}
-                        <span className="text-xs text-zinc-600 flex items-center gap-1 bg-zinc-800 px-2 py-1 rounded-full">
-                          <Clock className="w-3 h-3" /> Answered in {formatTime(entry.timeUsed || 0)}
+                  <div className="px-4 pb-4 border-t border-zinc-800 pt-3 flex flex-col gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {entry.verdict && <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full">{entry.verdict}</span>}
+                      {entry.score !== null && (
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${entry.score >= 8 ? 'bg-green-500/15 text-green-400' : entry.score >= 6 ? 'bg-blue-500/15 text-blue-400' : entry.score >= 4 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'}`}>
+                          {entry.score >= 8 ? '✓ Strong' : entry.score >= 6 ? '◑ Good' : entry.score >= 4 ? '△ Needs work' : '✗ Weak'}
                         </span>
-                      </div>
+                      )}
+                      <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />{formatTime(entry.timeUsed || 0)}
+                      </span>
                     </div>
+
+                    {/* Your answer */}
+                    {entry.answer && (
+                      <div>
+                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-wide mb-1.5">Your Answer</p>
+                        <p className="text-xs text-zinc-400 leading-relaxed bg-zinc-800/50 rounded-xl p-3">{entry.answer}</p>
+                      </div>
+                    )}
+
+                    {/* What you got right / missed */}
+                    {((entry.correct?.length || 0) > 0 || (entry.missing?.length || 0) > 0) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(entry.correct?.length || 0) > 0 && (
+                          <div className="bg-green-500/5 border border-green-500/15 rounded-xl p-3">
+                            <p className="text-[10px] font-bold text-green-400 mb-1.5">Covered ✓</p>
+                            {entry.correct?.map((c, ci) => <p key={ci} className="text-[10px] text-zinc-400 leading-snug">• {c}</p>)}
+                          </div>
+                        )}
+                        {(entry.missing?.length || 0) > 0 && (
+                          <div className="bg-red-500/5 border border-red-500/15 rounded-xl p-3">
+                            <p className="text-[10px] font-bold text-red-400 mb-1.5">Missed ✗</p>
+                            {entry.missing?.map((m, mi) => <p key={mi} className="text-[10px] text-zinc-400 leading-snug">• {m}</p>)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Model answer */}
+                    {entry.modelAnswer && (
+                      <div>
+                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-wide mb-1.5">Model Answer</p>
+                        <p className="text-xs text-zinc-300 leading-relaxed bg-orange-500/5 border border-orange-500/15 rounded-xl p-3">{entry.modelAnswer}</p>
+                      </div>
+                    )}
+
+                    {/* Tip */}
+                    {entry.tip && (
+                      <p className="text-[10px] text-orange-400/80 italic flex items-start gap-1.5">
+                        <Lightbulb className="w-3 h-3 shrink-0 mt-0.5" />{entry.tip}
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

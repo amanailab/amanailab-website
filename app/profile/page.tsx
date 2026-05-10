@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, Mail, Calendar, LayoutDashboard, LogOut, Trash2, Save, Loader2, BrainCircuit, AlertTriangle } from 'lucide-react'
+import { User, Mail, Calendar, LayoutDashboard, LogOut, Trash2, Save, Loader2, BrainCircuit, AlertTriangle, Briefcase, Code2 } from 'lucide-react'
 
 interface Stats { sessions: number; avgScore: number; streak: number }
 
@@ -167,6 +167,12 @@ export default function ProfilePage() {
           </Link>
           <Link href="/interview?tab=simulator" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-colors">
             <BrainCircuit className="w-4 h-4 text-zinc-500" /> Practice Interview
+          </Link>
+          <Link href="/job-tracker" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-colors">
+            <Briefcase className="w-4 h-4 text-zinc-500" /> Job Tracker
+          </Link>
+          <Link href="/code-lab" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100 transition-colors">
+            <Code2 className="w-4 h-4 text-zinc-500" /> Code Lab
           </Link>
         </div>
 

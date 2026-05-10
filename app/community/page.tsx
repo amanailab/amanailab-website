@@ -270,6 +270,7 @@ export default function CommunityPage() {
   const [loading, setLoading]     = useState(true)
   const [filter, setFilter]       = useState('all')
   const [showModal, setShowModal] = useState(false)
+  const [visibleCount, setVisibleCount] = useState(10)
 
   // Check auth
   useEffect(() => {
@@ -281,6 +282,7 @@ export default function CommunityPage() {
 
   // Fetch posts + companies
   useEffect(() => {
+    setVisibleCount(10) // reset pagination on filter change
     const url = filter !== 'all' ? `/api/community/posts?type=${filter}` : '/api/community/posts'
     Promise.all([
       fetch(url).then(r => r.json()),
@@ -395,9 +397,24 @@ export default function CommunityPage() {
             </button>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {posts.map(p => <PostCard key={p.id} post={p} />)}
-          </div>
+          <>
+            <div className="flex flex-col gap-3">
+              {posts.slice(0, visibleCount).map(p => <PostCard key={p.id} post={p} />)}
+            </div>
+            {posts.length > visibleCount && (
+              <div className="text-center mt-5">
+                <button
+                  onClick={() => setVisibleCount(c => c + 10)}
+                  className="flex items-center gap-2 mx-auto bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-zinc-200 text-sm font-semibold px-6 py-2.5 rounded-xl transition-all"
+                >
+                  Load More ({posts.length - visibleCount} remaining)
+                </button>
+              </div>
+            )}
+            {posts.length > 0 && posts.length <= visibleCount && (
+              <p className="text-xs text-zinc-700 text-center mt-4">{posts.length} posts total</p>
+            )}
+          </>
         )}
 
         {/* ── Not logged in CTA ── */}
