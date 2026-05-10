@@ -148,7 +148,7 @@ export default function ProblemClient({
 
   // AI assist
   const [aiLoading, setAiLoading]     = useState(false)
-  const [aiMode, setAiMode]             = useState<'debug'|'complexity'|'approach'|'review'|null>(null)
+  const [aiMode, setAiMode]             = useState<'debug'|'complexity'|'approach'|'review'|'solution'|null>(null)
   const [aiDebug, setAiDebug]           = useState('')
   const [aiComplexity, setAiComplexity] = useState<ComplexityResult|null>(null)
   const [aiHint, setAiHint]             = useState('')
@@ -176,7 +176,8 @@ export default function ProblemClient({
   const [xpEarned, setXpEarned] = useState<number|null>(null)
 
   // AI review result
-  const [aiReview, setAiReview] = useState('')
+  const [aiReview, setAiReview]     = useState('')
+  const [aiSolution, setAiSolution] = useState('')
 
   const visibleTests = problem.test_cases.filter(t => !t.is_hidden)
   const topicSlug    = TOPIC_SLUGS[problem.topic]
@@ -341,7 +342,7 @@ export default function ProblemClient({
   }, [user, submitting, pyStatus, runTests, problem.slug, code, submissions])
 
   // AI assist
-  const callAI = useCallback(async (mode: 'debug'|'complexity'|'approach'|'review') => {
+  const callAI = useCallback(async (mode: 'debug'|'complexity'|'approach'|'review'|'solution') => {
     if (user === null) { setAuthModal(true); return }
     setAiLoading(true); setAiMode(mode); setResultTab('ai')
     const failedCases = runResults?.filter(r => !r.passed).slice(0, 3).map(r => ({ input: r.input, expected: r.expected, got: r.got })) ?? []
@@ -351,7 +352,8 @@ export default function ProblemClient({
       const data = await res.json()
       if (mode === 'complexity') setAiComplexity(data.result as ComplexityResult)
       else if (mode === 'debug')  setAiDebug(data.result as string)
-      else if (mode === 'review') setAiReview(data.result as string)
+      else if (mode === 'review')    setAiReview(data.result as string)
+      else if (mode === 'solution') setAiSolution(data.result as string)
       else setAiHint(data.result as string)
     } catch { toast('AI assist failed. Try again.', 'error') }
     finally { setAiLoading(false) }
@@ -741,6 +743,14 @@ export default function ProblemClient({
                         Review
                       </button>
                     )}
+                    {accepted&&(
+                      <button onClick={() => callAI('solution')} disabled={aiLoading}
+                        title="See the clean official solution"
+                        className="flex items-center gap-1 text-xs font-semibold bg-green-500/10 hover:bg-green-500/20 border border-green-500/25 text-green-400 px-2.5 py-1.5 rounded-lg transition-colors shrink-0 disabled:opacity-50">
+                        {aiLoading&&aiMode==='solution'?<Loader2 className="w-3 h-3 animate-spin"/>:<BookOpen className="w-3 h-3"/>}
+                        Solution
+                      </button>
+                    )}
                     {accepted&&nextProblem&&(
                       <Link href={`/code-lab/${nextProblem.slug}`}
                         className="flex items-center gap-1 text-xs font-semibold bg-green-500/10 hover:bg-green-500/20 border border-green-500/25 text-green-400 px-2.5 py-1.5 rounded-lg transition-colors shrink-0">
@@ -839,6 +849,19 @@ export default function ProblemClient({
                     <div className="flex items-center gap-2 mb-2"><Star className="w-4 h-4 text-purple-400"/><p className="text-xs font-bold text-purple-400">Solution Review</p></div>
                     <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap">{aiReview}</p>
                   </div>
+                )
+                : aiMode==='solution'&&aiSolution ? (
+                  <div className="bg-green-500/5 border border-green-500/20 rounded-xl overflow-hidden">
+                    <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-green-500/10">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-green-400"/>
+                        <p className="text-xs font-bold text-green-400">Official Solution</p>
+                      </div>
+                      <button onClick={() => { navigator.clipboard.writeText(aiSolution); toast('Solution copied!', 'success') }}
+                        className="text-[10px] text-zinc-600 hover:text-zinc-300 transition-colors">copy</button>
+                    </div>
+                    <pre className="text-xs text-zinc-300 font-mono leading-relaxed p-3.5 overflow-x-auto whitespace-pre-wrap">{aiSolution}</pre>
+                  </div>
                 ) : (
                   <div className="py-2 flex flex-col gap-1.5">
                     <p className="text-[10px] text-zinc-600 mb-1">Use the AI action buttons above ↑</p>
@@ -846,6 +869,7 @@ export default function ProblemClient({
                     <p className="text-[10px] text-zinc-600"><span className="text-purple-400 font-semibold">📊 Complexity</span> — Big-O time & space analysis of your code</p>
                     <p className="text-[10px] text-zinc-600"><span className="text-yellow-400 font-semibold">💡 Hint</span> — Socratic guidance without giving the answer</p>
                     <p className="text-[10px] text-zinc-600"><span className="text-purple-400 font-semibold">⭐ Review</span> — after Accepted, get professional code review</p>
+                    <p className="text-[10px] text-zinc-600"><span className="text-green-400 font-semibold">📖 Solution</span> — after Accepted, see the clean official solution</p>
                   </div>
                 )
               )}

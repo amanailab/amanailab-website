@@ -668,7 +668,8 @@ export default async function DashboardPage() {
                   <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-4">Recent Sessions</p>
                   <div className="flex flex-col gap-2">
                     {s.slice(0, 5).map(sess => (
-                      <div key={sess.id} className={`flex items-center gap-3 p-3 rounded-xl border ${gradeBg(sess.grade)}`}>
+                      <Link key={sess.id} href={`/sessions/${sess.id}`}
+                        className={`flex items-center gap-3 p-3 rounded-xl border hover:brightness-110 transition-all ${gradeBg(sess.grade)}`}>
                         <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${gradeBg(sess.grade)}`}>
                           <span className={`text-sm font-extrabold ${gradeColor(sess.grade)}`}>{sess.grade}</span>
                         </div>
@@ -683,7 +684,7 @@ export default async function DashboardPage() {
                           <p className={`text-base font-extrabold ${gradeColor(sess.grade)}`}>{sess.avg_score.toFixed(1)}</p>
                           <p className="text-[10px] text-zinc-600">/10</p>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                   {s.length > 5 && <p className="text-xs text-zinc-600 text-center mt-3">{s.length - 5} more sessions</p>}

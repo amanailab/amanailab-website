@@ -8,6 +8,7 @@ import { Clock, ArrowLeft, Tag, Share2 } from 'lucide-react'
 import EmailCaptureCard from '@/components/shared/EmailCaptureCard'
 import ReadingProgress from '@/components/blog/ReadingProgress'
 import GiscusComments from '@/components/blog/GiscusComments'
+import TableOfContents from '@/components/blog/TableOfContents'
 import sanitizeHtml from 'sanitize-html'
 
 const ALLOWED_TAGS = [
@@ -71,11 +72,34 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function extractHeadings(html: string): { id: string; text: string; level: number }[] {
+  const headings: { id: string; text: string; level: number }[] = []
+  const regex = /<h([2-3])[^>]*>(.*?)<\/h[2-3]>/gi
+  let match
+  while ((match = regex.exec(html)) !== null) {
+    const level = parseInt(match[1])
+    const text  = match[2].replace(/<[^>]+>/g, '').trim()
+    const id    = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    if (text) headings.push({ id, text, level })
+  }
+  return headings
+}
+
+function injectHeadingIds(html: string): string {
+  return html.replace(/<h([2-3])([^>]*)>(.*?)<\/h[2-3]>/gi, (_, level, attrs, content) => {
+    const text = content.replace(/<[^>]+>/g, '').trim()
+    const id   = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    return `<h${level}${attrs} id="${id}">${content}</h${level}>`
+  })
+}
+
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params
   const post = await getPost(slug)
   if (!post) notFound()
-  const related = await getRelatedPosts(post.category, slug)
+  const related  = await getRelatedPosts(post.category, slug)
+  const headings = extractHeadings(post.content ?? '')
+  const contentWithIds = injectHeadingIds(post.content ?? '')
 
   return (
     <>
@@ -148,13 +172,16 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
       )}
 
-      {/* Content — sanitized to prevent XSS */}
+      {/* Table of Contents — auto-generated from headings */}
+      <TableOfContents headings={headings} />
+
+      {/* Content — sanitized to prevent XSS, headings get id attrs */}
       <div
         className="blog-content"
         dangerouslySetInnerHTML={{
-          __html: sanitizeHtml(post.content, {
+          __html: sanitizeHtml(contentWithIds, {
             allowedTags: ALLOWED_TAGS,
-            allowedAttributes: ALLOWED_ATTRS,
+            allowedAttributes: { ...(ALLOWED_ATTRS as Record<string, string[]>), '*': [...((ALLOWED_ATTRS as Record<string, string[]>)['*'] ?? []), 'id'] },
           }),
         }}
       />

@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
-type AssistMode = 'debug' | 'complexity' | 'approach' | 'review'
+type AssistMode = 'debug' | 'complexity' | 'approach' | 'review' | 'solution'
 
 const SYSTEM: Record<AssistMode, string> = {
   debug: `You are an expert AI/ML coding interviewer reviewing a student's Python solution.
@@ -36,6 +36,15 @@ Cover:
 4. What to say when presenting this in an interview
 
 Keep it concise, encouraging, and specific. Under 200 words. Reference the relevant ML concept.`,
+
+  solution: `You are an expert AI/ML educator writing a clean official solution to a coding problem.
+Write ONLY Python code — no markdown fences, no explanations outside of code comments.
+The solution must:
+- Be clean, Pythonic, and interview-ready
+- Have a docstring explaining the mathematical approach
+- Have inline comments on key lines
+- Handle edge cases
+- End with: # Time: O(...) | Space: O(...)`,
 }
 
 export async function POST(req: Request) {
@@ -106,6 +115,15 @@ ${code}
 This solution passes all test cases. Give professional code review feedback.`
     }
 
+    if (mode === 'solution') {
+      userPrompt = `Write the clean official solution for this AI/ML coding problem:
+
+Problem: ${problem_title}
+Description summary: ${problem_description?.slice(0, 400)}
+
+Write ONLY Python code with comments. No markdown fences.`
+    }
+
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
@@ -116,7 +134,7 @@ This solution passes all test cases. Give professional code review feedback.`
           { role: 'user',   content: userPrompt },
         ],
         temperature: 0.3,
-        max_tokens: mode === 'complexity' ? 400 : mode === 'review' ? 350 : 200,
+        max_tokens: mode === 'complexity' ? 400 : mode === 'review' ? 350 : mode === 'solution' ? 600 : 200,
         ...(mode === 'complexity' ? { response_format: { type: 'json_object' } } : {}),
       }),
     })

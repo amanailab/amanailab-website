@@ -61,7 +61,9 @@
       "Bash(sed -n '167,171p' E:/amanailab-website/amanailab-website/app/api/prompt/generate/route.ts)",
       "Bash(sed -n '11,15p' E:/amanailab-website/amanailab-website/app/api/interview/chat/route.ts)",
       "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\" -Directory)",
-      "Bash(xargs grep -l \"new Date\\(\\)\")"
+      "Bash(xargs grep -l \"new Date\\(\\)\")",
+      "Bash(mkdir -p E:/amanailab-website/amanailab-website/app/sessions/[id])",
+      "Bash(mkdir -p E:/amanailab-website/amanailab-website/app/api/user/sessions/[id])"
     ]
   }
 }
