@@ -103,7 +103,10 @@ const navItems: NavItem[] = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isActive(pathname: string, items: { href: string }[]) {
-  return items.some((i) => i.href === pathname);
+  return items.some((i) => {
+    const base = i.href.split('?')[0]
+    return pathname === base || (base.length > 1 && pathname.startsWith(base))
+  })
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -402,11 +405,11 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.22 }}
-            className="lg:hidden overflow-hidden bg-zinc-950 border-b border-zinc-800"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="lg:hidden overflow-y-auto bg-zinc-950 border-b border-zinc-800"
           >
             <div className="px-4 pt-3 pb-5 flex flex-col gap-1 max-h-[80vh] overflow-y-auto">
 

@@ -182,26 +182,28 @@ export default function SeriesGrid({ playlists }: { playlists: Playlist[] }) {
         </p>
       </motion.div>
 
-      {/* Filters */}
+      {/* Filters — scrollable on mobile */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        className="flex flex-wrap gap-2 mb-10"
+        className="overflow-x-auto mb-10 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide"
       >
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setActive(cat.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              active === cat.id
-                ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
-                : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-            }`}
-          >
-            {cat.label}
-          </button>
-        ))}
+        <div className="flex gap-2 w-max sm:w-auto sm:flex-wrap">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActive(cat.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                active === cat.id
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                  : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
       </motion.div>
 
       {/* Grid */}

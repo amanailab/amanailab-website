@@ -140,22 +140,71 @@ export default function BlogList({ posts, total, page, perPage, search, category
         </p>
       )}
 
-      {/* Grid */}
+      {/* Articles */}
       {posts.length === 0 ? (
-        <div className="text-center py-20 text-zinc-500">
-          <p className="text-lg mb-2">No articles found.</p>
-          <p className="text-sm">Try adjusting your search or filter.</p>
+        <div className="text-center py-20 bg-zinc-900 border border-zinc-800 rounded-2xl">
+          <div className="text-4xl mb-4">📝</div>
+          <p className="text-zinc-300 font-semibold mb-2">No articles found</p>
+          <p className="text-zinc-600 text-sm">Try adjusting your search or filter to find what you're looking for.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {posts.map((post) => (
+        <>
+          {/* Featured first post — only on page 1 without filters */}
+          {page === 1 && !search && !category && posts[0] && (
+            <Link
+              href={`/blog/${posts[0].slug}`}
+              className="group block bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-600 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 mb-6"
+            >
+              <div className="flex flex-col sm:flex-row">
+                <div className="relative sm:w-[45%] overflow-hidden" style={{ height: 220 }}>
+                  {posts[0].cover_image ? (
+                    <Image
+                      src={posts[0].cover_image}
+                      alt={posts[0].title}
+                      fill
+                      priority
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-500/20 to-zinc-800">
+                      <span className="text-6xl font-bold text-orange-500/30">{posts[0].title[0]}</span>
+                    </div>
+                  )}
+                  <div className="absolute top-3 left-3 bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                    Latest
+                  </div>
+                </div>
+                <div className="flex-1 p-6 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${getCategoryStyle(posts[0].category)}`}>
+                      {posts[0].category}
+                    </span>
+                    <span className="text-xs text-zinc-600">{formatDate(posts[0].created_at)}</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-zinc-100 mb-3 leading-snug group-hover:text-orange-400 transition-colors line-clamp-2">
+                    {posts[0].title}
+                  </h2>
+                  {posts[0].description && (
+                    <p className="text-sm text-zinc-400 line-clamp-2 mb-4 leading-relaxed">{posts[0].description}</p>
+                  )}
+                  <div className="flex items-center gap-1 text-xs text-zinc-600">
+                    <Clock className="w-3 h-3" />
+                    <span>{posts[0].read_time}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {(page === 1 && !search && !category ? posts.slice(1) : posts).map((post) => (
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}
-              className="group bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-600 transition-all hover:-translate-y-0.5"
+              className="group bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden hover:border-zinc-600 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20"
             >
               {post.cover_image ? (
-                <div className="relative overflow-hidden" style={{ height: 180 }}>
+                <div className="relative overflow-hidden aspect-video">
                   <Image
                     src={post.cover_image}
                     alt={post.title}
@@ -164,19 +213,14 @@ export default function BlogList({ posts, total, page, perPage, search, category
                   />
                 </div>
               ) : (
-                <div
-                  className="flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900"
-                  style={{ height: 180 }}
-                >
+                <div className="flex items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-900 aspect-video">
                   <span className="text-4xl font-bold text-zinc-700">{post.title[0]}</span>
                 </div>
               )}
 
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getCategoryStyle(post.category)}`}
-                  >
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getCategoryStyle(post.category)}`}>
                     {post.category}
                   </span>
                   <span className="text-xs text-zinc-600">{formatDate(post.created_at)}</span>
@@ -197,7 +241,8 @@ export default function BlogList({ posts, total, page, perPage, search, category
               </div>
             </Link>
           ))}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Pagination */}

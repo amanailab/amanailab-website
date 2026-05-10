@@ -384,11 +384,13 @@ export default function CommunityPage() {
             <div className="w-8 h-8 border-2 border-zinc-800 border-t-orange-500 rounded-full animate-spin" />
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-16">
-            <MessageSquare className="w-10 h-10 text-zinc-700 mx-auto mb-4" />
-            <p className="text-zinc-400 font-semibold mb-2">No posts yet</p>
-            <p className="text-zinc-600 text-sm mb-6">Be the first to share your interview experience!</p>
-            <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-colors">
+          <div className="text-center py-16 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+            <div className="text-5xl mb-4">💬</div>
+            <p className="text-zinc-200 font-bold text-lg mb-2">Be the first to share!</p>
+            <p className="text-zinc-500 text-sm mb-6 max-w-sm mx-auto leading-relaxed">
+              Share your AI/ML interview experience — help others know what to expect at Google, Meta, OpenAI and more.
+            </p>
+            <button onClick={() => setShowModal(true)} className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
               <Plus className="w-4 h-4" /> Share Your Experience
             </button>
           </div>

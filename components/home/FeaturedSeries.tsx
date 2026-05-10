@@ -50,8 +50,7 @@ export default function FeaturedSeries({ playlists }: { playlists: Playlist[] })
 function SeriesCard({ s, i }: { s: Playlist; i: number }) {
   const [imgError, setImgError] = useState(false);
   return (
-          <motion.div
-            key={s.id}
+    <motion.div
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -121,6 +120,6 @@ function SeriesCard({ s, i }: { s: Playlist; i: number }) {
                 </Link>
               </div>
             </div>
-          </motion.div>
+    </motion.div>
   );
 }

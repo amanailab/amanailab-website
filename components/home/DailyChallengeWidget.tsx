@@ -93,11 +93,11 @@ export default function DailyChallengeWidget() {
     <section className="py-8 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         <Link href="/daily" className="group block bg-zinc-900 border border-zinc-800 hover:border-orange-500/40 rounded-2xl p-5 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/5">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
 
-            {/* Left: icon + label */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="w-11 h-11 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center justify-center">
+          {/* Top row: icon + label + CTA (always visible) */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center justify-center shrink-0">
                 <Flame className="w-5 h-5 text-orange-400" />
               </div>
               <div>
@@ -115,23 +115,10 @@ export default function DailyChallengeWidget() {
               </div>
             </div>
 
-            {/* Middle: question preview */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${topicBadge[topic] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
-                  {topic}
-                </span>
-                <span className="text-[10px] text-zinc-600">{level}</span>
-              </div>
-              <p className="text-sm text-zinc-300 group-hover:text-zinc-200 leading-relaxed transition-colors line-clamp-2">
-                {preview}
-              </p>
-            </div>
-
-            {/* Right: CTA */}
+            {/* CTA — always top-right on all screen sizes */}
             <div className="shrink-0">
               {answered ? (
-                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 px-4 py-2.5 rounded-xl">
+                <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-xl">
                   <CheckCircle2 className="w-4 h-4 text-green-400" />
                   <div className="text-right">
                     <p className={`text-sm font-bold ${scoreColor(score)}`}>{score}/10</p>
@@ -139,15 +126,28 @@ export default function DailyChallengeWidget() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 bg-orange-500 group-hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+                <div className="flex items-center gap-1.5 bg-orange-500 group-hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
                   <Sparkles className="w-3.5 h-3.5" />
-                  Answer Now
+                  <span className="hidden sm:block">Answer Now</span>
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               )}
             </div>
-
           </div>
+
+          {/* Question preview */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${topicBadge[topic] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                {topic}
+              </span>
+              <span className="text-[10px] text-zinc-600">{level}</span>
+            </div>
+            <p className="text-sm text-zinc-300 group-hover:text-zinc-200 leading-relaxed transition-colors line-clamp-2">
+              {preview}
+            </p>
+          </div>
+
         </Link>
       </div>
     </section>

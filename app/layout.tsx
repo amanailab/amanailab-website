@@ -7,6 +7,7 @@ import PageTransition from "@/components/ui/PageTransition";
 import CommandPalette from "@/components/ui/CommandPalette";
 import BackToTop from "@/components/ui/BackToTop";
 import { ToastProvider } from "@/components/ui/Toast";
+import NavigationProgress from "@/components/ui/NavigationProgress";
 import { GoogleAnalytics } from '@next/third-parties/google'
 import MicrosoftClarity from "@/components/analytics/MicrosoftClarity";
 import { headers } from 'next/headers'
@@ -125,6 +126,7 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased" suppressHydrationWarning={true}>
         {!isAdmin && <Navbar />}
+        <NavigationProgress />
         <ToastProvider>
           <main className="flex-1">
             <PageTransition>{children}</PageTransition>

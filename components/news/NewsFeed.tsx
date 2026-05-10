@@ -312,13 +312,11 @@ export default function NewsFeed() {
 
         {/* Empty state */}
         {!loading && articles.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-32 text-center px-4">
-            <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-6">
-              <Newspaper className="w-8 h-8 text-zinc-600" />
-            </div>
-            <h2 className="text-xl font-bold text-zinc-100 mb-3">No news yet</h2>
-            <p className="text-zinc-400 text-sm max-w-xs mb-8">
-              Click Refresh Feed to fetch the latest AI news
+          <div className="flex flex-col items-center justify-center py-24 text-center px-4 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+            <div className="text-5xl mb-4">📰</div>
+            <h2 className="text-xl font-bold text-zinc-100 mb-2">No news articles yet</h2>
+            <p className="text-zinc-500 text-sm max-w-xs mb-8 leading-relaxed">
+              Fetch the latest AI/ML news from top sources — refreshes daily automatically
             </p>
             <button
               onClick={handleRefresh}
