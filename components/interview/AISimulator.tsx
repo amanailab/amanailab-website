@@ -251,6 +251,7 @@ export default function AISimulator() {
   const [feedbackTab, setFeedbackTab] = useState<'feedback' | 'model'>('feedback')
   const [loggedInUser, setLoggedInUser] = useState<string | null>(null)
   const [sessionSaved, setSessionSaved] = useState(false)
+  const [sessionXp, setSessionXp]       = useState(0)
 
   const { speak, cancel, speaking } = useTTS()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -287,7 +288,7 @@ export default function AISimulator() {
     const avg = scored.reduce((a, e) => a + (e.evaluation?.score ?? 0), 0) / scored.length
     const overallGrade = avg >= 9 ? 'A+' : avg >= 8 ? 'A' : avg >= 7 ? 'B' : avg >= 6 ? 'C' : avg >= 4 ? 'D' : 'F'
     try {
-      await fetch('/api/user/save-session', {
+      const saveRes = await fetch('/api/user/save-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -310,6 +311,15 @@ export default function AISimulator() {
           })),
         }),
       })
+      const saveData = await saveRes.json().catch(() => ({}))
+      if (saveData.xp_earned) {
+        setSessionXp(saveData.xp_earned)
+        // Sync localStorage
+        try {
+          const cur = parseInt(localStorage.getItem('codelab_xp') ?? '0')
+          localStorage.setItem('codelab_xp', String(cur + saveData.xp_earned))
+        } catch { /* ignore */ }
+      }
       setSessionSaved(true)
     } catch {
       // silent — saving is non-critical
@@ -1137,7 +1147,9 @@ export default function AISimulator() {
           <div className={`flex items-center gap-3 rounded-2xl p-4 border ${sessionSaved ? 'bg-green-500/10 border-green-500/20' : 'bg-zinc-900 border-zinc-800'}`}>
             <Save className={`w-4 h-4 shrink-0 ${sessionSaved ? 'text-green-400' : 'text-zinc-500'}`} />
             <p className="text-sm text-zinc-300">
-              {sessionSaved ? 'Session saved to your progress dashboard.' : 'Saving session…'}
+              {sessionSaved
+                ? `Session saved.${sessionXp > 0 ? ` +${sessionXp} XP earned!` : ''}`
+                : 'Saving session…'}
             </p>
             {sessionSaved && (
               <a href="/dashboard" className="ml-auto text-xs text-orange-400 hover:text-orange-300 font-semibold shrink-0 flex items-center gap-1">

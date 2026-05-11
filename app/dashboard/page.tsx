@@ -665,7 +665,14 @@ export default async function DashboardPage() {
 
                 {/* Recent Sessions */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-4">Recent Sessions</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Recent Sessions</p>
+                    {s.length > 0 && (
+                      <Link href="/sessions" className="text-xs text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+                        View All {s.length > 5 ? `(${s.length})` : ''} →
+                      </Link>
+                    )}
+                  </div>
                   <div className="flex flex-col gap-2">
                     {s.slice(0, 5).map(sess => (
                       <Link key={sess.id} href={`/sessions/${sess.id}`}
@@ -687,7 +694,9 @@ export default async function DashboardPage() {
                       </Link>
                     ))}
                   </div>
-                  {s.length > 5 && <p className="text-xs text-zinc-600 text-center mt-3">{s.length - 5} more sessions</p>}
+                  {s.length === 0 && (
+                    <p className="text-xs text-zinc-600 text-center py-4">No sessions yet — <Link href="/interview?tab=simulator" className="text-orange-400 hover:text-orange-300">start your first one</Link></p>
+                  )}
                 </div>
               </>
             )}

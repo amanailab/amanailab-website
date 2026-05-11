@@ -13,6 +13,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${data.title} (${data.difficulty}) | AI Code Lab`,
     description: `Solve ${data.title} — ${data.topic} coding problem for AI/ML engineers. Free.`,
+    alternates: { canonical: `https://amanailab.com/code-lab/${slug}` },
   }
 }
 

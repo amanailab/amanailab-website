@@ -16,6 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${meta.label} Flashcards — Key Concepts | AmanAI Lab`,
     description: `${meta.cards.length} flashcards covering ${meta.concepts.slice(0, 4).join(', ')} and more. Free daily ${meta.label} practice.`,
+    alternates: { canonical: `https://amanailab.com/flashcards/${slug}` },
   }
 }
 

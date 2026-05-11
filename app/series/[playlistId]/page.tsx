@@ -17,6 +17,7 @@ export async function generateMetadata({
   return {
     title: `${playlist.title} | AmanAI Lab`,
     description: playlist.description || `Watch the ${playlist.title} series on AmanAI Lab.`,
+    alternates: { canonical: `https://amanailab.com/series/${playlistId}` },
   };
 }
 

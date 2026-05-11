@@ -124,7 +124,7 @@ export default function Footer() {
                 className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
                 <TwitterIcon className="w-4 h-4" />
               </a>
-              <a href="mailto:aman.chauhan.ai71@gmail.com" aria-label="Email"
+              <a href="mailto:hello@amanailab.com" aria-label="Email"
                 className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
                 <Mail className="w-4 h-4" />
               </a>

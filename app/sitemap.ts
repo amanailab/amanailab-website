@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { getAdminSupabase } from '@/lib/admin'
 import { TOPICS } from '@/lib/topic-data'
+import { getPlaylists } from '@/lib/youtube'
 
 const BASE = 'https://amanailab.com'
 
@@ -85,7 +86,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
     }))
 
-    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages, ...codeLabPages]
+    // Series detail pages from YouTube playlists
+    let seriesPages: MetadataRoute.Sitemap = []
+    try {
+      const playlists = await getPlaylists(50)
+      seriesPages = playlists.map(p => ({
+        url: `${BASE}/series/${p.id}`,
+        priority: 0.75,
+        changeFrequency: 'weekly' as const,
+      }))
+    } catch { /* YouTube API failure — skip series pages */ }
+
+    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages, ...codeLabPages, ...seriesPages]
   } catch {
     const topicPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/topics/${t.slug}`, priority: 0.9, changeFrequency: 'monthly' as const }))
     const flashcardPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/flashcards/${t.slug}`, priority: 0.7, changeFrequency: 'monthly' as const }))
