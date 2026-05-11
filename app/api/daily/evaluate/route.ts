@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/admin'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -9,6 +10,12 @@ function todayIndex(): number {
 }
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req)
+  const rl = checkRateLimit(`daily-eval:${ip}`, 5, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many requests. Please wait before evaluating again.' }, { status: 429 })
+  }
+
   try {
     const { questionId, userAnswer } = await req.json()
 

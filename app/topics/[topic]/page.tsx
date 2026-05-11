@@ -18,6 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: meta.seoTitle,
     description: meta.seoDescription,
+    alternates: { canonical: `https://amanailab.com/topics/${slug}` },
     openGraph: { title: meta.seoTitle, description: meta.seoDescription },
   }
 }

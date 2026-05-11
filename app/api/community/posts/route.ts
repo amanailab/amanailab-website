@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/admin'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -23,6 +24,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request)
+  const rl = checkRateLimit(`community-post:${ip}`, 3, 300_000) // 3 posts per 5 min
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many posts. Please wait a few minutes.' }, { status: 429 })
+  }
+
   try {
     const { author_name, author_email, title, body, type, company_slug } = await request.json()
     if (!author_name?.trim() || !title?.trim() || !body?.trim()) {

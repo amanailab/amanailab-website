@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 // Public anon client — safe for reading approved comments (RLS handles access)
 function getAnonClient() {
@@ -36,6 +37,12 @@ export async function GET(req: NextRequest) {
 
 // POST /api/blog/comments
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req)
+  const rl = checkRateLimit(`blog-comment:${ip}`, 5, 300_000) // 5 comments per 5 min
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many comments. Please wait a few minutes.' }, { status: 429 })
+  }
+
   const supabase = await createAuthClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Login required to comment' }, { status: 401 })

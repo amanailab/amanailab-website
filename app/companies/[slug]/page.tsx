@@ -43,6 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${company.name} AI/ML Interview Questions & Prep | AmanAI Lab`,
     description: `Prepare for your ${company.name} interview. Real questions asked at ${company.name}, interview format, what they look for, and insider tips from AmanAI Lab.`,
+    alternates: { canonical: `https://amanailab.com/companies/${slug}` },
     openGraph: {
       title: `${company.name} Interview Prep | AmanAI Lab`,
       description: `${company.interview_rounds} interview rounds · ${company.hq} · Practice real ${company.name} AI/ML questions`,
