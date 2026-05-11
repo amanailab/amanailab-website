@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 
 // ─── Replace with your real WhatsApp number (country code + number, no +) ───
-const WA_NUMBER = "919999999999"
+const WA_NUMBER = "919997600372"
 function waLink(pkg: string) {
   const msg = encodeURIComponent(`Hi Aman! I'm interested in the "${pkg}" from AmanAI Lab. Can you share more details?`)
   return `https://wa.me/${WA_NUMBER}?text=${msg}`
