@@ -21,7 +21,7 @@ from datetime import datetime
 # ── CONFIG ─────────────────────────────────────────────────────────────────────
 SITE_URL = "https://amanailab.com"
 API_KEY  = "amanailab2026secret123"   # ADMIN_UPLOAD_KEY in Vercel
-GROQ_KEY = "your_groq_key_here"       # console.groq.com (free)
+GROQ_KEY = "your_groq_key_here"       # get free key at console.groq.com → paste here (do NOT commit)
 # ──────────────────────────────────────────────────────────────────────────────
 
 VALID_TOPICS = [
@@ -224,56 +224,75 @@ def collect_from_rss() -> list:
     return collected
 
 
+PROGRESS_FILE = "progress.json"
+BATCH_SIZE    = 8   # items per API call — uses ~5K tokens per batch instead of 2K per item
+
+def load_progress() -> dict:
+    if os.path.exists(PROGRESS_FILE):
+        with open(PROGRESS_FILE, encoding="utf-8") as f:
+            return json.load(f)
+    return {"last_index": 0, "questions": []}
+
+def save_progress(index: int, questions: list):
+    with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
+        json.dump({"last_index": index, "questions": questions}, f, indent=2, ensure_ascii=False)
+
 def extract_and_rephrase(raw_items: list) -> list:
     """
-    Uses Groq AI to:
-    1. Extract questions from raw text
-    2. Rephrase them so they are 100% original
-    3. Write quality model answers
+    Processes items in batches of 8 to save tokens.
+    Saves progress after each batch — resumes from where it stopped.
     """
-    client = Groq(api_key=GROQ_KEY)
-    all_questions = []
-    seen = set()  # avoid duplicates
+    client  = Groq(api_key=GROQ_KEY)
+    progress = load_progress()
+    start   = progress["last_index"]
+    all_questions = progress["questions"]
+    seen    = {q.get("question", "")[:60].lower() for q in all_questions}
 
-    for i, item in enumerate(raw_items):
-        print(f"  Processing item {i+1}/{len(raw_items)}: {item['source']}")
+    if start > 0:
+        print(f"  ▶ Resuming from item {start}/{len(raw_items)} ({len(all_questions)} questions already extracted)")
+
+    # Process in batches of BATCH_SIZE
+    for batch_start in range(start, len(raw_items), BATCH_SIZE):
+        batch = raw_items[batch_start : batch_start + BATCH_SIZE]
+        batch_end = min(batch_start + BATCH_SIZE, len(raw_items))
+        print(f"  Batch {batch_start+1}–{batch_end} of {len(raw_items)}...")
+
+        # Combine all items in the batch into one prompt
+        combined_text = ""
+        for item in batch:
+            combined_text += f"\n--- Source: {item['source']} ---\n{item['text'][:600]}\n"
+
         try:
-            prompt = f"""You are an expert AI/ML interview question writer for AmanAI Lab.
+            prompt = f"""You are an expert AI/ML interview question writer.
 
-Your job:
-1. Read the text below
-2. Extract any AI/ML interview questions or topics mentioned
-3. REPHRASE each question completely in your own words — it must NOT look copied
-4. Write a high-quality 4-6 sentence model answer for each
-5. Only include genuine technical AI/ML questions
+Read the texts below (from multiple sources) and extract real AI/ML interview questions.
+Then REPHRASE every question completely in your own words — nothing should look copied.
+Write a high-quality 4-6 sentence model answer for each question.
 
-Source: {item['source']}
-Company hint: {item.get('company') or 'various companies'}
+TEXTS:
+{combined_text}
 
-Text:
-{item['text'][:3000]}
-
-Return a JSON array. Each item:
+Return a JSON array. Each item must have:
 {{
-  "question": "rephrased question in your own words",
-  "answer": "detailed 4-6 sentence model answer",
+  "question": "your rephrased version of the question",
+  "answer": "detailed 4-6 sentence model answer you wrote",
   "topic": "one of: {', '.join(VALID_TOPICS)}",
   "level": "one of: Junior, Mid, Senior, Lead",
-  "company": "company name or null"
+  "company": "company name if mentioned, else null"
 }}
 
 Rules:
-- REPHRASE everything — no direct copying
-- Only keep questions that are genuinely useful for AI/ML interview prep
-- Skip vague, irrelevant, or duplicate questions
-- Minimum 3, maximum 15 questions per batch
+- Rephrase EVERYTHING — no direct copying
+- Only include genuine technical AI/ML questions
+- Skip behavioural, vague, or off-topic items
+- No duplicates
 - Return ONLY valid JSON array, nothing else"""
 
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.4,
-                max_tokens=4000,
+                max_tokens=3000,
             )
 
             content = response.choices[0].message.content.strip()
@@ -282,19 +301,33 @@ Rules:
 
             questions = json.loads(content)
 
-            # Deduplicate by question similarity
             for q in questions:
                 key = q.get("question", "")[:60].lower()
-                if key not in seen:
+                if key not in seen and q.get("question") and q.get("answer"):
                     seen.add(key)
-                    q["source"] = item["source"]
                     all_questions.append(q)
 
-            time.sleep(1)  # rate limit
+            # Save progress after every batch
+            save_progress(batch_end, all_questions)
+            print(f"    ✓ Got {len(questions)} questions | Total: {len(all_questions)} | Saved progress")
+            time.sleep(2)
 
         except Exception as e:
-            print(f"    Failed: {e}")
-            continue
+            err = str(e)
+            if "429" in err or "rate_limit" in err.lower():
+                # Extract wait time from error message
+                import re
+                wait_match = re.search(r'try again in (\d+)m', err)
+                wait_min = int(wait_match.group(1)) + 1 if wait_match else 30
+                save_progress(batch_start, all_questions)
+                print(f"\n⏸  Rate limit hit. Progress saved at item {batch_start}.")
+                print(f"✅ Already extracted {len(all_questions)} questions → saved to progress.json")
+                print(f"\n👉 Wait {wait_min} minutes then run again: python agent.py extract")
+                print("   It will resume from where it stopped.")
+                break
+            else:
+                print(f"    Failed: {e}")
+                continue
 
     return all_questions
 
@@ -358,9 +391,17 @@ if __name__ == "__main__":
             sys.exit(1)
         with open("raw_collected.json", encoding="utf-8") as f:
             raw = json.load(f)
-        print(f"🤖 Extracting + rephrasing questions from {len(raw)} sources...")
+        # Check if resuming or starting fresh
+        prog = load_progress()
+        if prog["last_index"] > 0:
+            print(f"▶ Resuming from item {prog['last_index']}/{len(raw)} — {len(prog['questions'])} questions already done")
+        else:
+            print(f"🤖 Extracting + rephrasing {len(raw)} sources in batches of {BATCH_SIZE}...")
         questions = extract_and_rephrase(raw)
         save_and_print(questions)
+        # Clear progress after full completion
+        if os.path.exists(PROGRESS_FILE):
+            os.remove(PROGRESS_FILE)
 
     elif cmd == "manual":
         if "paste your text here" in RAW_TEXT:
