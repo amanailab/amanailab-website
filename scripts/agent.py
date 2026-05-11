@@ -90,6 +90,86 @@ def collect_from_reddit() -> list:
     return collected
 
 
+def collect_from_leetcode() -> list:
+    """Fetch real interview questions from LeetCode Discuss (public GraphQL API)."""
+    collected = []
+    headers = {
+        "Content-Type": "application/json",
+        "Referer": "https://leetcode.com",
+        "User-Agent": "Mozilla/5.0",
+    }
+
+    # Search tags that have real ML interview discussions
+    tags = [
+        "machine-learning", "system-design", "amazon", "google",
+        "microsoft", "meta", "apple", "interview-question"
+    ]
+
+    for tag in tags:
+        try:
+            query = {
+                "query": """
+                query discussionCategoryTopics($categories: [String], $tags: [String], $orderBy: TopicSortingOption, $skip: Int, $query: String) {
+                    categoryTopicList(
+                        categories: $categories
+                        tags: $tags
+                        orderBy: $orderBy
+                        skip: $skip
+                        query: $query
+                        first: 15
+                    ) {
+                        edges {
+                            node {
+                                id
+                                title
+                                post { content }
+                                tags { name }
+                            }
+                        }
+                    }
+                }
+                """,
+                "variables": {
+                    "categories": ["interview-question"],
+                    "tags": [tag],
+                    "orderBy": "most_votes",
+                    "skip": 0,
+                    "query": "machine learning AI"
+                }
+            }
+            resp = requests.post(
+                "https://leetcode.com/graphql",
+                json=query,
+                headers=headers,
+                timeout=15
+            )
+            if resp.status_code != 200:
+                continue
+
+            data = resp.json()
+            edges = data.get("data", {}).get("categoryTopicList", {}).get("edges", [])
+
+            for edge in edges:
+                node = edge.get("node", {})
+                title   = node.get("title", "")
+                content = node.get("post", {}).get("content", "")
+                text    = f"{title}\n{content}"
+                if len(text) > 80:
+                    collected.append({
+                        "source": f"LeetCode Discuss (tag: {tag})",
+                        "company": None,
+                        "text": text[:3000]
+                    })
+
+            time.sleep(2)
+
+        except Exception as e:
+            print(f"  LeetCode tag '{tag}' failed: {e}")
+
+    print(f"  Collected {len(collected)} LeetCode Discuss posts")
+    return collected
+
+
 def collect_from_github() -> list:
     """Fetch from public GitHub repos with ML interview questions."""
     collected = []
@@ -261,9 +341,10 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "help"
 
     if cmd == "collect":
-        print("📡 Collecting from Reddit, GitHub, RSS feeds...")
+        print("📡 Collecting from Reddit, LeetCode, GitHub, RSS feeds...")
         raw = []
         raw += collect_from_reddit()
+        raw += collect_from_leetcode()
         raw += collect_from_github()
         raw += collect_from_rss()
         with open("raw_collected.json", "w", encoding="utf-8") as f:
@@ -301,6 +382,7 @@ if __name__ == "__main__":
         print("📡 Step 1: Collecting from all sources...")
         raw = []
         raw += collect_from_reddit()
+        raw += collect_from_leetcode()
         raw += collect_from_github()
         raw += collect_from_rss()
 
