@@ -21,7 +21,7 @@ const COMMANDS: Command[] = [
   { id: 'resume',     label: 'Analyze My Resume',       desc: 'ATS score + AI improvements',       icon: <Target className="w-4 h-4" />,        href: '/resume',                 group: 'Quick Actions' },
   { id: 'dashboard',  label: 'My Dashboard',             desc: 'Progress + streak + leaderboard',  icon: <LayoutDashboard className="w-4 h-4" />, href: '/dashboard',            group: 'Quick Actions' },
   // Tools
-  { id: 'code-lab',      label: 'Code Lab',             desc: 'LeetCode-style AI/ML problems',     icon: <Code2 className="w-4 h-4" />,         href: '/code-lab',              group: 'Tools', tag: 'New' },
+  { id: 'code-lab',      label: 'Code Lab',             desc: 'Code AI/ML algorithms, earn XP',    icon: <Code2 className="w-4 h-4" />,         href: '/code-lab',              group: 'Tools', tag: 'New' },
   { id: 'playground',    label: 'Code Playground',      desc: 'Monaco editor + AI assistant',      icon: <Code2 className="w-4 h-4" />,         href: '/playground',            group: 'Tools', tag: 'New' },
   { id: 'linkedin-opt',  label: 'LinkedIn Optimizer',   desc: 'AI-rewritten profile',              icon: <BarChart2 className="w-4 h-4" />,     href: '/linkedin-optimizer',    group: 'Tools' },
   { id: 'cover-letter',  label: 'Cover Letter Review',  desc: 'Score + rewrite',                   icon: <Mail className="w-4 h-4" />,          href: '/cover-letter-review',   group: 'Tools' },

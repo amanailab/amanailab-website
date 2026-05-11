@@ -2,7 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Search, Code2, Flame, CheckCircle2, Lock, Minus } from 'lucide-react'
+import { Search, Code2, Flame, CheckCircle2, Lock, Minus, Zap } from 'lucide-react'
+
+const LEVELS = [
+  { min: 0,    max: 299,  label: 'ML Beginner',     color: 'text-zinc-400',   bg: 'bg-zinc-800/60',         bar: 'bg-zinc-500',    emoji: '🌱', xpLabel: '0 XP'    },
+  { min: 300,  max: 699,  label: 'AI Explorer',     color: 'text-blue-400',   bg: 'bg-blue-500/10',          bar: 'bg-blue-500',    emoji: '🔭', xpLabel: '300 XP'  },
+  { min: 700,  max: 1499, label: 'ML Practitioner', color: 'text-green-400',  bg: 'bg-green-500/10',         bar: 'bg-green-500',   emoji: '⚡', xpLabel: '700 XP'  },
+  { min: 1500, max: 2999, label: 'AI Engineer',     color: 'text-violet-400', bg: 'bg-violet-500/10',        bar: 'bg-violet-500',  emoji: '🛠️', xpLabel: '1,500 XP'},
+  { min: 3000, max: 4999, label: 'ML Expert',       color: 'text-orange-400', bg: 'bg-orange-500/10',        bar: 'bg-orange-500',  emoji: '🎯', xpLabel: '3,000 XP'},
+  { min: 5000, max: Infinity, label: 'AI Master',   color: 'text-yellow-400', bg: 'bg-yellow-500/10',        bar: 'bg-yellow-400',  emoji: '👑', xpLabel: '5,000 XP'},
+]
 
 interface Problem {
   id: string; title: string; slug: string; difficulty: string
@@ -22,15 +31,24 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
   const [topic, setTopic]   = useState('All')
   const [diff,  setDiff]    = useState('All')
   const [search, setSearch] = useState('')
-  const [solvedIds, setSolvedIds]     = useState<Set<string>>(new Set())
+  const [solvedIds, setSolvedIds]       = useState<Set<string>>(new Set())
   const [attemptedIds, setAttemptedIds] = useState<Set<string>>(new Set())
+  const [xp, setXp]                     = useState(0)
 
   useEffect(() => {
     fetch('/api/code-lab/progress').then(r => r.json()).then(d => {
       setSolvedIds(new Set(d.solved ?? []))
       setAttemptedIds(new Set(d.attempted ?? []))
     }).catch(() => {})
+
+    fetch('/api/code-lab/xp').then(r => r.json()).then(d => {
+      setXp(d.xp ?? 0)
+    }).catch(() => {
+      try { setXp(parseInt(localStorage.getItem('codelab_xp') ?? '0')) } catch { /* ignore */ }
+    })
   }, [])
+
+  const currentLevel = LEVELS.slice().reverse().find(l => xp >= l.min) ?? LEVELS[0]
 
   const filtered = problems.filter(p => {
     const matchTopic  = topic === 'All'  || p.topic === topic
@@ -56,7 +74,7 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-zinc-100">AI/ML Code Lab</h1>
-              <p className="text-xs text-zinc-500">Implement AI/ML algorithms from scratch — like LeetCode for AI engineers</p>
+              <p className="text-xs text-zinc-500">Implement AI/ML algorithms from scratch — earn XP, unlock levels, master real interview problems</p>
             </div>
           </div>
 
@@ -74,6 +92,75 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* XP Level Roadmap */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Zap className={`w-4 h-4 ${currentLevel.color}`} />
+              <span className="text-sm font-bold text-zinc-200">Your Progress</span>
+            </div>
+            <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${currentLevel.bg} ${currentLevel.color}`}>
+              {currentLevel.emoji} {currentLevel.label} · {xp.toLocaleString()} XP
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {LEVELS.map((level, i) => {
+              const unlocked = xp >= level.min
+              const isCurrent = currentLevel.label === level.label
+              return (
+                <div
+                  key={level.label}
+                  className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
+                    isCurrent
+                      ? `${level.bg} border-current/30 ring-1 ring-current/20`
+                      : unlocked
+                        ? `${level.bg} opacity-80`
+                        : 'bg-zinc-900/50 border-zinc-800/50 opacity-40'
+                  }`}
+                >
+                  {isCurrent && (
+                    <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-orange-400 bg-zinc-950 px-1.5 rounded-full border border-orange-500/20">
+                      YOU
+                    </span>
+                  )}
+                  <span className="text-2xl">{level.emoji}</span>
+                  <span className={`text-[10px] font-bold leading-tight ${unlocked ? level.color : 'text-zinc-600'}`}>
+                    {level.label}
+                  </span>
+                  <span className="text-[9px] text-zinc-600">{level.xpLabel}</span>
+                  {!unlocked && (
+                    <Lock className="w-3 h-3 text-zinc-700 absolute bottom-2 right-2" />
+                  )}
+                  {unlocked && !isCurrent && (
+                    <CheckCircle2 className="w-3 h-3 text-green-500 absolute bottom-2 right-2" />
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* XP progress bar to next level */}
+          {(() => {
+            const nextL = LEVELS.find(l => l.min > xp)
+            if (!nextL) return (
+              <p className="text-xs text-yellow-400 text-center mt-3 font-bold">👑 You&apos;ve reached AI Master — the highest level!</p>
+            )
+            const pct = Math.round(((xp - currentLevel.min) / (nextL.min - currentLevel.min)) * 100)
+            return (
+              <div className="mt-4">
+                <div className="flex justify-between text-[10px] text-zinc-600 mb-1.5">
+                  <span>{xp.toLocaleString()} XP</span>
+                  <span>{nextL.min - xp} XP to {nextL.emoji} {nextL.label}</span>
+                </div>
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-700 ${currentLevel.bar}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Filters */}

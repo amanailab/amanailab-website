@@ -96,7 +96,23 @@ function DiffHighlight({ a, b, colorA }: { a: string; b: string; colorA: string 
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const XP_MAP = { Easy: 10, Medium: 25, Hard: 50 }
+const XP_MAP = { Easy: 20, Medium: 50, Hard: 100 }
+
+// Level thresholds (mirrors XPCard.tsx LEVELS)
+const LEVEL_THRESHOLDS = [
+  { min: 0,    label: 'ML Beginner',     emoji: '🌱' },
+  { min: 300,  label: 'AI Explorer',     emoji: '🔭' },
+  { min: 700,  label: 'ML Practitioner', emoji: '⚡' },
+  { min: 1500, label: 'AI Engineer',     emoji: '🛠️' },
+  { min: 3000, label: 'ML Expert',       emoji: '🎯' },
+  { min: 5000, label: 'AI Master',       emoji: '👑' },
+]
+
+function getLevelLabel(xp: number) {
+  let level = LEVEL_THRESHOLDS[0]
+  for (const l of LEVEL_THRESHOLDS) { if (xp >= l.min) level = l }
+  return level
+}
 
 function parseErrorLine(stderr: string): number | null {
   const m = stderr.match(/line\s+(\d+)/i)
@@ -124,6 +140,9 @@ export default function ProblemClient({
   const [code, setCode]       = useState(problem.starter_code)
   const [fontSize, setFontSize] = useState(13)
   const [copied, setCopied]   = useState(false)
+
+  // Level-up modal
+  const [levelUp, setLevelUp] = useState<{ label: string; emoji: string } | null>(null)
 
   // Auth & Python
   const [authModal, setAuthModal]   = useState(false)
@@ -322,15 +341,41 @@ export default function ProblemClient({
         setSolvedCount(c => c + 1)
         clearErrorHighlight()
         // XP calculation
-        const base  = XP_MAP[problem.difficulty as keyof typeof XP_MAP] ?? 10
+        const base  = XP_MAP[problem.difficulty as keyof typeof XP_MAP] ?? 20
         const speed = elapsed < 300 ? Math.round(base * 0.5) : 0
         const first = isFirst ? base : 0
         const xp    = base + speed + first
         setXpEarned(xp)
+
+        // Save to localStorage immediately
+        let prevXp = 0
         try {
-          const cur = parseInt(localStorage.getItem('codelab_xp') ?? '0')
-          localStorage.setItem('codelab_xp', String(cur + xp))
+          prevXp = parseInt(localStorage.getItem('codelab_xp') ?? '0')
+          localStorage.setItem('codelab_xp', String(prevXp + xp))
         } catch { /* ignore */ }
+
+        // Persist to server (fire-and-forget)
+        fetch('/api/code-lab/xp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delta: xp }),
+        }).then(r => r.json()).then(d => {
+          // Sync localStorage with server truth
+          if (d.xp) {
+            try { localStorage.setItem('codelab_xp', String(d.xp)) } catch { /* ignore */ }
+          }
+          // Level-up detection
+          const prevLevel = getLevelLabel(prevXp)
+          const newLevel  = getLevelLabel(d.xp ?? (prevXp + xp))
+          if (newLevel.min > prevLevel.min) {
+            setLevelUp(newLevel)
+            import('canvas-confetti').then(({ default: c }) => {
+              const colors = ['#fbbf24','#f97316','#4ade80','#60a5fa']
+              c({ particleCount: 150, spread: 90, origin: { y: 0.6 }, colors })
+            })
+          }
+        }).catch(() => { /* ignore — localStorage already updated */ })
+
         toast(`+${xp} XP earned! ${isFirst ? '🎉 First solve!' : ''}`, 'success')
       }
       setSubmitResult({ status, passed_tests: passed, total_tests: total, runtime_ms: runtime,
@@ -389,6 +434,25 @@ export default function ProblemClient({
   return (
     <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
       <LoginPromptModal isOpen={authModal} onClose={() => setAuthModal(false)} feature="run & submit code" returnPath={pathname} />
+
+      {/* ── Level-up modal ── */}
+      {levelUp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-zinc-900 border border-yellow-500/30 rounded-2xl p-8 text-center max-w-sm w-full shadow-2xl shadow-yellow-500/10">
+            <div className="text-6xl mb-4">{levelUp.emoji}</div>
+            <p className="text-xs font-bold text-yellow-400 uppercase tracking-widest mb-2">Level Up!</p>
+            <h2 className="text-2xl font-extrabold text-zinc-100 mb-2">You&apos;re now a</h2>
+            <p className="text-3xl font-extrabold text-yellow-400 mb-5">{levelUp.label}</p>
+            <p className="text-sm text-zinc-500 mb-6">Keep solving problems to reach the next level. AI Master awaits.</p>
+            <button
+              onClick={() => setLevelUp(null)}
+              className="w-full bg-yellow-500 hover:bg-yellow-400 text-zinc-950 font-extrabold py-3 rounded-xl transition-all text-sm"
+            >
+              Keep grinding 🔥
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── TOP BAR ── */}
       <div className="flex items-center justify-between px-3 py-2 bg-zinc-900 border-b border-zinc-800 shrink-0 gap-2">

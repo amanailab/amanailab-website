@@ -7,7 +7,7 @@ import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 const FREE_FEATURES = [
   "17 AI-powered tools — completely free, no credit card needed",
   "AI interview simulator with voice + instant scoring",
-  "LeetCode-style Code Lab for AI/ML coding problems",
+  "AI/ML Code Lab — implement real algorithms, earn XP levels",
   "Personalized readiness score & skill gap analysis",
   "500+ real questions from Google, Meta, OpenAI & more",
 ]

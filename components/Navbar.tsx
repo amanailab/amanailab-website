@@ -55,7 +55,7 @@ const navItems: NavItem[] = [
     label: "Tools",
     columns: 2,
     items: [
-      { href: "/code-lab",    label: "Code Lab ✨",       description: "LeetCode-style AI/ML coding judge",  icon: <Code2 className="w-4 h-4" /> },
+      { href: "/code-lab",    label: "Code Lab ✨",       description: "Code AI/ML algorithms, earn XP levels",  icon: <Code2 className="w-4 h-4" /> },
       { href: "/playground", label: "Code Playground ✨", description: "Monaco editor + AI for ML code",    icon: <Code2 className="w-4 h-4" /> },
       { href: "/resume",             label: "Resume Analyzer",      description: "ATS score & improvements",          icon: <FileText className="w-4 h-4" /> },
       { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   description: "AI-rewritten profile",              icon: <BarChart2 className="w-4 h-4" /> },
