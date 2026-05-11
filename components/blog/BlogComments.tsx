@@ -31,10 +31,15 @@ export default function BlogComments({ slug }: Props) {
   }, [])
 
   const fetchComments = useCallback(async () => {
-    const res = await fetch(`/api/blog/comments?slug=${encodeURIComponent(slug)}`)
-    const data = await res.json()
-    setComments(data.comments ?? [])
-    setLoading(false)
+    try {
+      const res = await fetch(`/api/blog/comments?slug=${encodeURIComponent(slug)}`)
+      const data = await res.json()
+      setComments(data.comments ?? [])
+    } catch {
+      setComments([])
+    } finally {
+      setLoading(false)
+    }
   }, [slug])
 
   useEffect(() => { fetchComments() }, [fetchComments])
