@@ -31,7 +31,25 @@ export default function XPCard() {
     fetch('/api/code-lab/progress').then(r => r.json()).then(d => setSolved((d.solved ?? []).length)).catch(() => {})
   }, [])
 
-  if (xp === null || xp === 0) return null // hide until user earns XP
+  if (xp === null) return null
+
+  if (xp === 0) return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Zap className="w-4 h-4 text-zinc-600" />
+        <p className="text-sm font-bold text-zinc-400">Code Lab XP</p>
+      </div>
+      <p className="text-xs text-zinc-600 mb-3 leading-relaxed">
+        Solve coding problems to earn XP and unlock levels — from ML Beginner to AI Master.
+      </p>
+      <Link
+        href="/code-lab"
+        className="flex items-center justify-center gap-2 w-full bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 text-xs font-semibold py-2.5 rounded-xl transition-colors"
+      >
+        <Code2 className="w-3.5 h-3.5" /> Earn your first XP →
+      </Link>
+    </div>
+  )
 
   const level   = getLevel(xp)
   const nextXp  = nextLevelXp(xp)

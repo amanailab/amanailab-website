@@ -61,15 +61,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const post = await getPost(slug)
   if (!post) return {}
+  const ogImage = post.cover_image ?? `https://amanailab.com/api/og/blog?title=${encodeURIComponent(post.title)}&category=${encodeURIComponent(post.category ?? '')}&rt=${post.read_time ?? 5}`
   return {
     title: `${post.title} | AmanAI Lab`,
     description: post.description ?? undefined,
     alternates: { canonical: `https://amanailab.com/blog/${slug}` },
-    openGraph: post.cover_image ? {
+    openGraph: {
       type: 'article',
       url: `https://amanailab.com/blog/${slug}`,
-      images: [post.cover_image],
-    } : undefined,
+      title: post.title,
+      description: post.description ?? undefined,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.description ?? undefined,
+      images: [ogImage],
+    },
   }
 }
 
