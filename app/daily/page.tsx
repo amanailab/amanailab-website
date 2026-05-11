@@ -197,7 +197,7 @@ export default function DailyChallengePage() {
         })
       }
 
-      // Persist to localStorage
+      // Persist to localStorage (instant)
       const entry: StoredEntry = { date: todayDate, questionId: question.id, answer, result: ev }
       localStorage.setItem(STORAGE_ENTRY, JSON.stringify(entry))
 
@@ -207,6 +207,21 @@ export default function DailyChallengePage() {
         localStorage.setItem(STORAGE_HISTORY, JSON.stringify(updated))
         setStreak(calcStreak(updated, todayDate))
       }
+
+      // Also save to server for logged-in users (streak persists across devices)
+      fetch('/api/daily/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: todayDate, questionId: question.id, score: ev.score }),
+      }).then(r => r.json()).then(d => {
+        if (d.xp_awarded > 0) {
+          // Sync XP to localStorage so Code Lab XP card updates
+          try {
+            const cur = parseInt(localStorage.getItem('codelab_xp') ?? '0')
+            localStorage.setItem('codelab_xp', String(cur + d.xp_awarded))
+          } catch { /* ignore */ }
+        }
+      }).catch(() => { /* non-critical */ })
     } catch {
       setError('Evaluation failed. Please try again.')
     } finally {

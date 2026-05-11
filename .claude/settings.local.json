@@ -68,7 +68,8 @@
       "Bash(Select-Object -First 30)",
       "Bash(xargs grep -l \"signIn\\\\|signInWithPassword\")",
       "Bash(xargs grep -l \"use client\")",
-      "Bash(xargs head -100)"
+      "Bash(xargs head -100)",
+      "Bash(xargs grep -l \"resend.emails.send\")"
     ]
   }
 }

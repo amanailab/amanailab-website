@@ -37,8 +37,8 @@ const socials = [
   {
     icon: Mail,
     label: "Email",
-    handle: "hello@amanailab.com",
-    href: "mailto:hello@amanailab.com",
+    handle: "aman.chauhan.ai71@gmail.com",
+    href: "mailto:aman.chauhan.ai71@gmail.com",
     hoverColor: "hover:text-orange-400",
   },
 ];
@@ -273,10 +273,10 @@ export default function ContactForm() {
               talk business.
             </p>
             <a
-              href="mailto:hello@amanailab.com"
+              href="mailto:aman.chauhan.ai71@gmail.com"
               className="text-orange-400 hover:text-orange-300 text-xs font-semibold transition-colors"
             >
-              hello@amanailab.com →
+              aman.chauhan.ai71@gmail.com →
             </a>
           </div>
 

@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
     try {
       await resend.emails.send({
-        from: 'AmanAI Lab <hello@amanailab.com>',
+        from: 'AmanAI Lab <onboarding@resend.dev>',
         to: user.email,
         subject: `⚡ Your streak is at risk — practice for 10 minutes`,
         html: `

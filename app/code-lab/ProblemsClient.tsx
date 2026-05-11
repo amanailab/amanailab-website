@@ -112,7 +112,9 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
               <Zap className={`w-4 h-4 ${isLoggedIn ? currentLevel.color : 'text-zinc-600'}`} />
               <span className="text-sm font-bold text-zinc-200">XP Levels</span>
             </div>
-            {isLoggedIn ? (
+            {isLoggedIn === null ? (
+              <div className="h-6 w-32 bg-zinc-800 rounded-full animate-pulse" />
+            ) : isLoggedIn ? (
               <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${currentLevel.bg} ${currentLevel.color}`}>
                 {currentLevel.emoji} {currentLevel.label} · {xp.toLocaleString()} XP
               </span>
@@ -160,7 +162,9 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
           </div>
 
           {/* XP progress bar or login CTA */}
-          {isLoggedIn === false ? (
+          {isLoggedIn === null ? (
+            <div className="mt-4 h-1.5 w-full bg-zinc-800 rounded-full animate-pulse" />
+          ) : isLoggedIn === false ? (
             <div className="mt-4 bg-orange-500/5 border border-orange-500/15 rounded-xl px-4 py-3 text-center">
               <p className="text-xs text-zinc-500 mb-1.5">Your XP and level progress will be saved here once you sign in.</p>
               <Link href="/login" className="text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors">
