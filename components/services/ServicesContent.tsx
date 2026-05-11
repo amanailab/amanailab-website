@@ -1,715 +1,522 @@
-"use client";
+"use client"
 
-import { useState } from "react";
+import { useState } from "react"
+import { motion } from "framer-motion"
 import {
-  ClipboardList, Terminal, Trophy,
-  User, Clock, Briefcase, MessageCircle,
-  ChevronDown, ChevronUp, ArrowRight, Rocket,
-  CheckCircle2, CreditCard,
-} from "lucide-react";
+  CheckCircle2, Code2, Zap, Crown, Globe, Layers, Cpu,
+  BrainCircuit, FileText, MessageSquare, ArrowRight,
+  Star, Clock, Users, Briefcase, Rocket, Shield, Phone,
+} from "lucide-react"
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const WHATSAPP_NUMBER = "919997600372";
-
-function waLink(msg: string) {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+// ─── Replace with your real WhatsApp number ──────────────────────────────────
+const WA_NUMBER = "919999999999"
+function waLink(pkg: string) {
+  const msg = encodeURIComponent(`Hi Aman! I'm interested in the "${pkg}" package from AmanAI Lab. Please share more details.`)
+  return `https://wa.me/${WA_NUMBER}?text=${msg}`
 }
 
-// ─── Animations (injected once) ───────────────────────────────────────────────
-
-function GlobalStyles() {
-  return (
-    <style>{`
-      @keyframes pulse-node {
-        0%, 100% { opacity: 1; r: 100%; }
-        50%       { opacity: 0.45; r: 80%; }
-      }
-      @keyframes pulse-node-sm {
-        0%, 100% { opacity: 0.75; }
-        50%       { opacity: 0.3; }
-      }
-      @keyframes float-particle {
-        0%, 100% { transform: translateY(0px);   opacity: 0.6; }
-        50%       { transform: translateY(-6px);  opacity: 1; }
-      }
-      @keyframes glow-border {
-        0%, 100% { box-shadow: 0 0 0px 0px rgba(249,115,22,0); }
-        50%       { box-shadow: 0 0 24px 4px rgba(249,115,22,0.35); }
-      }
-      .node-pulse-1 { animation: pulse-node    2.8s ease-in-out infinite; }
-      .node-pulse-2 { animation: pulse-node-sm 3.2s ease-in-out 0.4s infinite; }
-      .node-pulse-3 { animation: pulse-node-sm 2.6s ease-in-out 0.8s infinite; }
-      .node-pulse-4 { animation: pulse-node-sm 3.5s ease-in-out 1.2s infinite; }
-      .node-pulse-5 { animation: pulse-node-sm 2.9s ease-in-out 0.6s infinite; }
-      .node-pulse-6 { animation: pulse-node-sm 3.1s ease-in-out 1.0s infinite; }
-      .node-pulse-7 { animation: pulse-node-sm 2.7s ease-in-out 1.4s infinite; }
-      .node-pulse-8 { animation: pulse-node-sm 3.3s ease-in-out 0.2s infinite; }
-      .particle-1   { animation: float-particle 3.0s ease-in-out infinite; }
-      .particle-2   { animation: float-particle 3.6s ease-in-out 0.5s infinite; }
-      .particle-3   { animation: float-particle 2.8s ease-in-out 1.0s infinite; }
-      .particle-4   { animation: float-particle 3.4s ease-in-out 1.5s infinite; }
-      .popular-glow { animation: glow-border 2.5s ease-in-out infinite; }
-    `}</style>
-  );
-}
-
-// ─── Hero Illustration ────────────────────────────────────────────────────────
-
-function HeroIllustration() {
-  return (
-    <svg
-      viewBox="0 0 400 400"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-full max-w-sm mx-auto lg:max-w-none"
-      aria-hidden="true"
-    >
-
-      {/* ── Connecting lines (ring 1 → center) ── */}
-      <line x1="200" y1="200" x2="200" y2="90"  stroke="#FF6B35" strokeWidth="1.5" strokeOpacity="0.35" />
-      <line x1="200" y1="200" x2="310" y2="200" stroke="#c084fc" strokeWidth="1.5" strokeOpacity="0.35" />
-      <line x1="200" y1="200" x2="200" y2="310" stroke="#60a5fa" strokeWidth="1.5" strokeOpacity="0.35" />
-      <line x1="200" y1="200" x2="90"  y2="200" stroke="#c084fc" strokeWidth="1.5" strokeOpacity="0.35" />
-
-      {/* ── Connecting lines (ring 2 → ring 1) ── */}
-      <line x1="200" y1="90"  x2="310" y2="200" stroke="#60a5fa" strokeWidth="1"   strokeOpacity="0.2" />
-      <line x1="310" y1="200" x2="200" y2="310" stroke="#c084fc" strokeWidth="1"   strokeOpacity="0.2" />
-      <line x1="200" y1="310" x2="90"  y2="200" stroke="#60a5fa" strokeWidth="1"   strokeOpacity="0.2" />
-      <line x1="90"  y1="200" x2="200" y2="90"  stroke="#c084fc" strokeWidth="1"   strokeOpacity="0.2" />
-
-      {/* ── Ring 2 → diagonal outer nodes ── */}
-      <line x1="200" y1="90"  x2="305" y2="95"  stroke="#60a5fa" strokeWidth="0.8" strokeOpacity="0.2" />
-      <line x1="310" y1="200" x2="305" y2="95"  stroke="#c084fc" strokeWidth="0.8" strokeOpacity="0.2" />
-      <line x1="310" y1="200" x2="305" y2="305" stroke="#60a5fa" strokeWidth="0.8" strokeOpacity="0.2" />
-      <line x1="200" y1="310" x2="305" y2="305" stroke="#c084fc" strokeWidth="0.8" strokeOpacity="0.2" />
-      <line x1="200" y1="310" x2="95"  y2="305" stroke="#60a5fa" strokeWidth="0.8" strokeOpacity="0.2" />
-      <line x1="90"  y1="200" x2="95"  y2="305" stroke="#c084fc" strokeWidth="0.8" strokeOpacity="0.2" />
-      <line x1="90"  y1="200" x2="95"  y2="95"  stroke="#60a5fa" strokeWidth="0.8" strokeOpacity="0.2" />
-      <line x1="200" y1="90"  x2="95"  y2="95"  stroke="#c084fc" strokeWidth="0.8" strokeOpacity="0.2" />
-
-      {/* ── Central node ── */}
-      <circle cx="200" cy="200" r="28" fill="#FF6B35" fillOpacity="0.15" />
-      <circle cx="200" cy="200" r="20" fill="#FF6B35" fillOpacity="0.3" />
-      <circle cx="200" cy="200" r="13" fill="#FF6B35" className="node-pulse-1" />
-      {/* brain symbol */}
-      <text x="200" y="206" textAnchor="middle" fill="white" fontSize="13" fontWeight="800" fontFamily="monospace">AI</text>
-
-      {/* ── Ring 1 nodes ── */}
-      {/* Top */}
-      <circle cx="200" cy="90" r="10" fill="#60a5fa" fillOpacity="0.2" />
-      <circle cx="200" cy="90" r="7"  fill="#60a5fa" className="node-pulse-2" />
-      {/* Right */}
-      <circle cx="310" cy="200" r="10" fill="#c084fc" fillOpacity="0.2" />
-      <circle cx="310" cy="200" r="7"  fill="#c084fc" className="node-pulse-3" />
-      {/* Bottom */}
-      <circle cx="200" cy="310" r="10" fill="#60a5fa" fillOpacity="0.2" />
-      <circle cx="200" cy="310" r="7"  fill="#60a5fa" className="node-pulse-4" />
-      {/* Left */}
-      <circle cx="90"  cy="200" r="10" fill="#c084fc" fillOpacity="0.2" />
-      <circle cx="90"  cy="200" r="7"  fill="#c084fc" className="node-pulse-5" />
-
-      {/* ── Ring 2 outer nodes ── */}
-      <circle cx="305" cy="95"  r="5" fill="#60a5fa" className="node-pulse-6" />
-      <circle cx="305" cy="305" r="5" fill="#c084fc" className="node-pulse-7" />
-      <circle cx="95"  cy="305" r="5" fill="#60a5fa" className="node-pulse-8" />
-      <circle cx="95"  cy="95"  r="5" fill="#c084fc" className="node-pulse-2" />
-
-      {/* ── Floating particles ── */}
-      <circle cx="160" cy="50"  r="3" fill="#FF6B35" fillOpacity="0.6" className="particle-1" />
-      <circle cx="350" cy="130" r="2" fill="#60a5fa" fillOpacity="0.7" className="particle-2" />
-      <circle cx="340" cy="310" r="3" fill="#c084fc" fillOpacity="0.6" className="particle-3" />
-      <circle cx="55"  cy="290" r="2" fill="#FF6B35" fillOpacity="0.5" className="particle-4" />
-      <circle cx="60"  cy="110" r="2" fill="#60a5fa" fillOpacity="0.5" className="particle-1" />
-      <circle cx="250" cy="35"  r="2" fill="#c084fc" fillOpacity="0.6" className="particle-3" />
-      <circle cx="370" cy="220" r="2" fill="#FF6B35" fillOpacity="0.4" className="particle-2" />
-      <circle cx="30"  cy="200" r="2" fill="#60a5fa" fillOpacity="0.4" className="particle-4" />
-
-      {/* ── Floating labels ── */}
-      <rect x="316" y="52"  width="52" height="22" rx="6" fill="#18181b" stroke="#FF6B35" strokeWidth="1" strokeOpacity="0.5" />
-      <text x="342" y="67"  textAnchor="middle" fill="#FF6B35" fontSize="10" fontWeight="700" fontFamily="monospace">LLM</text>
-
-      <rect x="28"  y="52"  width="52" height="22" rx="6" fill="#18181b" stroke="#60a5fa" strokeWidth="1" strokeOpacity="0.5" />
-      <text x="54"  y="67"  textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="700" fontFamily="monospace">RAG</text>
-
-      <rect x="316" y="326" width="62" height="22" rx="6" fill="#18181b" stroke="#c084fc" strokeWidth="1" strokeOpacity="0.5" />
-      <text x="347" y="341" textAnchor="middle" fill="#c084fc" fontSize="10" fontWeight="700" fontFamily="monospace">Agent</text>
-
-      <rect x="22"  y="326" width="60" height="22" rx="6" fill="#18181b" stroke="#60a5fa" strokeWidth="1" strokeOpacity="0.5" />
-      <text x="52"  y="341" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="700" fontFamily="monospace">API</text>
-    </svg>
-  );
-}
-
-// ─── How It Works mini-SVGs ───────────────────────────────────────────────────
-
-function ClipboardSVG() {
-  return (
-    <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-14 h-14 mb-4" aria-hidden="true">
-      <rect x="10" y="8" width="36" height="42" rx="5" fill="#FF6B35" fillOpacity="0.12" stroke="#FF6B35" strokeOpacity="0.4" strokeWidth="1.5" />
-      <rect x="20" y="4" width="16" height="8" rx="4" fill="#FF6B35" fillOpacity="0.3" stroke="#FF6B35" strokeOpacity="0.5" strokeWidth="1.5" />
-      <line x1="18" y1="22" x2="38" y2="22" stroke="#FF6B35" strokeOpacity="0.7" strokeWidth="2" strokeLinecap="round" />
-      <line x1="18" y1="30" x2="38" y2="30" stroke="#FF6B35" strokeOpacity="0.5" strokeWidth="2" strokeLinecap="round" />
-      <line x1="18" y1="38" x2="30" y2="38" stroke="#FF6B35" strokeOpacity="0.4" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function CodeSVG() {
-  return (
-    <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-14 h-14 mb-4" aria-hidden="true">
-      <rect x="4" y="8" width="48" height="40" rx="6" fill="#60a5fa" fillOpacity="0.08" stroke="#60a5fa" strokeOpacity="0.3" strokeWidth="1.5" />
-      <circle cx="13" cy="17" r="2.5" fill="#60a5fa" fillOpacity="0.5" />
-      <circle cx="21" cy="17" r="2.5" fill="#60a5fa" fillOpacity="0.35" />
-      <circle cx="29" cy="17" r="2.5" fill="#60a5fa" fillOpacity="0.25" />
-      <line x1="4" y1="24" x2="52" y2="24" stroke="#60a5fa" strokeOpacity="0.2" strokeWidth="1" />
-      <text x="14" y="39" fill="#60a5fa" fontSize="13" fontWeight="700" fontFamily="monospace" fillOpacity="0.9">&lt;AI/&gt;</text>
-    </svg>
-  );
-}
-
-function TrophySVG() {
-  return (
-    <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-14 h-14 mb-4" aria-hidden="true">
-      <path d="M18 10 H38 V30 A10 10 0 0 1 28 40 A10 10 0 0 1 18 30 Z" fill="#4ade80" fillOpacity="0.12" stroke="#4ade80" strokeOpacity="0.45" strokeWidth="1.5" />
-      <path d="M10 14 H18 V26 Q10 26 10 18 Z" fill="#4ade80" fillOpacity="0.1" stroke="#4ade80" strokeOpacity="0.3" strokeWidth="1.2" />
-      <path d="M46 14 H38 V26 Q46 26 46 18 Z" fill="#4ade80" fillOpacity="0.1" stroke="#4ade80" strokeOpacity="0.3" strokeWidth="1.2" />
-      <line x1="28" y1="40" x2="28" y2="47" stroke="#4ade80" strokeOpacity="0.5" strokeWidth="2" strokeLinecap="round" />
-      <rect x="18" y="47" width="20" height="4" rx="2" fill="#4ade80" fillOpacity="0.25" stroke="#4ade80" strokeOpacity="0.4" strokeWidth="1.2" />
-      <path d="M24 24 L28 18 L32 24 L38 25 L33 30 L35 36 L28 32 L21 36 L23 30 L18 25 Z" fill="#4ade80" fillOpacity="0.6" />
-    </svg>
-  );
-}
-
-// ─── Section Header ───────────────────────────────────────────────────────────
-
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="text-center mb-14">
-      <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-100 mb-3">{title}</h2>
-      {subtitle && <p className="text-zinc-400 text-base max-w-xl mx-auto">{subtitle}</p>}
-    </div>
-  );
-}
-
-// ─── FAQ Item ─────────────────────────────────────────────────────────────────
-
-function FAQItem({ q, a, open, onToggle }: { q: string; a: string; open: boolean; onToggle: () => void }) {
-  return (
-    <div className="border border-zinc-800 rounded-2xl overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left hover:bg-zinc-900/50 transition-colors"
-      >
-        <span className="text-zinc-100 font-semibold text-sm sm:text-base">{q}</span>
-        {open
-          ? <ChevronUp className="w-4 h-4 text-orange-400 shrink-0" />
-          : <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />}
-      </button>
-      {open && (
-        <div className="px-6 pb-5">
-          <p className="text-zinc-400 text-sm leading-relaxed">{a}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const HOW_IT_WORKS = [
+// ─── Career Packages ──────────────────────────────────────────────────────────
+const CAREER_PACKAGES = [
   {
-    num: "01",
-    Illustration: ClipboardSVG,
-    icon: ClipboardList,
-    title: "Tell Us Your Background",
-    desc: "Fill a quick form about your current role, experience and your target AI job.",
+    id: "blueprint",
+    name: "Blueprint",
+    price: "₹999",
+    usd: "~$12",
+    tagline: "Start with a solid plan",
+    badge: null as string | null,
+    color: "border-zinc-700",
+    accent: "text-zinc-300",
+    barColor: "bg-zinc-500",
+    highlight: false,
+    deliveryDays: "2–3 days",
+    features: [
+      { text: "1 AI project idea tailored to your background & target company", strong: true },
+      { text: "Complete project architecture document" },
+      { text: "Step-by-step build guide (no experience needed)" },
+      { text: "GitHub starter code template" },
+      { text: "3 resume bullet points written for the project" },
+      { text: "48-hour WhatsApp support" },
+    ],
+    bestFor: "Freshers & students planning their first AI project",
+  },
+  {
+    id: "launchpad",
+    name: "Launchpad",
+    price: "₹2,499",
+    usd: "~$30",
+    tagline: "Build it. Practice it. Land the job.",
+    badge: "Most Popular",
+    color: "border-orange-500/50",
     accent: "text-orange-400",
-    glow: "bg-orange-500/10 border-orange-500/20",
+    barColor: "bg-orange-500",
+    highlight: true,
+    deliveryDays: "5–7 days",
+    features: [
+      { text: "Everything in Blueprint", strong: true },
+      { text: "Complete working project with full production-ready code", strong: true },
+      { text: "Code walkthrough video recorded by Aman", strong: true },
+      { text: "20 project-specific interview Q&As with model answers" },
+      { text: "1 live mock interview session (45 min) with AI scoring" },
+      { text: "LinkedIn post + GitHub README templates" },
+      { text: "Full resume review with tailored suggestions" },
+      { text: "7-day priority WhatsApp support" },
+    ],
+    bestFor: "Working professionals switching into AI/ML roles",
   },
   {
-    num: "02",
-    Illustration: CodeSVG,
-    icon: Terminal,
-    title: "We Build Your Project",
-    desc: "We create a custom AI project perfectly matched to your background. Java dev gets Java+AI. Python dev gets Python+AI.",
-    accent: "text-blue-400",
-    glow: "bg-blue-500/10 border-blue-500/20",
+    id: "placement",
+    name: "Placement",
+    price: "₹4,999",
+    usd: "~$60",
+    tagline: "We don't stop until you're hired",
+    badge: "Best Value",
+    color: "border-violet-500/50",
+    accent: "text-violet-400",
+    barColor: "bg-violet-500",
+    highlight: false,
+    deliveryDays: "7–10 days",
+    features: [
+      { text: "Everything in Launchpad", strong: true },
+      { text: "2 custom projects: one beginner + one advanced", strong: true },
+      { text: "3 mock interview sessions with written feedback", strong: true },
+      { text: "Full resume rewrite (ATS-optimized for AI/ML roles)" },
+      { text: "Complete LinkedIn profile overhaul" },
+      { text: "4 weekly 1-on-1 check-in calls" },
+      { text: "Job application strategy + company shortlist" },
+      { text: "Referral to Aman's hiring network" },
+      { text: "Support until you receive an offer — no time limit", strong: true },
+    ],
+    bestFor: "Serious candidates who want guaranteed forward momentum",
   },
-  {
-    num: "03",
-    Illustration: TrophySVG,
-    icon: Trophy,
-    title: "Get Placed",
-    desc: "We prep you for interviews, review your resume and stay with you till you land your AI job.",
-    accent: "text-green-400",
-    glow: "bg-green-500/10 border-green-500/20",
-  },
-];
+]
 
-const HOW_TO_BUY = [
+// ─── Website Packages ─────────────────────────────────────────────────────────
+const WEBSITE_PACKAGES = [
   {
-    icon: MessageCircle,
-    title: "WhatsApp Us",
-    desc: "Click Get Started and send us a WhatsApp message with your background.",
-    color: "text-green-400",
-    bg: "bg-green-500/10 border-green-500/20",
+    id: "ai-landing",
+    name: "AI Landing Page",
+    price: "₹3,999",
+    usd: "~$48",
+    tagline: "Your AI-powered web presence, live in a week",
+    badge: null as string | null,
+    color: "border-zinc-700",
+    accent: "text-zinc-300",
+    barColor: "bg-zinc-500",
+    highlight: false,
+    deliveryDays: "5–7 days",
+    features: [
+      { text: "Single-page responsive website (fully custom, no templates)", strong: true },
+      { text: "1–2 AI-powered tools (chatbot, analyzer, or content generator)" },
+      { text: "Modern dark design with animations (Framer Motion)" },
+      { text: "Mobile-first, Lighthouse 90+ performance" },
+      { text: "Deployed live on Vercel with custom domain setup" },
+      { text: "Full source code pushed to your GitHub" },
+      { text: "7-day post-launch support" },
+    ],
+    bestFor: "Freelancers, students & indie makers who want a standout AI portfolio",
+    tech: ["Next.js", "Tailwind CSS", "Groq API", "Vercel"],
   },
   {
-    icon: CreditCard,
-    title: "Make Payment",
-    desc: "We send you a secure Razorpay payment link. Pay safely online.",
-    color: "text-blue-400",
-    bg: "bg-blue-500/10 border-blue-500/20",
+    id: "ai-platform",
+    name: "AI Platform",
+    price: "₹7,999",
+    usd: "~$96",
+    tagline: "A full product — not just a website",
+    badge: "Most Popular",
+    color: "border-orange-500/50",
+    accent: "text-orange-400",
+    barColor: "bg-orange-500",
+    highlight: true,
+    deliveryDays: "10–14 days",
+    features: [
+      { text: "5–8 pages (Home, Tools, Blog, About, Dashboard, Contact)", strong: true },
+      { text: "3–5 custom AI-powered tools built from scratch", strong: true },
+      { text: "User authentication — login, signup, profile, password reset" },
+      { text: "User dashboard with progress / activity tracking" },
+      { text: "Blog / content section with admin CMS" },
+      { text: "SEO: meta tags, sitemap, Open Graph, schema markup" },
+      { text: "Command palette, dark mode, page transitions" },
+      { text: "Custom domain + Vercel deployment" },
+      { text: "14-day priority WhatsApp support" },
+    ],
+    bestFor: "Startups, educators & professionals who want a full product like AmanAI Lab",
+    tech: ["Next.js 16", "Supabase", "Tailwind CSS 4", "Groq / OpenAI", "Vercel"],
   },
   {
-    icon: Rocket,
-    title: "We Start Working",
-    desc: "Within 24 hours we begin building your custom AI project.",
-    color: "text-orange-400",
-    bg: "bg-orange-500/10 border-orange-500/20",
+    id: "ai-saas",
+    name: "Custom AI SaaS",
+    price: "₹14,999",
+    usd: "~$180",
+    tagline: "Your revenue-generating AI product, end to end",
+    badge: "Enterprise",
+    color: "border-violet-500/50",
+    accent: "text-violet-400",
+    barColor: "bg-violet-500",
+    highlight: false,
+    deliveryDays: "21–30 days",
+    features: [
+      { text: "Everything in AI Platform", strong: true },
+      { text: "10+ custom AI tools / features (you define the scope)", strong: true },
+      { text: "Admin panel — manage users, content & analytics", strong: true },
+      { text: "Payment integration (Razorpay or Stripe)" },
+      { text: "Rate limiting, security hardening, error monitoring" },
+      { text: "PWA support — installable on iOS & Android" },
+      { text: "Google Analytics + Microsoft Clarity + Performance monitoring" },
+      { text: "You own 100% of the code — no lock-in, ever" },
+      { text: "30-day dedicated support + 1 free revision round" },
+    ],
+    bestFor: "Founders & businesses building a monetisable AI SaaS product",
+    tech: ["Next.js 16", "TypeScript", "Supabase", "Groq / OpenAI", "Razorpay", "Vercel"],
   },
-];
+]
 
-const BACKGROUNDS = [
-  { emoji: "☕", title: "Java Developer",      project: "Build a Document AI System with Spring Boot + LangChain" },
-  { emoji: "🐍", title: "Python Developer",    project: "Build a Production RAG API with FastAPI + Claude" },
-  { emoji: "📊", title: "Data Analyst",        project: "Build an AI Analytics Dashboard with LLM Insights" },
-  { emoji: "🔧", title: "Data Engineer",       project: "Build a Real-time AI Data Pipeline" },
-  { emoji: "🎨", title: "Frontend Developer",  project: "Build an AI-Powered Web App with Next.js + Claude API" },
-  { emoji: "⚙️", title: "Backend Developer",   project: "Build AI Microservices with FastAPI + Agents" },
-  { emoji: "🗄️", title: "SQL / Database Dev",  project: "Build a Natural Language to SQL System" },
-  { emoji: "🚀", title: "DevOps Engineer",     project: "Build an LLMOps Pipeline with MLflow + vLLM" },
-];
+// ─── Process Steps ────────────────────────────────────────────────────────────
+const CAREER_STEPS = [
+  { n: "01", icon: MessageSquare, title: "Tell us about yourself",  desc: "WhatsApp Aman — your background, target role, and current level." },
+  { n: "02", icon: BrainCircuit,  title: "We craft your roadmap",  desc: "Within 24h: a tailored project idea, plan, and realistic timeline." },
+  { n: "03", icon: Code2,         title: "We build together",      desc: "Working code, video walkthroughs, mock interviews — step by step." },
+  { n: "04", icon: Rocket,        title: "You land the offer",     desc: "Apply with confidence: standout project + polished profile." },
+]
+const WEBSITE_STEPS = [
+  { n: "01", icon: Phone,      title: "Discovery call",         desc: "Tell us your idea, audience & must-have features over WhatsApp." },
+  { n: "02", icon: Layers,     title: "Design & architecture",  desc: "Wireframe + tech plan delivered within 48h for your approval." },
+  { n: "03", icon: Cpu,        title: "We build & update daily",desc: "Daily progress updates on WhatsApp — you always know the status." },
+  { n: "04", icon: Globe,      title: "Launch & hand-off",      desc: "Site live. Full code on your GitHub. Docs included. Done." },
+]
 
-const WHY_US = [
-  {
-    icon: User,
-    title: "Built For You",
-    desc: "Not generic projects. Custom built for your exact background and target role.",
-  },
-  {
-    icon: Clock,
-    title: "Till You Get Placed",
-    desc: "No time limits. No monthly fees. We support you until you land your dream AI job.",
-  },
-  {
-    icon: Briefcase,
-    title: "Real Industry Experience",
-    desc: "Projects designed by someone who built AI systems for Fortune 500 companies and global organizations.",
-  },
-  {
-    icon: MessageCircle,
-    title: "WhatsApp Support",
-    desc: "Direct access on WhatsApp. Ask questions anytime. Get answers fast.",
-  },
-];
+// ─── Trust Indicators ─────────────────────────────────────────────────────────
+const TRUST = [
+  { icon: Shield,  label: "You own the code",        sub: "No vendor lock-in, ever" },
+  { icon: Clock,   label: "Fixed delivery timeline", sub: "Agreed before you pay" },
+  { icon: Users,   label: "Direct with Aman",        sub: "No juniors, no agency" },
+  { icon: Star,    label: "Battle-tested stack",     sub: "Same tech as AmanAI Lab" },
+]
 
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
 const FAQS = [
   {
-    q: "What if I am a complete beginner?",
-    a: "No problem. We assess your current skills and build a project that stretches you just enough to grow without overwhelming you.",
+    q: "Do I need coding experience for the career packages?",
+    a: "No. We explain every line of code step by step. You'll understand your own project — that's exactly how you ace the interview.",
   },
   {
-    q: "How long does it take to get placed?",
-    a: "It depends on your effort. Most clients who actively apply get interviews within 4–8 weeks of completing their project.",
+    q: "What AI stack do you use for websites?",
+    a: "Next.js 16, TypeScript, Tailwind CSS 4, Supabase, Groq (Llama 3.3) or OpenAI — the exact same stack powering AmanAI Lab.",
   },
   {
-    q: "What is included in WhatsApp support?",
-    a: "You get direct access to ask questions about your project, interview prep, resume and job applications. We reply within 24 hours.",
+    q: "Can I request something not listed here?",
+    a: "Absolutely. WhatsApp Aman with your exact requirements and we'll scope it out. Most custom projects fit between the listed tiers.",
   },
   {
-    q: "Can I upgrade my package later?",
-    a: "Yes. You can upgrade anytime by paying the difference between packages.",
+    q: "How do payments work?",
+    a: "50% upfront via Razorpay, 50% on delivery. For the ₹999 Blueprint, it's 100% upfront. Scope is fully agreed before any payment.",
   },
   {
-    q: "What technologies will my project use?",
-    a: "Depends on your background. We use Python, FastAPI, LangChain, Claude API, RAG, vector databases and deployment on cloud platforms.",
+    q: "What if the work isn't what I expected?",
+    a: "We iterate until you're satisfied. For career packages, support continues until you receive an offer — or we refund the difference.",
   },
-];
+  {
+    q: "How quickly do you respond on WhatsApp?",
+    a: "Usually within 2–4 hours during IST business hours. Weekends may be slightly slower.",
+  },
+]
 
-// ─── WhatsApp SVG icon ────────────────────────────────────────────────────────
-
-function WhatsAppIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-green-400 shrink-0" xmlns="http://www.w3.org/2000/svg">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
-    </svg>
-  );
-}
-
-// ─── Main Component ────────────────────────────────────────────────────────────
-
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function ServicesContent() {
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [tab, setTab]         = useState<"career" | "website">("career")
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
+
+  const packages = tab === "career" ? CAREER_PACKAGES : WEBSITE_PACKAGES
+  const steps    = tab === "career" ? CAREER_STEPS    : WEBSITE_STEPS
 
   return (
-    <div className="bg-zinc-950 text-zinc-50">
-      <GlobalStyles />
+    <div className="min-h-screen bg-zinc-950 pb-24">
 
-      {/* ── SECTION 1 — HERO ─────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
-        <div
-          className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right,#27272a 1px,transparent 1px),linear-gradient(to bottom,#27272a 1px,transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-        <div className="absolute inset-0 flex items-center justify-start pointer-events-none">
-          <div
-            className="w-[600px] h-[400px] rounded-full opacity-10"
-            style={{ background: "radial-gradient(ellipse,#f97316 0%,transparent 70%)", filter: "blur(80px)" }}
-          />
+      {/* ── Hero ── */}
+      <section className="max-w-4xl mx-auto px-4 text-center pt-14 pb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+          className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs font-semibold px-4 py-2 rounded-full mb-6"
+        >
+          <Zap className="w-3.5 h-3.5" /> Built by the creator of AmanAI Lab
+        </motion.div>
+
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+          className="text-4xl sm:text-5xl font-extrabold text-zinc-100 leading-tight mb-4"
+        >
+          Real AI Skills.{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
+            Real Products.
+          </span>
+          <br className="hidden sm:block" /> Real Results.
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          className="text-zinc-400 text-base sm:text-lg max-w-2xl mx-auto mb-8 leading-relaxed"
+        >
+          Whether you need an AI project to crack your dream job, or a full AI-powered website built from scratch —
+          Aman builds it with you, personally. Same stack. Same quality. No agencies, no templates.
+        </motion.p>
+
+        {/* Trust row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10 max-w-3xl mx-auto">
+          {TRUST.map(t => (
+            <div key={t.label} className="flex flex-col items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+              <t.icon className="w-4 h-4 text-orange-400" />
+              <p className="text-[11px] font-bold text-zinc-200 text-center leading-tight">{t.label}</p>
+              <p className="text-[10px] text-zinc-600 text-center">{t.sub}</p>
+            </div>
+          ))}
         </div>
-        <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-zinc-950 to-transparent" />
-        <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-zinc-950 to-transparent" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+        {/* Tab toggle */}
+        <div className="inline-flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 gap-1">
+          {(["career", "website"] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                tab === t
+                  ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              {t === "career"
+                ? <><Briefcase className="w-4 h-4" /> AI Career Services</>
+                : <><Globe className="w-4 h-4" /> AI Website Development</>
+              }
+            </button>
+          ))}
+        </div>
+      </section>
 
-            {/* Text */}
-            <div className="flex-1 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-7 tracking-wide uppercase">
-                <Rocket className="w-3.5 h-3.5" />
-                AI Career Services
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6">
-                We Build Your{" "}
-                <span style={{ backgroundImage: "linear-gradient(135deg,#fb923c 0%,#f97316 50%,#ea580c 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                  AI Project.
-                </span>
-                <br />
-                We Prep You For{" "}
-                <span className="text-zinc-300">Interviews.</span>
-                <br />
-                We Stay Till You{" "}
-                <span className="text-zinc-300">Get Placed.</span>
-              </h1>
-              <p className="text-zinc-400 text-lg max-w-xl mb-10 leading-relaxed lg:mx-0 mx-auto">
-                Custom AI projects built for your background. One payment. No timelines. Just results.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+      {/* ── Pricing Cards ── */}
+      <section className="max-w-6xl mx-auto px-4 mb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {packages.map((pkg, i) => (
+            <motion.div
+              key={pkg.id}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.08 }}
+              className={`relative flex flex-col bg-zinc-900 border rounded-2xl overflow-hidden ${pkg.color} ${
+                pkg.highlight ? "ring-1 ring-orange-500/30 shadow-2xl shadow-orange-500/10 scale-[1.02]" : ""
+              }`}
+            >
+              {pkg.highlight && <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-orange-500 to-transparent" />}
+
+              {pkg.badge && (
+                <div className={`absolute top-4 right-4 text-[10px] font-extrabold px-2.5 py-1 rounded-full z-10 ${
+                  pkg.highlight
+                    ? "bg-orange-500 text-white"
+                    : pkg.badge === "Enterprise"
+                      ? "bg-violet-500/20 border border-violet-500/30 text-violet-400"
+                      : "bg-zinc-700 text-zinc-300 border border-zinc-600"
+                }`}>
+                  {pkg.badge}
+                </div>
+              )}
+
+              <div className="p-6 flex flex-col flex-1 gap-0">
+                {/* Header */}
+                <p className={`text-xs font-extrabold uppercase tracking-widest mb-1 ${pkg.accent}`}>{pkg.name}</p>
+                <p className="text-xs text-zinc-500 mb-4">{pkg.tagline}</p>
+
+                <div className="flex items-baseline gap-2 mb-1">
+                  <span className="text-4xl font-extrabold text-zinc-100">{pkg.price}</span>
+                  <span className="text-sm text-zinc-600">{pkg.usd}</span>
+                </div>
+                <div className="flex items-center gap-1.5 mb-5">
+                  <Clock className="w-3 h-3 text-zinc-600" />
+                  <span className="text-xs text-zinc-600">Delivered in {pkg.deliveryDays}</span>
+                </div>
+
+                <div className="border-t border-zinc-800 mb-5" />
+
+                {/* Features */}
+                <ul className="flex flex-col gap-2.5 mb-6 flex-1">
+                  {pkg.features.map((f, fi) => (
+                    <li key={fi} className="flex items-start gap-2.5">
+                      <CheckCircle2 className={`w-4 h-4 shrink-0 mt-0.5 ${f.strong ? pkg.accent : "text-zinc-700"}`} />
+                      <span className={`text-xs leading-relaxed ${f.strong ? "text-zinc-100 font-semibold" : "text-zinc-400"}`}>
+                        {f.text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Tech stack pill row */}
+                {"tech" in pkg && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {(pkg as typeof WEBSITE_PACKAGES[0]).tech.map(t => (
+                      <span key={t} className="text-[10px] text-zinc-500 bg-zinc-800 border border-zinc-700/60 px-2 py-0.5 rounded-full font-mono">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <p className="text-[10px] text-zinc-600 italic mb-5">✦ Best for: {pkg.bestFor}</p>
+
                 <a
-                  href="#pricing"
-                  className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/25 text-[15px]"
-                >
-                  View Packages
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-                <a
-                  href={waLink("Hi Aman, I want to switch to AI and need your help.")}
+                  href={waLink(`${pkg.name} — ${pkg.price}`)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-600 text-zinc-100 font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 text-[15px]"
+                  className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all ${
+                    pkg.highlight
+                      ? "bg-orange-500 hover:bg-orange-400 text-white shadow-lg hover:shadow-orange-500/30"
+                      : "bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200"
+                  }`}
                 >
-                  <WhatsAppIcon />
-                  WhatsApp Us
+                  Start on WhatsApp <ArrowRight className="w-4 h-4" />
                 </a>
               </div>
-            </div>
+            </motion.div>
+          ))}
+        </div>
 
-            {/* Illustration */}
-            <div className="flex-1 w-full max-w-xs sm:max-w-sm lg:max-w-none">
-              <HeroIllustration />
-            </div>
+        {/* Custom quote strip */}
+        <div className="mt-6 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-zinc-200 mb-0.5">Need something custom?</p>
+            <p className="text-xs text-zinc-500">Different budget, specific tech, tight deadline? Just ask — most requests are quoted same day.</p>
           </div>
+          <a
+            href={waLink("Custom Project Enquiry")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 text-sm font-bold px-5 py-2.5 rounded-xl transition-all"
+          >
+            <MessageSquare className="w-4 h-4" /> Discuss Custom →
+          </a>
         </div>
       </section>
 
-      {/* ── SECTION 2 — HOW IT WORKS ─────────────────────────────────────── */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <SectionHeader title="How It Works" subtitle="Simple 3 step process" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {HOW_IT_WORKS.map((step) => {
-              const Icon = step.icon;
-              const Illustration = step.Illustration;
-              return (
-                <div
-                  key={step.num}
-                  className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-8 hover:border-zinc-700 transition-all duration-200"
-                >
-                  <div className="absolute top-6 right-6 text-5xl font-extrabold text-zinc-800 tabular-nums select-none">
-                    {step.num}
-                  </div>
-                  <Illustration />
-                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl border mb-5 ${step.glow}`}>
-                    <Icon className={`w-5 h-5 ${step.accent}`} />
-                  </div>
-                  <h3 className="text-zinc-100 font-bold text-lg mb-3">{step.title}</h3>
-                  <p className="text-zinc-400 text-sm leading-relaxed">{step.desc}</p>
-                </div>
-              );
-            })}
-          </div>
+      {/* ── Process ── */}
+      <section className="max-w-4xl mx-auto px-4 mb-20">
+        <div className="text-center mb-10">
+          <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">How It Works</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-100">Simple. Fast. Zero fluff.</h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {steps.map((s, i) => (
+            <motion.div
+              key={s.n}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: i * 0.08 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5"
+            >
+              <span className="text-xs font-bold text-zinc-700 mb-3 block font-mono">{s.n}</span>
+              <s.icon className="w-5 h-5 text-orange-400 mb-3" />
+              <p className="text-sm font-bold text-zinc-200 mb-1.5">{s.title}</p>
+              <p className="text-xs text-zinc-500 leading-relaxed">{s.desc}</p>
+            </motion.div>
+          ))}
         </div>
       </section>
 
-      {/* ── SECTION 3 — HOW TO BUY ───────────────────────────────────────── */}
-      <section className="py-20 px-4 bg-zinc-900/30">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeader title="How to Buy" subtitle="Simple 3 step process. No complexity." />
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            {HOW_TO_BUY.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <div key={step.title} className="flex flex-col md:flex-row items-center gap-4 flex-1 w-full">
-                  <div className="flex-1 w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-7 flex flex-col items-center text-center hover:border-zinc-700 transition-all">
-                    <div className={`w-12 h-12 rounded-xl border flex items-center justify-center mb-4 ${step.bg}`}>
-                      <Icon className={`w-5 h-5 ${step.color}`} />
-                    </div>
-                    <div className="text-xs font-bold text-zinc-600 mb-1 tracking-widest">STEP {i + 1}</div>
-                    <h3 className="text-zinc-100 font-bold text-base mb-2">{step.title}</h3>
-                    <p className="text-zinc-400 text-sm leading-relaxed">{step.desc}</p>
-                  </div>
-                  {i < HOW_TO_BUY.length - 1 && (
-                    <ArrowRight className="w-6 h-6 text-zinc-600 shrink-0 hidden md:block" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SECTION 4 — BACKGROUND SELECTOR ─────────────────────────────── */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <SectionHeader
-            title="Built For YOUR Background"
-            subtitle="Whatever your current stack, we create the perfect AI transition project"
-          />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {BACKGROUNDS.map((bg) => (
-              <div
-                key={bg.title}
-                className="group bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-orange-500/50 hover:bg-zinc-900/80 transition-all duration-200 cursor-default"
-              >
-                <div className="text-3xl mb-4">{bg.emoji}</div>
-                <h3 className="text-zinc-100 font-bold text-sm mb-2 group-hover:text-orange-400 transition-colors">
-                  {bg.title}
-                </h3>
-                <p className="text-zinc-500 text-xs leading-relaxed group-hover:text-zinc-400 transition-colors">
-                  {bg.project}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SECTION 5 — PRICING ──────────────────────────────────────────── */}
-      <section id="pricing" className="py-24 px-4 bg-zinc-900/30">
-        <div className="max-w-7xl mx-auto">
-          <SectionHeader title="Simple Pricing" subtitle="One payment. Till you get placed." />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-
-            {/* Starter */}
-            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-8 flex flex-col gap-5">
-              <div>
-                <span className="text-xs font-bold tracking-widest text-zinc-400 uppercase">Starter</span>
-                <div className="mt-3">
-                  <span className="text-4xl font-extrabold text-zinc-100">₹999</span>
-                </div>
-                <p className="text-zinc-500 text-sm mt-1.5">Get your AI project done</p>
-              </div>
-              <ul className="flex flex-col gap-3 flex-1">
-                {[
-                  "1 custom AI project idea",
-                  "Complete project document",
-                  "Step by step build guide",
-                  "GitHub starter code template",
-                  "Resume bullet points for the project",
-                  "WhatsApp support till placed",
-                ].map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm text-zinc-300">
-                    <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href={waLink("Hi Aman, I am interested in the Starter Pack ₹999. My background is...")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 border border-orange-500 text-orange-400 hover:bg-orange-500/10 font-semibold text-sm px-5 py-3 rounded-xl transition-all"
-              >
-                Get Started
-              </a>
-            </div>
-
-            {/* Popular */}
-            <div className="popular-glow bg-zinc-900 border-2 border-orange-500 rounded-2xl p-8 flex flex-col gap-5 scale-[1.03] relative">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                <span className="bg-orange-500 text-white text-xs font-bold px-4 py-1.5 rounded-full tracking-widest uppercase">
-                  Popular
+      {/* ── Website stack callout (website tab only) ── */}
+      {tab === "website" && (
+        <section className="max-w-4xl mx-auto px-4 mb-20">
+          <div className="bg-gradient-to-br from-orange-500/8 via-zinc-900 to-violet-500/8 border border-orange-500/20 rounded-2xl p-8 text-center">
+            <Code2 className="w-8 h-8 text-orange-400 mx-auto mb-4" />
+            <h3 className="text-xl font-extrabold text-zinc-100 mb-2">Same stack as AmanAI Lab — built from scratch for you</h3>
+            <p className="text-sm text-zinc-400 max-w-xl mx-auto mb-6 leading-relaxed">
+              No Wix. No templates. No drag-and-drop. Every component is hand-coded in the same battle-tested
+              stack that powers AmanAI Lab — performant, secure, and fully yours.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {["Next.js 16", "TypeScript 5", "Tailwind CSS 4", "Supabase", "Groq / OpenAI", "Framer Motion", "Vercel", "Razorpay / Stripe"].map(t => (
+                <span key={t} className="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/15 px-3 py-1 rounded-full font-mono">
+                  {t}
                 </span>
-              </div>
-              <div>
-                <span className="text-xs font-bold tracking-widest text-orange-400 uppercase">Popular</span>
-                <div className="mt-2">
-                  <span className="text-4xl font-extrabold text-zinc-100">₹2,499</span>
-                </div>
-                <p className="text-zinc-400 text-sm mt-1.5">Project + Interview ready</p>
-              </div>
-              <ul className="flex flex-col gap-3 flex-1">
-                {[
-                  "Everything in Starter PLUS:",
-                  "Complete working project with code",
-                  "Full GitHub repository",
-                  "Project explanation document",
-                  "Project specific interview Q&A",
-                  "Mock interview session (1 session)",
-                  "LinkedIn post template",
-                  "Resume review and suggestions",
-                  "Priority WhatsApp support till placed",
-                ].map((f) => (
-                  <li key={f} className={`flex items-start gap-2.5 text-sm ${f.endsWith(":") ? "text-zinc-400 font-semibold" : "text-zinc-200"}`}>
-                    {f.endsWith(":") ? (
-                      <span className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                    )}
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href={waLink("Hi Aman, I am interested in the Popular Pack ₹2,499. My background is...")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold text-sm px-5 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
-              >
-                Get Started
-              </a>
+              ))}
             </div>
-
-            {/* Complete */}
-            <div className="bg-zinc-900 border border-purple-500/50 rounded-2xl p-8 flex flex-col gap-5">
-              <div>
-                <span className="text-xs font-bold tracking-widest text-purple-400 uppercase">Complete</span>
-                <div className="mt-3">
-                  <span className="text-4xl font-extrabold text-zinc-100">₹4,999</span>
-                </div>
-                <p className="text-zinc-500 text-sm mt-1.5">We stay till you get placed</p>
-              </div>
-              <ul className="flex flex-col gap-3 flex-1">
-                {[
-                  "Everything in Popular PLUS:",
-                  "2 custom AI projects (basic + advanced)",
-                  "Mock interview sessions (3 sessions)",
-                  "Full resume rewrite",
-                  "LinkedIn profile complete optimization",
-                  "Weekly check-in calls (4 sessions)",
-                  "Job application strategy guide",
-                  "Direct WhatsApp group with Aman",
-                  "Referral to Aman network",
-                  "Till placed — we never stop supporting",
-                ].map((f) => (
-                  <li key={f} className={`flex items-start gap-2.5 text-sm ${f.endsWith(":") ? "text-zinc-400 font-semibold" : "text-zinc-300"}`}>
-                    {f.endsWith(":") ? (
-                      <span className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
-                    )}
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <a
-                href={waLink("Hi Aman, I am interested in the Complete Pack ₹4,999. My background is...")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 border border-purple-500 text-purple-400 hover:bg-purple-500/10 font-semibold text-sm px-5 py-3 rounded-xl transition-all"
-              >
-                Get Started
-              </a>
-            </div>
-
           </div>
+        </section>
+      )}
+
+      {/* ── Social Proof Numbers ── */}
+      <section className="max-w-4xl mx-auto px-4 mb-20">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          {[
+            { value: "50K+",  label: "YouTube Subscribers" },
+            { value: "17+",   label: "AI Tools Built" },
+            { value: "500+",  label: "Interview Questions" },
+            { value: "100%",  label: "Code Ownership" },
+          ].map(s => (
+            <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+              <p className="text-3xl font-extrabold text-orange-400 mb-1">{s.value}</p>
+              <p className="text-xs text-zinc-500">{s.label}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ── SECTION 6 — WHY CHOOSE US ────────────────────────────────────── */}
-      <section className="py-24 px-4">
-        <div className="max-w-5xl mx-auto">
-          <SectionHeader title="Why AmanAI Lab?" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {WHY_US.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.title}
-                  className="bg-zinc-900 border border-zinc-800 rounded-2xl p-7 flex gap-5 hover:border-zinc-700 transition-all"
-                >
-                  <div className="w-11 h-11 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5 text-orange-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-zinc-100 font-bold mb-2">{item.title}</h3>
-                    <p className="text-zinc-400 text-sm leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* ── FAQ ── */}
+      <section className="max-w-2xl mx-auto px-4 mb-20">
+        <div className="text-center mb-8">
+          <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">FAQ</p>
+          <h2 className="text-2xl font-extrabold text-zinc-100">Common questions, honest answers</h2>
         </div>
-      </section>
 
-      {/* ── SECTION 7 — FAQ ──────────────────────────────────────────────── */}
-      <section className="py-24 px-4 bg-zinc-900/30">
-        <div className="max-w-3xl mx-auto">
-          <SectionHeader title="Frequently Asked Questions" />
-          <div className="flex flex-col gap-3">
-            {FAQS.map((item, i) => (
-              <FAQItem
-                key={i}
-                q={item.q}
-                a={item.a}
-                open={openFaq === i}
-                onToggle={() => setOpenFaq(openFaq === i ? null : i)}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SECTION 8 — CTA BOTTOM ───────────────────────────────────────── */}
-      <section className="py-24 px-4">
-        <div className="max-w-3xl mx-auto">
-          <div className="relative bg-zinc-900 border border-zinc-800 rounded-3xl px-8 py-16 text-center overflow-hidden">
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ background: "radial-gradient(ellipse at 50% 0%,rgba(249,115,22,0.12) 0%,transparent 70%)" }}
-            />
-            <div className="relative z-10">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-orange-500/10 border border-orange-500/20 rounded-2xl mb-6">
-                <Rocket className="w-6 h-6 text-orange-400" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
-                Ready to Switch to AI?
-              </h2>
-              <p className="text-zinc-400 text-lg max-w-md mx-auto mb-8 leading-relaxed">
-                Join developers who are already building their AI career with AmanAI Lab.
-              </p>
-              <a
-                href={waLink("Hi Aman, I want to switch to AI and need your help.")}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2.5 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-8 py-4 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/25 text-[15px]"
+        <div className="flex flex-col gap-2">
+          {FAQS.map((faq, i) => (
+            <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-800/40 transition-colors gap-4"
               >
-                Start Today
-                <ArrowRight className="w-4 h-4" />
-              </a>
-              <p className="text-zinc-600 text-xs mt-5">Limited spots available each month</p>
+                <span className="text-sm font-semibold text-zinc-200">{faq.q}</span>
+                <span className={`text-zinc-500 shrink-0 text-xs transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`}>▾</span>
+              </button>
+              {openFaq === i && (
+                <div className="px-5 pb-4 pt-3 text-sm text-zinc-400 leading-relaxed border-t border-zinc-800">
+                  {faq.a}
+                </div>
+              )}
             </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
+      <section className="max-w-2xl mx-auto px-4 text-center">
+        <div className="bg-zinc-900 border border-orange-500/20 rounded-2xl p-10 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-violet-500/5 pointer-events-none" />
+          <Crown className="w-10 h-10 text-orange-400 mx-auto mb-4 relative z-10" />
+          <h2 className="text-2xl font-extrabold text-zinc-100 mb-2 relative z-10">Ready to build something real?</h2>
+          <p className="text-sm text-zinc-400 mb-8 max-w-md mx-auto leading-relaxed relative z-10">
+            No forms, no waiting rooms, no sales calls. WhatsApp Aman directly —
+            describe what you need and get a response within a few hours.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center relative z-10">
+            <a
+              href={waLink("Services Enquiry")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25 text-sm"
+            >
+              <MessageSquare className="w-4 h-4" /> WhatsApp Aman Now
+            </a>
+            <a
+              href="mailto:aman.chauhan.ai71@gmail.com"
+              className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-bold px-6 py-3.5 rounded-xl transition-colors text-sm"
+            >
+              <FileText className="w-4 h-4" /> Send an Email
+            </a>
           </div>
+          <p className="text-xs text-zinc-700 mt-5 relative z-10">
+            Usually responds within 2–4 hours · Scope agreed before any payment
+          </p>
         </div>
       </section>
 
     </div>
-  );
+  )
 }
