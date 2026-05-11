@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: 'AI Research Paper Explainer | AmanAI Lab',
   description: 'Paste any arXiv URL or paper abstract and get a clear, jargon-free explanation. Understand AI/ML research papers without a PhD.',
   keywords: ['AI paper explainer', 'arXiv explainer', 'research paper summary', 'ML paper explained'],
+  alternates: { canonical: 'https://amanailab.com/paper-explainer' },
 }
 
 export default function PaperExplainerPage() {

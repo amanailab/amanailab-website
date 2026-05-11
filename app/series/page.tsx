@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Series | AmanAI Lab",
   description:
     "Browse all AI learning series — LLMs, AI Agents, RAG, Prompt Engineering, Fine-tuning, and more.",
+  alternates: { canonical: 'https://amanailab.com/series' },
 };
 
 export default async function SeriesPage() {

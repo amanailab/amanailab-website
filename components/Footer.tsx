@@ -157,8 +157,8 @@ export default function Footer() {
             © {year} AmanAI Lab. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            <Link href="/contact" className="text-zinc-600 hover:text-zinc-400 text-xs transition-colors">Privacy</Link>
-            <Link href="/contact" className="text-zinc-600 hover:text-zinc-400 text-xs transition-colors">Terms</Link>
+            <Link href="/privacy" className="text-zinc-600 hover:text-zinc-400 text-xs transition-colors">Privacy</Link>
+            <Link href="/terms" className="text-zinc-600 hover:text-zinc-400 text-xs transition-colors">Terms</Link>
             <p className="text-zinc-700 text-xs">Built for AI/ML professionals</p>
           </div>
         </div>

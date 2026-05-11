@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/api/', '/verify-email'],
+        disallow: ['/admin', '/api/', '/verify-email', '/courses', '/dashboard', '/profile', '/sessions', '/job-tracker'],
       },
     ],
     sitemap: 'https://amanailab.com/sitemap.xml',

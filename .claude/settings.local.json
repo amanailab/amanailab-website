@@ -63,7 +63,9 @@
       "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\" -Directory)",
       "Bash(xargs grep -l \"new Date\\(\\)\")",
       "Bash(mkdir -p E:/amanailab-website/amanailab-website/app/sessions/[id])",
-      "Bash(mkdir -p E:/amanailab-website/amanailab-website/app/api/user/sessions/[id])"
+      "Bash(mkdir -p E:/amanailab-website/amanailab-website/app/api/user/sessions/[id])",
+      "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\" -Recurse -Directory -Name)",
+      "Bash(Select-Object -First 30)"
     ]
   }
 }
