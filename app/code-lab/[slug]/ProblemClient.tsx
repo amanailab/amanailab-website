@@ -11,7 +11,7 @@ import {
   Bug, BarChart2, HelpCircle, BookOpen, ZoomIn, ZoomOut,
   Maximize2, Minimize2, Copy, Check, Sparkles, Star, Save,
   ChevronLeft, ChevronRight as ChevronRightIcon, Plus, Trash2,
-  Palette, Zap, FlaskConical,
+  Palette, Zap, FlaskConical, Lock,
 } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 import LoginPromptModal from '@/components/ui/LoginPromptModal'
@@ -301,7 +301,7 @@ export default function ProblemClient({
   }, [code])
 
   const handleRun = useCallback(async () => {
-    if (user === null) { setAuthModal(true); return }
+    // Run uses Pyodide (client-side Python) — no server call needed, no login required
     if (running || pyStatus === 'error') return
     setRunning(true); setRunResults(null); setSubmitResult(null); setResultTab('results')
     clearErrorHighlight()
@@ -309,14 +309,13 @@ export default function ProblemClient({
       if (pyStatus !== 'ready') { setPyStatus('loading'); await getPyodide(); setPyStatus('ready') }
       const results = await runTests(visibleTests)
       setRunResults(results)
-      // Highlight error line if any test has an error
       const errorResult = results.find(r => r.got.startsWith('Error:'))
       if (errorResult) {
         const lineNum = parseErrorLine(errorResult.got)
         if (lineNum) highlightErrorLine(lineNum)
       }
     } catch { setRunResults([]) } finally { setRunning(false) }
-  }, [user, running, pyStatus, runTests, visibleTests, clearErrorHighlight, highlightErrorLine])
+  }, [running, pyStatus, runTests, visibleTests, clearErrorHighlight, highlightErrorLine])
 
   const handleSubmit = useCallback(async () => {
     if (user === null) { setAuthModal(true); return }
@@ -512,10 +511,10 @@ export default function ProblemClient({
             Run <kbd className="hidden md:block text-[8px] text-zinc-600 font-mono">⌘↵</kbd>
           </button>
 
-          <button onClick={handleSubmit} disabled={running||submitting||pyStatus==='error'} title="Submit (⌘⇧↵)"
+          <button onClick={handleSubmit} disabled={running||submitting||pyStatus==='error'} title={user===null?"Sign in to submit":"Submit (⌘⇧↵)"}
             className="flex items-center gap-1 text-xs font-semibold bg-orange-500 hover:bg-orange-400 text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
-            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-            Submit
+            {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : user===null ? <Lock className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
+            Submit {user===null && <span className="text-[9px] opacity-70">· Login</span>}
           </button>
         </div>
       </div>
@@ -787,6 +786,21 @@ export default function ProblemClient({
                       )}
                     </div>
                   ))}
+
+                  {/* Sign-in nudge for logged-out users after running */}
+                  {user === null && (
+                    <div className="mt-1 bg-orange-500/5 border border-orange-500/15 rounded-xl px-3 py-2.5 flex items-center justify-between gap-3">
+                      <p className="text-xs text-zinc-400">
+                        <span className="font-semibold text-zinc-200">Sign in free</span> to submit against all test cases and earn XP
+                      </p>
+                      <button
+                        onClick={() => setAuthModal(true)}
+                        className="shrink-0 text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors whitespace-nowrap"
+                      >
+                        Sign in →
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
