@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "About | AmanAI Lab",
   description:
     "Learn about AmanAI Lab — teaching Generative AI, LLMs, and AI Agents to developers worldwide.",
+  alternates: { canonical: 'https://amanailab.com/about' },
 };
 
 export default async function AboutPage() {

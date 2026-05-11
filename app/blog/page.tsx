@@ -8,6 +8,7 @@ import BlogList from '@/components/blog/BlogList'
 export const metadata: Metadata = {
   title: 'Blog | AmanAI Lab',
   description: 'In-depth articles on Generative AI, LLMs, RAG, AI Agents, and more.',
+  alternates: { canonical: 'https://amanailab.com/blog' },
 }
 
 const PER_PAGE = 12

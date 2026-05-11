@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "AI News Feed | AmanAI Lab",
   description:
     "Latest AI updates curated for developers. Models, research, tools, agents, and India AI — updated daily.",
+  alternates: { canonical: 'https://amanailab.com/news' },
 };
 
 export default function NewsPage() {

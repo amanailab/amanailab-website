@@ -60,7 +60,6 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
   },
-  alternates: { canonical: "https://amanailab.com" },
   verification: {
     google: 'D-yK2df-NULwHLyUwJDjyO_V1MuoDR91fpURUUekgA8',
   },

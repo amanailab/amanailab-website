@@ -9,6 +9,12 @@ import FeaturedSeries from "@/components/home/FeaturedSeries";
 import LatestVideos from "@/components/home/LatestVideos";
 import CTASection from "@/components/home/CTASection";
 
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  alternates: { canonical: 'https://amanailab.com' },
+}
+
 export const revalidate = 300;
 
 export default async function HomePage() {

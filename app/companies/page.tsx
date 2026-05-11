@@ -8,6 +8,7 @@ import type { Metadata } from 'next'
 export const metadata: Metadata = {
   title: 'AI/ML Interview Prep by Company | AmanAI Lab',
   description: 'Company-specific AI/ML interview preparation. Google, Meta, OpenAI, Anthropic, Microsoft and more — real questions, interview formats, and insider tips.',
+  alternates: { canonical: 'https://amanailab.com/companies' },
 }
 
 interface Company {

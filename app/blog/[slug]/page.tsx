@@ -64,7 +64,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${post.title} | AmanAI Lab`,
     description: post.description ?? undefined,
-    openGraph: post.cover_image ? { images: [post.cover_image] } : undefined,
+    alternates: { canonical: `https://amanailab.com/blog/${slug}` },
+    openGraph: post.cover_image ? {
+      type: 'article',
+      url: `https://amanailab.com/blog/${slug}`,
+      images: [post.cover_image],
+    } : undefined,
   }
 }
 
