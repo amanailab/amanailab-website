@@ -40,6 +40,16 @@ function s(value: unknown): string {
 }
 
 export async function POST(req: Request) {
+  // Rate limit: 3 builds per 2 minutes per IP
+  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:resume-build`, 3, 120_000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Please wait ${retryAfterSec} seconds before generating again.` },
+      { status: 429 }
+    )
+  }
+
   try {
     const body = (await req.json()) as BuildRequest;
 
@@ -174,8 +184,8 @@ Use the same number of experiences as Work History above, in the same order.
 Return ONLY valid JSON. No markdown fences. No commentary.`,
           },
         ],
-        temperature: 0.5,
-        max_tokens: 1800,
+        temperature: 0.4,
+        max_tokens: 1500,
         response_format: { type: "json_object" },
       }),
     });
