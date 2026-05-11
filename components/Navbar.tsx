@@ -67,6 +67,7 @@ const navItems: NavItem[] = [
       { href: "/job-prep",           label: "Job Prep",             description: "Paste a JD, get tailored questions",  icon: <Briefcase className="w-4 h-4" /> },
     ],
   },
+  { kind: "link", href: "/courses", label: "Courses" },
   {
     kind: "dropdown",
     label: "Interview",
