@@ -183,7 +183,15 @@ Return ONLY valid JSON. No markdown fences. No commentary.`,
     if (!groqRes.ok) {
       const errText = await groqRes.text();
       console.error("[Build] Groq error:", errText);
-      return NextResponse.json({ error: "Failed to generate resume." }, { status: 500 });
+      let friendlyError = "Failed to generate resume. Please try again."
+      try {
+        const errJson = JSON.parse(errText)
+        const msg = errJson?.error?.message ?? ""
+        if (msg.includes("rate_limit") || msg.includes("429")) friendlyError = "AI is busy right now. Please wait 1 minute and try again."
+        else if (msg.includes("invalid_api_key") || msg.includes("401")) friendlyError = "API key error. Please contact support."
+        else if (msg.includes("token")) friendlyError = "Daily AI limit reached. Please try again tomorrow."
+      } catch { /* ignore */ }
+      return NextResponse.json({ error: friendlyError }, { status: 500 });
     }
 
     const groqData = await groqRes.json();
