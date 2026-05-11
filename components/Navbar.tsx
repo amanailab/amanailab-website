@@ -131,13 +131,16 @@ export default function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
+    // getUser() is the authoritative check — sets authLoading=false exactly once
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUserEmail(user?.email ?? null);
       setAuthLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, sess) => {
-      setUserEmail(sess?.user?.email ?? null);
-      setAuthLoading(false);
+    // Only react to explicit sign-in / sign-out; ignore TOKEN_REFRESHED / INITIAL_SESSION
+    // which can fire with sess=null and incorrectly flash the Login button
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+      if (event === 'SIGNED_IN') setUserEmail(sess?.user?.email ?? null);
+      if (event === 'SIGNED_OUT') setUserEmail(null);
     });
     return () => subscription.unsubscribe();
   }, []);

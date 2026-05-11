@@ -7,7 +7,7 @@ import type { BlogPost } from '@/lib/admin'
 import { Clock, ArrowLeft, Tag, Share2 } from 'lucide-react'
 import EmailCaptureCard from '@/components/shared/EmailCaptureCard'
 import ReadingProgress from '@/components/blog/ReadingProgress'
-import GiscusComments from '@/components/blog/GiscusComments'
+import BlogComments from '@/components/blog/BlogComments'
 import TableOfContents from '@/components/blog/TableOfContents'
 import sanitizeHtml from 'sanitize-html'
 
@@ -229,7 +229,7 @@ export default async function BlogPostPage({ params }: Props) {
       )}
 
       {/* Comments */}
-      <GiscusComments slug={post.slug} />
+      <BlogComments slug={post.slug} />
     </article>
     </>
   )
