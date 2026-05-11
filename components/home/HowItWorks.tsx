@@ -53,7 +53,7 @@ export default function HowItWorks() {
             How It Works
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-3">
-            From zero to job offer in 3 steps
+            From preparation to confidence in 3 steps
           </h2>
           <p className="text-zinc-400 text-base max-w-xl mx-auto">
             A structured path for every AI/ML candidate — whether you&apos;re starting from scratch or preparing for a FAANG interview.

@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Contact | AmanAI Lab",
   description:
     "Get in touch with AmanAI Lab — for questions, collaborations, sponsorships, or feedback.",
+  alternates: { canonical: 'https://amanailab.com/contact' },
 };
 
 export default function ContactPage() {

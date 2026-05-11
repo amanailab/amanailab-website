@@ -106,8 +106,27 @@ export default async function BlogPostPage({ params }: Props) {
   const headings = extractHeadings(post.content ?? '')
   const contentWithIds = injectHeadingIds(post.content ?? '')
 
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.description ?? '',
+    url: `https://amanailab.com/blog/${slug}`,
+    datePublished: post.created_at,
+    dateModified: post.updated_at ?? post.created_at,
+    author: { '@type': 'Person', name: 'Aman Chauhan', url: 'https://amanailab.com/about' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'AmanAI Lab',
+      logo: { '@type': 'ImageObject', url: 'https://amanailab.com/logo.jpg' },
+    },
+    image: post.cover_image ? [post.cover_image] : ['https://amanailab.com/logo.jpg'],
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://amanailab.com/blog/${slug}` },
+  }
+
   return (
     <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
     <ReadingProgress />
     <article className="pt-24 pb-16 px-4 max-w-3xl mx-auto">
       <Link

@@ -81,6 +81,7 @@ const navItems: NavItem[] = [
       { href: "/topics",     label: "Topic Guides",    description: "Deep-dive guides by topic",               icon: <Layers className="w-4 h-4" /> },
       { href: "/flashcards", label: "Flashcards",      description: "5-min daily concept practice",            icon: <Library className="w-4 h-4" /> },
       { href: "/community",  label: "Community",       description: "Share interview experiences",             icon: <MessageSquare className="w-4 h-4" /> },
+      { href: "/leaderboard",label: "Leaderboard",     description: "Top performers ranked by score",           icon: <Trophy className="w-4 h-4" /> },
     ],
   },
   {

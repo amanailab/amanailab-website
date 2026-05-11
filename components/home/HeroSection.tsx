@@ -47,7 +47,7 @@ export default function HeroSection() {
           className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-sm font-medium px-4 py-2 rounded-full mb-8"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          The #1 AI/ML Career Platform — 100% Free
+          Live AI scoring + 500 real questions — 100% Free
         </motion.div>
 
         {/* Headline */}
