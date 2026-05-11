@@ -1,7 +1,8 @@
 'use client'
 
-import { useActionState, useState, useEffect } from 'react'
-import { login } from '@/app/actions/auth'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Loader2, CheckCircle2, TrendingUp, BrainCircuit, BarChart2 } from 'lucide-react'
@@ -65,13 +66,31 @@ function DemoCard() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
-  const [error, action, pending] = useActionState(login, null)
+  const router = useRouter()
+  const [error, setError]   = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
   const [nextPath, setNextPath] = useState('/dashboard')
-  // Read ?next= from URL safely inside useEffect (avoids hydration mismatch)
+
   useEffect(() => {
     const n = new URLSearchParams(window.location.search).get('next')
     if (n?.startsWith('/')) setNextPath(n)
   }, [])
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setError(null)
+    setPending(true)
+    const data = new FormData(e.currentTarget)
+    const supabase = createClient()
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: data.get('email') as string,
+      password: data.get('password') as string,
+    })
+    setPending(false)
+    if (authError) { setError(authError.message); return }
+    // Client-side sign-in fires SIGNED_IN on all listeners (including Navbar)
+    router.push(nextPath)
+  }
 
   return (
     <div className="min-h-screen flex bg-zinc-950">
@@ -142,8 +161,7 @@ export default function LoginPage() {
             <p className="text-sm text-zinc-500">Sign in to see your progress dashboard</p>
           </div>
 
-          <form action={action} className="flex flex-col gap-4">
-            <input type="hidden" name="next" value={nextPath} />
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
                 Email

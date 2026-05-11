@@ -8,7 +8,7 @@ import {
   Menu, X, ChevronDown, Search,
   BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
-  BrainCircuit, Map, CalendarDays, Building2, Target,
+  BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
   User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2,
 } from "lucide-react";
 import Image from "next/image";
@@ -132,17 +132,20 @@ export default function Navbar() {
 
   useEffect(() => {
     const supabase = createClient();
-    // getUser() is the authoritative check — sets authLoading=false exactly once
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUserEmail(user?.email ?? null);
-      setAuthLoading(false);
-    });
-    // Only react to explicit sign-in / sign-out; ignore TOKEN_REFRESHED / INITIAL_SESSION
-    // which can fire with sess=null and incorrectly flash the Login button
+
+    // onAuthStateChange is the single source of truth.
+    // INITIAL_SESSION fires immediately on mount with the current session from
+    // cookies — no network call, so no flash. Works correctly after server-side
+    // redirects because @supabase/ssr stores the session in cookies that the
+    // browser client can read synchronously.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
-      if (event === 'SIGNED_IN') setUserEmail(sess?.user?.email ?? null);
-      if (event === 'SIGNED_OUT') setUserEmail(null);
+      setUserEmail(sess?.user?.email ?? null);
+      // Stop showing skeleton as soon as we have a definitive answer
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setAuthLoading(false);
+      }
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
