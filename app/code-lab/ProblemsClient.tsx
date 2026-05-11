@@ -34,6 +34,7 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
   const [solvedIds, setSolvedIds]       = useState<Set<string>>(new Set())
   const [attemptedIds, setAttemptedIds] = useState<Set<string>>(new Set())
   const [xp, setXp]                     = useState(0)
+  const [isLoggedIn, setIsLoggedIn]     = useState<boolean | null>(null)
 
   useEffect(() => {
     fetch('/api/code-lab/progress').then(r => r.json()).then(d => {
@@ -43,8 +44,18 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
 
     fetch('/api/code-lab/xp').then(r => r.json()).then(d => {
       setXp(d.xp ?? 0)
+      // If API returns xp (even 0) without 401, user is logged in or guest
+      setIsLoggedIn(true)
     }).catch(() => {
+      setIsLoggedIn(false)
       try { setXp(parseInt(localStorage.getItem('codelab_xp') ?? '0')) } catch { /* ignore */ }
+    })
+
+    // Check auth state
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      createClient().auth.getSession().then(({ data: { session } }) => {
+        setIsLoggedIn(!!session)
+      })
     })
   }, [])
 
@@ -98,12 +109,18 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Zap className={`w-4 h-4 ${currentLevel.color}`} />
-              <span className="text-sm font-bold text-zinc-200">Your Progress</span>
+              <Zap className={`w-4 h-4 ${isLoggedIn ? currentLevel.color : 'text-zinc-600'}`} />
+              <span className="text-sm font-bold text-zinc-200">XP Levels</span>
             </div>
-            <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${currentLevel.bg} ${currentLevel.color}`}>
-              {currentLevel.emoji} {currentLevel.label} · {xp.toLocaleString()} XP
-            </span>
+            {isLoggedIn ? (
+              <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${currentLevel.bg} ${currentLevel.color}`}>
+                {currentLevel.emoji} {currentLevel.label} · {xp.toLocaleString()} XP
+              </span>
+            ) : (
+              <Link href="/login" className="text-xs text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+                Login to track XP →
+              </Link>
+            )}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
@@ -142,8 +159,15 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
             })}
           </div>
 
-          {/* XP progress bar to next level */}
-          {(() => {
+          {/* XP progress bar or login CTA */}
+          {isLoggedIn === false ? (
+            <div className="mt-4 bg-orange-500/5 border border-orange-500/15 rounded-xl px-4 py-3 text-center">
+              <p className="text-xs text-zinc-500 mb-1.5">Your XP and level progress will be saved here once you sign in.</p>
+              <Link href="/login" className="text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors">
+                Sign in free to start earning XP →
+              </Link>
+            </div>
+          ) : (() => {
             const nextL = LEVELS.find(l => l.min > xp)
             if (!nextL) return (
               <p className="text-xs text-yellow-400 text-center mt-3 font-bold">👑 You&apos;ve reached AI Master — the highest level!</p>

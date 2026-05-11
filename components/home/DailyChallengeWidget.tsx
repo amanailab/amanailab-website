@@ -45,11 +45,13 @@ export default function DailyChallengeWidget() {
 
         // Calc streak
         const dates = [...new Set(history)].sort((a, b) => b.localeCompare(a))
-        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+        // Use local date (en-CA = YYYY-MM-DD) to match streak logic in daily/page.tsx
+        const localDate = (d: Date) => d.toLocaleDateString('en-CA')
+        const yesterday = localDate(new Date(Date.now() - 86400000))
         if (dates.includes(data.date) || dates.includes(yesterday)) {
           let s = 0; let cursor = data.date
           for (let i = 0; i < 365; i++) {
-            if (dates.includes(cursor)) { s++; cursor = new Date(new Date(cursor).getTime() - 86400000).toISOString().split('T')[0] }
+            if (dates.includes(cursor)) { s++; cursor = localDate(new Date(new Date(cursor).getTime() - 86400000)) }
             else { if (cursor === data.date) { cursor = yesterday; continue } break }
           }
           setStreak(s)

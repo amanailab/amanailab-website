@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Daily Challenge | AmanAI Lab',
-  description: 'Answer one AI/ML interview question every day and build your streak. Free daily practice for AI engineers.',
+  title: 'Daily AI/ML Challenge | AmanAI Lab',
+  description: 'One AI/ML interview question every day. Build your streak, track your answers, and stay sharp for your next interview. Free.',
+  alternates: { canonical: 'https://amanailab.com/daily' },
 }
 
 export default function DailyLayout({ children }: { children: React.ReactNode }) {

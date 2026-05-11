@@ -80,10 +80,21 @@ export default function BlogComments({ slug }: Props) {
 
   return (
     <div className="mt-10 pt-8 border-t border-zinc-800">
-      <h2 className="flex items-center gap-2 text-sm font-bold text-zinc-400 uppercase tracking-wider mb-6">
-        <MessageSquare className="w-4 h-4" />
-        Discussion {comments.length > 0 && <span className="text-zinc-600 font-normal normal-case">({comments.length})</span>}
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-zinc-400 uppercase tracking-wider">
+          <MessageSquare className="w-4 h-4" />
+          Discussion {comments.length > 0 && <span className="text-zinc-600 font-normal normal-case">({comments.length})</span>}
+        </h2>
+        {/* Show login CTA inline in header when logged out */}
+        {!userEmail && (
+          <Link
+            href="/login"
+            className="text-xs font-semibold text-orange-400 hover:text-orange-300 transition-colors"
+          >
+            Sign in to comment →
+          </Link>
+        )}
+      </div>
 
       {/* Comment list */}
       {loading ? (
@@ -148,13 +159,16 @@ export default function BlogComments({ slug }: Props) {
           </div>
         </form>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-center">
-          <p className="text-sm text-zinc-400 mb-3">Sign in to join the discussion</p>
+        <div className="bg-orange-500/5 border border-orange-500/15 rounded-2xl p-5 flex items-center gap-4">
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-zinc-200 mb-0.5">Join the discussion</p>
+            <p className="text-xs text-zinc-500">Sign in with your AmanAI Lab account — it takes 30 seconds.</p>
+          </div>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+            className="shrink-0 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20"
           >
-            Login to Comment
+            Sign in
           </Link>
         </div>
       )}

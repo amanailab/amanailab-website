@@ -69,9 +69,11 @@ function calcStreak(history: string[], todayDate: string): number {
 
 function timeUntilMidnight(): string {
   const now = new Date()
-  const midnight = new Date(now)
-  midnight.setUTCHours(24, 0, 0, 0)
-  const diff = midnight.getTime() - now.getTime()
+  // Use local midnight — daily challenge resets at midnight in the user's timezone
+  const tomorrow = new Date(now)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  tomorrow.setHours(0, 0, 0, 0)
+  const diff = tomorrow.getTime() - now.getTime()
   const h = Math.floor(diff / 3600000)
   const m = Math.floor((diff % 3600000) / 60000)
   return `${h}h ${m}m`
