@@ -70,7 +70,8 @@
       "Bash(xargs grep -l \"use client\")",
       "Bash(xargs head -100)",
       "Bash(xargs grep -l \"resend.emails.send\")",
-      "Bash(xargs grep -L \"og:\\\\|openGraph\")"
+      "Bash(xargs grep -L \"og:\\\\|openGraph\")",
+      "Bash(xargs wc -l)"
     ]
   }
 }
