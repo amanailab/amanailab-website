@@ -21,7 +21,7 @@ from datetime import datetime
 # ── CONFIG ─────────────────────────────────────────────────────────────────────
 SITE_URL = "https://amanailab.com"
 API_KEY  = "amanailab2026secret123"   # ADMIN_UPLOAD_KEY in Vercel
-GROQ_KEY = "your_groq_key_here"       # get free key at console.groq.com → paste here (do NOT commit)
+GROQ_KEY = "your_groq_key_here"       # get free key at console.groq.com → paste here locally (do NOT commit)
 # ──────────────────────────────────────────────────────────────────────────────
 
 VALID_TOPICS = [

@@ -85,13 +85,16 @@ export async function POST(req: Request) {
   }
 
   const supabase = getAdminSupabase()
-  const { error } = await supabase
+  // Use insert with ignoreDuplicates — works without requiring a unique constraint
+  const { error, data } = await supabase
     .from('interview_questions')
-    .upsert(
-      QUESTIONS.map(q => ({ question: q.question, answer: q.answer, topic: q.topic, level: q.level })),
-      { onConflict: 'question' }
+    .insert(
+      QUESTIONS.map(q => ({ question: q.question, answer: q.answer, topic: q.topic, level: q.level }))
     )
+    .select('id')
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ seeded: QUESTIONS.length })
+  if (error && !error.message.includes('duplicate')) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  return NextResponse.json({ seeded: data?.length ?? QUESTIONS.length })
 }

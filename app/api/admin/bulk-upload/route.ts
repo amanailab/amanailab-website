@@ -158,8 +158,41 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── CODE PROBLEMS ──────────────────────────────────────────────────────────
+    else if (type === 'code_problems') {
+      const rows = (data as Record<string, unknown>[]).map((p, i) => {
+        if (!p.title || !p.slug) {
+          results.errors.push(`Row ${i}: missing title or slug`)
+          results.skipped++
+          return null
+        }
+        return {
+          title:        p.title,
+          slug:         String(p.slug).toLowerCase().replace(/\s+/g, '-'),
+          difficulty:   p.difficulty ?? 'Easy',
+          topic:        p.topic ?? 'Math',
+          tags:         p.tags ?? [],
+          companies:    p.companies ?? [],
+          description:  p.description ?? '',
+          starter_code: p.starter_code ?? '',
+          test_cases:   p.test_cases ?? [],
+          hints:        p.hints ?? [],
+          order_index:  p.order_index ?? 99,
+        }
+      }).filter(Boolean)
+
+      if (rows.length > 0) {
+        const { error, data: inserted } = await sb
+          .from('code_problems')
+          .upsert(rows, { onConflict: 'slug', ignoreDuplicates: false })
+          .select('id')
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        results.inserted = inserted?.length ?? rows.length
+      }
+    }
+
     else {
-      return NextResponse.json({ error: `Unknown type "${type}". Use: questions, news, companies` }, { status: 400 })
+      return NextResponse.json({ error: `Unknown type "${type}". Use: questions, news, companies, code_problems` }, { status: 400 })
     }
 
     return NextResponse.json({

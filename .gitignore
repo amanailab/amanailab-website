@@ -37,6 +37,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# scripts — local data files, never commit these
+scripts/extracted_questions.json
+scripts/reviewed_questions.json
+scripts/raw_collected.json
+scripts/progress.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
