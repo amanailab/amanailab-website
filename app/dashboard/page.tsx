@@ -742,6 +742,34 @@ export default async function DashboardPage() {
           <div className="w-full lg:w-[300px] shrink-0">
             <div className="flex flex-col gap-4 lg:sticky lg:top-20">
               <LeaderboardCard entries={displayedEntries} nameMap={nameMap} userRank={userRank} totalUsers={totalUsers} />
+
+              {/* Sessions history card */}
+              {totalSessions > 0 && (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <BrainCircuit className="w-4 h-4 text-violet-400" />
+                      <p className="text-sm font-bold text-zinc-200">Interview History</p>
+                    </div>
+                    <Link href="/sessions" className="text-xs text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+                      View All →
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { label: 'Total', value: totalSessions, color: 'text-zinc-100' },
+                      { label: 'Avg',   value: `${overallAvg.toFixed(1)}`, color: 'text-blue-400' },
+                      { label: 'Best',  value: `${bestScore.toFixed(1)}`, color: 'text-green-400' },
+                    ].map(s => (
+                      <div key={s.label} className="bg-zinc-800/50 rounded-xl p-2">
+                        <p className={`text-sm font-extrabold ${s.color}`}>{s.value}</p>
+                        <p className="text-[10px] text-zinc-600">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <CodeLabCard stats={codeStats} />
               <XPCard />
             </div>

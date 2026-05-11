@@ -65,10 +65,19 @@ export default async function BlogPage({
 
   return (
     <div className="pt-24 pb-16 px-4 max-w-6xl mx-auto">
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-bold text-zinc-100 mb-3">Blog</h1>
-        <p className="text-zinc-400 max-w-xl mx-auto">
-          In-depth articles on Generative AI, LLMs, RAG, AI Agents, fine-tuning, and more.
+      {/* Hero */}
+      <div className="mb-12 text-center">
+        <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-5 uppercase tracking-wider">
+          ✍️ AmanAI Lab Blog
+        </div>
+        <h1 className="text-4xl sm:text-5xl font-extrabold text-zinc-100 mb-4 leading-tight">
+          Learn AI/ML the{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-orange-600">
+            right way
+          </span>
+        </h1>
+        <p className="text-zinc-400 text-lg max-w-xl mx-auto leading-relaxed">
+          In-depth guides on Generative AI, LLMs, RAG, AI Agents, fine-tuning, and more — written by a practitioner, not a content farm.
         </p>
       </div>
 

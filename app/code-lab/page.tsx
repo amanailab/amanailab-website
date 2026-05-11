@@ -17,7 +17,23 @@ async function getProblems() {
   return data ?? []
 }
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'AI/ML Code Lab',
+  applicationCategory: 'EducationalApplication',
+  description: '20+ AI/ML coding problems — implement algorithms from scratch, earn XP levels, unlock AI hints. Free judge for AI engineers.',
+  url: 'https://amanailab.com/code-lab',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  operatingSystem: 'Web Browser',
+}
+
 export default async function CodeLabPage() {
   const problems = await getProblems()
-  return <ProblemsClient problems={problems} />
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ProblemsClient problems={problems} />
+    </>
+  )
 }
