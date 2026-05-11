@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createAuthClient } from '@/lib/supabase/server'
 
+// Public anon client — safe for reading approved comments (RLS handles access)
+function getAnonClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+// Admin client — only needed for writes (bypasses RLS to set user_id)
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,7 +23,7 @@ export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get('slug')
   if (!slug) return NextResponse.json({ error: 'slug required' }, { status: 400 })
 
-  const { data, error } = await getAdminClient()
+  const { data, error } = await getAnonClient()
     .from('blog_comments')
     .select('id, body, created_at, user_name, user_email')
     .eq('slug', slug)
