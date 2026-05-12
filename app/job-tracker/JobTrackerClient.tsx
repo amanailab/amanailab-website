@@ -533,28 +533,40 @@ export default function JobTrackerClient() {
   }
 
   async function handleMove(id: string, toStage: StageId) {
+    const snapshot = apps.find(a => a.id === id)
     setApps(prev => prev.map(a => a.id === id ? { ...a, status: toStage, updated_at: new Date().toISOString() } : a))
-    await fetch('/api/user/job-tracker', {
+    const res = await fetch('/api/user/job-tracker', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: toStage }),
     })
+    if (!res.ok && snapshot) {
+      setApps(prev => prev.map(a => a.id === id ? snapshot : a))
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Remove this application?')) return
+    const snapshot = apps.find(a => a.id === id)
     setApps(prev => prev.filter(a => a.id !== id))
-    await fetch('/api/user/job-tracker', {
+    const res = await fetch('/api/user/job-tracker', {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     })
+    if (!res.ok && snapshot) {
+      setApps(prev => [...prev, snapshot].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()))
+    }
   }
 
   async function handleStar(id: string, priority: string) {
+    const snapshot = apps.find(a => a.id === id)
     setApps(prev => prev.map(a => a.id === id ? { ...a, priority: priority as Application['priority'] } : a))
-    await fetch('/api/user/job-tracker', {
+    const res = await fetch('/api/user/job-tracker', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, priority }),
     })
+    if (!res.ok && snapshot) {
+      setApps(prev => prev.map(a => a.id === id ? snapshot : a))
+    }
   }
 
   function openEdit(app: Application) {

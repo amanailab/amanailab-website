@@ -125,7 +125,10 @@ export default function Navbar() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 16);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 16);
+      setUserMenuOpen(false);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
