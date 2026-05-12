@@ -18,19 +18,7 @@ import LoginPromptModal from '@/components/ui/LoginPromptModal'
 import { useToast } from '@/components/ui/Toast'
 
 const MonacoEditor = dynamic(
-  () => import('@monaco-editor/react').then(m => m.default).catch(() => {
-    // Return a minimal fallback component if Monaco fails to load
-    const Fallback = ({ value, onChange }: { value?: string; onChange?: (v: string | undefined) => void }) => (
-      <textarea
-        className="flex-1 w-full h-full bg-[#1e1e1e] text-zinc-200 font-mono text-sm p-4 resize-none outline-none border-0"
-        value={value ?? ''}
-        onChange={e => onChange?.(e.target.value)}
-        spellCheck={false}
-      />
-    )
-    Fallback.displayName = 'EditorFallback'
-    return Fallback as never
-  }),
+  () => import('@monaco-editor/react').then(m => m.default),
   { ssr: false, loading: () => <div className="flex-1 bg-[#1e1e1e] flex items-center justify-center"><div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" /></div> }
 )
 
@@ -213,15 +201,20 @@ export default function ProblemClient({
   const visibleTests = problem.test_cases.filter(t => !t.is_hidden)
   const topicSlug    = TOPIC_SLUGS[problem.topic]
 
-  // Timer
+  // Timer — stops automatically when solution is accepted
+  const [timerStopped, setTimerStopped] = useState(false)
   useEffect(() => {
+    if (timerStopped) {
+      if (timerRef.current) clearInterval(timerRef.current)
+      return
+    }
     timerRef.current = setInterval(() => setElapsed(s => s + 1), 1000)
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [])
+  }, [timerStopped])
   const mins = Math.floor(elapsed / 60); const secs = elapsed % 60
   const timeDisplay = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`
-  const timerColor = elapsed < 1200 ? 'text-green-400' : elapsed < 2400 ? 'text-yellow-400' : 'text-red-400'
-  const timerBg    = elapsed < 1200 ? 'bg-green-500/10 border-green-500/25' : elapsed < 2400 ? 'bg-yellow-500/10 border-yellow-500/25' : 'bg-red-500/10 border-red-500/25'
+  const timerColor = timerStopped ? 'text-zinc-400' : elapsed < 1200 ? 'text-green-400' : elapsed < 2400 ? 'text-yellow-400' : 'text-red-400'
+  const timerBg    = timerStopped ? 'bg-zinc-800 border-zinc-700' : elapsed < 1200 ? 'bg-green-500/10 border-green-500/25' : elapsed < 2400 ? 'bg-yellow-500/10 border-yellow-500/25' : 'bg-red-500/10 border-red-500/25'
 
   // Pyodide
   useEffect(() => {
@@ -342,6 +335,8 @@ export default function ProblemClient({
       const status = passed === total ? 'Accepted' : 'Wrong Answer'
       const runtime = Date.now() - t0
       if (status === 'Accepted') {
+        // Stop the timer on a successful solve
+        setTimerStopped(true)
         import('canvas-confetti').then(({ default: c }) => {
           const colors = ['#4ade80','#22c55e','#f97316','#fbbf24']
           c({ particleCount: 100, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors })
@@ -406,12 +401,21 @@ export default function ProblemClient({
       const res = await fetch('/api/code-lab/ai-assist', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mode, code, problem_title: problem.title, problem_description: problem.description, failed_cases: failedCases }) })
       const data = await res.json()
+      // Surface API-level errors (4xx / 5xx) that fetch doesn't throw on
+      if (!res.ok) throw new Error(data.error ?? `AI request failed (${res.status})`)
+      if (!data.result) throw new Error('AI returned an empty response. Please try again.')
       if (mode === 'complexity') setAiComplexity(data.result as ComplexityResult)
       else if (mode === 'debug')  setAiDebug(data.result as string)
       else if (mode === 'review')    setAiReview(data.result as string)
       else if (mode === 'solution') setAiSolution(data.result as string)
       else setAiHint(data.result as string)
-    } catch { toast('AI assist failed. Try again.', 'error') }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'AI assist failed. Try again.'
+      toast(msg, 'error')
+      // Also show the error inline in the AI tab so it's visible even after toast fades
+      if (mode === 'debug') setAiDebug(`⚠ ${msg}`)
+      else if (mode === 'approach') setAiHint(`⚠ ${msg}`)
+    }
     finally { setAiLoading(false) }
   }, [user, code, problem.title, problem.description, runResults, toast])
 
@@ -497,10 +501,11 @@ export default function ProblemClient({
           )}
         </div>
 
-        {/* Center: BIG prominent timer */}
+        {/* Center: timer — turns grey and shows ✓ when solved */}
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-mono font-extrabold text-lg leading-none tracking-widest transition-colors shrink-0 ${timerColor} ${timerBg}`}>
-          <Clock className="w-4 h-4" />
+          {timerStopped ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Clock className="w-4 h-4" />}
           {timeDisplay}
+          {timerStopped && <span className="text-[10px] font-bold text-green-400 ml-0.5 hidden sm:block">Solved!</span>}
         </div>
 
         {/* Right */}
@@ -532,6 +537,7 @@ export default function ProblemClient({
       </div>
 
       {/* ── SPLIT PANE ── */}
+      {/* userSelect none prevents selection during drag; editor area overrides it back */}
       <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden" style={{ userSelect: 'none' }}>
 
         {/* Left panel */}
@@ -687,13 +693,34 @@ export default function ProblemClient({
           </div>
 
           {/* Monaco */}
-          <div className="flex-1 min-h-0">
+          {/* userSelect + pointerEvents reset so the editor captures clicks/typing
+              even though the split-pane parent has userSelect:none for drag */}
+          <div className="flex-1 min-h-0" style={{ userSelect: 'text', pointerEvents: 'auto' }}>
             <MonacoEditor height="100%" defaultLanguage="python" value={code}
               onChange={v => { setCode(v??''); clearErrorHighlight() }}
               theme={editorTheme}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               onMount={(editor: any) => { editorRef.current = editor }}
-              options={{ fontSize, fontFamily:"'JetBrains Mono','Fira Code',monospace", fontLigatures:true, lineNumbers:'on', minimap:{enabled:false}, scrollBeyondLastLine:false, wordWrap:'on', tabSize:4, renderLineHighlight:'all', bracketPairColorization:{enabled:true}, padding:{top:10,bottom:10}, scrollbar:{verticalScrollbarSize:5}, cursorBlinking:'smooth', smoothScrolling:true }} />
+              options={{
+                fontSize,
+                fontFamily: "'JetBrains Mono','Fira Code',monospace",
+                fontLigatures: true,
+                lineNumbers: 'on',
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                tabSize: 4,
+                renderLineHighlight: 'line',
+                bracketPairColorization: { enabled: true },
+                padding: { top: 10, bottom: 10 },
+                // Hide horizontal scrollbar — wordWrap:on means lines never overflow horizontally
+                scrollbar: { verticalScrollbarSize: 5, horizontalScrollbarSize: 0, horizontal: 'hidden' },
+                // Remove right-side overview ruler strip (the thin coloured line at the far right)
+                overviewRulerLanes: 0,
+                overviewRulerBorder: false,
+                cursorBlinking: 'smooth',
+                smoothScrolling: true,
+              }} />
           </div>
 
           {/* Custom test cases panel */}
@@ -736,10 +763,11 @@ export default function ProblemClient({
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900/50 border-t border-zinc-800/50 shrink-0 flex-wrap">
             <span className="text-[10px] font-bold text-zinc-600 mr-0.5">AI:</span>
             <button onClick={() => callAI('debug')} disabled={aiLoading||!runResults?.some(r=>!r.passed)||running}
-              title="AI identifies bugs without revealing the answer (run first)"
+              title={!runResults ? 'Click Run first, then Debug to identify bugs' : !runResults.some(r=>!r.passed) ? 'All tests pass — nothing to debug!' : 'AI identifies bugs without revealing the answer'}
               className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition-all disabled:opacity-40 text-red-400 ${aiMode==='debug'&&!aiLoading?'bg-red-500/15 border-red-500/30':'bg-zinc-800/60 border-zinc-700/50 hover:bg-red-500/10 hover:border-red-500/30'}`}>
               {aiLoading&&aiMode==='debug'?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Bug className="w-3.5 h-3.5"/>}
               Debug
+              {!runResults && <span className="text-[9px] opacity-60 hidden sm:block">Run first</span>}
             </button>
             <button onClick={() => callAI('complexity')} disabled={aiLoading||!code.trim()||running}
               title="Analyze time & space complexity"
@@ -760,8 +788,8 @@ export default function ProblemClient({
             )}
           </div>
 
-          {/* Results panel */}
-          <div className="h-56 border-t border-zinc-800 bg-zinc-900 flex flex-col overflow-hidden shrink-0">
+          {/* Results panel — h-40 on short screens, h-56 on taller ones so Monaco always has room */}
+          <div className="h-40 sm:h-56 border-t border-zinc-800 bg-zinc-900 flex flex-col overflow-hidden shrink-0">
             <div className="flex items-center border-b border-zinc-800 shrink-0">
               {([{id:'results',label:'Test Results'},{id:'submit',label:'Submission'},{id:'history',label:'History'},{id:'ai',label:'✨ AI'}] as const).map(t => (
                 <button key={t.id} onClick={() => setResultTab(t.id)}
