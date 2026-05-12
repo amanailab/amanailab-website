@@ -153,7 +153,6 @@ export default function Navbar() {
     const handler = (e: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
         setOpenDropdown(null);
-        setUserMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -333,9 +332,12 @@ export default function Navbar() {
               <div className="hidden lg:block w-8 h-8 bg-zinc-800 rounded-lg animate-pulse" />
             ) : userEmail ? (
               <div className="hidden lg:block relative">
+                {userMenuOpen && (
+                  <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} aria-hidden="true" />
+                )}
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-3 py-1.5 rounded-lg transition-all"
+                  className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-3 py-1.5 rounded-lg transition-all relative z-50"
                 >
                   <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                     <span className="text-[10px] font-bold text-white">{userEmail[0].toUpperCase()}</span>
