@@ -72,12 +72,20 @@ interface BuilderExperience {
   company: string;
   role: string;
   duration: string;
+  location: string;
   responsibilities: string;
 }
 
 interface BuilderProject {
   name: string;
   description: string;
+  techStack: string;
+}
+
+interface BuilderCertification {
+  name: string;
+  issuer: string;
+  year: string;
 }
 
 interface BuilderResumeExperience {
@@ -99,6 +107,8 @@ interface BuilderState {
   email: string;
   phone: string;
   linkedin: string;
+  github: string;
+  website: string;
   location: string;
   targetRole: string;
   currentRole: string;
@@ -111,12 +121,15 @@ interface BuilderState {
   degree: string;
   college: string;
   graduationYear: string;
+  gpa: string;
   projects: BuilderProject[];
+  certifications: BuilderCertification[];
 }
 
 const YEARS_OPTIONS = ["0-1", "1-3", "3-5", "5-10", "10+"];
-const MAX_EXPERIENCES = 3;
-const MAX_PROJECTS = 2;
+const MAX_EXPERIENCES = 5;
+const MAX_PROJECTS = 4;
+const MAX_CERTIFICATIONS = 6;
 
 const FEATURES: FeatureMeta[] = [
   {
@@ -161,15 +174,19 @@ const EMPTY_EXPERIENCE: BuilderExperience = {
   company: "",
   role: "",
   duration: "",
+  location: "",
   responsibilities: "",
 };
-const EMPTY_PROJECT: BuilderProject = { name: "", description: "" };
+const EMPTY_PROJECT: BuilderProject = { name: "", description: "", techStack: "" };
+const EMPTY_CERT: BuilderCertification = { name: "", issuer: "", year: "" };
 
 const INITIAL_BUILDER: BuilderState = {
   fullName: "",
   email: "",
   phone: "",
   linkedin: "",
+  github: "",
+  website: "",
   location: "",
   targetRole: "",
   currentRole: "",
@@ -182,7 +199,9 @@ const INITIAL_BUILDER: BuilderState = {
   degree: "",
   college: "",
   graduationYear: "",
+  gpa: "",
   projects: [],
+  certifications: [],
 };
 
 type SectionStatus = "good" | "needs_work" | "missing";
@@ -436,6 +455,9 @@ interface BuilderFormProps {
   updateProject: (index: number, field: keyof BuilderProject, value: string) => void;
   addProject: () => void;
   removeProject: (index: number) => void;
+  updateCertification: (index: number, field: keyof BuilderCertification, value: string) => void;
+  addCertification: () => void;
+  removeCertification: (index: number) => void;
   onSubmit: () => void;
   working: boolean;
   error: string;
@@ -463,17 +485,23 @@ function BuilderForm(props: BuilderFormProps) {
     updateProject,
     addProject,
     removeProject,
+    updateCertification,
+    addCertification,
+    removeCertification,
     onSubmit,
     working,
     error,
   } = props;
 
-  const sectionHeader = (n: number, title: string) => (
-    <div>
-      <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1">
-        Section {n}
-      </p>
-      <h3 className="text-base font-bold text-zinc-100">{title}</h3>
+  const sectionHeader = (n: number, title: string, subtitle?: string) => (
+    <div className="flex items-start gap-3">
+      <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500/15 text-orange-400 text-xs font-bold shrink-0 mt-0.5">
+        {n}
+      </div>
+      <div>
+        <h3 className="text-sm font-bold text-zinc-100">{title}</h3>
+        {subtitle && <p className="text-xs text-zinc-500 mt-0.5">{subtitle}</p>}
+      </div>
     </div>
   );
 
@@ -482,93 +510,79 @@ function BuilderForm(props: BuilderFormProps) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col gap-8">
       <div>
-        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">
-          Resume Builder
+        <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1">
+          ATS Resume Builder
         </p>
-        <h2 className="text-xl font-bold text-zinc-100">Build a recruiter-ready resume</h2>
+        <h2 className="text-xl font-bold text-zinc-100">Build your perfect ATS-optimised resume</h2>
         <p className="text-zinc-500 text-sm mt-1">
-          Fill in the sections below — required fields are marked with *
+          Complete all sections for the best results — required fields marked with *
         </p>
       </div>
 
       {/* Section 1 — Personal Info */}
       <div className="flex flex-col gap-4">
-        {sectionHeader(1, "Personal Info")}
+        {sectionHeader(1, "Personal Info", "Your contact details appear at the top of the resume")}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <label className={labelClass}>Full Name *</label>
-            <input
-              type="text"
-              value={builder.fullName}
+            <input type="text" value={builder.fullName}
               onChange={(e) => updateBuilder("fullName", e.target.value)}
-              placeholder="Aman Chauhan"
-              className={inputClass(!!errors.fullName)}
-            />
+              placeholder="Aman Chauhan" className={inputClass(!!errors.fullName)} />
             <FieldError message={errors.fullName} />
           </div>
           <div className="flex flex-col gap-2">
             <label className={labelClass}>Email *</label>
-            <input
-              type="email"
-              value={builder.email}
+            <input type="email" value={builder.email}
               onChange={(e) => updateBuilder("email", e.target.value)}
-              placeholder="you@example.com"
-              className={inputClass(!!errors.email)}
-            />
+              placeholder="you@example.com" className={inputClass(!!errors.email)} />
             <FieldError message={errors.email} />
           </div>
           <div className="flex flex-col gap-2">
             <label className={labelClass}>Phone</label>
-            <input
-              type="tel"
-              value={builder.phone}
+            <input type="tel" value={builder.phone}
               onChange={(e) => updateBuilder("phone", e.target.value)}
-              placeholder="+91 99999 99999"
-              className={inputClass(false)}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className={labelClass}>LinkedIn URL</label>
-            <input
-              type="url"
-              value={builder.linkedin}
-              onChange={(e) => updateBuilder("linkedin", e.target.value)}
-              placeholder="https://linkedin.com/in/yourname"
-              className={inputClass(false)}
-            />
+              placeholder="+91 99999 99999" className={inputClass(false)} />
           </div>
           <div className="flex flex-col gap-2">
             <label className={labelClass}>Location</label>
-            <input
-              type="text"
-              value={builder.location}
+            <input type="text" value={builder.location}
               onChange={(e) => updateBuilder("location", e.target.value)}
-              placeholder="Bengaluru, India"
-              className={inputClass(false)}
-            />
+              placeholder="Bengaluru, India" className={inputClass(false)} />
           </div>
           <div className="flex flex-col gap-2">
             <label className={labelClass}>Target Role *</label>
-            <select
-              value={builder.targetRole}
+            <select value={builder.targetRole}
               onChange={(e) => updateBuilder("targetRole", e.target.value)}
-              className={inputClass(!!errors.targetRole)}
-            >
+              className={inputClass(!!errors.targetRole)}>
               <option value="">Choose a role…</option>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
+              {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
             <FieldError message={errors.targetRole} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>LinkedIn URL</label>
+            <input type="url" value={builder.linkedin}
+              onChange={(e) => updateBuilder("linkedin", e.target.value)}
+              placeholder="linkedin.com/in/yourname" className={inputClass(false)} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>GitHub URL</label>
+            <input type="url" value={builder.github}
+              onChange={(e) => updateBuilder("github", e.target.value)}
+              placeholder="github.com/yourname" className={inputClass(false)} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Portfolio / Website</label>
+            <input type="url" value={builder.website}
+              onChange={(e) => updateBuilder("website", e.target.value)}
+              placeholder="yourportfolio.dev" className={inputClass(false)} />
           </div>
         </div>
       </div>
 
       {/* Section 2 — Professional Summary */}
       <div className="flex flex-col gap-4">
-        {sectionHeader(2, "Professional Summary")}
+        {sectionHeader(2, "Professional Summary", "AI will craft an ATS-optimised summary from these details")}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <label className={labelClass}>Current Role *</label>
@@ -623,101 +637,69 @@ function BuilderForm(props: BuilderFormProps) {
 
       {/* Section 3 — Work Experience */}
       <div className="flex flex-col gap-4">
-        {sectionHeader(3, "Work Experience")}
+        {sectionHeader(3, "Work Experience", "AI will convert your responsibilities into powerful achievement bullets")}
         {builder.experiences.map((exp, i) => {
           const expError = errors[`experience_${i}`];
           return (
-            <div
-              key={i}
-              className={`flex flex-col gap-3 p-4 rounded-xl border ${
-                expError ? "border-red-500/40 bg-red-500/5" : "border-zinc-800 bg-zinc-950/40"
-              }`}
-            >
+            <div key={i} className={`flex flex-col gap-3 p-4 rounded-xl border ${expError ? "border-red-500/40 bg-red-500/5" : "border-zinc-800 bg-zinc-950/40"}`}>
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold text-zinc-300 uppercase tracking-wide">
-                  Experience {i + 1}
-                  {i === 0 ? " *" : ""}
+                <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide">
+                  Experience {i + 1}{i === 0 ? " *" : ""}
                 </p>
                 {builder.experiences.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeExperience(i)}
-                    className="flex items-center gap-1 text-xs text-zinc-400 hover:text-red-400 transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Remove
+                  <button type="button" onClick={() => removeExperience(i)}
+                    className="flex items-center gap-1 text-xs text-zinc-400 hover:text-red-400 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" /> Remove
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={exp.company}
+                <input type="text" value={exp.company}
                   onChange={(e) => updateExperience(i, "company", e.target.value)}
-                  placeholder="Company"
-                  className={inputClass(false)}
-                />
-                <input
-                  type="text"
-                  value={exp.role}
+                  placeholder="Company Name" className={inputClass(false)} />
+                <input type="text" value={exp.role}
                   onChange={(e) => updateExperience(i, "role", e.target.value)}
-                  placeholder="Role / Title"
-                  className={inputClass(false)}
-                />
+                  placeholder="Job Title / Role" className={inputClass(false)} />
+                <input type="text" value={exp.duration}
+                  onChange={(e) => updateExperience(i, "duration", e.target.value)}
+                  placeholder="Jan 2022 – Present" className={inputClass(false)} />
+                <input type="text" value={exp.location}
+                  onChange={(e) => updateExperience(i, "location", e.target.value)}
+                  placeholder="City, Country (or Remote)" className={inputClass(false)} />
               </div>
-              <input
-                type="text"
-                value={exp.duration}
-                onChange={(e) => updateExperience(i, "duration", e.target.value)}
-                placeholder="Duration (e.g. 2023-Present)"
-                className={inputClass(false)}
-              />
-              <textarea
-                value={exp.responsibilities}
+              <textarea value={exp.responsibilities}
                 onChange={(e) => updateExperience(i, "responsibilities", e.target.value)}
-                placeholder="Describe what you did..."
-                rows={3}
-                className={`${inputClass(false)} resize-y`}
-              />
+                placeholder="Describe what you built, shipped, or improved. Include numbers where possible (e.g. 'Reduced latency by 40%', 'Led a team of 5 engineers')."
+                rows={4} className={`${inputClass(false)} resize-y`} />
               <FieldError message={expError} />
             </div>
           );
         })}
         {builder.experiences.length < MAX_EXPERIENCES && (
-          <button
-            type="button"
-            onClick={addExperience}
-            className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add More Experience
+          <button type="button" onClick={addExperience}
+            className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-dashed border-zinc-700 text-zinc-300 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add Another Experience
           </button>
         )}
       </div>
 
       {/* Section 4 — Skills */}
       <div className="flex flex-col gap-4">
-        {sectionHeader(4, "Skills")}
+        {sectionHeader(4, "Skills", "Separate with commas — be specific, not vague")}
         <div className="flex flex-col gap-2">
           <label className={labelClass}>Technical Skills *</label>
-          <textarea
-            value={builder.technicalSkills}
+          <textarea value={builder.technicalSkills}
             onChange={(e) => updateBuilder("technicalSkills", e.target.value)}
-            placeholder="Python, SQL, TensorFlow..."
-            rows={3}
-            className={`${inputClass(!!errors.technicalSkills)} resize-y`}
-          />
+            placeholder="Python, SQL, PyTorch, TensorFlow, scikit-learn, NumPy, Pandas, LLMs, RAG, NLP, Computer Vision"
+            rows={3} className={`${inputClass(!!errors.technicalSkills)} resize-y`} />
           <FieldError message={errors.technicalSkills} />
         </div>
         <div className="flex flex-col gap-2">
-          <label className={labelClass}>Tools & Frameworks</label>
-          <textarea
-            value={builder.tools}
+          <label className={labelClass}>Tools, Platforms & Frameworks</label>
+          <textarea value={builder.tools}
             onChange={(e) => updateBuilder("tools", e.target.value)}
-            placeholder="LangChain, FastAPI, AWS..."
-            rows={3}
-            className={`${inputClass(false)} resize-y`}
-          />
+            placeholder="LangChain, FastAPI, Docker, AWS, GCP, MLflow, Weights & Biases, Git, Kubernetes, Pinecone"
+            rows={3} className={`${inputClass(false)} resize-y`} />
         </div>
       </div>
 
@@ -727,90 +709,111 @@ function BuilderForm(props: BuilderFormProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <label className={labelClass}>Degree *</label>
-            <input
-              type="text"
-              value={builder.degree}
+            <input type="text" value={builder.degree}
               onChange={(e) => updateBuilder("degree", e.target.value)}
-              placeholder="B.Tech in Computer Science"
-              className={inputClass(!!errors.degree)}
-            />
+              placeholder="B.Tech in Computer Science" className={inputClass(!!errors.degree)} />
             <FieldError message={errors.degree} />
           </div>
           <div className="flex flex-col gap-2">
             <label className={labelClass}>College / University *</label>
-            <input
-              type="text"
-              value={builder.college}
+            <input type="text" value={builder.college}
               onChange={(e) => updateBuilder("college", e.target.value)}
-              placeholder="IIT Delhi"
-              className={inputClass(!!errors.college)}
-            />
+              placeholder="IIT Delhi" className={inputClass(!!errors.college)} />
             <FieldError message={errors.college} />
           </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <label className={labelClass}>Year of Graduation *</label>
-          <input
-            type="text"
-            value={builder.graduationYear}
-            onChange={(e) => updateBuilder("graduationYear", e.target.value)}
-            placeholder="2024"
-            className={inputClass(!!errors.graduationYear)}
-          />
-          <FieldError message={errors.graduationYear} />
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>Year of Graduation *</label>
+            <input type="text" value={builder.graduationYear}
+              onChange={(e) => updateBuilder("graduationYear", e.target.value)}
+              placeholder="2024" className={inputClass(!!errors.graduationYear)} />
+            <FieldError message={errors.graduationYear} />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className={labelClass}>GPA / Percentage (optional)</label>
+            <input type="text" value={builder.gpa}
+              onChange={(e) => updateBuilder("gpa", e.target.value)}
+              placeholder="9.2 / 10 or 85%" className={inputClass(false)} />
+          </div>
         </div>
       </div>
 
-      {/* Section 6 — Projects (optional) */}
+      {/* Section 6 — Projects */}
       <div className="flex flex-col gap-4">
-        {sectionHeader(6, "Projects (Optional)")}
+        {sectionHeader(6, "Projects", "Optional — up to 4 projects. Great for freshers & AI/ML roles")}
         {builder.projects.length === 0 && (
-          <p className="text-xs text-zinc-500">
-            Add up to {MAX_PROJECTS} side projects to strengthen your resume.
+          <p className="text-xs text-zinc-500 italic">
+            Projects demonstrate real skills. Add at least one if you have less than 2 years of experience.
           </p>
         )}
         {builder.projects.map((p, i) => (
-          <div
-            key={i}
-            className="flex flex-col gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/40"
-          >
+          <div key={i} className="flex flex-col gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/40">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold text-zinc-300 uppercase tracking-wide">
-                Project {i + 1}
-              </p>
-              <button
-                type="button"
-                onClick={() => removeProject(i)}
-                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-red-400 transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Remove
+              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide">Project {i + 1}</p>
+              <button type="button" onClick={() => removeProject(i)}
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-red-400 transition-colors">
+                <Trash2 className="w-3.5 h-3.5" /> Remove
               </button>
             </div>
-            <input
-              type="text"
-              value={p.name}
-              onChange={(e) => updateProject(i, "name", e.target.value)}
-              placeholder="Project Name"
-              className={inputClass(false)}
-            />
-            <textarea
-              value={p.description}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input type="text" value={p.name}
+                onChange={(e) => updateProject(i, "name", e.target.value)}
+                placeholder="Project Name (e.g. AI Resume Analyzer)" className={inputClass(false)} />
+              <input type="text" value={p.techStack}
+                onChange={(e) => updateProject(i, "techStack", e.target.value)}
+                placeholder="Tech Stack (Python, LangChain, FastAPI)" className={inputClass(false)} />
+            </div>
+            <textarea value={p.description}
               onChange={(e) => updateProject(i, "description", e.target.value)}
-              placeholder="What you built and impact"
-              rows={3}
-              className={`${inputClass(false)} resize-y`}
-            />
+              placeholder="What problem did it solve? What did you build? Any metrics? (e.g. 'Built RAG pipeline that reduced retrieval time by 60%')"
+              rows={3} className={`${inputClass(false)} resize-y`} />
           </div>
         ))}
         {builder.projects.length < MAX_PROJECTS && (
-          <button
-            type="button"
-            onClick={addProject}
-            className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add More Project
+          <button type="button" onClick={addProject}
+            className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-dashed border-zinc-700 text-zinc-300 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add Project
+          </button>
+        )}
+      </div>
+
+      {/* Section 7 — Certifications */}
+      <div className="flex flex-col gap-4">
+        {sectionHeader(7, "Certifications", "Optional — adds credibility for technical roles")}
+        {builder.certifications.length === 0 && (
+          <p className="text-xs text-zinc-500 italic">
+            AWS, Google Cloud, TensorFlow, Azure AI — certifications signal commitment to the field.
+          </p>
+        )}
+        {builder.certifications.map((c, i) => (
+          <div key={i} className="flex flex-col gap-3 p-4 rounded-xl border border-zinc-800 bg-zinc-950/40">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide">Certification {i + 1}</p>
+              <button type="button" onClick={() => removeCertification(i)}
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-red-400 transition-colors">
+                <Trash2 className="w-3.5 h-3.5" /> Remove
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <input type="text" value={c.name}
+                  onChange={(e) => updateCertification(i, "name", e.target.value)}
+                  placeholder="AWS Certified Machine Learning Specialty" className={inputClass(false)} />
+              </div>
+              <input type="text" value={c.year}
+                onChange={(e) => updateCertification(i, "year", e.target.value)}
+                placeholder="Year (e.g. 2024)" className={inputClass(false)} />
+              <div className="sm:col-span-3">
+                <input type="text" value={c.issuer}
+                  onChange={(e) => updateCertification(i, "issuer", e.target.value)}
+                  placeholder="Issuing Organisation (Amazon, Google, Microsoft…)" className={inputClass(false)} />
+              </div>
+            </div>
+          </div>
+        ))}
+        {builder.certifications.length < MAX_CERTIFICATIONS && (
+          <button type="button" onClick={addCertification}
+            className="flex items-center justify-center gap-2 w-full bg-zinc-800 hover:bg-zinc-700 border border-dashed border-zinc-700 text-zinc-300 text-xs font-semibold px-4 py-2.5 rounded-xl transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Add Certification
           </button>
         )}
       </div>
@@ -1074,187 +1077,246 @@ export default function ResumeAnalyzer() {
     setPdfWorking(true);
     try {
       const { default: jsPDF } = await import("jspdf");
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      const contentWidth = pageWidth - margin * 2;
-      let y = 20;
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-      const ensureSpace = (needed: number) => {
-        if (y + needed > pageHeight - margin) {
-          doc.addPage();
-          y = margin;
-        }
+      const PW   = doc.internal.pageSize.getWidth();   // 210mm
+      const PH   = doc.internal.pageSize.getHeight();  // 297mm
+      const ML   = 18;   // left margin
+      const MR   = 18;   // right margin
+      const MT   = 16;   // top margin
+      const MB   = 14;   // bottom margin
+      const CW   = PW - ML - MR;  // content width ~174mm
+
+      // Brand colors
+      const C_ORANGE: [number,number,number] = [234,  88, 12];  // orange-600
+      const C_BLACK:  [number,number,number] = [ 20,  20, 20];
+      const C_DGRAY:  [number,number,number] = [ 80,  80, 80];
+      const C_LGRAY:  [number,number,number] = [200, 200, 200];
+
+      let y = MT;
+
+      const chkY = (need: number) => {
+        if (y + need > PH - MB) { doc.addPage(); y = MT; }
       };
 
-      // NAME — large, centered, black
+      // ── HEADER ────────────────────────────────────────────────────────────────
       doc.setFontSize(22);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(0, 0, 0);
-      const nameText = (builder.fullName || "").toUpperCase();
-      doc.text(nameText, pageWidth / 2, y, { align: "center" });
-      y += 8;
+      doc.setTextColor(...C_BLACK);
+      doc.text((builder.fullName || "Your Name").toUpperCase(), PW / 2, y, { align: "center" });
+      y += 7;
 
-      // Target role — centered, gray
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(80, 80, 80);
       if (builder.targetRole) {
-        doc.text(builder.targetRole, pageWidth / 2, y, { align: "center" });
-        y += 6;
-      }
-
-      // Contact — centered, small
-      doc.setFontSize(9);
-      doc.setTextColor(80, 80, 80);
-      const contact = [builder.email, builder.phone, builder.location, builder.linkedin]
-        .filter(Boolean)
-        .join("  |  ");
-      if (contact) {
-        const contactLines = doc.splitTextToSize(contact, contentWidth);
-        doc.text(contactLines, pageWidth / 2, y, { align: "center" });
-        y += contactLines.length * 5;
-      }
-      y += 4;
-
-      // Orange divider
-      doc.setDrawColor(255, 107, 53);
-      doc.setLineWidth(0.5);
-      doc.line(margin, y, pageWidth - margin, y);
-      y += 8;
-
-      const sectionHeader = (label: string) => {
-        ensureSpace(14);
         doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(255, 107, 53);
-        doc.text(label, margin, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...C_DGRAY);
+        doc.text(builder.targetRole, PW / 2, y, { align: "center" });
         y += 6;
-      };
+      }
 
-      const grayDivider = () => {
-        ensureSpace(8);
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.3);
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 6;
-      };
+      // Contact row 1 — email | phone | location
+      const row1 = [builder.email, builder.phone, builder.location].filter(Boolean).join("  |  ");
+      if (row1) {
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...C_DGRAY);
+        const r1Lines = doc.splitTextToSize(row1, CW);
+        doc.text(r1Lines, PW / 2, y, { align: "center" });
+        y += r1Lines.length * 4.5;
+      }
 
-      // PROFESSIONAL SUMMARY
-      sectionHeader("PROFESSIONAL SUMMARY");
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-      const summaryLines = doc.splitTextToSize(builderResume.summary || "", contentWidth);
-      ensureSpace(summaryLines.length * 5);
-      doc.text(summaryLines, margin, y);
-      y += summaryLines.length * 5 + 6;
+      // Contact row 2 — linkedin | github | website
+      const row2 = [builder.linkedin, builder.github, builder.website].filter(Boolean).join("  |  ");
+      if (row2) {
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...C_DGRAY);
+        const r2Lines = doc.splitTextToSize(row2, CW);
+        doc.text(r2Lines, PW / 2, y, { align: "center" });
+        y += r2Lines.length * 4.5;
+      }
 
-      grayDivider();
+      y += 4;
+      // thick orange rule
+      doc.setDrawColor(...C_ORANGE);
+      doc.setLineWidth(0.9);
+      doc.line(ML, y, PW - MR, y);
+      y += 7;
 
-      // WORK EXPERIENCE
-      sectionHeader("WORK EXPERIENCE");
-      const experiences = builderResume.experiences ?? [];
-      experiences.forEach((exp) => {
-        ensureSpace(10);
+      // ── SECTION HELPERS ────────────────────────────────────────────────────────
+      const secTitle = (label: string) => {
+        chkY(13);
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 0, 0);
-        const heading = `${exp.role || ""}${exp.role && exp.company ? " | " : ""}${exp.company || ""}`;
-        doc.text(heading, margin, y);
+        doc.setTextColor(...C_ORANGE);
+        doc.text(label, ML, y);
+        y += 2;
+        doc.setDrawColor(...C_ORANGE);
+        doc.setLineWidth(0.35);
+        doc.line(ML, y, PW - MR, y);
+        y += 5;
+      };
 
+      const divider = () => {
+        chkY(5);
+        doc.setDrawColor(...C_LGRAY);
+        doc.setLineWidth(0.2);
+        doc.line(ML, y, PW - MR, y);
+        y += 5;
+      };
+
+      // ── PROFESSIONAL SUMMARY ──────────────────────────────────────────────────
+      secTitle("PROFESSIONAL SUMMARY");
+      doc.setFontSize(9.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...C_BLACK);
+      const sumLines = doc.splitTextToSize(builderResume.summary || "", CW);
+      chkY(sumLines.length * 4.8);
+      doc.text(sumLines, ML, y);
+      y += sumLines.length * 4.8 + 5;
+
+      // ── WORK EXPERIENCE ───────────────────────────────────────────────────────
+      divider();
+      secTitle("WORK EXPERIENCE");
+      (builderResume.experiences ?? []).forEach((exp, idx) => {
+        chkY(12);
+        // Role + Company heading (left) | Duration (right)
+        const heading = [exp.role, exp.company].filter(Boolean).join("  |  ");
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...C_BLACK);
+        const hLines = doc.splitTextToSize(heading, CW - 28);
+        doc.text(hLines[0], ML, y);
         if (exp.duration) {
-          doc.setFontSize(9);
+          doc.setFontSize(8.5);
           doc.setFont("helvetica", "italic");
-          doc.setTextColor(100, 100, 100);
-          doc.text(exp.duration, pageWidth - margin, y, { align: "right" });
+          doc.setTextColor(...C_DGRAY);
+          doc.text(exp.duration, PW - MR, y, { align: "right" });
         }
         y += 5;
-
+        // Location
+        const loc = builder.experiences[idx]?.location?.trim();
+        if (loc) {
+          doc.setFontSize(8.5);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(...C_DGRAY);
+          doc.text(loc, ML, y);
+          y += 4.5;
+        }
+        // Achievement bullets
         (exp.bullets ?? []).forEach((bullet) => {
+          const bLines = doc.splitTextToSize(`• ${bullet}`, CW - 3);
+          chkY(bLines.length * 4.5);
           doc.setFontSize(9);
           doc.setFont("helvetica", "normal");
-          doc.setTextColor(0, 0, 0);
-          const bulletLines = doc.splitTextToSize(`• ${bullet}`, contentWidth - 5);
-          ensureSpace(bulletLines.length * 4 + 2);
-          doc.text(bulletLines, margin + 3, y);
-          y += bulletLines.length * 4 + 2;
+          doc.setTextColor(...C_BLACK);
+          doc.text(bLines, ML + 1.5, y);
+          y += bLines.length * 4.5 + 0.5;
         });
-        y += 3;
+        if (idx < (builderResume.experiences ?? []).length - 1) y += 3;
       });
+      y += 4;
 
-      grayDivider();
-
-      // TECHNICAL SKILLS
-      sectionHeader("TECHNICAL SKILLS");
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-      const skillsBlock = [
-        `Technical: ${builderResume.skillsFormatted || builder.technicalSkills}`,
-        builder.tools || builderResume.toolsFormatted
-          ? `Tools: ${builderResume.toolsFormatted || builder.tools}`
-          : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
-      const skillLines = doc.splitTextToSize(skillsBlock, contentWidth);
-      ensureSpace(skillLines.length * 5);
-      doc.text(skillLines, margin, y);
-      y += skillLines.length * 5 + 6;
-
-      grayDivider();
-
-      // EDUCATION
-      sectionHeader("EDUCATION");
+      // ── EDUCATION ─────────────────────────────────────────────────────────────
+      divider();
+      secTitle("EDUCATION");
+      chkY(10);
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.setTextColor(0, 0, 0);
-      ensureSpace(10);
-      doc.text(builder.degree || "", margin, y);
+      doc.setTextColor(...C_BLACK);
+      doc.text(builder.degree || "", ML, y);
+      if (builder.graduationYear) {
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(...C_DGRAY);
+        doc.text(builder.graduationYear, PW - MR, y, { align: "right" });
+      }
       y += 5;
-
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 100, 100);
-      const eduLine = [builder.college, builder.graduationYear].filter(Boolean).join(" | ");
-      if (eduLine) {
-        doc.text(eduLine, margin, y);
-        y += 5;
-      }
+      doc.setTextColor(...C_DGRAY);
+      const eduParts = [builder.college, builder.gpa ? `GPA: ${builder.gpa}` : ""].filter(Boolean).join("  |  ");
+      if (eduParts) { doc.text(eduParts, ML, y); y += 5; }
       y += 3;
 
-      // PROJECTS
-      const projects = (builder.projects || []).filter(
-        (p) => p.name.trim() || p.description.trim()
-      );
-      if (projects.length > 0) {
-        grayDivider();
-        sectionHeader("PROJECTS");
-        projects.forEach((project) => {
-          if (project.name) {
-            ensureSpace(10);
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(0, 0, 0);
-            doc.text(project.name, margin, y);
-            y += 5;
-          }
-          if (project.description) {
+      // ── TECHNICAL SKILLS ──────────────────────────────────────────────────────
+      divider();
+      secTitle("TECHNICAL SKILLS");
+      const skillsText = builderResume.skillsFormatted || builder.technicalSkills;
+      const toolsText  = builderResume.toolsFormatted  || builder.tools;
+      const renderSkillRow = (label: string, val: string) => {
+        if (!val?.trim()) return;
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...C_BLACK);
+        const lbl = `${label}:  `;
+        doc.text(lbl, ML, y);
+        const lw = doc.getTextWidth(lbl);
+        doc.setFont("helvetica", "normal");
+        const vLines = doc.splitTextToSize(val, CW - lw);
+        vLines.forEach((ln: string, li: number) => {
+          chkY(5);
+          doc.text(ln, ML + (li === 0 ? lw : lw), y + li * 4.8);
+        });
+        y += vLines.length * 4.8 + 2;
+      };
+      renderSkillRow("Technical", skillsText);
+      renderSkillRow("Tools", toolsText);
+      y += 2;
+
+      // ── PROJECTS ──────────────────────────────────────────────────────────────
+      const validProjs = (builder.projects || []).filter(p => p.name?.trim() || p.description?.trim());
+      if (validProjs.length > 0) {
+        divider();
+        secTitle("PROJECTS");
+        validProjs.forEach((proj, idx) => {
+          chkY(10);
+          const projTitle = proj.name + (proj.techStack ? `  |  ${proj.techStack}` : "");
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...C_BLACK);
+          const ptLines = doc.splitTextToSize(projTitle, CW);
+          doc.text(ptLines[0], ML, y);
+          y += 5;
+          if (proj.description) {
+            const dLines = doc.splitTextToSize(`• ${proj.description}`, CW - 3);
+            chkY(dLines.length * 4.5);
             doc.setFontSize(9);
             doc.setFont("helvetica", "normal");
-            doc.setTextColor(0, 0, 0);
-            const projLines = doc.splitTextToSize(`• ${project.description}`, contentWidth - 5);
-            ensureSpace(projLines.length * 4 + 2);
-            doc.text(projLines, margin + 3, y);
-            y += projLines.length * 4 + 4;
+            doc.text(dLines, ML + 1.5, y);
+            y += dLines.length * 4.5 + 1;
           }
+          if (idx < validProjs.length - 1) y += 2;
+        });
+        y += 3;
+      }
+
+      // ── CERTIFICATIONS ────────────────────────────────────────────────────────
+      const validCerts = (builder.certifications || []).filter(c => c.name?.trim());
+      if (validCerts.length > 0) {
+        divider();
+        secTitle("CERTIFICATIONS");
+        validCerts.forEach((cert) => {
+          chkY(8);
+          const parts = [cert.name, cert.issuer, cert.year].filter(Boolean);
+          // name bold, rest normal
+          doc.setFontSize(9.5);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...C_BLACK);
+          doc.text(cert.name, ML, y);
+          if (cert.issuer || cert.year) {
+            const suffix = [cert.issuer, cert.year].filter(Boolean).join("  |  ");
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...C_DGRAY);
+            doc.text(suffix, PW - MR, y, { align: "right" });
+          }
+          y += 5;
+          void parts; // used above
         });
       }
 
       const safeName = (builder.fullName || "Resume").replace(/[^a-z0-9]+/gi, "_");
-      doc.save(`${safeName}_Resume_AmanAI_Lab.pdf`);
+      doc.save(`${safeName}_ATS_Resume.pdf`);
     } catch {
       setError("Could not generate PDF. Please try again.");
     } finally {
@@ -1323,6 +1385,26 @@ export default function ResumeAnalyzer() {
 
   function removeProject(index: number) {
     setBuilder((b) => ({ ...b, projects: b.projects.filter((_, i) => i !== index) }));
+  }
+
+  function updateCertification(index: number, field: keyof BuilderCertification, value: string) {
+    setBuilder((b) => {
+      const next = [...b.certifications];
+      next[index] = { ...next[index], [field]: value };
+      return { ...b, certifications: next };
+    });
+  }
+
+  function addCertification() {
+    setBuilder((b) =>
+      b.certifications.length >= MAX_CERTIFICATIONS
+        ? b
+        : { ...b, certifications: [...b.certifications, { ...EMPTY_CERT }] }
+    );
+  }
+
+  function removeCertification(index: number) {
+    setBuilder((b) => ({ ...b, certifications: b.certifications.filter((_, i) => i !== index) }));
   }
 
   function validateBuilder(): boolean {
@@ -1626,6 +1708,9 @@ export default function ResumeAnalyzer() {
             updateProject={updateProject}
             addProject={addProject}
             removeProject={removeProject}
+            updateCertification={updateCertification}
+            addCertification={addCertification}
+            removeCertification={removeCertification}
             onSubmit={() => runBuild()}
             working={working}
             error={error}
@@ -2516,18 +2601,21 @@ export default function ResumeAnalyzer() {
           <div className="flex flex-col gap-5">
             {/* White preview that mirrors the PDF */}
             <div className="bg-white text-zinc-900 rounded-2xl p-6 sm:p-10 shadow-2xl shadow-black/40 border border-zinc-200">
-              <div className="text-center">
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase">
+              <div className="text-center border-b border-orange-500 pb-5 mb-5">
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase text-zinc-900">
                   {builder.fullName || "Your Name"}
                 </h2>
                 {builder.targetRole && (
-                  <p className="text-sm text-zinc-600 mt-1">{builder.targetRole}</p>
+                  <p className="text-sm text-zinc-600 mt-1 font-medium">{builder.targetRole}</p>
                 )}
-                <p className="text-xs text-zinc-600 mt-2 leading-relaxed">
-                  {[builder.email, builder.phone, builder.location, builder.linkedin]
-                    .filter(Boolean)
-                    .join("  |  ")}
+                <p className="text-xs text-zinc-500 mt-2 leading-relaxed">
+                  {[builder.email, builder.phone, builder.location].filter(Boolean).join("  |  ")}
                 </p>
+                {(builder.linkedin || builder.github || builder.website) && (
+                  <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                    {[builder.linkedin, builder.github, builder.website].filter(Boolean).join("  |  ")}
+                  </p>
+                )}
               </div>
 
               <div className="my-5 h-0.5 bg-orange-500 rounded" />
@@ -2541,7 +2629,7 @@ export default function ResumeAnalyzer() {
               <div className="my-5 h-px bg-zinc-200" />
 
               {/* Experience */}
-              <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-3">
+              <h3 className="text-[10px] font-bold text-orange-600 tracking-[0.2em] uppercase mb-3 border-b border-orange-200 pb-1">
                 Work Experience
               </h3>
               <div className="flex flex-col gap-4">
@@ -2549,21 +2637,16 @@ export default function ResumeAnalyzer() {
                   <div key={i}>
                     <div className="flex items-baseline justify-between gap-3 flex-wrap">
                       <p className="text-sm font-bold text-zinc-900">
-                        {exp.role}
-                        {exp.role && exp.company ? " | " : ""}
-                        {exp.company}
+                        {exp.role}{exp.role && exp.company ? "  |  " : ""}{exp.company}
                       </p>
-                      {exp.duration && (
-                        <p className="text-xs italic text-zinc-500">{exp.duration}</p>
-                      )}
+                      {exp.duration && <p className="text-xs italic text-zinc-500 shrink-0">{exp.duration}</p>}
                     </div>
+                    {builder.experiences[i]?.location && (
+                      <p className="text-xs text-zinc-500 mt-0.5">{builder.experiences[i].location}</p>
+                    )}
                     {exp.bullets?.length > 0 && (
-                      <ul className="mt-1.5 ml-4 list-disc text-sm text-zinc-800 space-y-1">
-                        {exp.bullets.map((b, j) => (
-                          <li key={j} className="leading-relaxed">
-                            {b}
-                          </li>
-                        ))}
+                      <ul className="mt-1.5 ml-4 list-disc text-sm text-zinc-700 space-y-1">
+                        {exp.bullets.map((b, j) => <li key={j} className="leading-relaxed">{b}</li>)}
                       </ul>
                     )}
                   </div>
@@ -2573,7 +2656,7 @@ export default function ResumeAnalyzer() {
               <div className="my-5 h-px bg-zinc-200" />
 
               {/* Skills */}
-              <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-2">
+              <h3 className="text-[10px] font-bold text-orange-600 tracking-[0.2em] uppercase mb-2 border-b border-orange-200 pb-1">
                 Technical Skills
               </h3>
               <p className="text-sm leading-relaxed text-zinc-800">
@@ -2590,37 +2673,55 @@ export default function ResumeAnalyzer() {
               <div className="my-5 h-px bg-zinc-200" />
 
               {/* Education */}
-              <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-2">
+              <h3 className="text-[10px] font-bold text-orange-600 tracking-[0.2em] uppercase mb-2 border-b border-orange-200 pb-1">
                 Education
               </h3>
-              <p className="text-sm font-bold text-zinc-900">{builder.degree}</p>
+              <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                <p className="text-sm font-bold text-zinc-900">{builder.degree}</p>
+                {builder.graduationYear && <p className="text-xs italic text-zinc-500">{builder.graduationYear}</p>}
+              </div>
               <p className="text-xs text-zinc-600 mt-0.5">
-                {[builder.college, builder.graduationYear].filter(Boolean).join(" | ")}
+                {[builder.college, builder.gpa ? `GPA: ${builder.gpa}` : ""].filter(Boolean).join("  |  ")}
               </p>
 
               {/* Projects */}
-              {builder.projects.filter((p) => p.name.trim() || p.description.trim()).length >
-                0 && (
+              {builder.projects.filter((p) => p.name.trim() || p.description.trim()).length > 0 && (
                 <>
-                  <div className="my-5 h-px bg-zinc-200" />
-                  <h3 className="text-xs font-bold text-orange-600 tracking-[0.2em] uppercase mb-2">
+                  <div className="my-4 h-px bg-zinc-200" />
+                  <h3 className="text-[10px] font-bold text-orange-600 tracking-[0.2em] uppercase mb-2 border-b border-orange-200 pb-1">
                     Projects
                   </h3>
                   <div className="flex flex-col gap-3">
-                    {builder.projects
-                      .filter((p) => p.name.trim() || p.description.trim())
-                      .map((p, i) => (
-                        <div key={i}>
-                          {p.name && (
-                            <p className="text-sm font-bold text-zinc-900">{p.name}</p>
-                          )}
-                          {p.description && (
-                            <ul className="mt-1 ml-4 list-disc text-sm text-zinc-800">
-                              <li className="leading-relaxed">{p.description}</li>
-                            </ul>
-                          )}
-                        </div>
-                      ))}
+                    {builder.projects.filter((p) => p.name.trim() || p.description.trim()).map((p, i) => (
+                      <div key={i}>
+                        <p className="text-sm font-bold text-zinc-900">
+                          {p.name}{p.techStack ? <span className="font-normal text-zinc-500">  |  {p.techStack}</span> : ""}
+                        </p>
+                        {p.description && (
+                          <ul className="mt-1 ml-4 list-disc text-sm text-zinc-700">
+                            <li className="leading-relaxed">{p.description}</li>
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Certifications */}
+              {builder.certifications.filter(c => c.name.trim()).length > 0 && (
+                <>
+                  <div className="my-4 h-px bg-zinc-200" />
+                  <h3 className="text-[10px] font-bold text-orange-600 tracking-[0.2em] uppercase mb-2 border-b border-orange-200 pb-1">
+                    Certifications
+                  </h3>
+                  <div className="flex flex-col gap-1.5">
+                    {builder.certifications.filter(c => c.name.trim()).map((c, i) => (
+                      <div key={i} className="flex items-baseline justify-between gap-3 flex-wrap">
+                        <p className="text-sm font-semibold text-zinc-900">{c.name}</p>
+                        <p className="text-xs text-zinc-500 shrink-0">{[c.issuer, c.year].filter(Boolean).join("  |  ")}</p>
+                      </div>
+                    ))}
                   </div>
                 </>
               )}

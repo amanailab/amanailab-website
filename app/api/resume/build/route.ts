@@ -8,12 +8,20 @@ interface ExperienceInput {
   company?: string;
   role?: string;
   duration?: string;
+  location?: string;
   responsibilities?: string;
 }
 
 interface ProjectInput {
   name?: string;
   description?: string;
+  techStack?: string;
+}
+
+interface CertificationInput {
+  name?: string;
+  issuer?: string;
+  year?: string;
 }
 
 interface BuildRequest {
@@ -21,6 +29,8 @@ interface BuildRequest {
   email?: string;
   phone?: string;
   linkedin?: string;
+  github?: string;
+  website?: string;
   location?: string;
   targetRole?: string;
   currentRole?: string;
@@ -33,7 +43,9 @@ interface BuildRequest {
   degree?: string;
   college?: string;
   graduationYear?: string;
+  gpa?: string;
   projects?: ProjectInput[];
+  certifications?: CertificationInput[];
 }
 
 function s(value: unknown): string {
@@ -58,6 +70,8 @@ export async function POST(req: Request) {
     const email = s(body.email);
     const phone = s(body.phone);
     const linkedin = s(body.linkedin);
+    const github = s(body.github);
+    const website = s(body.website);
     const location = s(body.location);
     const targetRole = s(body.targetRole);
     const currentRole = s(body.currentRole);
@@ -69,12 +83,14 @@ export async function POST(req: Request) {
     const degree = s(body.degree);
     const college = s(body.college);
     const graduationYear = s(body.graduationYear);
+    const gpa = s(body.gpa);
 
     const experiences = (Array.isArray(body.experiences) ? body.experiences : [])
       .map((e) => ({
         company: s(e?.company),
         role: s(e?.role),
         duration: s(e?.duration),
+        location: s(e?.location),
         responsibilities: s(e?.responsibilities),
       }))
       .filter((e) => e.company || e.role || e.responsibilities);
@@ -83,8 +99,17 @@ export async function POST(req: Request) {
       .map((p) => ({
         name: s(p?.name),
         description: s(p?.description),
+        techStack: s(p?.techStack),
       }))
       .filter((p) => p.name || p.description);
+
+    const certifications = (Array.isArray(body.certifications) ? body.certifications : [])
+      .map((c) => ({
+        name: s(c?.name),
+        issuer: s(c?.issuer),
+        year: s(c?.year),
+      }))
+      .filter((c) => c.name);
 
     // Required field validation
     const missing: string[] = [];
@@ -107,41 +132,36 @@ export async function POST(req: Request) {
       );
     }
 
-    const contactLine = [email, phone, location].filter(Boolean).join(" · ");
-    const linksLine = linkedin ? `LinkedIn: ${linkedin}` : "";
+    const contactLine = [email, phone, location].filter(Boolean).join(" | ");
+    const linksLine = [linkedin, github, website].filter(Boolean).join(" | ");
 
-    const workHistory =
-      experiences
-        .map(
-          (e, i) =>
-            `${i + 1}. ${e.role || "(role)"} at ${e.company || "(company)"} (${
-              e.duration || "(duration)"
-            })\nResponsibilities: ${e.responsibilities || "(not provided)"}`
-        )
-        .join("\n\n") || "(none provided)";
+    const workHistory = experiences.map((e, i) =>
+      `${i + 1}. ${e.role || "(role)"} at ${e.company || "(company)"}${e.location ? `, ${e.location}` : ""} (${e.duration || "dates not specified"})
+   Responsibilities: ${e.responsibilities || "(not provided)"}`
+    ).join("\n\n") || "(none provided)";
 
-    const projectsBlock =
-      projects.length > 0
-        ? projects
-            .map(
-              (p, i) =>
-                `${i + 1}. ${p.name || "(unnamed)"}: ${p.description || "(no description)"}`
-            )
-            .join("\n")
-        : "(none provided)";
+    const projectsBlock = projects.length > 0
+      ? projects.map((p, i) =>
+          `${i + 1}. ${p.name || "(unnamed)"}${p.techStack ? ` [${p.techStack}]` : ""}: ${p.description || "(no description)"}`
+        ).join("\n")
+      : "(none)";
+
+    const certsBlock = certifications.length > 0
+      ? certifications.map(c => `- ${c.name}${c.issuer ? ` | ${c.issuer}` : ""}${c.year ? ` | ${c.year}` : ""}`).join("\n")
+      : "(none)";
 
     const raw: string = (await callAI({
       messages: [
           {
             role: "system",
-            content: "You are an expert resume writer. Return ONLY valid JSON. No markdown.",
+            content: `You are an elite ATS resume writer who creates resumes that score 90%+ on ATS systems and impress human recruiters. You write powerful bullet points that start with strong action verbs, include specific metrics, and showcase real impact. Return ONLY valid JSON. No markdown.`,
           },
           {
             role: "user",
-            content: `Create resume data for:
+            content: `Create a world-class ATS-optimised resume for:
 Name: ${fullName}
 Contact: ${contactLine || "(not provided)"}
-${linksLine}
+${linksLine ? `Links: ${linksLine}` : ""}
 Target Role: ${targetRole}
 Experience: ${yearsExperience} years
 Current Role: ${currentRole}
@@ -151,23 +171,32 @@ About: ${oneLiner || "(not provided)"}
 Work History:
 ${workHistory}
 
-Skills: ${technicalSkills}
-Tools: ${tools || "(not provided)"}
+Technical Skills: ${technicalSkills}
+Tools & Frameworks: ${tools || "(not provided)"}
 
-Education: ${degree} from ${college} (${graduationYear})
+Education: ${degree} from ${college}${gpa ? ` | GPA: ${gpa}` : ""} (${graduationYear})
 
 Projects:
 ${projectsBlock}
 
+Certifications:
+${certsBlock}
+
+IMPORTANT RULES for bullets:
+- Every bullet MUST start with a strong past-tense action verb (Built, Developed, Designed, Led, Reduced, Improved, Deployed, Achieved, Implemented, Optimized…)
+- Include specific numbers, %, $, or scale wherever possible (even estimated)
+- Show impact: what changed because of this work?
+- Max 2 lines per bullet, no fluff
+
 Return this exact JSON:
 {
-  "summary": "3-sentence ATS-optimized professional summary tailored to ${targetRole}",
+  "summary": "3-sentence ATS-optimized professional summary for ${targetRole}. Sentence 1: years of experience + key skills. Sentence 2: biggest achievement with a number. Sentence 3: what value they bring.",
   "experiences": [
     {
       "company": "string",
       "role": "string",
       "duration": "string",
-      "bullets": ["3 bullet strings — each starts with an action verb and includes a quantified achievement and impact"]
+      "bullets": ["4 powerful bullet strings — action verb + metric + impact"]
     }
   ],
   "skillsFormatted": "comma-separated technical skills, ordered for ATS relevance to ${targetRole}",
