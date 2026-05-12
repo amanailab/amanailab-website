@@ -332,7 +332,7 @@ export default function Navbar() {
             {authLoading ? (
               <div className="hidden lg:block w-8 h-8 bg-zinc-800 rounded-lg animate-pulse" />
             ) : userEmail ? (
-              <div className="hidden lg:block relative" onMouseLeave={() => setUserMenuOpen(false)}>
+              <div className="hidden lg:block relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-3 py-1.5 rounded-lg transition-all"
