@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import SkillQuiz from '@/components/quiz/SkillQuiz'
 
 export const metadata: Metadata = {
-  title: 'AI/ML Skill Assessment Quiz | AmanAI Lab',
+  title: 'AI/ML Skill Assessment Quiz',
   description: 'Test your AI and ML knowledge with AI-generated multiple choice questions. Get instant explanations and track your progress.',
   alternates: { canonical: 'https://amanailab.com/quiz' },
 }

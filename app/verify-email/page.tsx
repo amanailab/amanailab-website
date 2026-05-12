@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import VerifyEmailClient from './VerifyEmailClient'
 
 export const metadata: Metadata = {
-  title: 'Verify Email | AmanAI Lab',
+  title: 'Verify Email',
   description: 'Verify your email to activate your AmanAI Lab subscription.',
 }
 

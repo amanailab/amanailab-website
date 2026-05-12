@@ -12,7 +12,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const imageUrl = `${siteUrl}/api/share/score-card?t=${encodeURIComponent(t)}&s=${encodeURIComponent(s)}&g=${encodeURIComponent(g)}&l=${encodeURIComponent(l)}`
 
   return {
-    title: `I scored ${g} (${s}/10) on ${t} interview prep | AmanAI Lab`,
+    title: `I scored ${g} (${s}/10) on ${t} interview prep`,
     description: `Check out my AI/ML interview score on AmanAI Lab — the free platform for AI/ML interview preparation. Try it yourself!`,
     openGraph: {
       title: `I scored ${g} on ${t} interview prep | AmanAI Lab`,

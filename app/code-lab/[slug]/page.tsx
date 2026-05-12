@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const sb = getAdminSupabase()
   const { data } = await sb.from('code_problems').select('title, difficulty, topic').eq('slug', slug).single()
-  if (!data) return { title: 'Problem | AmanAI Lab' }
+  if (!data) return { title: 'Problem' }
   return {
     title: `${data.title} (${data.difficulty}) | AI Code Lab`,
     description: `Solve ${data.title} — ${data.topic} coding problem for AI/ML engineers. Free.`,

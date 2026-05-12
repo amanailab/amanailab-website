@@ -81,7 +81,8 @@
       "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\\\\app\" -Recurse -Filter \"*resume*\")",
       "Bash(Select-Object FullName)",
       "Bash(grep -r \"href=.*\\\\$\\\\|href={.*}\" ./components --include=\"*.tsx\")",
-      "Bash(xargs grep -l \"use client\\\\|'use client'\")"
+      "Bash(xargs grep -l \"use client\\\\|'use client'\")",
+      "Bash(git diff *)"
     ]
   }
 }

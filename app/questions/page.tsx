@@ -7,11 +7,11 @@ import { getAdminSupabase } from '@/lib/admin'
 import QuestionsClient from '@/components/questions/QuestionsClient'
 
 export const metadata: Metadata = {
-  title: 'AI/ML Interview Question Bank | AmanAI Lab',
+  title: 'AI/ML Interview Question Bank',
   description: 'Browse 500+ AI/ML interview questions covering LLM, RAG, Agents, MLOps, System Design and more. Filter by topic, level, and company. Free.',
   alternates: { canonical: 'https://amanailab.com/questions' },
   openGraph: {
-    title: 'AI/ML Interview Question Bank | AmanAI Lab',
+    title: 'AI/ML Interview Question Bank',
     description: '500+ real AI/ML interview questions with model answers. Filter by topic, level, and company.',
   },
 }

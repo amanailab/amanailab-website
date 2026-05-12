@@ -7,7 +7,7 @@ import { TOPICS } from '@/lib/topic-data'
 import { getAdminSupabase } from '@/lib/admin'
 
 export const metadata: Metadata = {
-  title: 'AI/ML Interview Topics — Complete Preparation Guides | AmanAI Lab',
+  title: 'AI/ML Interview Topics — Complete Preparation Guides',
   description: 'Topic-by-topic AI/ML interview preparation guides. LLM, RAG, Agents, Fine-Tuning, MLOps, System Design and more — with real questions and model answers.',
   alternates: { canonical: 'https://amanailab.com/topics' },
 }

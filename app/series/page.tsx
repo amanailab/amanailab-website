@@ -5,7 +5,7 @@ import SeriesGrid from "@/components/series/SeriesGrid";
 export const revalidate = 1800; // 30 minutes
 
 export const metadata: Metadata = {
-  title: "Series | AmanAI Lab",
+  title: "Series",
   description:
     "Browse all AI learning series — LLMs, AI Agents, RAG, Prompt Engineering, Fine-tuning, and more.",
   alternates: { canonical: 'https://amanailab.com/series' },

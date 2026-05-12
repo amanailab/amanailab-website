@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'AI/ML Interview Leaderboard | AmanAI Lab',
+  title: 'AI/ML Interview Leaderboard',
   description: 'Top performers ranked by average AI/ML mock interview score. Weekly and all-time leaderboards.',
   alternates: { canonical: 'https://amanailab.com/leaderboard' },
 }

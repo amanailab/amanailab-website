@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Search, ChevronDown, ChevronUp, Lightbulb, Library, Bookmark, BookmarkCheck } from 'lucide-react'
 import Link from 'next/link'
 
@@ -109,6 +109,14 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
   const [filterCompany, setFilterCompany] = useState('all')
   const [showSaved, setShowSaved]         = useState(false)
   const [page, setPage]                   = useState(0)
+  const topRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to the top of the question list whenever the page changes
+  useEffect(() => {
+    if (page > 0) {
+      topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [page])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -130,6 +138,9 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
 
   return (
     <>
+      {/* Scroll anchor — page-change scrolls here */}
+      <div ref={topRef} className="scroll-mt-24" />
+
       {/* Search + Filters */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6 flex flex-col gap-3">
         <div className="relative">

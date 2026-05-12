@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | AmanAI Lab',
+  title: 'Terms of Service',
   description: 'Terms of Service for AmanAI Lab — rules for using our AI/ML career platform.',
   alternates: { canonical: 'https://amanailab.com/terms' },
 }

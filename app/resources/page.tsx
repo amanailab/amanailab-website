@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import ResourcesContent from "@/components/resources/ResourcesContent";
 
 export const metadata: Metadata = {
-  title: "Free Resources | AmanAI Lab",
+  title: "Free Resources",
   description:
     "Download free AI/ML cheat sheets and interview prep materials — LLMs, RAG, Agents, Fine-Tuning, Transformers, and more.",
   alternates: { canonical: 'https://amanailab.com/resources' },

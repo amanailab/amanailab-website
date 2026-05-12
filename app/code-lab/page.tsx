@@ -3,7 +3,7 @@ import { getAdminSupabase } from '@/lib/admin'
 import ProblemsClient from './ProblemsClient'
 
 export const metadata: Metadata = {
-  title: 'AI/ML Code Lab | AmanAI Lab',
+  title: 'AI/ML Code Lab',
   description: '20+ AI/ML coding problems — implement softmax, attention, RAG, KNN and more from scratch. Code-first AI/ML judge with XP levels and AI hints.',
   alternates: { canonical: 'https://amanailab.com/code-lab' },
 }

@@ -6,7 +6,7 @@ import type { BlogPost } from '@/lib/admin'
 import BlogList from '@/components/blog/BlogList'
 
 export const metadata: Metadata = {
-  title: 'Blog | AmanAI Lab',
+  title: 'Blog',
   description: 'In-depth articles on Generative AI, LLMs, RAG, AI Agents, and more.',
   alternates: { canonical: 'https://amanailab.com/blog' },
 }

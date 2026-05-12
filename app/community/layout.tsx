@@ -1,11 +1,11 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'AI/ML Interview Community | AmanAI Lab',
+  title: 'AI/ML Interview Community',
   description: 'Share your AI/ML interview experiences, ask questions, and get tips from engineers who have been through interviews at Google, Meta, OpenAI, Anthropic and more.',
   alternates: { canonical: 'https://amanailab.com/community' },
   openGraph: {
-    title: 'AI/ML Interview Community | AmanAI Lab',
+    title: 'AI/ML Interview Community',
     description: 'Real interview experiences from engineers at top AI companies. Join the community.',
   },
 }

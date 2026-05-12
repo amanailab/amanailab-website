@@ -14,7 +14,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { topic: slug } = await params
   const meta = TOPIC_MAP[slug]
-  if (!meta) return { title: 'Topic Not Found | AmanAI Lab' }
+  if (!meta) return { title: 'Topic Not Found' }
   return {
     title: meta.seoTitle,
     description: meta.seoDescription,

@@ -19,7 +19,7 @@ import CompanyReadiness from '@/components/dashboard/CompanyReadiness'
 import InterviewCountdown from '@/components/dashboard/InterviewCountdown'
 import AchievementAlert from '@/components/dashboard/AchievementAlert'
 
-export const metadata: Metadata = { title: 'My Dashboard | AmanAI Lab' }
+export const metadata: Metadata = { title: 'My Dashboard' }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

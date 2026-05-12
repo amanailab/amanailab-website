@@ -3,7 +3,7 @@ import AboutContent from "@/components/about/AboutContent";
 import { getChannelStats, formatStats } from "@/lib/youtube";
 
 export const metadata: Metadata = {
-  title: "About | AmanAI Lab",
+  title: "About",
   description:
     "Learn about AmanAI Lab — teaching Generative AI, LLMs, and AI Agents to developers worldwide.",
   alternates: { canonical: 'https://amanailab.com/about' },

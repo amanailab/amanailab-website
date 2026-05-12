@@ -12,10 +12,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { playlistId } = await params;
   const playlist = await getPlaylistById(playlistId);
-  if (!playlist) return { title: "Series | AmanAI Lab" };
+  if (!playlist) return { title: "Series" };
 
   return {
-    title: `${playlist.title} | AmanAI Lab`,
+    title: `${playlist.title}`,
     description: playlist.description || `Watch the ${playlist.title} series on AmanAI Lab.`,
     alternates: { canonical: `https://amanailab.com/series/${playlistId}` },
   };

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | AmanAI Lab',
+  title: 'Privacy Policy',
   description: 'Privacy Policy for AmanAI Lab — how we collect, use, and protect your data.',
   alternates: { canonical: 'https://amanailab.com/privacy' },
 }
