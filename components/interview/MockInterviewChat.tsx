@@ -86,6 +86,9 @@ export default function MockInterviewChat() {
       if (data.finalFeedback) {
         setFinalFeedback(data.finalFeedback)
         setPhase('done')
+      } else if (data.feedbackParseError) {
+        setError('Could not parse final score. Your interview is complete — click Restart to try again.')
+        setPhase('done')
       }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
@@ -168,7 +171,14 @@ export default function MockInterviewChat() {
       </div>
 
       {/* Progress */}
-      <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden mb-6">
+      <div
+        className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden mb-6"
+        role="progressbar"
+        aria-valuenow={Math.min(turnCount, MAX_TURNS)}
+        aria-valuemin={0}
+        aria-valuemax={MAX_TURNS}
+        aria-label={`Interview progress: turn ${Math.min(turnCount, MAX_TURNS)} of ${MAX_TURNS}`}
+      >
         <div className="h-full bg-orange-500 rounded-full transition-all duration-300" style={{ width: `${(Math.min(turnCount, MAX_TURNS) / MAX_TURNS) * 100}%` }} />
       </div>
 

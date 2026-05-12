@@ -21,7 +21,14 @@ export async function POST(req: Request) {
     if (!targetRole?.trim()) {
       return NextResponse.json({ error: 'Target role is required.' }, { status: 400 })
     }
+    if (typeof targetRole === 'string' && targetRole.length > 200) {
+      return NextResponse.json({ error: 'Target role is too long.' }, { status: 400 })
+    }
+    const VALID_LEVELS = ['Beginner', 'Intermediate', 'Advanced']
+    const safeLevel = VALID_LEVELS.includes(currentLevel) ? currentLevel : 'Beginner'
+    const safeTimePerWeek = Math.max(1, Math.min(80, parseInt(String(timePerWeek), 10) || 10))
 
+    let result
     const raw = (await callAI({
         messages: [
           {
@@ -48,8 +55,8 @@ Generate highly specific, up-to-date 2026 roadmaps. Include actual tool names, l
             content: `Create a detailed 2026 career roadmap for someone who wants to become a ${targetRole}.
 
 Current Skills: ${currentSkills || 'Not specified'}
-Current Level: ${currentLevel || 'Beginner'}
-Available Time: ${timePerWeek || '10'} hours per week
+Current Level: ${safeLevel}
+Available Time: ${safeTimePerWeek} hours per week
 
 IMPORTANT:
 - Include the LATEST 2026 AI tools, frameworks, and concepts
@@ -87,10 +94,16 @@ Generate 5-6 phases covering beginner through job-ready. Be extremely specific a
         max_tokens: 4000,
         response_format: { type: 'json_object' },
     })).trim()
-    const result = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
+    try {
+      const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim()
+      result = JSON.parse(cleaned)
+    } catch {
+      console.error('[roadmap] JSON parse error, raw:', raw.slice(0, 200))
+      return NextResponse.json({ error: 'Failed to generate roadmap. Please try again.' }, { status: 500 })
+    }
     return NextResponse.json(result)
   } catch (err) {
     console.error('[roadmap]', err)
-    return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to generate roadmap. Please try again.' }, { status: 500 })
   }
 }

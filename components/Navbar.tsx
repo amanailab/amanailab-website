@@ -164,6 +164,8 @@ export default function Navbar() {
 
   return (
     <nav
+      role="navigation"
+      aria-label="Main navigation"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? "bg-zinc-950/95 backdrop-blur-md shadow-lg shadow-black/20 border-b border-zinc-800/60"
@@ -200,6 +202,7 @@ export default function Navbar() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-current={active ? "page" : undefined}
                     className={`relative px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
                       active
                         ? "text-orange-400 bg-orange-500/8"
@@ -232,6 +235,8 @@ export default function Navbar() {
                   <button
                     onClick={() => setOpenDropdown(isOpen ? null : item.label)}
                     aria-expanded={isOpen}
+                    aria-haspopup="menu"
+                    aria-label={`${item.label} menu`}
                     className={`relative flex items-center gap-1 px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
                       active
                         ? "text-orange-400 bg-orange-500/8"
@@ -263,13 +268,15 @@ export default function Navbar() {
                         <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
                           {/* Dropdown header accent */}
                           <div className="h-0.5 w-full bg-gradient-to-r from-orange-500/0 via-orange-500 to-orange-500/0" />
-                          <div className={`p-2 ${cols === 2 ? "grid grid-cols-2 gap-0.5" : "flex flex-col gap-0.5"}`}>
+                          <div role="menu" className={`p-2 ${cols === 2 ? "grid grid-cols-2 gap-0.5" : "flex flex-col gap-0.5"}`}>
                             {item.items.map((sub) => {
                               const subActive = pathname === sub.href;
                               return (
                                 <Link
                                   key={`${sub.href}-${sub.label}`}
                                   href={sub.href}
+                                  role="menuitem"
+                                  aria-current={subActive ? "page" : undefined}
                                   onClick={() => setOpenDropdown(null)}
                                   className={`flex items-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
                                     subActive

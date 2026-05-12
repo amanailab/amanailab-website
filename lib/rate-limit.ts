@@ -1,5 +1,5 @@
-// Simple in-memory rate limiter — works per serverless instance
-// For production scale, replace with Upstash Redis
+// Simple in-memory rate limiter — works per serverless instance.
+// For distributed deployments replace with Upstash Redis.
 
 interface Entry { count: number; resetAt: number }
 const store = new Map<string, Entry>()
@@ -12,11 +12,13 @@ if (typeof setInterval !== 'undefined') {
   }, 120_000)
 }
 
+const IP_RE = /^[\d.a-fA-F:]+$/
+
 /**
  * Check whether a key (IP + route) is within rate limit.
- * @param key     Unique identifier (e.g. `${ip}:resume-analyze`)
- * @param limit   Max requests allowed in the window
- * @param windowMs Window duration in ms (default: 60s)
+ * @param key      Unique identifier (e.g. `${ip}:resume-analyze`)
+ * @param limit    Max requests allowed in the window
+ * @param windowMs Window duration in ms (default 60 s)
  */
 export function checkRateLimit(
   key: string,
@@ -33,6 +35,7 @@ export function checkRateLimit(
 
   if (entry.count >= limit) {
     const retryAfterSec = Math.ceil((entry.resetAt - now) / 1000)
+    console.warn(`[RateLimit] Blocked key="${key}" retryAfter=${retryAfterSec}s`)
     return { allowed: false, remaining: 0, retryAfterSec }
   }
 
@@ -40,9 +43,15 @@ export function checkRateLimit(
   return { allowed: true, remaining: limit - entry.count, retryAfterSec: 0 }
 }
 
-/** Extract best-effort client IP from Next.js request headers */
+/** Extract best-effort client IP from Next.js request headers.
+ *  Validates the value looks like an IP to avoid log injection. */
 export function getClientIp(req: Request): string {
   const fwd = req.headers.get('x-forwarded-for')
-  if (fwd) return fwd.split(',')[0].trim()
-  return req.headers.get('x-real-ip') ?? 'unknown'
+  if (fwd) {
+    const candidate = fwd.split(',')[0].trim()
+    if (IP_RE.test(candidate)) return candidate
+  }
+  const real = req.headers.get('x-real-ip')
+  if (real && IP_RE.test(real.trim())) return real.trim()
+  return 'unknown'
 }

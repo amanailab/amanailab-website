@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://amanailab.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'),
   title: {
     default: "AmanAI Lab | AI/ML Career Platform — Tools, Interview Prep & Learning",
     template: "%s | AmanAI Lab",
@@ -33,9 +33,7 @@ export const metadata: Metadata = {
     "The most complete AI/ML career platform. Free tools: Resume Analyzer, Interview Simulator, LinkedIn Optimizer, Career Roadmap, Paper Explainer, Skill Quiz and more. Learn Generative AI, LLMs, and AI Agents.",
   keywords: [
     "AI/ML interview prep", "machine learning career", "resume analyzer AI",
-    "generative AI tutorial", "LLM engineer", "AI job tools", "career roadmap AI",
-    "research paper explainer", "LinkedIn optimizer", "AI mock interview",
-    "RAG tutorial", "LangChain", "AI agents", "fine-tuning LLM",
+    "AI mock interview", "LLM engineer", "career roadmap AI",
   ],
   authors: [{ name: "Aman Chauhan", url: "https://amanailab.com" }],
   creator: "AmanAI Lab",
@@ -46,7 +44,7 @@ export const metadata: Metadata = {
     siteName: "AmanAI Lab",
     title: "AmanAI Lab — AI/ML Career Platform",
     description: "Free AI-powered tools for AI/ML job seekers. Resume analyzer, interview simulator, LinkedIn optimizer, career roadmap & more.",
-    images: [{ url: "/logo.jpg", width: 512, height: 512, alt: "AmanAI Lab" }],
+    images: [{ url: "/logo.jpg", width: 1200, height: 630, alt: "AmanAI Lab — AI/ML Career Platform" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -65,27 +63,29 @@ export const metadata: Metadata = {
   },
 };
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": "https://amanailab.com/#website",
-      "url": "https://amanailab.com",
+      "@id": `${SITE_URL}/#website`,
+      "url": SITE_URL,
       "name": "AmanAI Lab",
       "description": "AI/ML career platform with free tools for job seekers",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": { "@type": "EntryPoint", "urlTemplate": "https://amanailab.com/search?q={search_term_string}" },
+        "target": { "@type": "EntryPoint", "urlTemplate": `${SITE_URL}/search?q={search_term_string}` },
         "query-input": "required name=search_term_string",
       },
     },
     {
       "@type": "Organization",
-      "@id": "https://amanailab.com/#organization",
+      "@id": `${SITE_URL}/#organization`,
       "name": "AmanAI Lab",
-      "url": "https://amanailab.com",
-      "logo": { "@type": "ImageObject", "url": "https://amanailab.com/logo.jpg" },
+      "url": SITE_URL,
+      "logo": { "@type": "ImageObject", "url": `${SITE_URL}/logo.jpg` },
       "sameAs": [
         "https://youtube.com/@AmanAI_lab",
         "https://linkedin.com/in/amanailab",
@@ -105,6 +105,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
+        <meta name="theme-color" content="#09090b" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -124,10 +125,17 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased" suppressHydrationWarning={true}>
+        {/* Skip link for keyboard/screen-reader users */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:bg-orange-500 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-semibold focus:text-sm"
+        >
+          Skip to main content
+        </a>
         {!isAdmin && <Navbar />}
         <NavigationProgress />
         <ToastProvider>
-          <main className="flex-1">
+          <main id="main-content" className="flex-1">
             <PageTransition>{children}</PageTransition>
           </main>
           {!isAdmin && <Footer />}

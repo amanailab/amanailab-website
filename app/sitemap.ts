@@ -3,7 +3,7 @@ import { getAdminSupabase } from '@/lib/admin'
 import { TOPICS } from '@/lib/topic-data'
 import { getPlaylists } from '@/lib/youtube'
 
-const BASE = 'https://amanailab.com'
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
 
 const staticPages: MetadataRoute.Sitemap = [
   { url: BASE,                             priority: 1.0, changeFrequency: 'daily'   },

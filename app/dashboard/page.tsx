@@ -166,7 +166,11 @@ function ReadinessArc({ score }: { score: number }) {
   const label = readinessLabel(score)
   return (
     <div className="flex flex-col items-center">
-      <svg width="160" height="90" viewBox="0 0 160 90">
+      <svg
+        width="160" height="90" viewBox="0 0 160 90"
+        role="img"
+        aria-label={`Interview Readiness: ${score} out of 100 — ${label.label}`}
+      >
         <path d="M 12 80 A 68 68 0 0 1 148 80" fill="none" stroke="#27272a" strokeWidth="10" strokeLinecap="round" />
         <path d="M 12 80 A 68 68 0 0 1 148 80" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} />
         <text x="80" y="72" textAnchor="middle" fill={color} fontSize="26" fontWeight="800">{score}</text>
@@ -182,7 +186,11 @@ function SolvedRing({ solved, total }: { solved: number; total: number }) {
   const dash = total > 0 ? circ * (solved / total) : 0
   return (
     <div className="flex flex-col items-center">
-      <svg width="84" height="84" viewBox="0 0 84 84">
+      <svg
+        width="84" height="84" viewBox="0 0 84 84"
+        role="img"
+        aria-label={`${solved} of ${total} problems solved`}
+      >
         <circle cx="42" cy="42" r={r} fill="none" stroke="#27272a" strokeWidth="7" />
         <circle cx="42" cy="42" r={r} fill="none" stroke="#f97316" strokeWidth="7"
           strokeLinecap="round" strokeDasharray={`${dash} ${circ}`} strokeDashoffset={circ / 4}
@@ -287,7 +295,14 @@ function CodeLabCard({ stats }: { stats: CodeStats }) {
                 <span className={`text-[10px] font-bold ${DIFF_COLOR[label]}`}>{label}</span>
                 <span className="text-[10px] text-zinc-500">{solved}/{total}</span>
               </div>
-              <div className="h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+              <div
+                className="h-1.5 bg-zinc-700 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={solved}
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-label={`${label} problems: ${solved} of ${total} solved`}
+              >
                 <div className={`h-full rounded-full ${DIFF_BAR[label]} opacity-80`}
                   style={{ width: total > 0 ? `${(solved / total) * 100}%` : '0%' }} />
               </div>
@@ -345,7 +360,14 @@ function AchievementsPanel({ achievements }: { achievements: Achievement[] }) {
             <span className="text-xl leading-none">{ach.emoji}</span>
             <p className="text-[10px] font-bold text-zinc-300 leading-tight">{ach.label}</p>
             {!ach.unlocked && ach.total !== undefined && ach.progress !== undefined && (
-              <div className="w-full h-1 bg-zinc-700 rounded-full overflow-hidden">
+              <div
+                className="w-full h-1 bg-zinc-700 rounded-full overflow-hidden"
+                role="progressbar"
+                aria-valuenow={ach.progress}
+                aria-valuemin={0}
+                aria-valuemax={ach.total}
+                aria-label={`${ach.label}: ${ach.progress} of ${ach.total}`}
+              >
                 <div className="h-full bg-orange-500/60 rounded-full" style={{ width: `${Math.min((ach.progress / ach.total) * 100, 100)}%` }} />
               </div>
             )}
@@ -405,11 +427,27 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Fetch all data in parallel
-  const [{ data: sessions }, { data: allSessions }, codeStats] = await Promise.all([
-    supabase.from('user_interview_sessions').select('id,topic,level,question_count,avg_score,grade,created_at').order('created_at', { ascending: false }).limit(100),
-    adminSb.from('user_interview_sessions').select('user_id,avg_score').limit(5000),
-    getCodeStats(user.id, adminSb),
+  // Fetch all data in parallel with an 8-second safety timeout per query
+  const deadlineMs = 8000
+  function raceWithTimeout<T>(p: Promise<T>, fallback: T): Promise<T> {
+    return Promise.race([p, new Promise<T>(r => setTimeout(() => r(fallback), deadlineMs))])
+  }
+
+  const [sessions, allSessions, codeStats] = await Promise.all([
+    raceWithTimeout(
+      Promise.resolve(supabase.from('user_interview_sessions')
+        .select('id,topic,level,question_count,avg_score,grade,created_at')
+        .order('created_at', { ascending: false })
+        .limit(100)).then(r => r.data),
+      null as Session[] | null,
+    ),
+    raceWithTimeout(
+      Promise.resolve(adminSb.from('user_interview_sessions')
+        .select('user_id,avg_score')
+        .limit(5000)).then(r => r.data),
+      null as { user_id: string; avg_score: number }[] | null,
+    ),
+    raceWithTimeout(getCodeStats(user.id, adminSb), { solved: 0, easy_solved: 0, medium_solved: 0, hard_solved: 0, easy_total: 9, medium_total: 8, hard_total: 3, total_problems: 20, recent: [] } as CodeStats),
   ])
 
   const s             = (sessions ?? []) as Session[]
@@ -450,17 +488,11 @@ export default async function DashboardPage() {
     lbEntries.find(e => e.isYou) ?? { uid: user.id, avg: overallAvg, sessions: totalSessions, isYou: true },
   ]
 
-  // Anonymous display names
+  // Anonymous display names — other users get a rank-based alias, never partial email
   const nameMap: Record<string, string> = {}
-  try {
-    const { data: { users: authUsers } } = await adminSb.auth.admin.listUsers({ perPage: 1000 })
-    authUsers?.forEach(u => {
-      const prefix = u.email?.split('@')[0] ?? 'user'
-      nameMap[u.id] = u.id === user.id ? emailPrefix : (prefix.slice(0, 2) + '••')
-    })
-  } catch {
-    lbEntries.forEach((e, i) => { nameMap[e.uid] = e.isYou ? emailPrefix : `user${i + 1}` })
-  }
+  lbEntries.forEach((e, i) => {
+    nameMap[e.uid] = e.isYou ? emailPrefix : `user_${i + 1}`
+  })
 
   // Achievements
   const achievements: Achievement[] = [
@@ -640,7 +672,14 @@ export default async function DashboardPage() {
                                   <span className={`text-sm font-extrabold ${scoreBarColor(avg).replace('bg-','text-').replace('-500','-400')}`}>{avg.toFixed(1)}</span>
                                 </div>
                               </div>
-                              <div className="h-1.5 bg-zinc-700 rounded-full overflow-hidden mb-1.5">
+                              <div
+                                className="h-1.5 bg-zinc-700 rounded-full overflow-hidden mb-1.5"
+                                role="progressbar"
+                                aria-valuenow={Math.round(avg * 10)}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-label={`${topic} mastery: ${avg.toFixed(1)} out of 10`}
+                              >
                                 <div className={`h-full ${bar} opacity-80 rounded-full`} style={{ width: `${(avg / 10) * 100}%` }} />
                               </div>
                               <p className="text-[10px] text-zinc-600">{sc} session{sc > 1 ? 's' : ''}</p>

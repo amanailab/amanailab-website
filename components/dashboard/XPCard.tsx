@@ -27,26 +27,32 @@ export default function XPCard() {
   const [solved, setSolved] = useState(0)
 
   useEffect(() => {
-    // Try server first, fall back to localStorage
-    fetch('/api/code-lab/xp')
-      .then(r => r.json())
-      .then(d => {
-        const serverXp = d.xp ?? 0
+    // Fetch XP and progress in parallel
+    Promise.allSettled([
+      fetch('/api/code-lab/xp').then(r => r.json()),
+      fetch('/api/code-lab/progress').then(r => r.json()),
+    ]).then(([xpResult, progressResult]) => {
+      if (xpResult.status === 'fulfilled') {
+        const serverXp = xpResult.value.xp ?? 0
         setXp(serverXp)
         try { localStorage.setItem('codelab_xp', String(serverXp)) } catch { /* ignore */ }
-      })
-      .catch(() => {
-        try { setXp(parseInt(localStorage.getItem('codelab_xp') ?? '0')) } catch { setXp(0) }
-      })
-
-    fetch('/api/code-lab/progress')
-      .then(r => r.json())
-      .then(d => setSolved((d.solved ?? []).length))
-      .catch(() => {})
+      } else {
+        // Fallback to localStorage if server fetch failed
+        try { setXp(parseInt(localStorage.getItem('codelab_xp') ?? '0', 10)) } catch { setXp(0) }
+      }
+      if (progressResult.status === 'fulfilled') {
+        setSolved((progressResult.value.solved ?? []).length)
+      }
+    })
   }, [])
 
   if (xp === null) return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 animate-pulse">
+    <div
+      className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 animate-pulse"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading Code Lab XP"
+    >
       <div className="h-4 w-24 bg-zinc-800 rounded mb-3" />
       <div className="h-8 w-16 bg-zinc-800 rounded mb-2" />
       <div className="h-1.5 w-full bg-zinc-800 rounded" />
@@ -94,7 +100,14 @@ export default function XPCard() {
       </div>
 
       {next && (
-        <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden mb-3">
+        <div
+          className="h-1.5 bg-zinc-800 rounded-full overflow-hidden mb-3"
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`XP progress to ${next.label}: ${progress}%`}
+        >
           <div className={`h-full rounded-full transition-all duration-700 ${level.bar}`}
             style={{ width: `${progress}%` }} />
         </div>

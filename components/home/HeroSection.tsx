@@ -64,6 +64,8 @@ export default function HeroSection() {
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
+              // Fallback for browsers that don't support background-clip:text
+              color: "#f97316",
             }}
           >
             AI/ML Job
