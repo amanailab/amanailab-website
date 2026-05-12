@@ -53,7 +53,7 @@ const TOPICS_SIM  = ["LLM", "RAG", "Agents", "Fine-Tuning", "MLOps", "Transforme
 const LEVELS_BANK = ["All", "Fresher", "Mid", "Senior"];
 const LEVELS_SIM  = ["Fresher", "Mid", "Senior"];
 
-const DAILY_LIMIT = 5;
+const DAILY_LIMIT = 3;
 const LS_KEY = "amanai_sim_usage";
 
 const topicColors: Record<string, string> = {

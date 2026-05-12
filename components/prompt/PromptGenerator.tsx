@@ -65,7 +65,7 @@ interface HistoryEntry {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DAILY_LIMIT = 5;
+const DAILY_LIMIT = 3;
 const LS_USES_KEY = "prompt_gen_uses";
 const LS_DATE_KEY = "prompt_gen_date";
 const LS_HISTORY_KEY = "prompt_gen_history";

@@ -72,7 +72,7 @@ interface HotTakeForm {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DAILY_LIMIT = 5;
+const DAILY_LIMIT = 3;
 const LS_USES_KEY = "linkedin_gen_uses";
 const LS_DATE_KEY = "linkedin_gen_date";
 const WHATSAPP_NUMBER = "919997600372";

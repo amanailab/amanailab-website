@@ -249,7 +249,7 @@ const ROLES = [
 ];
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const DAILY_LIMIT = 5;
+const DAILY_LIMIT = 3;
 const LS_USES_KEY = "resume_tool_uses";
 const LS_DATE_KEY = "resume_tool_date";
 const WHATSAPP_NUMBER = "919997600372";
