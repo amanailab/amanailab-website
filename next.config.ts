@@ -20,10 +20,10 @@ const securityHeaders = [
       // Scripts: self + analytics (GA/Clarity) + Giscus + Pyodide CDN (in-browser Python)
       // wasm-unsafe-eval is required for Pyodide WebAssembly execution
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://giscus.app https://cdn.jsdelivr.net",
-      // Styles: self + inline (Tailwind JIT, framer-motion)
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      // Fonts
-      "font-src 'self' https://fonts.gstatic.com",
+      // Styles: self + inline (Tailwind JIT, framer-motion) + Monaco editor CSS from CDN
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+      // Fonts: Geist (Google) + Monaco editor icon font (codicon.ttf) from CDN
+      "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
       // Images: self + data URIs + YouTube + Supabase + GitHub avatars
       "img-src 'self' data: blob: https://i.ytimg.com https://i3.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://yt3.googleusercontent.com https://nvjnfgdssukunoymhbmo.supabase.co https://avatars.githubusercontent.com",
       // Frames: Giscus comments, YouTube embeds

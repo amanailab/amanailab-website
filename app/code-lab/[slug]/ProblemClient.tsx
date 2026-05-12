@@ -18,7 +18,19 @@ import LoginPromptModal from '@/components/ui/LoginPromptModal'
 import { useToast } from '@/components/ui/Toast'
 
 const MonacoEditor = dynamic(
-  () => import('@monaco-editor/react').then(m => m.default),
+  () => import('@monaco-editor/react').then(m => m.default).catch(() => {
+    // Return a minimal fallback component if Monaco fails to load
+    const Fallback = ({ value, onChange }: { value?: string; onChange?: (v: string | undefined) => void }) => (
+      <textarea
+        className="flex-1 w-full h-full bg-[#1e1e1e] text-zinc-200 font-mono text-sm p-4 resize-none outline-none border-0"
+        value={value ?? ''}
+        onChange={e => onChange?.(e.target.value)}
+        spellCheck={false}
+      />
+    )
+    Fallback.displayName = 'EditorFallback'
+    return Fallback as never
+  }),
   { ssr: false, loading: () => <div className="flex-1 bg-[#1e1e1e] flex items-center justify-center"><div className="w-5 h-5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" /></div> }
 )
 
