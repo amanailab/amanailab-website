@@ -456,7 +456,10 @@ export default async function DashboardPage() {
   const bestScore     = totalSessions ? Math.max(...s.map(x => x.avg_score)) : 0
   const streak        = calcStreak(s)
   const readiness     = calcReadiness(s)
-  const emailPrefix   = user.email?.split('@')[0] ?? 'there'
+  // Prefer the display name set in profile; fall back to email prefix
+  const emailPrefix   = (user.user_metadata?.display_name as string | undefined)?.trim()
+                     || user.email?.split('@')[0]
+                     || 'there'
   const lastPracticed = s[0] ? timeAgo(s[0].created_at) : null
 
   // Topic mastery
