@@ -3,7 +3,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
-export const maxDuration = 30
+export const maxDuration = 60
 
 const AI_ML_TOPICS = ['LLM', 'RAG', 'Agents', 'Fine-Tuning', 'MLOps', 'Transformers', 'System Design', 'Python', 'Vector DB', 'NLP', 'Statistics', 'Computer Vision', 'Behavioral']
 

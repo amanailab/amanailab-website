@@ -59,7 +59,19 @@ const USER_PROMPT: Record<Action, (code: string, extra?: string) => string> = {
   generate:   (_,    desc) => `Write Python code for the following: ${desc}`,
 }
 
+const MAX_CODE_CHARS = 15_000
+
 export async function POST(req: Request) {
+  // Rate limit: 10 assists per minute per IP
+  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:playground`, 10, 60_000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
+    )
+  }
+
   try {
     const { code, action, description } = await req.json()
 
@@ -75,8 +87,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'description is required for generate action' }, { status: 400 })
     }
 
+    // Truncate code to prevent hitting the 50k-char AI prompt limit
+    const safeCode = code ? String(code).slice(0, MAX_CODE_CHARS) : ''
+
     const systemPrompt = SYSTEM[action as Action]
-    const userPrompt   = USER_PROMPT[action as Action]?.(code ?? '', description ?? '')
+    const userPrompt   = USER_PROMPT[action as Action]?.(safeCode, description ?? '')
 
     if (!systemPrompt || !userPrompt) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })

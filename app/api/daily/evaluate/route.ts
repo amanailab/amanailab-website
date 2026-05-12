@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
-export const maxDuration = 30
+export const maxDuration = 60
 
 function todayIndex(): number {
   return Math.floor(Date.now() / 86400000)
@@ -23,6 +23,7 @@ export async function POST(req: Request) {
     if (!questionId || !userAnswer?.trim()) {
       return NextResponse.json({ error: 'Question ID and answer are required' }, { status: 400 })
     }
+    const safeAnswer = String(userAnswer).slice(0, 3000)
 
     const supabase = getAdminSupabase()
 
@@ -53,7 +54,7 @@ Score strictly. Return ONLY valid JSON, no markdown fences.`,
             role: 'user',
             content: `Question: ${today.question}
 
-Candidate's Answer: ${userAnswer}
+Candidate's Answer: ${safeAnswer}
 
 Reference Answer (for your use only — do not quote verbatim): ${today.answer}
 

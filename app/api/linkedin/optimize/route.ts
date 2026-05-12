@@ -22,11 +22,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'At least headline or About section is required.' }, { status: 400 })
     }
 
+    // Truncate fields to keep total prompt well within the 50k-char AI limit
+    const safeHeadline   = headline   ? String(headline).slice(0, 300)    : ''
+    const safeAbout      = about      ? String(about).slice(0, 8000)      : ''
+    const safeExperience = experience ? String(experience).slice(0, 6000) : ''
+    const safeRole       = targetRole ? String(targetRole).slice(0, 200)  : ''
+
     const sections = [
-      headline ? `Headline: ${headline}` : '',
-      about ? `About/Summary:\n${about}` : '',
-      experience ? `Experience highlights:\n${experience}` : '',
-      targetRole ? `Target role: ${targetRole}` : '',
+      safeHeadline   ? `Headline: ${safeHeadline}`              : '',
+      safeAbout      ? `About/Summary:\n${safeAbout}`           : '',
+      safeExperience ? `Experience highlights:\n${safeExperience}` : '',
+      safeRole       ? `Target role: ${safeRole}`               : '',
     ].filter(Boolean).join('\n\n')
 
     const raw = (await callAI({
