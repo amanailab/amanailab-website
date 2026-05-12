@@ -53,6 +53,6 @@ Analyze the JD and return:
     return NextResponse.json(result)
   } catch (err) {
     console.error('[skill-gap]', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

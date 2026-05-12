@@ -18,7 +18,7 @@ export async function POST(req: Request) {
           {
             role: 'system',
             content:
-              'You are an expert AI/ML technical interviewer. Generate unique, non-repetitive interview questions. Return ONLY valid JSON. No markdown fences.',
+              'You are a senior AI/ML technical interviewer at a top AI company. Generate unique, non-repetitive, high-quality interview questions that probe real understanding. Return ONLY valid JSON. No markdown.',
           },
           {
             role: 'user',
@@ -43,7 +43,8 @@ Rules:
     })).trim()
     const parsed = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
 
-    return NextResponse.json({ questions: parsed.questions ?? [] })
+    const questions = Array.isArray(parsed.questions) ? parsed.questions : []
+    return NextResponse.json({ questions })
   } catch (err) {
     console.error('[Session Generate]', err)
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })

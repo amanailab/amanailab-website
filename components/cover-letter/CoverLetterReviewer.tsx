@@ -187,7 +187,7 @@ export default function CoverLetterReviewer() {
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { href: '/resume', label: 'Resume Analyzer' },
-                    { href: '/resume#build', label: 'Build ATS Resume' },
+                    { href: '/resume', label: 'Build ATS Resume' },
                   ].map(l => (
                     <Link key={l.href} href={l.href}
                       className="flex items-center justify-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 px-3 py-2.5 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900 transition-colors"

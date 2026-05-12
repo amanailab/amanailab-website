@@ -79,7 +79,9 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); e=d.get\\('error',{}\\); print\\(e.get\\('message','OK - no error'\\)\\)\")",
       "Bash(vercel env *)",
       "Bash(Get-ChildItem -Path \"E:\\\\amanailab-website\\\\amanailab-website\\\\app\" -Recurse -Filter \"*resume*\")",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(grep -r \"href=.*\\\\$\\\\|href={.*}\" ./components --include=\"*.tsx\")",
+      "Bash(xargs grep -l \"use client\\\\|'use client'\")"
     ]
   }
 }

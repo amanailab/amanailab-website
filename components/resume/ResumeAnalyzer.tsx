@@ -1298,8 +1298,6 @@ export default function ResumeAnalyzer() {
         secTitle("CERTIFICATIONS");
         validCerts.forEach((cert) => {
           chkY(8);
-          const parts = [cert.name, cert.issuer, cert.year].filter(Boolean);
-          // name bold, rest normal
           doc.setFontSize(9.5);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(...C_BLACK);
@@ -1311,7 +1309,6 @@ export default function ResumeAnalyzer() {
             doc.text(suffix, PW - MR, y, { align: "right" });
           }
           y += 5;
-          void parts; // used above
         });
       }
 

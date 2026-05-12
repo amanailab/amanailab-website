@@ -146,6 +146,6 @@ Write ONLY Python code with comments. No markdown fences.`
     return NextResponse.json({ result: content, mode })
   } catch (err) {
     console.error('[code-assist]', err)
-    return NextResponse.json({ error: 'Failed' }, { status: 500 })
+    return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 })
   }
 }

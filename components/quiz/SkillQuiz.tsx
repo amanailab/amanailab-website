@@ -22,7 +22,7 @@ const NEXT_STUDY: Record<string, string> = {
   Transformers: '/topics/transformers', 'System Design': '/topics/system-design',
   Python: '/topics/python', 'Vector DB': '/topics/vector-db',
   NLP: '/flashcards', 'Computer Vision': '/flashcards',
-  Statistics: '/flashcards', Behavioral: '/interview',
+  Statistics: '/flashcards', Behavioral: '/topics/behavioral',
 }
 
 const GRADE_INFO: Record<string, { label: string; msg: string; color: string; bg: string }> = {

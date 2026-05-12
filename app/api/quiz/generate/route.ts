@@ -61,7 +61,7 @@ Rules:
           },
         ],
       temperature: 0.5,
-      max_tokens: 3000,
+      max_tokens: 4500,
       response_format: { type: 'json_object' },
     })).trim()
 

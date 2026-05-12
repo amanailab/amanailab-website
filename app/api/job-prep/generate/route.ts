@@ -44,7 +44,7 @@ Return this exact JSON:
 
 Requirements:
 - Skills must reflect ACTUAL emphasis in the JD — not generic ML skills
-- Questions must feel like they came from a real ${jd.slice(0, 50).split('\n')[0]} interview — not a textbook
+- Questions must feel like they came from a real-world AI/ML interview panel — not a textbook
 - Model answers must demonstrate real expertise, not definitions
 - Generate exactly 6 questions and 3 study tips`,
           },
@@ -53,7 +53,13 @@ Requirements:
       max_tokens: 2000,
       response_format: { type: 'json_object' },
     })).trim()
-    const parsed = JSON.parse(raw)
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
+    } catch {
+      return NextResponse.json({ error: 'Failed to parse AI response. Please try again.' }, { status: 500 })
+    }
 
     return NextResponse.json(parsed)
   } catch (err) {
