@@ -111,13 +111,13 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
   const [page, setPage]                   = useState(0)
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase()
+    const q = search.toLowerCase().trim()
     return initialQuestions.filter(x =>
       (showSaved ? bookmarks.has(x.id) : true) &&
-      (filterTopic   === 'all' || x.topic === filterTopic) &&
-      (filterLevel   === 'all' || x.level === filterLevel) &&
+      (filterTopic   === 'all' || x.topic?.trim().toLowerCase() === filterTopic.toLowerCase()) &&
+      (filterLevel   === 'all' || x.level?.trim().toLowerCase() === filterLevel.toLowerCase()) &&
       (filterCompany === 'all' || (filterCompany === 'general' ? !x.company : x.company_slug === filterCompany)) &&
-      (!q || x.question.toLowerCase().includes(q))
+      (!q || x.question.toLowerCase().includes(q) || x.topic?.toLowerCase().includes(q))
     )
   }, [initialQuestions, filterTopic, filterLevel, filterCompany, search, showSaved, bookmarks])
 
@@ -141,11 +141,11 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
         <div className="flex flex-wrap gap-2 items-center">
           <select value={filterTopic} onChange={e => { setFilterTopic(e.target.value); setPage(0) }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none">
             <option value="all">All Topics</option>
-            {ALL_TOPICS.map(t => <option key={t}>{t}</option>)}
+            {ALL_TOPICS.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
           <select value={filterLevel} onChange={e => { setFilterLevel(e.target.value); setPage(0) }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none">
             <option value="all">All Levels</option>
-            {LEVELS.map(l => <option key={l}>{l}</option>)}
+            {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
           </select>
           <select value={filterCompany} onChange={e => { setFilterCompany(e.target.value); setPage(0) }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none">
             <option value="all">All Sources</option>
