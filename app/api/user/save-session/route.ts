@@ -1,15 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdmin } from '@supabase/supabase-js'
+import { getAdminSupabase } from '@/lib/admin'
 import { NextResponse } from 'next/server'
 
 export const runtime = 'nodejs'
-
-function getAdmin() {
-  return createAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
 
 // XP awarded for completing an interview session based on avg score
 function calcSessionXp(avg_score: number, question_count: number): number {
@@ -34,7 +27,7 @@ export async function POST(req: Request) {
     // Award XP for completing the session
     const xpEarned = calcSessionXp(avg_score ?? 0, question_count ?? 0)
     if (xpEarned > 0) {
-      const sb = getAdmin()
+      const sb = getAdminSupabase()
       const { data: existing } = await sb.from('user_xp').select('xp').eq('user_id', user.id).single()
       const newXp = (existing?.xp ?? 0) + xpEarned
       await sb.from('user_xp').upsert({ user_id: user.id, xp: newXp, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })

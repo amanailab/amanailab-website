@@ -86,6 +86,21 @@ export default function MockInterviewChat() {
       if (data.finalFeedback) {
         setFinalFeedback(data.finalFeedback)
         setPhase('done')
+        // Save session to DB so it appears in the leaderboard, profile, and dashboard
+        const score = data.finalFeedback.score ?? 0
+        const grade = score >= 9 ? 'A+' : score >= 8 ? 'A' : score >= 7 ? 'B' : score >= 5 ? 'C' : 'D'
+        fetch('/api/user/save-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic,
+            level,
+            question_count: MAX_TURNS,
+            avg_score: score,
+            grade,
+            entries: null,
+          }),
+        }).catch(() => { /* fire-and-forget — UI already shows result */ })
       } else if (data.feedbackParseError) {
         setError('Could not parse final score. Your interview is complete — click Restart to try again.')
         setPhase('done')

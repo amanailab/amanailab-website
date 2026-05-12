@@ -1,14 +1,7 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getAdminSupabase } from '@/lib/admin'
 
 export const runtime = 'nodejs'
-
-function getClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
 
 function anonymize(email: string, name: string | null): string {
   if (name && name.length > 1) return name
@@ -18,7 +11,7 @@ function anonymize(email: string, name: string | null): string {
 
 export async function GET() {
   try {
-    const sb = getClient()
+    const sb = getAdminSupabase()
 
     // Top all-time: aggregate sessions per user
     const { data, error } = await sb
