@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -14,12 +15,8 @@ export async function POST(req: Request) {
     const { jobDescription, userPerformance } = await req.json()
     if (!jobDescription?.trim()) return NextResponse.json({ error: 'Job description required' }, { status: 400 })
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = await callAI({
+      messages: [
           {
             role: 'system',
             content: `You are an expert AI/ML career coach. Analyze a job description and identify skill gaps.
@@ -48,15 +45,11 @@ Analyze the JD and return:
 }`,
           },
         ],
-        temperature: 0.2,
-        max_tokens: 1000,
-        response_format: { type: 'json_object' },
-      }),
+      temperature: 0.2,
+      max_tokens: 1000,
+      response_format: { type: 'json_object' },
     })
-
-    if (!groqRes.ok) return NextResponse.json({ error: 'AI failed' }, { status: 500 })
-    const data = await groqRes.json()
-    const result = JSON.parse(data.choices?.[0]?.message?.content ?? '{}')
+    const result = JSON.parse(raw.trim() || '{}')
     return NextResponse.json(result)
   } catch (err) {
     console.error('[skill-gap]', err)

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -124,24 +125,15 @@ Description summary: ${problem_description?.slice(0, 400)}
 Write ONLY Python code with comments. No markdown fences.`
     }
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const content = (await callAI({
+      messages: [
           { role: 'system', content: SYSTEM[mode as AssistMode] },
           { role: 'user',   content: userPrompt },
         ],
-        temperature: 0.3,
-        max_tokens: mode === 'complexity' ? 400 : mode === 'review' ? 350 : mode === 'solution' ? 600 : 200,
-        ...(mode === 'complexity' ? { response_format: { type: 'json_object' } } : {}),
-      }),
-    })
-
-    if (!groqRes.ok) return NextResponse.json({ error: 'AI failed' }, { status: 500 })
-    const data = await groqRes.json()
-    const content = data.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.3,
+      max_tokens: mode === 'complexity' ? 400 : mode === 'review' ? 350 : mode === 'solution' ? 600 : 200,
+      ...(mode === 'complexity' ? { response_format: { type: 'json_object' } } : {}),
+    })).trim()
 
     if (mode === 'complexity') {
       try {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/admin'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -41,15 +42,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Not today's question" }, { status: 400 })
     }
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: 'system',
             content: `You are an expert AI/ML interviewer evaluating a candidate's written answer.
@@ -74,18 +68,10 @@ Return this exact JSON:
 }`,
           },
         ],
-        temperature: 0.3,
-        max_tokens: 600,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!groqRes.ok) {
-      return NextResponse.json({ error: 'Evaluation failed' }, { status: 500 })
-    }
-
-    const groqData = await groqRes.json()
-    const raw = groqData.choices?.[0]?.message?.content?.trim() ?? '{}'
+      temperature: 0.3,
+      max_tokens: 600,
+      response_format: { type: 'json_object' },
+    })).trim() || '{}'
 
     let ev: {
       score?: number

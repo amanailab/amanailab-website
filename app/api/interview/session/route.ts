@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -12,15 +13,8 @@ export async function POST(req: Request) {
 
     const safeCount = Math.min(Math.max(Number(count) || 5, 3), 7)
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: 'system',
             content:
@@ -43,18 +37,10 @@ Rules:
 - No numbering in the question text itself`,
           },
         ],
-        temperature: 0.85,
-        max_tokens: 1500,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to generate questions.' }, { status: 502 })
-    }
-
-    const data = await res.json()
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.85,
+      max_tokens: 1500,
+      response_format: { type: 'json_object' },
+    })).trim()
     const parsed = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
 
     return NextResponse.json({ questions: parsed.questions ?? [] })

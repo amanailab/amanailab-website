@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { callAI, AICallError } from "@/lib/ai-fallback";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,14 +42,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+    let summary: string;
+    try {
+      summary = (await callAI({
         messages: [
           {
             role: "system",
@@ -78,20 +74,21 @@ Requirements:
         ],
         temperature: 0.6,
         max_tokens: 700,
-      }),
-    });
-
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      console.error("[LinkedIn] Groq error:", errText);
-      return NextResponse.json(
-        { error: "Failed to generate LinkedIn summary." },
-        { status: 500 }
-      );
+      })).trim();
+    } catch (err) {
+      if (err instanceof AICallError) {
+        let friendlyError = "Failed to generate LinkedIn summary. Please try again.";
+        try {
+          const errJson = JSON.parse(err.groqErrText);
+          const msg = errJson?.error?.message ?? "";
+          if (msg.includes("rate_limit") || msg.includes("429")) friendlyError = "AI is busy right now. Please wait 1 minute and try again.";
+          else if (msg.includes("invalid_api_key") || msg.includes("401")) friendlyError = "API key error. Please contact support.";
+          else if (msg.includes("token")) friendlyError = "Daily AI limit reached. Please try again tomorrow.";
+        } catch { /* ignore */ }
+        return NextResponse.json({ error: friendlyError }, { status: 500 });
+      }
+      throw err;
     }
-
-    const groqData = await groqRes.json();
-    const summary: string = (groqData.choices?.[0]?.message?.content ?? "").trim();
 
     if (!summary) {
       return NextResponse.json({ error: "Empty response from model." }, { status: 500 });

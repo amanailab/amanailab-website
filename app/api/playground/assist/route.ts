@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 45
@@ -81,31 +82,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const result = (await callAI({
+      messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user',   content: userPrompt },
         ],
-        temperature: action === 'generate' ? 0.4 : 0.2,
-        max_tokens: 2000,
-      }),
-    })
-
-    if (!groqRes.ok) {
-      const err = await groqRes.text()
-      console.error('[Playground Assist]', err)
-      return NextResponse.json({ error: 'AI request failed' }, { status: 500 })
-    }
-
-    const data = await groqRes.json()
-    const result = data.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: action === 'generate' ? 0.4 : 0.2,
+      max_tokens: 2000,
+    })).trim()
 
     return NextResponse.json({ result, action })
   } catch (err) {

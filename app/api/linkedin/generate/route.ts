@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { callAI } from "@/lib/ai-fallback";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -248,31 +249,14 @@ export async function POST(req: Request) {
 
     const userPrompt = built.user + variationInstruction(variation);
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
+    const raw: string = (await callAI({
+      messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.8,
-        max_tokens: 1000,
-      }),
-    });
-
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      console.error("[LinkedIn Post] Groq error:", errText);
-      return NextResponse.json({ error: "Failed to generate post." }, { status: 500 });
-    }
-
-    const groqData = await groqRes.json();
-    const raw: string = (groqData.choices?.[0]?.message?.content ?? "").trim();
+      temperature: 0.8,
+      max_tokens: 1000,
+    })).trim();
 
     if (!raw) {
       return NextResponse.json({ error: "Empty response from model." }, { status: 500 });

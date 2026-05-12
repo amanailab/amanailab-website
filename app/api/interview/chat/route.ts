@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -40,29 +41,14 @@ ${isLastTurn ? '- END your response with: ---FINAL_FEEDBACK---\n{"score": number
 
 Do NOT generate JSON unless it is the final turn wrap-up.`
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const content = (await callAI({
+      messages: [
           { role: 'system', content: systemPrompt },
           ...messages.map((m: Message) => ({ role: m.role, content: m.content })),
         ],
-        temperature: 0.6,
-        max_tokens: 600,
-      }),
-    })
-
-    if (!groqRes.ok) {
-      return NextResponse.json({ error: 'Failed to get response.' }, { status: 500 })
-    }
-
-    const groqData = await groqRes.json()
-    const content: string = groqData.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.6,
+      max_tokens: 600,
+    })).trim()
 
     let finalFeedback = null
     let replyText = content

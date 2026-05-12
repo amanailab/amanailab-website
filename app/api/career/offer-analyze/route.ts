@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -21,15 +22,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Offer letter content is required.' }, { status: 400 })
     }
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: 'system',
             content: 'You are an expert career advisor and compensation analyst specializing in AI/ML roles. Analyze offer letters and provide actionable advice. Return ONLY valid JSON. No markdown fences.',
@@ -68,18 +62,10 @@ Return this exact JSON:
 }`,
           },
         ],
-        temperature: 0.3,
-        max_tokens: 2500,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to analyze offer.' }, { status: 500 })
-    }
-
-    const data = await res.json()
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.3,
+      max_tokens: 2500,
+      response_format: { type: 'json_object' },
+    })).trim()
     const result = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
     return NextResponse.json(result)
   } catch (err) {

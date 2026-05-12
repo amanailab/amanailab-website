@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -22,15 +23,8 @@ export async function POST(req: Request) {
 
     const safeCount = Math.min(Math.max(Number(count) || 5, 3), 10)
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: 'system',
             content: 'You are an AI/ML quiz generator. Generate accurate multiple choice questions. Return ONLY valid JSON. No markdown fences.',
@@ -59,18 +53,10 @@ Rules:
 - Each question must have exactly 4 options`,
           },
         ],
-        temperature: 0.5,
-        max_tokens: 3000,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!groqRes.ok) {
-      return NextResponse.json({ error: 'Failed to generate quiz.' }, { status: 500 })
-    }
-
-    const groqData = await groqRes.json()
-    const raw = groqData.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.5,
+      max_tokens: 3000,
+      response_format: { type: 'json_object' },
+    })).trim()
 
     const result = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
     return NextResponse.json(result)

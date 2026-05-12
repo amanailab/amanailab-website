@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { callAI } from "@/lib/ai-fallback";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -129,15 +130,8 @@ export async function POST(req: Request) {
             .join("\n")
         : "(none provided)";
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
+    const raw: string = (await callAI({
+      messages: [
           {
             role: "system",
             content: "You are an expert resume writer. Return ONLY valid JSON. No markdown.",
@@ -184,28 +178,10 @@ Use the same number of experiences as Work History above, in the same order.
 Return ONLY valid JSON. No markdown fences. No commentary.`,
           },
         ],
-        temperature: 0.4,
-        max_tokens: 1500,
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      console.error("[Build] Groq error:", errText);
-      let friendlyError = "Failed to generate resume. Please try again."
-      try {
-        const errJson = JSON.parse(errText)
-        const msg = errJson?.error?.message ?? ""
-        if (msg.includes("rate_limit") || msg.includes("429")) friendlyError = "AI is busy right now. Please wait 1 minute and try again."
-        else if (msg.includes("invalid_api_key") || msg.includes("401")) friendlyError = "API key error. Please contact support."
-        else if (msg.includes("token")) friendlyError = "Daily AI limit reached. Please try again tomorrow."
-      } catch { /* ignore */ }
-      return NextResponse.json({ error: friendlyError }, { status: 500 });
-    }
-
-    const groqData = await groqRes.json();
-    const raw: string = (groqData.choices?.[0]?.message?.content ?? "").trim();
+      temperature: 0.4,
+      max_tokens: 1500,
+      response_format: { type: "json_object" },
+    })).trim();
 
     if (!raw) {
       return NextResponse.json({ error: "Empty response from model." }, { status: 500 });

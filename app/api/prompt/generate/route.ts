@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { callAI } from "@/lib/ai-fallback";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -195,31 +196,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
+    const prompt: string = (await callAI({
+      messages: [
           { role: "system", content: parts.system },
           { role: "user", content: parts.user },
         ],
-        temperature: 0.7,
-        max_tokens: 800,
-      }),
-    });
-
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      console.error("[Prompt] Groq error:", errText);
-      return NextResponse.json({ error: "Failed to generate prompt." }, { status: 500 });
-    }
-
-    const groqData = await groqRes.json();
-    const prompt: string = (groqData.choices?.[0]?.message?.content ?? "").trim();
+      temperature: 0.7,
+      max_tokens: 800,
+    })).trim();
 
     if (!prompt) {
       return NextResponse.json({ error: "Empty response from model." }, { status: 500 });

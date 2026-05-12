@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export async function POST(req: Request) {
   try {
@@ -8,15 +9,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'question and answer are required.' }, { status: 400 })
     }
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: 'system',
             content:
@@ -44,20 +38,10 @@ Return this exact JSON:
 }`,
           },
         ],
-        temperature: 0.3,
-        max_tokens: 1024,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!res.ok) {
-      const err = await res.text()
-      console.error('[Evaluate] Groq error:', err)
-      return NextResponse.json({ error: 'Failed to evaluate answer.' }, { status: 502 })
-    }
-
-    const data = await res.json()
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.3,
+      max_tokens: 1024,
+      response_format: { type: 'json_object' },
+    })).trim()
 
     let evaluation
     try {

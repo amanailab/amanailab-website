@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -91,15 +92,8 @@ export async function POST(req: Request) {
       paperText = input.trim().slice(0, 8000)
     }
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: 'system',
             content: `You are a world-class AI/ML research communicator and professor. Your job is to write RICH, DETAILED, EDUCATIONAL explanations of research papers. You never give shallow summaries — you go deep. You use analogies, examples, and step-by-step breakdowns. You bridge the gap between researchers and practitioners. Return ONLY valid JSON. No markdown fences.`,
@@ -147,18 +141,10 @@ Requirements:
 - Do NOT be generic — everything must be specific to THIS paper`,
           },
         ],
-        temperature: 0.3,
-        max_tokens: 4500,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!groqRes.ok) {
-      return NextResponse.json({ error: 'Failed to explain paper.' }, { status: 500 })
-    }
-
-    const groqData = await groqRes.json()
-    const raw = groqData.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.3,
+      max_tokens: 4500,
+      response_format: { type: 'json_object' },
+    })).trim()
     const result = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
 
     return NextResponse.json({ ...result, arxivId, authors, year, originalTitle: paperTitle })

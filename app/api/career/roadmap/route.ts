@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -21,14 +22,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Target role is required.' }, { status: 400 })
     }
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+    const raw = (await callAI({
         messages: [
           {
             role: 'system',
@@ -92,15 +86,7 @@ Generate 5-6 phases covering beginner through job-ready. Be extremely specific a
         temperature: 0.3,
         max_tokens: 4000,
         response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to generate roadmap.' }, { status: 500 })
-    }
-
-    const data = await res.json()
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? ''
+    })).trim()
     const result = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
     return NextResponse.json(result)
   } catch (err) {

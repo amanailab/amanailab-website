@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -10,12 +11,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Please paste a full job description (at least 50 characters).' }, { status: 400 })
     }
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: 'system',
             content: 'You are an expert AI/ML technical recruiter and interview coach. Analyze job descriptions and generate targeted interview questions. Return ONLY valid JSON, no markdown.',
@@ -49,16 +46,10 @@ Job Description:
 ${jd.slice(0, 4000)}`,
           },
         ],
-        temperature: 0.5,
-        max_tokens: 2000,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!res.ok) return NextResponse.json({ error: 'Failed to analyze job description.' }, { status: 502 })
-
-    const data = await res.json()
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.5,
+      max_tokens: 2000,
+      response_format: { type: 'json_object' },
+    })).trim()
     const parsed = JSON.parse(raw)
 
     return NextResponse.json(parsed)

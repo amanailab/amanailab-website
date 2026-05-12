@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRequire } from "node:module";
+import { callAI, AICallError } from "@/lib/ai-fallback";
 
 const require = createRequire(import.meta.url);
 const pdfParse: (buffer: Buffer) => Promise<{ text: string }> =
@@ -98,14 +99,9 @@ export async function POST(req: Request) {
         ? jobDescription.slice(0, MAX_JD_CHARS)
         : jobDescription.trim();
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+    let raw: string;
+    try {
+      raw = (await callAI({
         messages: [
           {
             role: "system",
@@ -140,17 +136,21 @@ Return ONLY valid JSON. No markdown fences. No commentary.`,
         temperature: 0.3,
         max_tokens: 1500,
         response_format: { type: "json_object" },
-      }),
-    });
-
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      console.error("[Match] Groq error:", errText);
-      return NextResponse.json({ error: "Failed to match resume." }, { status: 500 });
+      })).trim();
+    } catch (err) {
+      if (err instanceof AICallError) {
+        let friendlyError = "Failed to match resume. Please try again.";
+        try {
+          const errJson = JSON.parse(err.groqErrText);
+          const msg = errJson?.error?.message ?? "";
+          if (msg.includes("rate_limit") || msg.includes("429")) friendlyError = "AI is busy right now. Please wait 1 minute and try again.";
+          else if (msg.includes("invalid_api_key") || msg.includes("401")) friendlyError = "API key error. Please contact support.";
+          else if (msg.includes("token")) friendlyError = "Daily AI limit reached. Please try again tomorrow.";
+        } catch { /* ignore */ }
+        return NextResponse.json({ error: friendlyError }, { status: 500 });
+      }
+      throw err;
     }
-
-    const groqData = await groqRes.json();
-    const raw = groqData.choices?.[0]?.message?.content?.trim() ?? "";
 
     let match: MatchResult;
     try {

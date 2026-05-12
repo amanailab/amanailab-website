@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -25,15 +26,8 @@ export async function POST(req: Request) {
     const interview = new Date(interviewDate)
     const daysLeft = Math.max(1, Math.ceil((interview.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: 'system',
             content: 'You are an expert AI/ML interview coach. Generate focused, realistic study plans. Return ONLY valid JSON. No markdown fences.',
@@ -77,18 +71,10 @@ Return this exact JSON:
 Generate a realistic week-by-week plan fitting ${daysLeft} days. Max 4 weeks. Keep each week's days array to 5-7 days. Focus on AI/ML interview topics.`,
           },
         ],
-        temperature: 0.4,
-        max_tokens: 3000,
-        response_format: { type: 'json_object' },
-      }),
-    })
-
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to generate study plan.' }, { status: 500 })
-    }
-
-    const data = await res.json()
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? ''
+      temperature: 0.4,
+      max_tokens: 3000,
+      response_format: { type: 'json_object' },
+    })).trim()
     const result = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''))
     return NextResponse.json(result)
   } catch (err) {

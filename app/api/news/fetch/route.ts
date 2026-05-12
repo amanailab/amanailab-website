@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { callAI } from "@/lib/ai-fallback";
 
 interface RawArticle {
   title: string;
@@ -102,16 +103,8 @@ async function fetchRSSFeed(url: string, sourceName: string): Promise<RawArticle
 
 async function analyzeWithGroq(article: RawArticle): Promise<GroqAnalysis | null> {
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        max_tokens: 300,
-        messages: [
+    const raw = (await callAI({
+      messages: [
           {
             role: "system",
             content: "You are an AI news analyst. Return ONLY valid JSON. No markdown.",
@@ -121,17 +114,9 @@ async function analyzeWithGroq(article: RawArticle): Promise<GroqAnalysis | null
             content: `Summarize this AI news for developers.\nTitle: ${article.title}\nDescription: ${article.raw_description}\n\nReturn exactly this JSON:\n{\n  "summary": "one sentence summary",\n  "developer_take": "one sentence on what this means for developers",\n  "impact_score": "game_changer or important or good_to_know",\n  "category": "models or research or tools or agents or india_ai or general"\n}`,
           },
         ],
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
+      max_tokens: 300,
+    })).trim();
 
-    if (!res.ok) {
-      console.error("[Groq] Error status:", res.status);
-      return null;
-    }
-
-    const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content?.trim() ?? "";
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
 
@@ -146,7 +131,7 @@ async function analyzeWithGroq(article: RawArticle): Promise<GroqAnalysis | null
       category: validCategory.includes(parsed.category) ? parsed.category : "general",
     };
   } catch (err) {
-    console.error("[Groq] Parse error:", err);
+    console.error("[AI] analyzeWithGroq failed:", err);
     return null;
   }
 }
