@@ -15,35 +15,38 @@ export async function POST(req: Request) {
       messages: [
           {
             role: 'system',
-            content: 'You are an expert AI/ML technical recruiter and interview coach. Analyze job descriptions and generate targeted interview questions. Return ONLY valid JSON, no markdown.',
+            content: `You are a senior AI/ML technical recruiter with 10 years at top AI companies (Google, Meta, OpenAI, Anthropic). You deeply understand what each JD actually tests for in interviews. Your questions are specific, your model answers are expert-level, and your study tips are actionable. Return ONLY valid JSON, no markdown.`,
           },
           {
             role: 'user',
-            content: `Analyze this job description and return a JSON object with this exact structure:
-{
-  "role": "extracted job title",
-  "company": "company name if mentioned, else null",
-  "level": "Fresher|Mid|Senior|Staff|Principal",
-  "skills": ["skill1", "skill2", ...],
-  "questions": [
-    {
-      "question": "specific interview question",
-      "why": "one sentence: why this question is asked for this role",
-      "model_answer": "2-4 sentence ideal answer highlighting key concepts"
-    }
-  ],
-  "study_tips": ["tip1", "tip2", "tip3"]
-}
-
-Rules:
-- Extract exactly the top 8 most important technical skills
-- Generate exactly 6 interview questions that are SPECIFIC to this role (not generic)
-- Questions should reflect the actual requirements in the JD
-- Model answers should be concise but complete
-- 3 study tips specific to gaps or priorities in this role
+            content: `Analyze this job description and extract key interview prep information.
 
 Job Description:
-${jd.slice(0, 4000)}`,
+${jd.slice(0, 4000)}
+
+Return this exact JSON:
+{
+  "role": "exact job title from JD",
+  "company": "company name if mentioned, else null",
+  "level": "Fresher|Mid|Senior|Staff|Principal",
+  "skills": ["top 8 skills in priority order — most critical first, based on what's emphasised in the JD"],
+  "questions": [
+    {
+      "question": "specific, non-generic question directly tied to the JD requirements",
+      "why": "one sentence explaining exactly why this company asks this for this role",
+      "model_answer": "3-5 sentence expert answer showing deep knowledge — include specific techniques, frameworks, or numbers where relevant"
+    }
+  ],
+  "study_tips": [
+    "specific, actionable tip with a resource or technique — not 'review X', but 'build X using Y because this JD emphasises Z'"
+  ]
+}
+
+Requirements:
+- Skills must reflect ACTUAL emphasis in the JD — not generic ML skills
+- Questions must feel like they came from a real ${jd.slice(0, 50).split('\n')[0]} interview — not a textbook
+- Model answers must demonstrate real expertise, not definitions
+- Generate exactly 6 questions and 3 study tips`,
           },
         ],
       temperature: 0.5,

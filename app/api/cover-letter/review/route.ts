@@ -29,13 +29,13 @@ export async function POST(req: Request) {
       messages: [
           {
             role: 'system',
-            content: 'You are an expert cover letter reviewer and career coach. Analyze cover letters against job descriptions. Return ONLY valid JSON. No markdown fences.',
+            content: `You are a top-tier career coach who has reviewed 10,000+ cover letters and helped candidates land roles at Google, Meta, OpenAI, and top AI startups. You know exactly what hiring managers read in 30 seconds, what makes them stop and call, and what makes them reject. Your feedback is specific, honest, and actionable. The rewrite you produce MUST include the exact keywords from the JD and open with a compelling hook. Return ONLY valid JSON. No markdown.`,
           },
           {
             role: 'user',
-            content: `Review this cover letter against the job description and provide detailed feedback.
+            content: `Review this cover letter against the job description with expert-level scrutiny.
 
-Target Role: ${targetRole || 'Not specified'}
+Target Role: ${targetRole || 'AI/ML role'}
 
 Job Description:
 ${jobDescription.slice(0, 3000)}
@@ -45,16 +45,16 @@ ${coverLetter.slice(0, 3000)}
 
 Return this exact JSON:
 {
-  "overallScore": number 0-100,
-  "grade": "A|B|C|D|F",
-  "summary": "2-3 sentence overall assessment",
-  "strengths": ["3-5 things done well"],
-  "weaknesses": ["3-5 things to improve"],
-  "missingKeywords": ["important keywords from JD missing in cover letter"],
-  "toneAnalysis": { "label": "Professional|Too Casual|Too Formal|Too Generic", "suggestion": "one sentence fix" },
-  "lengthAnalysis": { "verdict": "Too Short|Good Length|Too Long", "suggestion": "one sentence" },
-  "improvedVersion": "complete rewritten cover letter optimized for this JD (300-400 words)",
-  "quickFixes": ["3 immediate changes to make right now"]
+  "overallScore": number 0-100 (90+ = would definitely call, 70-89 = likely call, 50-69 = maybe, <50 = would not call),
+  "grade": "A" | "B" | "C" | "D" | "F",
+  "summary": "2-3 honest sentences: first sentence states the biggest strength, second states the most critical weakness, third gives the bottom line verdict",
+  "strengths": ["3-5 SPECIFIC things done well — quote or reference actual phrases from the letter"],
+  "weaknesses": ["3-5 SPECIFIC weaknesses — be honest about what hiring managers actually dislike, e.g. 'opening paragraph uses generic phrases like passionate about technology that every candidate uses'"],
+  "missingKeywords": ["important technical keywords from the JD that don't appear in the letter — these hurt ATS scoring"],
+  "toneAnalysis": { "label": "Professional|Too Casual|Too Formal|Too Generic|Too Salesy", "suggestion": "specific 1-sentence fix referencing actual phrases in the letter" },
+  "lengthAnalysis": { "verdict": "Too Short|Good Length|Too Long", "suggestion": "specific guidance on what to cut or expand" },
+  "improvedVersion": "complete rewritten cover letter (300-400 words). Must: open with a specific compelling hook (not 'I am writing to apply for'), weave in 3-5 keywords from the JD naturally, include one specific achievement with a number, close with a clear CTA. Match the tone to the company culture evident in the JD.",
+  "quickFixes": ["3 concrete, immediate changes — each should be actionable in 5 minutes, e.g. 'Replace your opening line with: [specific better opening]'"]
 }`,
           },
         ],

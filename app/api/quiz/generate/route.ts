@@ -21,36 +21,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Topic and level are required.' }, { status: 400 })
     }
 
-    const safeCount = Math.min(Math.max(Number(count) || 5, 3), 10)
+    const safeCount = Math.min(Math.max(Number(count) || 5, 3), 15)
 
     const raw = (await callAI({
       messages: [
           {
             role: 'system',
-            content: 'You are an AI/ML quiz generator. Generate accurate multiple choice questions. Return ONLY valid JSON. No markdown fences.',
+            content: `You are a world-class AI/ML interview coach creating MCQ questions used by engineers at top AI companies. Your questions are precise, educational, varied in style, and based on real interview patterns. Return ONLY valid JSON. No markdown.`,
           },
           {
             role: 'user',
-            content: `Generate ${safeCount} multiple choice questions about ${topic} at ${level} level for AI/ML practitioners.
+            content: `Generate ${safeCount} high-quality MCQ questions about ${topic} at ${level} level.
+
+Level:
+${level === 'Fresher' ? '- Core definitions, basic concepts, vocabulary, simple scenarios' : ''}
+${level === 'Mid' ? '- Practical trade-offs, when to use X vs Y, implementation details, common pitfalls' : ''}
+${level === 'Senior' ? '- Deep internals, architecture decisions, production challenges, scaling, edge cases' : ''}
+
+Mix question styles: definition, comparison, applied scenario, numerical/formula, troubleshooting.
 
 Return this exact JSON:
 {
   "questions": [
     {
       "id": 1,
-      "question": "clear question text",
+      "question": "precise question text (1-2 sentences)",
       "options": ["A. option one", "B. option two", "C. option three", "D. option four"],
       "correctIndex": 0,
-      "explanation": "brief explanation of why the answer is correct and others are wrong"
+      "explanation": "2-3 sentences: why correct answer is right, why the most tempting wrong answer is wrong, one practical takeaway"
     }
   ]
 }
 
 Rules:
 - correctIndex is 0-based (0=A, 1=B, 2=C, 3=D)
-- Questions must be factually accurate
-- ${level === 'Fresher' ? 'Focus on basic definitions and concepts' : level === 'Mid' ? 'Focus on practical application and trade-offs' : 'Focus on advanced internals, system design and nuance'}
-- Each question must have exactly 4 options`,
+- All 4 options must be plausible — no obviously wrong distractors
+- Rotate which letter holds the correct answer across questions
+- Explanations must be educational, not just restating the answer`,
           },
         ],
       temperature: 0.5,
