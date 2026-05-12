@@ -17,8 +17,9 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      // Scripts: self + analytics (GA/Clarity) + Giscus
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://giscus.app",
+      // Scripts: self + analytics (GA/Clarity) + Giscus + Pyodide CDN (in-browser Python)
+      // wasm-unsafe-eval is required for Pyodide WebAssembly execution
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://giscus.app https://cdn.jsdelivr.net",
       // Styles: self + inline (Tailwind JIT, framer-motion)
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Fonts
@@ -27,8 +28,8 @@ const securityHeaders = [
       "img-src 'self' data: blob: https://i.ytimg.com https://i3.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://yt3.googleusercontent.com https://nvjnfgdssukunoymhbmo.supabase.co https://avatars.githubusercontent.com",
       // Frames: Giscus comments, YouTube embeds
       "frame-src https://giscus.app https://www.youtube.com",
-      // Connections: self + all external APIs we call from the browser
-      "connect-src 'self' https://api.groq.com https://generativelanguage.googleapis.com https://nvjnfgdssukunoymhbmo.supabase.co https://www.google-analytics.com https://www.clarity.ms wss://nvjnfgdssukunoymhbmo.supabase.co",
+      // Connections: self + all external APIs + Pyodide CDN (downloads .whl packages at runtime)
+      "connect-src 'self' https://api.groq.com https://generativelanguage.googleapis.com https://nvjnfgdssukunoymhbmo.supabase.co https://www.google-analytics.com https://www.clarity.ms wss://nvjnfgdssukunoymhbmo.supabase.co https://cdn.jsdelivr.net",
       // Media
       "media-src 'self' blob:",
       // Workers (Monaco editor uses blob workers)
