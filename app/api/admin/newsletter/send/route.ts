@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   try {
     const cookieStore = await cookies()
     const session = cookieStore.get('admin_session')?.value
-    if (session !== process.env.ADMIN_SECRET) {
+    if (session !== 'true') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

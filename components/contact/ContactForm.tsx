@@ -139,6 +139,7 @@ export default function ContactForm() {
               <button
                 onClick={() => {
                   setSubmitted(false);
+                  setError(null);
                   setForm({ name: "", email: "", subject: subjects[0], message: "" });
                 }}
                 className="text-orange-400 hover:text-orange-300 text-sm font-medium transition-colors"
