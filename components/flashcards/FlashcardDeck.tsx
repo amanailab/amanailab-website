@@ -152,7 +152,7 @@ export default function FlashcardDeck({ topic }: Props) {
         {!flipped ? (
           <div className="flex gap-3">
             <button
-              onClick={() => next()}
+              onClick={() => setFlipped(true)}
               className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold py-3.5 rounded-xl transition-colors"
             >
               Reveal Answer
