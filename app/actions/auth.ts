@@ -29,7 +29,8 @@ export async function signup(prevState: string | null, formData: FormData) {
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  redirect('/')
+  // No redirect here — callers use window.location.href='/' for a hard reload
+  // so the Next.js router cache is fully cleared and the sign-out is instant.
 }
 
 export async function resendVerification(email: string) {

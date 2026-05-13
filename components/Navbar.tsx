@@ -379,6 +379,7 @@ export default function Navbar() {
                           onClick={async () => {
                             setUserMenuOpen(false);
                             await logout();
+                            window.location.href = '/';
                           }}
                           className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors w-full text-left"
                         >
@@ -532,7 +533,7 @@ export default function Navbar() {
                     <LayoutDashboard className="w-4 h-4 text-zinc-500" /> My Progress
                   </Link>
                   <button
-                    onClick={async () => { await logout(); }}
+                    onClick={async () => { await logout(); window.location.href = '/'; }}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60 rounded-xl transition-colors w-full text-left"
                   >
                     <LogOut className="w-4 h-4 text-zinc-500" /> Sign out

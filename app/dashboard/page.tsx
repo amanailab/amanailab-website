@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/admin'
 import { redirect } from 'next/navigation'
-import { logout } from '@/app/actions/auth'
+import SignOutButton from '@/components/dashboard/SignOutButton'
 import {
-  Trophy, BrainCircuit, TrendingUp, LogOut,
+  Trophy, BrainCircuit, TrendingUp,
   Target, Flame, Star, AlertTriangle, ArrowRight,
   CheckCircle2, BookOpen, Building2, MessageSquare,
   Briefcase, Map, Library, Sparkles,
@@ -503,11 +503,7 @@ export default async function DashboardPage() {
             </div>
             <p className="text-sm text-zinc-500">{lastPracticed ? `Last practiced: ${lastPracticed}` : 'Welcome — start your first session below'}</p>
           </div>
-          <form action={logout}>
-            <button type="submit" className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 bg-zinc-900 border border-zinc-800 px-3 py-2 rounded-lg transition-colors">
-              <LogOut className="w-3.5 h-3.5" /> Sign out
-            </button>
-          </form>
+          <SignOutButton />
         </div>
 
         {/* ── 2-column layout ── */}
