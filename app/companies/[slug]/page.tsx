@@ -20,12 +20,7 @@ interface Question {
 
 async function getData(slug: string) {
   const supabase = getAdminSupabase()
-  const [{ data: company }, { data: questions }] = await Promise.all([
-    supabase.from('companies').select('*').eq('slug', slug).single(),
-    supabase.from('company_questions').select('id, question, model_answer, topic, level')
-      .eq('company_id', supabase.from('companies').select('id').eq('slug', slug))
-      .order('topic'),
-  ])
+  const { data: company } = await supabase.from('companies').select('*').eq('slug', slug).single()
   if (!company) return null
   const { data: qs } = await supabase
     .from('company_questions')
@@ -77,10 +72,21 @@ export default async function CompanyPage({ params }: Props) {
     })),
   } : null
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://amanailab.com' },
+      { '@type': 'ListItem', position: 2, name: 'Companies', item: 'https://amanailab.com/companies' },
+      { '@type': 'ListItem', position: 3, name: company.name, item: `https://amanailab.com/companies/${company.slug}` },
+    ],
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }} />
       {faqSchema && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="max-w-4xl mx-auto px-4">
 
         {/* Back */}

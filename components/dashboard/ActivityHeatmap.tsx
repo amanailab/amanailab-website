@@ -39,7 +39,7 @@ export default function ActivityHeatmap({ sessions, totalSessions }: Props) {
   // Build 53 weeks × 7 days (Sun→Sat), going back from today
   const today   = new Date()
   today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().split('T')[0]
+  const todayStr = today.toLocaleDateString('en-CA') // en-CA gives YYYY-MM-DD in local timezone
 
   // Start on the Sunday of 52 weeks ago
   const start = new Date(today)
@@ -52,7 +52,7 @@ export default function ActivityHeatmap({ sessions, totalSessions }: Props) {
     for (let d = 0; d < 7; d++) {
       const date = new Date(start)
       date.setDate(start.getDate() + w * 7 + d)
-      week.push({ date, dateStr: date.toISOString().split('T')[0] })
+      week.push({ date, dateStr: date.toLocaleDateString('en-CA') })
     }
     weeks.push(week)
   }

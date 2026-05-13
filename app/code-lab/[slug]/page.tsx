@@ -52,13 +52,26 @@ export default async function ProblemPage({ params }: Props) {
   const totalProblems  = allProblems?.length ?? 0
   const similarProblems = similarArr ?? []
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://amanailab.com' },
+      { '@type': 'ListItem', position: 2, name: 'Code Lab', item: 'https://amanailab.com/code-lab' },
+      { '@type': 'ListItem', position: 3, name: problem.title, item: `https://amanailab.com/code-lab/${problem.slug}` },
+    ],
+  }
+
   return (
-    <ProblemClient
-      problem={problem}
-      prevProblem={prevProblem}
-      nextProblem={nextProblem}
-      totalProblems={totalProblems}
-      similarProblems={similarProblems}
-    />
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      <ProblemClient
+        problem={problem}
+        prevProblem={prevProblem}
+        nextProblem={nextProblem}
+        totalProblems={totalProblems}
+        similarProblems={similarProblems}
+      />
+    </>
   )
 }

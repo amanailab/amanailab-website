@@ -92,7 +92,7 @@ function extractHeadings(html: string): { id: string; text: string; level: numbe
   let match
   while ((match = regex.exec(html)) !== null) {
     const level = parseInt(match[1])
-    const text  = match[2].replace(/<[^>]+>/g, '').trim()
+    const text  = (match[2] ?? '').replace(/<[^>]+>/g, '').trim()
     const id    = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     if (text) headings.push({ id, text, level })
   }
@@ -133,9 +133,20 @@ export default async function BlogPostPage({ params }: Props) {
     mainEntityOfPage: { '@type': 'WebPage', '@id': `https://amanailab.com/blog/${slug}` },
   }
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://amanailab.com' },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://amanailab.com/blog' },
+      { '@type': 'ListItem', position: 3, name: post.title, item: `https://amanailab.com/blog/${slug}` },
+    ],
+  }
+
   return (
     <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
     <ReadingProgress />
     <article className="pt-24 pb-16 px-4 max-w-3xl mx-auto">
       <Link
