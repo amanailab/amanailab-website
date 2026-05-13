@@ -14,6 +14,7 @@ import {
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
 import { createClient } from "@/lib/supabase/client";
+import { logout } from "@/app/actions/auth";
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
 
@@ -377,9 +378,7 @@ export default function Navbar() {
                         <button
                           onClick={async () => {
                             setUserMenuOpen(false);
-                            const supabase = createClient();
-                            await supabase.auth.signOut();
-                            window.location.href = '/';
+                            await logout();
                           }}
                           className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors w-full text-left"
                         >
@@ -533,11 +532,7 @@ export default function Navbar() {
                     <LayoutDashboard className="w-4 h-4 text-zinc-500" /> My Progress
                   </Link>
                   <button
-                    onClick={async () => {
-                      const supabase = createClient();
-                      await supabase.auth.signOut();
-                      window.location.href = '/';
-                    }}
+                    onClick={async () => { await logout(); }}
                     className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60 rounded-xl transition-colors w-full text-left"
                   >
                     <LogOut className="w-4 h-4 text-zinc-500" /> Sign out
