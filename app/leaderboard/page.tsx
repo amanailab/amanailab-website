@@ -37,6 +37,7 @@ export default function LeaderboardPage() {
   const [alltime, setAlltime]     = useState<Entry[]>([])
   const [weekly, setWeekly]       = useState<Entry[]>([])
   const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState(false)
 
   useEffect(() => {
     fetch('/api/leaderboard')
@@ -45,7 +46,7 @@ export default function LeaderboardPage() {
         setAlltime(d.leaderboard ?? [])
         setWeekly(d.weekly ?? [])
       })
-      .catch(() => {})
+      .catch(() => { setError(true) })
       .finally(() => setLoading(false))
   }, [])
 
@@ -84,6 +85,17 @@ export default function LeaderboardPage() {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
+          </div>
+        ) : !loading && error ? (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
+            <p className="text-zinc-400 font-semibold mb-1">Failed to load rankings</p>
+            <p className="text-zinc-600 text-sm mb-4">Please refresh the page to try again</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all"
+            >
+              Retry
+            </button>
           </div>
         ) : list.length === 0 ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">

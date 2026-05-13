@@ -31,3 +31,15 @@ export async function logout() {
   await supabase.auth.signOut()
   redirect('/')
 }
+
+export async function resendVerification(email: string) {
+  const supabase = await createClient()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options: { emailRedirectTo: `${siteUrl}/auth/callback` },
+  })
+  if (error) return error.message
+  return 'sent'
+}

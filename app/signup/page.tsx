@@ -1,7 +1,7 @@
 'use client'
 
-import { useActionState, useState, useEffect } from 'react'
-import { signup } from '@/app/actions/auth'
+import { useActionState, useState, useEffect, useRef, useTransition } from 'react'
+import { signup, resendVerification } from '@/app/actions/auth'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -34,7 +34,45 @@ function StepsPreview() {
 
 // ─── Check email screen ───────────────────────────────────────────────────────
 
-function CheckEmailScreen() {
+function CheckEmailScreen({ email }: { email: string }) {
+  const [resendState, setResendState] = useState<'idle' | 'pending' | 'sent' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
+  const [cooldown, setCooldown] = useState(0)
+  const [isPending, startTransition] = useTransition()
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  function startCooldown() {
+    setCooldown(60)
+    timerRef.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!)
+          timerRef.current = null
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current) }, [])
+
+  function handleResend() {
+    setResendState('pending')
+    startTransition(async () => {
+      const result = await resendVerification(email)
+      if (result === 'sent') {
+        setResendState('sent')
+        startCooldown()
+      } else {
+        setResendState('error')
+        setErrorMsg(result)
+      }
+    })
+  }
+
+  const buttonDisabled = resendState === 'pending' || isPending || cooldown > 0
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-zinc-950">
       <div className="w-full max-w-sm text-center">
@@ -43,7 +81,9 @@ function CheckEmailScreen() {
         </div>
         <h1 className="text-2xl font-extrabold text-zinc-100 mb-2">Check your email</h1>
         <p className="text-sm text-zinc-400 leading-relaxed mb-6">
-          We sent a confirmation link to your email. Click it to activate your account and start tracking your interview progress.
+          We sent a confirmation link to{' '}
+          <span className="text-zinc-200 font-medium">{email}</span>. Click it to activate
+          your account and start tracking your interview progress.
         </p>
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-6 text-left flex flex-col gap-2">
           {['Confirm your email', 'Complete your first interview session', 'See your readiness score'].map((step, i) => (
@@ -53,7 +93,33 @@ function CheckEmailScreen() {
             </div>
           ))}
         </div>
-        <Link href="/login" className="text-sm text-orange-400 hover:text-orange-300 font-semibold transition-colors">
+
+        {/* Resend button */}
+        <div className="mb-6">
+          {resendState === 'sent' ? (
+            <p className="text-sm text-green-400 font-semibold flex items-center justify-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              Email sent!{cooldown > 0 && <span className="text-zinc-500 font-normal"> Resend in {cooldown}s</span>}
+            </p>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={buttonDisabled}
+                className="text-sm text-orange-400 hover:text-orange-300 disabled:text-zinc-600 disabled:cursor-not-allowed font-semibold transition-colors inline-flex items-center gap-1.5"
+              >
+                {(resendState === 'pending' || isPending) && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend confirmation email'}
+              </button>
+              {resendState === 'error' && (
+                <p className="text-xs text-red-400 mt-1.5">{errorMsg}</p>
+              )}
+            </>
+          )}
+        </div>
+
+        <Link href="/login" className="text-sm text-zinc-500 hover:text-zinc-400 transition-colors">
           Back to Sign In
         </Link>
       </div>
@@ -67,6 +133,7 @@ export default function SignupPage() {
   const [state, action, pending] = useActionState(signup, null)
   const [googlePending, setGooglePending] = useState(false)
   const [nextPath, setNextPath] = useState('/dashboard')
+  const [submittedEmail, setSubmittedEmail] = useState('')
   useEffect(() => {
     const n = new URLSearchParams(window.location.search).get('next')
     if (n?.startsWith('/')) setNextPath(n)
@@ -81,7 +148,12 @@ export default function SignupPage() {
     })
   }
 
-  if (state === 'check_email') return <CheckEmailScreen />
+  function handleFormAction(formData: FormData) {
+    setSubmittedEmail((formData.get('email') as string) ?? '')
+    return action(formData)
+  }
+
+  if (state === 'check_email') return <CheckEmailScreen email={submittedEmail} />
 
   return (
     <div className="min-h-screen flex bg-zinc-950">
@@ -157,7 +229,7 @@ export default function SignupPage() {
             <p className="text-sm text-zinc-500">Start tracking your interview progress today</p>
           </div>
 
-          <form action={action} className="flex flex-col gap-4">
+          <form action={handleFormAction} className="flex flex-col gap-4">
             <input type="hidden" name="next" value={nextPath} />
             <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">

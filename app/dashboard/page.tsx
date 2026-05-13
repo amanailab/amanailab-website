@@ -6,7 +6,7 @@ import {
   Trophy, BrainCircuit, TrendingUp, LogOut,
   Target, Flame, Star, AlertTriangle, ArrowRight,
   CheckCircle2, BookOpen, Building2, MessageSquare,
-  Briefcase, Map, Library, Sparkles, Medal,
+  Briefcase, Map, Library, Sparkles,
   Flame as FlameIcon, Users, Code2,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -18,8 +18,12 @@ import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap'
 import CompanyReadiness from '@/components/dashboard/CompanyReadiness'
 import InterviewCountdown from '@/components/dashboard/InterviewCountdown'
 import AchievementAlert from '@/components/dashboard/AchievementAlert'
+import AchievementsPanel from '@/components/dashboard/AchievementsPanel'
 
-export const metadata: Metadata = { title: 'My Dashboard' }
+export const metadata: Metadata = {
+  title: 'My Dashboard | AmanAI Lab',
+  robots: { index: false, follow: false },
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -336,45 +340,6 @@ function CodeLabCard({ stats }: { stats: CodeStats }) {
         {stats.solved === 0 ? 'Start Solving Problems' : `Solve More — ${stats.total_problems - stats.solved} left`}
         <ArrowRight className="w-3.5 h-3.5" />
       </Link>
-    </div>
-  )
-}
-
-// ─── Achievements panel ──────────────────────────────────────────────────────
-
-function AchievementsPanel({ achievements }: { achievements: Achievement[] }) {
-  const unlocked = achievements.filter(a => a.unlocked).length
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Medal className="w-4 h-4 text-yellow-400" />
-          <p className="text-sm font-bold text-zinc-100">Achievements</p>
-        </div>
-        <span className="text-xs font-bold text-zinc-400">{unlocked}<span className="text-zinc-600">/{achievements.length}</span></span>
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        {achievements.map(ach => (
-          <div key={ach.id} title={ach.desc}
-            className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border text-center transition-all ${ach.unlocked ? 'bg-zinc-800/60 border-zinc-700 hover:border-zinc-600' : 'bg-zinc-900/30 border-zinc-800/40 opacity-40'}`}>
-            <span className="text-xl leading-none">{ach.emoji}</span>
-            <p className="text-[10px] font-bold text-zinc-300 leading-tight">{ach.label}</p>
-            {!ach.unlocked && ach.total !== undefined && ach.progress !== undefined && (
-              <div
-                className="w-full h-1 bg-zinc-700 rounded-full overflow-hidden"
-                role="progressbar"
-                aria-valuenow={ach.progress}
-                aria-valuemin={0}
-                aria-valuemax={ach.total}
-                aria-label={`${ach.label}: ${ach.progress} of ${ach.total}`}
-              >
-                <div className="h-full bg-orange-500/60 rounded-full" style={{ width: `${Math.min((ach.progress / ach.total) * 100, 100)}%` }} />
-              </div>
-            )}
-            {ach.unlocked && <span className="text-[9px] text-green-400 font-semibold">Unlocked</span>}
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

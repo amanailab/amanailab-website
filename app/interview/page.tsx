@@ -2,10 +2,20 @@ import type { Metadata } from "next";
 import InterviewHub from "@/components/interview/InterviewHub";
 
 export const metadata: Metadata = {
-  title: "AI Interview Prep Hub",
+  title: "AI Interview Prep Hub | AmanAI Lab",
   description:
     "Practice real AI/ML interview questions on LLMs, RAG, Agents, Fine-Tuning, MLOps and more. Free. No login needed.",
   alternates: { canonical: 'https://amanailab.com/interview' },
+  openGraph: {
+    title: 'AI Interview Prep Hub | AmanAI Lab',
+    description: 'Practice real AI/ML interview questions with instant AI scoring. Free mock interviews on LLMs, RAG, Agents, Fine-Tuning, MLOps and more.',
+    images: [{ url: '/og-interview.png', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI Interview Prep Hub | AmanAI Lab',
+    description: 'Practice real AI/ML interview questions with instant AI scoring. Free.',
+  },
 };
 
 const jsonLd = {
