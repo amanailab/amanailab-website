@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import {
   Target, Loader2, AlertCircle, CheckCircle2, ArrowRight,
-  BrainCircuit, Zap, BookOpen,
+  BrainCircuit, Zap, BookOpen, Copy, Check,
 } from 'lucide-react'
 
 interface TopicPerf { topic: string; avg: number; sessions: number }
@@ -22,6 +22,31 @@ const TOPIC_SLUGS: Record<string, string> = {
   LLM: 'llm', RAG: 'rag', Agents: 'agents', 'Fine-Tuning': 'fine-tuning',
   MLOps: 'mlops', Transformers: 'transformers', 'System Design': 'system-design',
   Python: 'python', 'Vector DB': 'vector-db', NLP: 'nlp', Statistics: 'statistics',
+}
+
+function buildGapReport(result: Result): string {
+  return [
+    `SKILL GAP ANALYSIS`,
+    `Role: ${result.job_title} | Readiness: ${result.overall_readiness}%`,
+    '',
+    result.recommendation,
+    '',
+    'GAPS TO WORK ON:',
+    ...result.gaps.map(g => `${g.priority}. ${g.topic} (${g.user_score !== null ? `Your score: ${g.user_score}/10` : 'Not practiced'}) — ${g.action}`),
+    '',
+    'YOUR STRENGTHS:',
+    ...result.strengths.map(s => `• ${s.topic}: ${s.user_score}/10 — ${s.note}`),
+  ].join('\n')
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+      className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded border border-zinc-800 hover:border-zinc-600 transition-colors">
+      {copied ? <><Check className="w-3 h-3 text-green-400" /> Copied</> : <><Copy className="w-3 h-3" /> Copy Report</>}
+    </button>
+  )
 }
 
 export default function SkillGapClient() {
@@ -156,9 +181,12 @@ export default function SkillGapClient() {
                   <h2 className="text-base font-bold text-zinc-100">{result.job_title || 'AI/ML Role'}</h2>
                   <p className="text-xs text-zinc-500 mt-0.5">{result.company_type}</p>
                 </div>
-                <div className="text-right">
-                  <p className={`text-3xl font-extrabold ${readinessColor(result.overall_readiness)}`}>{result.overall_readiness}%</p>
-                  <p className="text-xs text-zinc-500">Ready</p>
+                <div className="flex items-center gap-3">
+                  <CopyButton text={buildGapReport(result)} />
+                  <div className="text-right">
+                    <p className={`text-3xl font-extrabold ${readinessColor(result.overall_readiness)}`}>{result.overall_readiness}%</p>
+                    <p className="text-xs text-zinc-500">Ready</p>
+                  </div>
                 </div>
               </div>
               <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-4">
@@ -186,6 +214,10 @@ export default function SkillGapClient() {
                           <span className="text-[10px] text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-full">
                             {g.user_score !== null ? `Your score: ${g.user_score}/10` : 'Not practiced'}
                           </span>
+                          {/* required level target */}
+                          <span className="text-[10px] text-orange-400 bg-orange-500/10 px-1.5 py-0.5 rounded-full">
+                            Need: {g.required_level === 'Advanced' ? '8+' : g.required_level === 'Intermediate' ? '6+' : '5+'}/10
+                          </span>
                           <span className="text-[10px] text-zinc-600">Requires: {g.required_level}</span>
                         </div>
                         <p className="text-xs text-zinc-400 leading-relaxed">{g.action}</p>
@@ -199,6 +231,26 @@ export default function SkillGapClient() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Create Study Plan CTA — shown when there are gaps */}
+            {result.gaps?.length > 0 && (
+              <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 flex items-center gap-4">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-zinc-100">Turn these gaps into a study plan</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">Your weak topics will be pre-filled in the Study Plan tool</p>
+                </div>
+                <Link
+                  href="/career?tab=study-plan"
+                  onClick={() => {
+                    const weakTopics = result.gaps.slice(0, 5).map(g => g.topic).join(', ')
+                    localStorage.setItem('career_prefill', JSON.stringify({ weakTopics, source: 'skill-gap' }))
+                  }}
+                  className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shrink-0"
+                >
+                  Create Study Plan <ArrowRight className="w-4 h-4" />
+                </Link>
               </div>
             )}
 
@@ -243,8 +295,21 @@ export default function SkillGapClient() {
               </div>
             )}
 
+            {/* Missing from platform */}
+            {result.missing_from_platform?.length > 0 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                <p className="text-sm font-bold text-zinc-100 mb-3">Also Required (Not on Platform)</p>
+                <p className="text-xs text-zinc-500 mb-3">These skills appear in the JD but aren&apos;t covered by AmanAI Lab yet. Study them separately.</p>
+                <div className="flex flex-wrap gap-2">
+                  {result.missing_from_platform.map((t, i) => (
+                    <span key={i} className="text-xs font-medium px-3 py-1 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Quick actions */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Link href="/interview?tab=simulator"
                 className="flex items-center gap-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 rounded-xl p-4 transition-all group">
                 <BrainCircuit className="w-5 h-5 text-violet-400 shrink-0" />
@@ -267,6 +332,14 @@ export default function SkillGapClient() {
                 <div>
                   <p className="text-sm font-bold text-zinc-200 group-hover:text-white">Study Topics</p>
                   <p className="text-[10px] text-zinc-600">Deep-dive guides</p>
+                </div>
+              </Link>
+              <Link href="/quiz"
+                className="flex items-center gap-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 rounded-xl p-4 transition-all group">
+                <BrainCircuit className="w-5 h-5 text-green-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-zinc-200 group-hover:text-white">Skill Quiz</p>
+                  <p className="text-[10px] text-zinc-600">Test your knowledge</p>
                 </div>
               </Link>
             </div>

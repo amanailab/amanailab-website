@@ -6,7 +6,7 @@ import {
   Briefcase, Plus, X, Trash2, Edit2, Check, AlertCircle,
   Building2, Star, Calendar, Link2, ChevronRight, ChevronLeft,
   Search, TrendingUp, Target, Clock, Award, ChevronDown, ChevronUp,
-  Loader2, ExternalLink, Mail, BarChart2,
+  Loader2, ExternalLink, Mail, BarChart2, Download,
 } from 'lucide-react'
 import { useUser } from '@/hooks/useUser'
 import LoginPromptModal from '@/components/ui/LoginPromptModal'
@@ -108,6 +108,24 @@ function avatarColor(name: string) {
   return colors[h % colors.length]
 }
 
+function exportCSV(apps: Application[]) {
+  const headers = ['Company', 'Role', 'Stage', 'Priority', 'Applied Date', 'Interview Date', 'Location', 'Salary Range', 'Recruiter', 'Job URL', 'Notes']
+  const rows = apps.map(a => [
+    a.company_name, a.role_title, a.status, a.priority ?? 'normal',
+    a.applied_date ?? '', a.interview_date ?? '', a.location ?? '',
+    a.salary_range ?? '', a.recruiter_name ?? '', a.job_url ?? '',
+    (a.notes ?? '').replace(/\n/g, ' '),
+  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+  const csv = [headers.join(','), ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `job_applications_${new Date().toISOString().split('T')[0]}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StatsBar({ apps }: { apps: Application[] }) {
@@ -138,7 +156,7 @@ function StatsBar({ apps }: { apps: Application[] }) {
         <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 text-center">
           <div className={`flex justify-center mb-1 ${s.color}`}>{s.icon}</div>
           <p className={`text-lg font-extrabold ${s.color}`}>{s.value}</p>
-          <p className="text-[10px] text-zinc-600 leading-tight mt-0.5">{s.label}</p>
+          <p className="text-[10px] text-zinc-500 leading-tight mt-0.5">{s.label}</p>
         </div>
       ))}
     </div>
@@ -238,6 +256,17 @@ function AppCard({ app, onMove, onDelete, onEdit, onStar }: CardProps) {
             {intDays < 0 ? `${Math.abs(intDays)}d ago` : intDays === 0 ? 'Today!' : `In ${intDays}d`}
             {' — Interview'}
           </div>
+        )}
+
+        {/* Offer analyze shortcut */}
+        {stage === 'offer' && (
+          <Link
+            href={`/career?tab=offer`}
+            onClick={() => localStorage.setItem('career_prefill', JSON.stringify({ offerRole: app.role_title, offerCompany: app.company_name, source: 'job-tracker' }))}
+            className="flex items-center gap-1 text-[10px] font-semibold text-green-400 hover:text-green-300 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded-lg transition-colors mb-2 w-fit"
+          >
+            Analyze Offer →
+          </Link>
         )}
 
         {/* Metadata row */}
@@ -478,6 +507,8 @@ export default function JobTrackerClient() {
   const [search, setSearch]       = useState('')
   const [showRejected, setShowRejected] = useState(false)
   const [view, setView]           = useState<'kanban' | 'list'>('kanban')
+  const [rejectTarget, setRejectTarget] = useState<{ id: string; company: string } | null>(null)
+  const [rejectReason, setRejectReason] = useState('')
 
   const load = useCallback(async () => {
     if (!user || user === 'loading') return
@@ -541,6 +572,16 @@ export default function JobTrackerClient() {
     })
     if (!res.ok && snapshot) {
       setApps(prev => prev.map(a => a.id === id ? snapshot : a))
+    }
+  }
+
+  function handleMoveOrReject(id: string, toStage: StageId) {
+    if (toStage === 'rejected') {
+      const app = apps.find(a => a.id === id)
+      setRejectTarget({ id, company: app?.company_name ?? '' })
+      setRejectReason('')
+    } else {
+      handleMove(id, toStage)
     }
   }
 
@@ -615,6 +656,48 @@ export default function JobTrackerClient() {
         />
       )}
 
+      {/* Rejection reason modal */}
+      {rejectTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setRejectTarget(null)} />
+          <div className="relative bg-zinc-900 border border-zinc-700 rounded-2xl p-5 w-full max-w-sm shadow-xl">
+            <p className="text-sm font-bold text-zinc-100 mb-1">Mark as Rejected</p>
+            <p className="text-xs text-zinc-500 mb-4">{rejectTarget.company} — optional: note why</p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {['Ghosted', 'Failed OA', 'Failed Technical', 'No offer extended', 'Withdrew', 'Offer below expectations'].map(r => (
+                <button key={r} onClick={() => setRejectReason(r)}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${rejectReason === r ? 'bg-red-500/20 border-red-500/30 text-red-300' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'}`}>
+                  {r}
+                </button>
+              ))}
+            </div>
+            <input value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+              placeholder="Or type a reason…"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 outline-none mb-4" />
+            <div className="flex gap-2">
+              <button onClick={() => setRejectTarget(null)}
+                className="flex-1 py-2 text-sm bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 rounded-xl transition-colors">Cancel</button>
+              <button onClick={() => {
+                const reason = rejectReason.trim()
+                if (reason) {
+                  // Append rejection reason to notes
+                  const app = apps.find(a => a.id === rejectTarget.id)
+                  const existingNotes = app?.notes ?? ''
+                  const newNotes = existingNotes ? `${existingNotes}\n[Rejected: ${reason}]` : `[Rejected: ${reason}]`
+                  fetch('/api/user/job-tracker', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: rejectTarget.id, notes: newNotes }) }).catch(() => {})
+                  setApps(prev => prev.map(a => a.id === rejectTarget.id ? { ...a, notes: newNotes } : a))
+                }
+                handleMove(rejectTarget.id, 'rejected')
+                setRejectTarget(null)
+              }}
+                className="flex-1 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 rounded-xl transition-colors">
+                Confirm Rejected
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-screen-2xl mx-auto px-4">
 
         {/* Header */}
@@ -635,6 +718,13 @@ export default function JobTrackerClient() {
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…"
                 className="pl-9 pr-3 py-2 text-xs bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-orange-500/50 w-44 transition-colors" />
             </div>
+            {/* Export CSV */}
+            {apps.length > 0 && (
+              <button onClick={() => exportCSV(apps)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 px-3 py-2 rounded-xl transition-colors">
+                <Download className="w-3.5 h-3.5" /> Export CSV
+              </button>
+            )}
             {/* View toggle */}
             <button
               onClick={() => setView(v => v === 'kanban' ? 'list' : 'kanban')}
@@ -767,7 +857,7 @@ export default function JobTrackerClient() {
                         </div>
                         <div className="flex flex-col gap-2">
                           {items.map(app => (
-                            <AppCard key={app.id} app={app} onMove={handleMove} onDelete={handleDelete} onEdit={openEdit} onStar={handleStar} />
+                            <AppCard key={app.id} app={app} onMove={handleMoveOrReject} onDelete={handleDelete} onEdit={openEdit} onStar={handleStar} />
                           ))}
                           {items.length === 0 && (
                             <p className="text-[10px] text-zinc-700 text-center py-5 border border-dashed border-zinc-800/60 rounded-xl">Empty</p>
@@ -793,7 +883,7 @@ export default function JobTrackerClient() {
                 {showRejected && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {rejectedApps.map(app => (
-                      <AppCard key={app.id} app={app} onMove={handleMove} onDelete={handleDelete} onEdit={openEdit} onStar={handleStar} />
+                      <AppCard key={app.id} app={app} onMove={handleMoveOrReject} onDelete={handleDelete} onEdit={openEdit} onStar={handleStar} />
                     ))}
                   </div>
                 )}

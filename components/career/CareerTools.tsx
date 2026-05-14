@@ -1,8 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Map, CalendarDays, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail, RotateCcw } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Map, CalendarDays, Calendar, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail, RotateCcw, ExternalLink, ArrowRight } from 'lucide-react'
 import { isCaptured, saveEmail, markCaptured } from '@/lib/email-capture'
+
+// ─── Topic → slug mapping for phase chips ────────────────────────────────────
+const TOPIC_SLUG_MAP: Record<string, string> = {
+  'LLM': 'llm', 'RAG': 'rag', 'Agents': 'agents', 'Fine-Tuning': 'fine-tuning',
+  'MLOps': 'mlops', 'Transformers': 'transformers', 'System Design': 'system-design',
+  'Python': 'python', 'Vector DB': 'vector-db', 'NLP': 'nlp', 'Statistics': 'statistics',
+  'Attention': 'transformers', 'RLHF': 'fine-tuning', 'Prompt Engineering': 'llm',
+  'Embeddings': 'vector-db', 'Computer Vision': 'llm',
+}
 
 type Tab = 'roadmap' | 'study-plan' | 'offer' | 'company'
 
@@ -258,6 +268,38 @@ async function downloadRoadmapPDF(result: RoadmapResult, targetRole: string) {
   doc.save(`AmanAILab_Roadmap_${targetRole.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`)
 }
 
+// ─── Offer PDF Download ───────────────────────────────────────────────────────
+async function downloadOfferPDF(result: OfferResult, role: string) {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const M = 14, PW = 210, CW = PW - M * 2
+  let y = M
+  const safe = (s: string) => (s ?? '').replace(/[^\x20-\x7E -ÿ]/g, '')
+  function check(n: number) { if (y + n > 284) { doc.addPage(); y = M + 4 } }
+  function h1(t: string) { check(10); doc.setFont('helvetica','bold').setFontSize(14).setTextColor(244,244,245); doc.text(safe(t), M, y); y += 8 }
+  function h2(t: string) { check(8); doc.setFont('helvetica','bold').setFontSize(10).setTextColor(249,115,22); doc.text(safe(t), M, y); y += 6 }
+  function para(t: string) { doc.setFont('helvetica','normal').setFontSize(9).setTextColor(160,160,168); const lines: string[] = doc.splitTextToSize(safe(t), CW); check(lines.length * 5 + 2); doc.text(lines, M, y); y += lines.length * 5 + 2 }
+  function bullet(t: string) { para(`- ${t}`) }
+  function gap(n=3) { y += n }
+
+  h1(`Offer Analysis: ${role || 'Role'}`)
+  para(`Verdict: ${result.overallVerdict} — Score: ${result.overallScore}/100`)
+  gap(); para(result.summary)
+  gap(); h2('Recommendation')
+  para(`${result.recommendation}: ${result.recommendationReason}`)
+  gap(); h2('Compensation')
+  para(`Base: ${result.compensation.baseSalary} | Equity: ${result.compensation.equity} | Bonus: ${result.compensation.bonus}`)
+  para(result.compensation.marketNote)
+  if (result.greenFlags.length) { gap(); h2('Green Flags'); result.greenFlags.forEach(f => bullet(f)) }
+  if (result.redFlags.length) { gap(); h2('Red Flags'); result.redFlags.forEach(f => bullet(f)) }
+  if (result.missingClauses.length) { gap(); h2('Missing Clauses'); result.missingClauses.forEach(c => bullet(c)) }
+  gap(); h2('Negotiation Script (Email)')
+  para(result.negotiationScript)
+  gap(); doc.setFont('helvetica','normal').setFontSize(7).setTextColor(80,80,90)
+  doc.text('AmanAI Lab | amanailab.com', M, 293)
+  doc.save(`Offer_Analysis_${(role || 'offer').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`)
+}
+
 // ─── Collapsible Section ──────────────────────────────────────────────────────
 function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -344,7 +386,7 @@ interface RoadmapResult {
   keySkills: string[]; jobReadySignals: string[]; trendingIn2026: string[]; tips: string[]
 }
 
-function RoadmapTab() {
+function RoadmapTab({ onSwitchToStudyPlan }: { onSwitchToStudyPlan: (role: string) => void }) {
   const [targetRole, setTargetRole] = useState('')
   const [currentSkills, setCurrentSkills] = useState('')
   const [currentLevel, setCurrentLevel] = useState('Beginner')
@@ -354,6 +396,27 @@ function RoadmapTab() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [roadmapCached, setRoadmapCached] = useState(false)
+  const [completedPhases, setCompletedPhases] = useState<Set<number>>(new Set())
+
+  // Load phase progress when result changes
+  useEffect(() => {
+    if (!result) return
+    try {
+      const key = `roadmap_progress_${targetRole.replace(/\s+/g, '_').toLowerCase()}`
+      const saved = JSON.parse(localStorage.getItem(key) ?? '[]') as number[]
+      setCompletedPhases(new Set(saved))
+    } catch {}
+  }, [result]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function togglePhase(phaseNum: number) {
+    setCompletedPhases(prev => {
+      const next = new Set(prev)
+      next.has(phaseNum) ? next.delete(phaseNum) : next.add(phaseNum)
+      const key = `roadmap_progress_${targetRole.replace(/\s+/g, '_').toLowerCase()}`
+      localStorage.setItem(key, JSON.stringify([...next]))
+      return next
+    })
+  }
 
   async function generate() {
     if (result && roadmapCached) {
@@ -427,7 +490,7 @@ function RoadmapTab() {
                 <Clock className="w-5 h-5 text-orange-400" />
                 <span className="text-lg font-bold text-zinc-100">{result.totalDuration} Roadmap</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => { setRoadmapCached(false); generate() }}
                   className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
@@ -440,9 +503,25 @@ function RoadmapTab() {
                 >
                   <Download className="w-3.5 h-3.5" /> Download PDF
                 </button>
+                <button
+                  onClick={() => onSwitchToStudyPlan(targetRole)}
+                  className="flex items-center gap-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl transition-colors"
+                >
+                  <CalendarDays className="w-3.5 h-3.5" /> Turn into Study Plan
+                </button>
               </div>
             </div>
             <p className="text-sm text-zinc-300 leading-relaxed">{result.overview}</p>
+            {/* Phase progress bar */}
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 rounded-full transition-all"
+                  style={{ width: result.phases.length > 0 ? `${(completedPhases.size / result.phases.length) * 100}%` : '0%' }}
+                />
+              </div>
+              <span className="text-xs text-zinc-500 shrink-0">{completedPhases.size} / {result.phases.length} phases complete</span>
+            </div>
           </div>
 
           <>
@@ -450,7 +529,7 @@ function RoadmapTab() {
               <div className="flex flex-col gap-3">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Learning Phases</p>
                 {result.phases.map((phase) => (
-                  <div key={phase.phase} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                  <div key={phase.phase} className={`bg-zinc-900 border rounded-2xl p-5 transition-colors ${completedPhases.has(phase.phase) ? 'border-green-500/30' : 'border-zinc-800'}`}>
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-bold shrink-0">{phase.phase}</div>
@@ -459,12 +538,31 @@ function RoadmapTab() {
                           <p className="text-xs text-zinc-500">{phase.duration}</p>
                         </div>
                       </div>
+                      <button
+                        onClick={() => togglePhase(phase.phase)}
+                        title={completedPhases.has(phase.phase) ? 'Mark incomplete' : 'Mark complete'}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${completedPhases.has(phase.phase) ? 'bg-green-500 border-green-500' : 'border-zinc-600 hover:border-green-500'}`}
+                      >
+                        {completedPhases.has(phase.phase) && <Check className="w-3 h-3 text-white" />}
+                      </button>
                     </div>
                     <p className="text-xs text-zinc-400 mb-3">{phase.goal}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <p className="text-xs font-semibold text-zinc-500 mb-1.5">Topics</p>
-                        <ul className="flex flex-col gap-1">{phase.topics.map((t) => <li key={t} className="text-xs text-zinc-300 flex items-start gap-1.5"><span className="text-orange-500 shrink-0">•</span>{t}</li>)}</ul>
+                        <div className="flex flex-wrap gap-1.5">
+                          {phase.topics.map(t => {
+                            const slug = TOPIC_SLUG_MAP[t]
+                            const chip = (
+                              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 hover:bg-orange-500/20 transition-colors">
+                                {t}
+                              </span>
+                            )
+                            return slug
+                              ? <Link key={t} href={`/topics/${slug}`} target="_blank" rel="noopener noreferrer">{chip}</Link>
+                              : <React.Fragment key={t}>{chip}</React.Fragment>
+                          })}
+                        </div>
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-zinc-500 mb-1.5">Resources</p>
@@ -540,7 +638,61 @@ interface StudyPlanResult {
   weeks: StudyWeek[]; priorityTopics: string[]; dailyRoutine: string[]; doNotForget: string[]
 }
 
-function StudyPlanTab() {
+function getTodayWeekDay(interviewDate: string, totalDays: number, weeksCount: number): { weekIdx: number; dayNum: number } | null {
+  if (!interviewDate || !totalDays || !weeksCount) return null
+  const now = Date.now()
+  const interview = new Date(interviewDate).getTime()
+  const startMs = interview - totalDays * 86400000
+  const elapsedDays = Math.floor((now - startMs) / 86400000)
+  if (elapsedDays < 0 || elapsedDays >= totalDays) return null
+  const daysPerWeek = Math.ceil(totalDays / weeksCount)
+  const weekIdx = Math.floor(elapsedDays / daysPerWeek)
+  const dayNum = (elapsedDays % daysPerWeek) + 1
+  return { weekIdx, dayNum }
+}
+
+function exportICS(plan: StudyPlanResult, interviewDateStr: string) {
+  const interview = new Date(interviewDateStr)
+  const startDate = new Date(interview.getTime() - plan.totalDays * 86400000)
+  const daysPerWeek = Math.ceil(plan.totalDays / plan.weeks.length)
+
+  const events: string[] = []
+  plan.weeks.forEach((week, wi) => {
+    week.days.forEach(day => {
+      const dayNum = (wi * daysPerWeek) + (day.day - 1)
+      const date = new Date(startDate.getTime() + dayNum * 86400000)
+      const dtStr = date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+      const uid = `studyplan-w${wi}-d${day.day}@amanailab.com`
+      const desc = day.tasks.join('\\n') + '\\n\\nPractice: ' + day.practice
+      events.push([
+        'BEGIN:VEVENT',
+        `UID:${uid}`,
+        `DTSTART:${dtStr}`,
+        `DTEND:${dtStr}`,
+        `SUMMARY:Study: ${day.topic}`,
+        `DESCRIPTION:${desc}`,
+        'END:VEVENT',
+      ].join('\r\n'))
+    })
+  })
+
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'CALSCALE:GREGORIAN',
+    'PRODID:-//AmanAI Lab//Study Plan//EN',
+    ...events,
+    'END:VCALENDAR',
+  ].join('\r\n')
+
+  const blob = new Blob([ics], { type: 'text/calendar' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = 'study_plan.ics'; a.click()
+  URL.revokeObjectURL(url)
+}
+
+const STUDY_PROGRESS_KEY = 'study_plan_progress'
+
+function StudyPlanTab({ prefill }: { prefill?: { targetRole?: string } | null }) {
   const [targetRole, setTargetRole] = useState('')
   const [interviewDate, setInterviewDate] = useState('')
   const [currentLevel, setCurrentLevel] = useState('Mid')
@@ -552,6 +704,43 @@ function StudyPlanTab() {
   const [error, setError] = useState('')
   const [openWeek, setOpenWeek] = useState(0)
   const [studyPlanCached, setStudyPlanCached] = useState(false)
+  const [completedDays, setCompletedDays] = useState<Set<string>>(new Set())
+
+  // Load day progress on mount
+  useEffect(() => {
+    try {
+      setCompletedDays(new Set(JSON.parse(localStorage.getItem(STUDY_PROGRESS_KEY) ?? '[]')))
+    } catch {}
+  }, [])
+
+  // Apply prefill from roadmap or skill-gap
+  useEffect(() => {
+    if (prefill?.targetRole) setTargetRole(prefill.targetRole)
+    try {
+      const stored = JSON.parse(localStorage.getItem('career_prefill') ?? 'null')
+      if (stored?.source === 'skill-gap' && stored?.weakTopics) {
+        setWeakTopics(stored.weakTopics)
+        localStorage.removeItem('career_prefill')
+      }
+    } catch {}
+  }, [prefill])
+
+  const todayPos = result ? getTodayWeekDay(interviewDate, result.totalDays, result.weeks.length) : null
+
+  // Auto-open the current week when result loads
+  useEffect(() => {
+    if (result && todayPos) setOpenWeek(todayPos.weekIdx)
+  }, [result]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function toggleDay(weekIdx: number, dayIdx: number) {
+    const key = `w${weekIdx}d${dayIdx}`
+    setCompletedDays(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      localStorage.setItem(STUDY_PROGRESS_KEY, JSON.stringify([...next]))
+      return next
+    })
+  }
 
   async function generate() {
     if (result && studyPlanCached) {
@@ -635,9 +824,18 @@ function StudyPlanTab() {
                 <RotateCcw className="w-3 h-3" /> Re-generate
               </button>
             </div>
-            <div className="flex items-center gap-4 mt-3">
+            <div className="flex items-center gap-4 mt-3 flex-wrap">
               <span className="text-xs text-zinc-500">{result.totalDays} days</span>
               <span className="text-xs text-zinc-500">{result.dailyHours} hrs/day</span>
+              {completedDays.size > 0 && (
+                <span className="text-xs text-green-400">{completedDays.size} day{completedDays.size !== 1 ? 's' : ''} done</span>
+              )}
+              <button
+                onClick={() => exportICS(result, interviewDate)}
+                className="flex items-center gap-1.5 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-3 py-2 rounded-xl transition-colors ml-auto"
+              >
+                <Calendar className="w-3.5 h-3.5" /> Add to Calendar
+              </button>
             </div>
           </div>
 
@@ -659,7 +857,12 @@ function StudyPlanTab() {
                       <div className="flex items-center gap-3">
                         <div className="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-bold">{week.week}</div>
                         <div>
-                          <p className="text-sm font-semibold text-zinc-100">Week {week.week}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold text-zinc-100">Week {week.week}</p>
+                            {todayPos?.weekIdx === wi && (
+                              <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full">Today</span>
+                            )}
+                          </div>
                           <p className="text-xs text-zinc-500">{week.focus}</p>
                         </div>
                       </div>
@@ -667,19 +870,30 @@ function StudyPlanTab() {
                     </button>
                     {openWeek === wi && (
                       <div className="px-5 pb-5 flex flex-col gap-2">
-                        {week.days.map(day => (
-                          <div key={day.day} className="flex gap-3 py-2 border-t border-zinc-800/50 first:border-t-0">
-                            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400 shrink-0">{day.day}</div>
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold text-zinc-200">{day.topic}</p>
-                              <ul className="mt-1 flex flex-col gap-0.5">
-                                {day.tasks.map((t, i) => <li key={t + i} className="text-xs text-zinc-400 flex items-start gap-1.5"><span className="text-orange-500 shrink-0">•</span>{t}</li>)}
-                              </ul>
-                              <p className="text-xs text-blue-400 mt-1">Practice: {day.practice}</p>
+                        {week.days.map(day => {
+                          const isDone = completedDays.has(`w${wi}d${day.day}`)
+                          const isToday = todayPos?.weekIdx === wi && todayPos?.dayNum === day.day
+                          return (
+                            <div key={day.day} className={`flex gap-3 py-2 border-t border-zinc-800/50 first:border-t-0 ${isToday ? 'bg-orange-500/5 -mx-5 px-5 rounded-lg' : ''}`}>
+                              <button
+                                onClick={() => toggleDay(wi, day.day)}
+                                title={isDone ? 'Mark incomplete' : 'Mark complete'}
+                                className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-1.5 transition-all ${isDone ? 'bg-green-500 border-green-500' : 'border-zinc-700 hover:border-green-500'}`}
+                              >
+                                {isDone && <Check className="w-3 h-3 text-white" />}
+                              </button>
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${isToday ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 'bg-zinc-800 text-zinc-400'}`}>{day.day}</div>
+                              <div className="flex-1">
+                                <p className={`text-sm font-semibold ${isDone ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>{day.topic}</p>
+                                <ul className="mt-1 flex flex-col gap-0.5">
+                                  {day.tasks.map((t, i) => <li key={t + i} className="text-xs text-zinc-400 flex items-start gap-1.5"><span className="text-orange-500 shrink-0">•</span>{t}</li>)}
+                                </ul>
+                                <p className="text-xs text-blue-400 mt-1">Practice: {day.practice}</p>
+                              </div>
+                              <span className="text-xs text-zinc-600 shrink-0 mt-0.5">{day.timeEstimate}</span>
                             </div>
-                            <span className="text-xs text-zinc-600 shrink-0 mt-0.5">{day.timeEstimate}</span>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -714,7 +928,7 @@ interface OfferResult {
   overallVerdict: string; overallScore: number; summary: string
   compensation: { baseSalary: string; equity: string; bonus: string; benefits: string[]; marketComparison: string; marketNote: string }
   redFlags: string[]; greenFlags: string[]; missingClauses: string[]
-  negotiationScript: string; questionsToAsk: string[]
+  negotiationScript: string; phoneScript?: string; questionsToAsk: string[]
   recommendation: string; recommendationReason: string
 }
 
@@ -728,6 +942,27 @@ function OfferTab() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [offerCached, setOfferCached] = useState(false)
+  const [scriptMode, setScriptMode] = useState<'email' | 'phone'>('email')
+  const [offerHistory, setOfferHistory] = useState<{role:string;date:string;score:number;verdict:string;recommendation:string}[]>([])
+
+  // Load offer history from localStorage on mount
+  useEffect(() => {
+    try { setOfferHistory(JSON.parse(localStorage.getItem('offer_history') ?? '[]')) } catch {}
+  }, [])
+
+  // Auto-fill from Job Tracker localStorage prefill
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('career_prefill') ?? 'null')
+      if (stored?.source === 'job-tracker') {
+        if (stored.offerRole) setTargetRole(stored.offerRole)
+        if (stored.offerCompany) {
+          setOfferText(prev => prev || `Company: ${stored.offerCompany}\nRole: ${stored.offerRole ?? ''}\n\n[Paste your offer letter here]`)
+        }
+        localStorage.removeItem('career_prefill') // consume once
+      }
+    } catch {}
+  }, [])
 
   async function analyze() {
     if (result && offerCached) {
@@ -752,7 +987,17 @@ function OfferTab() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to analyze.')
+      if (!data.phoneScript) {
+        data.phoneScript = `"Thank you for the offer — I'm genuinely excited about this opportunity. After reviewing the details carefully, I'd like to discuss the compensation. Based on my research and experience, I was expecting something closer to [your target]. Is there flexibility on the base salary or equity? I'm very interested in making this work."`
+      }
       setResult(data); setOfferCached(true)
+      try {
+        const history = JSON.parse(localStorage.getItem('offer_history') ?? '[]')
+        const entry = { role: targetRole, company: '', date: new Date().toISOString(), score: data.overallScore, verdict: data.overallVerdict, recommendation: data.recommendation }
+        const updated = [entry, ...history].slice(0, 5)
+        localStorage.setItem('offer_history', JSON.stringify(updated))
+        setOfferHistory(updated)
+      } catch {}
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Something went wrong.') }
     finally { setLoading(false) }
   }
@@ -801,6 +1046,17 @@ function OfferTab() {
           className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-orange-500/50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
           {loading ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Analyzing Offer…</> : <><FileText className="w-4 h-4" /> Analyze My Offer</>}
         </button>
+        {/* Offer history */}
+        {offerHistory.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-1">
+            <span className="text-[10px] text-zinc-600">Recent:</span>
+            {offerHistory.slice(0, 3).map((h, i) => (
+              <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full border ${h.recommendation === 'Accept' ? 'text-green-400 bg-green-500/10 border-green-500/20' : h.recommendation === 'Negotiate' ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
+                {h.role || 'Offer'} — {h.score}/100 {h.recommendation}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading && <LoadingState label="Analyzing your offer letter…" />}
@@ -812,12 +1068,18 @@ function OfferTab() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Overall Verdict</p>
-                <button
-                  onClick={() => { setOfferCached(false); analyze() }}
-                  className="flex items-center gap-1 text-xs opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <RotateCcw className="w-3 h-3" /> Re-generate
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { setOfferCached(false); analyze() }}
+                    className="flex items-center gap-1 text-xs opacity-60 hover:opacity-100 transition-opacity"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Re-generate
+                  </button>
+                  <button onClick={() => downloadOfferPDF(result, targetRole)}
+                    className="flex items-center gap-1.5 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-3 py-2 rounded-xl transition-colors">
+                    <Download className="w-3.5 h-3.5" /> PDF
+                  </button>
+                </div>
               </div>
               <p className="text-xl font-bold">{result.overallVerdict}</p>
               <p className="text-sm opacity-80 mt-1">{result.summary}</p>
@@ -882,11 +1144,23 @@ function OfferTab() {
 
               {/* Negotiation Script */}
               <Section title="Negotiation Script">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs text-zinc-500">Use this word-for-word</p>
-                  <CopyButton text={result.negotiationScript} />
+                <div className="flex gap-1 bg-zinc-800 rounded-lg p-0.5 mb-3 w-fit">
+                  <button onClick={() => setScriptMode('email')}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all ${scriptMode === 'email' ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                    ✉️ Email
+                  </button>
+                  <button onClick={() => setScriptMode('phone')}
+                    className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all ${scriptMode === 'phone' ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                    📞 Phone Call
+                  </button>
                 </div>
-                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line bg-zinc-800 rounded-xl p-4">{result.negotiationScript}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-zinc-500">{scriptMode === 'email' ? 'Use this word-for-word in your email' : 'What to say when they call'}</p>
+                  <CopyButton text={scriptMode === 'email' ? result.negotiationScript : (result.phoneScript ?? '')} />
+                </div>
+                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line bg-zinc-800 rounded-xl p-4">
+                  {scriptMode === 'email' ? result.negotiationScript : (result.phoneScript ?? 'Phone script not available — re-generate to get one.')}
+                </p>
               </Section>
 
               {/* Questions to Ask */}
@@ -914,6 +1188,53 @@ interface CompanyResult {
   questionsToAskThem: string[]; salaryRange: string
   prosAndCons: { pros: string[]; cons: string[] }
   insiderTips: string[]; disclaimer: string
+}
+
+const KNOWN_COMPANY_SLUGS: Record<string, string> = {
+  'google': 'google', 'deepmind': 'google', 'google deepmind': 'google',
+  'meta': 'meta', 'facebook': 'meta', 'meta ai': 'meta',
+  'openai': 'openai', 'open ai': 'openai',
+  'anthropic': 'anthropic',
+  'microsoft': 'microsoft', 'azure': 'microsoft',
+  'amazon': 'amazon', 'aws': 'amazon',
+  'nvidia': 'nvidia',
+  'apple': 'apple',
+  'hugging face': 'hugging-face', 'huggingface': 'hugging-face',
+}
+
+function getCompanySlug(name: string): string | null {
+  return KNOWN_COMPANY_SLUGS[name.toLowerCase().trim()] ?? null
+}
+
+function buildResearchText(company: string, r: CompanyResult): string {
+  return [
+    `COMPANY RESEARCH: ${company}`,
+    `Salary Range: ${r.salaryRange}`,
+    '',
+    r.companyOverview,
+    '',
+    `AI/ML Focus: ${r.aiMlFocus}`,
+    '',
+    `Tech Stack: ${r.techStack.join(', ')}`,
+    '',
+    'INTERVIEW PROCESS:',
+    ...r.interviewProcess.map((round, i) => `${i+1}. ${round.round}: ${round.description}\n   Tip: ${round.tips}`),
+    '',
+    `TOPICS TO STUDY: ${r.topicsToStudy.join(', ')}`,
+    '',
+    'COMMON QUESTIONS:',
+    ...r.commonInterviewQuestions.map((q, i) => `${i+1}. ${q}`),
+    '',
+    'INSIDER TIPS:',
+    ...r.insiderTips.map(t => `• ${t}`),
+    '',
+    'PROS:',
+    ...r.prosAndCons.pros.map(p => `+ ${p}`),
+    'CONS:',
+    ...r.prosAndCons.cons.map(c => `- ${c}`),
+    '',
+    `Generated by AmanAI Lab | ${new Date().toLocaleDateString()}`,
+  ].join('\n')
 }
 
 function CompanyTab() {
@@ -976,16 +1297,26 @@ function CompanyTab() {
         <>
           {/* Overview */}
           <div id="company-result" className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-3 flex-wrap">
               <Building2 className="w-5 h-5 text-orange-400" />
               <h3 className="text-base font-bold text-zinc-100">{companyName}</h3>
-              {result.salaryRange && <span className="text-xs text-zinc-500 ml-auto">{result.salaryRange}</span>}
-              <button
-                onClick={() => { setResearchCached(false); research() }}
-                className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-              >
-                <RotateCcw className="w-3 h-3" /> Re-generate
-              </button>
+              {result.salaryRange && <span className="text-xs text-zinc-500">{result.salaryRange}</span>}
+              <div className="ml-auto flex items-center gap-2 flex-wrap">
+                {getCompanySlug(companyName) && (
+                  <Link href={`/companies/${getCompanySlug(companyName)}`}
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-lg transition-colors"
+                    target="_blank">
+                    View Full Profile <ExternalLink className="w-3 h-3" />
+                  </Link>
+                )}
+                <CopyButton text={buildResearchText(companyName, result)} />
+                <button
+                  onClick={() => { setResearchCached(false); research() }}
+                  className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" /> Re-generate
+                </button>
+              </div>
             </div>
             <p className="text-sm text-zinc-300 leading-relaxed mb-3">{result.companyOverview}</p>
             <p className="text-xs text-zinc-400 leading-relaxed">{result.aiMlFocus}</p>
@@ -1029,6 +1360,22 @@ function CompanyTab() {
                 </Section>
               </div>
 
+              {/* Practice interview CTA */}
+              {result.topicsToStudy.length > 0 && (
+                <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 flex items-center gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-zinc-100">Ready to practice?</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Start a mock interview focused on {companyName}&apos;s typical topics</p>
+                  </div>
+                  <Link
+                    href={`/interview?tab=simulator&topic=${encodeURIComponent(result.topicsToStudy[0] ?? 'LLM')}`}
+                    className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shrink-0"
+                  >
+                    Practice Interview <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              )}
+
               {/* Culture + Pros/Cons */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Section title="Culture Signals">
@@ -1057,7 +1404,10 @@ function CompanyTab() {
                 </ul>
               </Section>
 
-              <p className="text-xs text-zinc-600 italic">{result.disclaimer}</p>
+              <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 mt-2">
+                <span className="text-xs text-zinc-500">ℹ️</span>
+                <p className="text-xs text-zinc-500 italic">{result.disclaimer} · Research generated: {new Date().toLocaleDateString()}</p>
+              </div>
             </>
         </>
       )}
@@ -1078,6 +1428,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode; description: string
 
 export default function CareerTools() {
   const [activeTab, setActiveTab] = useState<Tab>('roadmap')
+  const [studyPlanPrefill, setStudyPlanPrefill] = useState<{ targetRole?: string } | null>(null)
 
   // Read ?tab= from URL so Navbar deep links work
   useEffect(() => {
@@ -1123,8 +1474,12 @@ export default function CareerTools() {
         </div>
 
         {/* Tab content */}
-        {activeTab === 'roadmap' && <RoadmapTab />}
-        {activeTab === 'study-plan' && <StudyPlanTab />}
+        {activeTab === 'roadmap' && <RoadmapTab onSwitchToStudyPlan={(role) => {
+          setStudyPlanPrefill({ targetRole: role })
+          setActiveTab('study-plan')
+          setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)
+        }} />}
+        {activeTab === 'study-plan' && <StudyPlanTab prefill={studyPlanPrefill} />}
         {activeTab === 'offer' && <OfferTab />}
         {activeTab === 'company' && <CompanyTab />}
       </div>
