@@ -16,7 +16,7 @@ function rankColor(i: number) {
   if (i === 0) return 'text-yellow-400'
   if (i === 1) return 'text-zinc-300'
   if (i === 2) return 'text-amber-600'
-  return 'text-zinc-600'
+  return 'text-zinc-400'
 }
 
 function rankBg(i: number) {

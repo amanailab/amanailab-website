@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, Mail, Calendar, LayoutDashboard, LogOut, Trash2, Save, Loader2, BrainCircuit, AlertTriangle, Briefcase, Code2 } from 'lucide-react'
+import { User, Mail, Calendar, LayoutDashboard, LogOut, Trash2, Save, Loader2, BrainCircuit, AlertTriangle, Briefcase, Code2, Lock, ChevronDown } from 'lucide-react'
 
 interface Stats { sessions: number; avgScore: number; streak: number }
 
@@ -18,6 +18,12 @@ export default function ProfilePage() {
   const [saving, setSaving]       = useState(false)
   const [banner, setBanner]       = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
   const [showDelete, setShowDelete] = useState(false)
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [currentPass, setCurrentPass] = useState('')
+  const [newPass, setNewPass] = useState('')
+  const [confirmPass, setConfirmPass] = useState('')
+  const [changingPass, setChangingPass] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -66,6 +72,22 @@ export default function ProfilePage() {
     else { setBanner({ type: 'success', msg: 'Name updated.' }); setTimeout(() => setBanner(null), 3000) }
   }
 
+  async function handleChangePassword() {
+    if (newPass !== confirmPass) { setBanner({ type: 'error', msg: 'Passwords do not match.' }); return }
+    if (newPass.length < 8) { setBanner({ type: 'error', msg: 'Password must be at least 8 characters.' }); return }
+    setChangingPass(true)
+    const supabase = createClient()
+    const { error } = await supabase.auth.updateUser({ password: newPass })
+    setChangingPass(false)
+    if (error) setBanner({ type: 'error', msg: error.message })
+    else {
+      setBanner({ type: 'success', msg: 'Password updated successfully.' })
+      setShowPasswordForm(false)
+      setCurrentPass(''); setNewPass(''); setConfirmPass('')
+      setTimeout(() => setBanner(null), 3000)
+    }
+  }
+
   async function handleSignOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -73,15 +95,15 @@ export default function ProfilePage() {
   }
 
   async function handleDeleteAccount() {
-    if (!confirm('This will permanently delete your account and ALL progress data (sessions, submissions, subscriptions). This cannot be undone. Are you sure?')) return
+    if (deleteConfirmText !== 'DELETE') return
     try {
       const res = await fetch('/api/user/delete-account', { method: 'DELETE' })
-      if (!res.ok) { const d = await res.json(); alert(d.error ?? 'Failed to delete account'); return }
+      if (!res.ok) { const d = await res.json(); setBanner({ type: 'error', msg: d.error ?? 'Failed to delete account' }); return }
       const supabase = createClient()
       await supabase.auth.signOut()
       router.push('/?deleted=1')
     } catch {
-      alert('Failed to delete account. Please try again or contact support.')
+      setBanner({ type: 'error', msg: 'Failed to delete account. Please try again.' })
     }
   }
 
@@ -144,6 +166,32 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Password change */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 mb-4">
+          <button onClick={() => setShowPasswordForm(v => !v)}
+            className="flex items-center justify-between w-full text-sm font-semibold text-zinc-300 hover:text-zinc-100 transition-colors">
+            <span className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-zinc-500" /> Change Password
+            </span>
+            <ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${showPasswordForm ? 'rotate-180' : ''}`} />
+          </button>
+          {showPasswordForm && (
+            <div className="mt-4 flex flex-col gap-3">
+              <input type="password" value={newPass} onChange={e => setNewPass(e.target.value)}
+                placeholder="New password (min 8 chars)"
+                className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors" />
+              <input type="password" value={confirmPass} onChange={e => setConfirmPass(e.target.value)}
+                placeholder="Confirm new password"
+                className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors" />
+              <button onClick={handleChangePassword} disabled={changingPass || !newPass || !confirmPass}
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                {changingPass ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Update Password
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Stats */}
         {stats && (
           <div className="grid grid-cols-3 gap-3 mb-4">
@@ -192,11 +240,19 @@ export default function ProfilePage() {
                 <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-red-300">This will permanently delete your account and all progress data. This cannot be undone.</p>
               </div>
+              <p className="text-xs text-red-300 mb-3">Type <strong>DELETE</strong> to confirm:</p>
+              <input
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE"
+                className="w-full mb-3 bg-zinc-900 border border-red-500/30 focus:border-red-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors"
+              />
               <div className="flex gap-2">
-                <button onClick={() => setShowDelete(false)} className="flex-1 text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-semibold py-2 rounded-lg transition-colors">
+                <button onClick={() => { setShowDelete(false); setDeleteConfirmText('') }} className="flex-1 text-xs bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-semibold py-2 rounded-lg transition-colors">
                   Cancel
                 </button>
-                <button onClick={handleDeleteAccount} className="flex-1 text-xs bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 font-semibold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+                <button onClick={handleDeleteAccount} disabled={deleteConfirmText !== 'DELETE'}
+                  className="flex-1 text-xs bg-red-500/20 hover:bg-red-500/30 disabled:opacity-40 disabled:cursor-not-allowed border border-red-500/30 text-red-400 font-semibold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
                   <Trash2 className="w-3.5 h-3.5" /> Delete Account
                 </button>
               </div>

@@ -300,7 +300,7 @@ export default function CoverLetterReviewer() {
                           <CheckCircle2 className="w-4 h-4 text-green-400" />
                           <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">What Works</span>
                         </div>
-                        <ul className="flex flex-col gap-2">
+                        <ul className="flex flex-col gap-2 max-h-64 overflow-y-auto">
                           {result.strengths.map((s, i) => (
                             <li key={i} className="flex items-start gap-2 text-xs text-zinc-300">
                               <CheckCircle2 className="w-3.5 h-3.5 text-green-400 shrink-0 mt-0.5" />{s}
@@ -313,7 +313,7 @@ export default function CoverLetterReviewer() {
                           <XCircle className="w-4 h-4 text-red-400" />
                           <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Needs Work</span>
                         </div>
-                        <ul className="flex flex-col gap-2">
+                        <ul className="flex flex-col gap-2 max-h-64 overflow-y-auto">
                           {result.weaknesses.map((w, i) => (
                             <li key={i} className="flex items-start gap-2 text-xs text-zinc-300">
                               <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />{w}
@@ -371,7 +371,7 @@ export default function CoverLetterReviewer() {
                         </button>
                       </div>
                     </div>
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4">
+                    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 max-h-96 overflow-y-auto">
                       <p className="text-sm text-zinc-300 leading-[1.8] whitespace-pre-line">{result.improvedVersion}</p>
                     </div>
                   </div>

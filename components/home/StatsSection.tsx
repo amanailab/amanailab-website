@@ -70,7 +70,7 @@ export default function StatsSection({ stats }: { stats?: FormattedStats }) {
                   <Counter value={stat.value} suffix={stat.suffix} />
                 </div>
                 <div className="text-zinc-200 text-sm font-semibold mb-0.5">{stat.label}</div>
-                <div className="text-zinc-600 text-xs">{stat.desc}</div>
+                <div className="text-zinc-400 text-xs">{stat.desc}</div>
               </motion.div>
             ))}
           </div>

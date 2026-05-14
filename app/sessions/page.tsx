@@ -45,6 +45,8 @@ export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [filterTopic, setFilterTopic] = useState('All')
+  const [sortBy, setSortBy] = useState<'recent' | 'best' | 'worst'>('recent')
 
   useEffect(() => {
     createClient().auth.getUser().then(({ data: { user } }) => {
@@ -64,6 +66,16 @@ export default function SessionsPage() {
   const bestGrade = sessions.length
     ? sessions.reduce((best, s) => s.avg_score > best.avg_score ? s : best, sessions[0]).grade
     : null
+
+  const topics = ['All', ...new Set(sessions.map(s => s.topic))]
+
+  const displayed = [...sessions]
+    .filter(s => filterTopic === 'All' || s.topic === filterTopic)
+    .sort((a, b) => {
+      if (sortBy === 'best') return b.avg_score - a.avg_score
+      if (sortBy === 'worst') return a.avg_score - b.avg_score
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
@@ -100,7 +112,7 @@ export default function SessionsPage() {
             ].map(s => (
               <div key={s.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
                 <p className={`text-lg font-extrabold ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-zinc-600 mt-0.5">{s.label}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">{s.label}</p>
               </div>
             ))}
           </div>
@@ -114,7 +126,13 @@ export default function SessionsPage() {
         ) : error ? (
           <div className="text-center py-20">
             <AlertCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
-            <p className="text-zinc-400 text-sm">{error}</p>
+            <p className="text-zinc-400 text-sm mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" /> Try Again
+            </button>
           </div>
         ) : sessions.length === 0 ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
@@ -130,7 +148,43 @@ export default function SessionsPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {sessions.map(s => (
+            {/* Filter + Sort controls */}
+            <div className="mb-4 flex flex-col gap-3">
+              {/* Topic pills */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                {topics.map(t => (
+                  <button key={t} onClick={() => setFilterTopic(t)}
+                    className={`flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+                      filterTopic === t
+                        ? 'bg-orange-500 border-orange-500 text-white'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                    }`}>{t}</button>
+                ))}
+              </div>
+              {/* Sort */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-zinc-500 mr-1">Sort:</span>
+                {(['recent', 'best', 'worst'] as const).map(s => (
+                  <button key={s} onClick={() => setSortBy(s)}
+                    className={`text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors capitalize ${
+                      sortBy === s ? 'bg-zinc-700 border-zinc-600 text-zinc-100' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                    }`}>{s === 'recent' ? 'Recent' : s === 'best' ? 'Best Score' : 'Needs Work'}</button>
+                ))}
+                {filterTopic !== 'All' && (
+                  <span className="text-xs text-zinc-500 ml-auto">{displayed.length} of {sessions.length}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Empty state when filter returns nothing */}
+            {displayed.length === 0 && sessions.length > 0 && (
+              <div className="text-center py-12 text-zinc-500 text-sm">
+                No {filterTopic} sessions yet.{' '}
+                <button onClick={() => setFilterTopic('All')} className="text-orange-400 hover:text-orange-300">Clear filter</button>
+              </div>
+            )}
+
+            {displayed.map(s => (
               <Link
                 key={s.id}
                 href={`/sessions/${s.id}`}

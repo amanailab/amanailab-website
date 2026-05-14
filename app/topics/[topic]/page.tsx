@@ -1,9 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import { ArrowLeft, BrainCircuit, CheckCircle2, Lightbulb, ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
+import { ArrowLeft, BrainCircuit, CheckCircle2, BookOpen } from 'lucide-react'
 import { TOPIC_MAP, SLUG_TO_DB_TOPIC } from '@/lib/topic-data'
 import { getAdminSupabase } from '@/lib/admin'
+import QuestionsList from './QuestionsList'
 
 interface Props { params: Promise<{ topic: string }> }
 
@@ -33,36 +34,6 @@ async function getQuestions(dbTopic: string) {
       .order('id', { ascending: false }),
   ])
   return { general: general ?? [], companyQs: companyQs ?? [] }
-}
-
-// Inline expandable question (server component renders static, no JS needed for first paint)
-function QuestionItem({ question, answer, level, company }: {
-  question: string; answer: string; level: string; company?: string; companySlug?: string
-}) {
-  return (
-    <details className="group bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-      <summary className="flex items-start gap-3 p-4 cursor-pointer list-none hover:bg-zinc-800/30 transition-colors">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1.5">
-            <span className="text-[10px] text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700">{level}</span>
-            {company && <span className="text-[10px] text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full">{company}</span>}
-          </div>
-          <p className="text-sm text-zinc-200 leading-relaxed">{question}</p>
-        </div>
-        <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5 group-open:hidden" />
-        <ChevronUp className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5 hidden group-open:block" />
-      </summary>
-      <div className="px-4 pb-4 border-t border-zinc-800">
-        <div className="flex items-start gap-2 mt-3">
-          <Lightbulb className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1.5">Model Answer</p>
-            <p className="text-sm text-zinc-300 leading-relaxed">{answer}</p>
-          </div>
-        </div>
-      </div>
-    </details>
-  )
 }
 
 export default async function TopicPage({ params }: Props) {
@@ -157,12 +128,7 @@ export default async function TopicPage({ params }: Props) {
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5">
-              {allQuestions.map(q => (
-                <QuestionItem key={q.id} question={q.question} answer={q.answer}
-                  level={q.level} company={q.company} companySlug={q.companySlug} />
-              ))}
-            </div>
+            <QuestionsList questions={allQuestions} />
           )}
         </div>
 

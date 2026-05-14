@@ -1,15 +1,14 @@
 import type { Metadata } from 'next'
-
 export const metadata: Metadata = {
-  title: 'AI/ML Interview Community',
-  description: 'Share your AI/ML interview experiences, ask questions, and get tips from engineers who have been through interviews at Google, Meta, OpenAI, Anthropic and more.',
+  title: 'AI/ML Interview Experiences | AmanAI Lab Community',
+  description: 'Read real AI/ML interview experiences from engineers at Google, Meta, OpenAI, and more. Share your own experience to help others.',
   alternates: { canonical: 'https://amanailab.com/community' },
   openGraph: {
-    title: 'AI/ML Interview Community',
-    description: 'Real interview experiences from engineers at top AI companies. Join the community.',
+    title: 'AI/ML Interview Experiences | AmanAI Lab',
+    description: 'Real interview experiences from top AI/ML companies. Read and share to help the community.',
+    url: 'https://amanailab.com/community',
   },
 }
-
 export default function CommunityLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }

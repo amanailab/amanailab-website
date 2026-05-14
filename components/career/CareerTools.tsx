@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Map, CalendarDays, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail } from 'lucide-react'
+import { Map, CalendarDays, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail, RotateCcw } from 'lucide-react'
 import { isCaptured, saveEmail, markCaptured } from '@/lib/email-capture'
 
 type Tab = 'roadmap' | 'study-plan' | 'offer' | 'company'
@@ -353,8 +353,13 @@ function RoadmapTab() {
   const [result, setResult] = useState<RoadmapResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [roadmapCached, setRoadmapCached] = useState(false)
 
   async function generate() {
+    if (result && roadmapCached) {
+      document.getElementById('roadmap-result')?.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
     if (!targetRole.trim()) { setError('Please enter your target role.'); return }
     const emailErr = await ensureEmail(email)
     if (emailErr) { setError(emailErr); return }
@@ -366,7 +371,7 @@ function RoadmapTab() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to generate.')
-      setResult(data)
+      setResult(data); setRoadmapCached(true)
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Something went wrong.') }
     finally { setLoading(false) }
   }
@@ -416,18 +421,26 @@ function RoadmapTab() {
       {result && (
         <>
           {/* Overview */}
-          <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20 rounded-2xl p-6">
+          <div id="roadmap-result" className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20 rounded-2xl p-6">
             <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
               <div className="flex items-center gap-3">
                 <Clock className="w-5 h-5 text-orange-400" />
                 <span className="text-lg font-bold text-zinc-100">{result.totalDuration} Roadmap</span>
               </div>
-              <button
-                onClick={() => downloadRoadmapPDF(result, targetRole)}
-                className="flex items-center gap-2 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-3 py-2 rounded-xl transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" /> Download PDF
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { setRoadmapCached(false); generate() }}
+                  className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  <RotateCcw className="w-3 h-3" /> Re-generate
+                </button>
+                <button
+                  onClick={() => downloadRoadmapPDF(result, targetRole)}
+                  className="flex items-center gap-2 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 px-3 py-2 rounded-xl transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download PDF
+                </button>
+              </div>
             </div>
             <p className="text-sm text-zinc-300 leading-relaxed">{result.overview}</p>
           </div>
@@ -538,8 +551,13 @@ function StudyPlanTab() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [openWeek, setOpenWeek] = useState(0)
+  const [studyPlanCached, setStudyPlanCached] = useState(false)
 
   async function generate() {
+    if (result && studyPlanCached) {
+      document.getElementById('study-plan-result')?.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
     if (!targetRole.trim() || !interviewDate) { setError('Target role and interview date are required.'); return }
     const emailErr = await ensureEmail(email)
     if (emailErr) { setError(emailErr); return }
@@ -551,7 +569,7 @@ function StudyPlanTab() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to generate.')
-      setResult(data); setOpenWeek(0)
+      setResult(data); setOpenWeek(0); setStudyPlanCached(true)
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Something went wrong.') }
     finally { setLoading(false) }
   }
@@ -607,8 +625,16 @@ function StudyPlanTab() {
 
       {result && (
         <>
-          <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-2xl p-5">
-            <p className="text-sm text-zinc-300">{result.summary}</p>
+          <div id="study-plan-result" className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 rounded-2xl p-5">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-sm text-zinc-300">{result.summary}</p>
+              <button
+                onClick={() => { setStudyPlanCached(false); generate() }}
+                className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
+              >
+                <RotateCcw className="w-3 h-3" /> Re-generate
+              </button>
+            </div>
             <div className="flex items-center gap-4 mt-3">
               <span className="text-xs text-zinc-500">{result.totalDays} days</span>
               <span className="text-xs text-zinc-500">{result.dailyHours} hrs/day</span>
@@ -701,9 +727,21 @@ function OfferTab() {
   const [result, setResult] = useState<OfferResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [offerCached, setOfferCached] = useState(false)
 
   async function analyze() {
+    if (result && offerCached) {
+      document.getElementById('offer-result')?.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
     if (!offerText.trim()) { setError('Please paste your offer letter.'); return }
+    // Basic validation: check for at least one compensation-related keyword
+    const offerKeywords = ['salary', 'compensation', 'equity', 'stock', 'rsu', 'bonus', 'offer', 'package', '$', '₹', '£', '€', 'lakh', 'per year', 'annual', 'ctc']
+    const hasOfferContent = offerKeywords.some(kw => offerText.toLowerCase().includes(kw))
+    if (!hasOfferContent) {
+      setError('Please paste your actual offer letter or include compensation details (salary, equity, bonus, etc.) for accurate analysis.')
+      return
+    }
     const emailErr = await ensureEmail(email)
     if (emailErr) { setError(emailErr); return }
     setError(''); setLoading(true); setResult(null)
@@ -714,7 +752,7 @@ function OfferTab() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to analyze.')
-      setResult(data)
+      setResult(data); setOfferCached(true)
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Something went wrong.') }
     finally { setLoading(false) }
   }
@@ -770,9 +808,17 @@ function OfferTab() {
       {result && (
         <>
           {/* Verdict */}
-          <div className={`border rounded-2xl p-6 flex items-center justify-between gap-4 ${verdictColor(result.overallVerdict)}`}>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide opacity-70 mb-1">Overall Verdict</p>
+          <div id="offer-result" className={`border rounded-2xl p-6 flex items-center justify-between gap-4 ${verdictColor(result.overallVerdict)}`}>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Overall Verdict</p>
+                <button
+                  onClick={() => { setOfferCached(false); analyze() }}
+                  className="flex items-center gap-1 text-xs opacity-60 hover:opacity-100 transition-opacity"
+                >
+                  <RotateCcw className="w-3 h-3" /> Re-generate
+                </button>
+              </div>
               <p className="text-xl font-bold">{result.overallVerdict}</p>
               <p className="text-sm opacity-80 mt-1">{result.summary}</p>
             </div>
@@ -877,8 +923,13 @@ function CompanyTab() {
   const [result, setResult] = useState<CompanyResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [researchCached, setResearchCached] = useState(false)
 
   async function research() {
+    if (result && researchCached) {
+      document.getElementById('company-result')?.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
     if (!companyName.trim()) { setError('Please enter a company name.'); return }
     const emailErr = await ensureEmail(email)
     if (emailErr) { setError(emailErr); return }
@@ -890,7 +941,7 @@ function CompanyTab() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to research.')
-      setResult(data)
+      setResult(data); setResearchCached(true)
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Something went wrong.') }
     finally { setLoading(false) }
   }
@@ -924,11 +975,17 @@ function CompanyTab() {
       {result && (
         <>
           {/* Overview */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+          <div id="company-result" className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-3">
               <Building2 className="w-5 h-5 text-orange-400" />
               <h3 className="text-base font-bold text-zinc-100">{companyName}</h3>
               {result.salaryRange && <span className="text-xs text-zinc-500 ml-auto">{result.salaryRange}</span>}
+              <button
+                onClick={() => { setResearchCached(false); research() }}
+                className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" /> Re-generate
+              </button>
             </div>
             <p className="text-sm text-zinc-300 leading-relaxed mb-3">{result.companyOverview}</p>
             <p className="text-xs text-zinc-400 leading-relaxed">{result.aiMlFocus}</p>
