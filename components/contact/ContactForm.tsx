@@ -96,7 +96,7 @@ export default function ContactForm() {
   };
 
   const inputClass =
-    "w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/60 focus:outline-none text-zinc-100 placeholder:text-zinc-600 rounded-xl px-4 py-3 text-sm transition-colors";
+    "w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/60 focus:outline-none text-zinc-100 placeholder:text-zinc-500 rounded-xl px-4 py-3 text-sm transition-colors";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">

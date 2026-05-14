@@ -95,7 +95,7 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="At least 6 characters"
-                className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 rounded-xl px-4 py-3 pr-11 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-all"
+                className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 rounded-xl px-4 py-3 pr-11 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-all"
               />
               <button type="button" onClick={() => setShowPw(v => !v)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
@@ -112,7 +112,7 @@ export default function ResetPasswordPage() {
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
               placeholder="Repeat your password"
-              className={`w-full bg-zinc-900 border focus:ring-1 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-all ${
+              className={`w-full bg-zinc-900 border focus:ring-1 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-all ${
                 confirm && password !== confirm
                   ? 'border-red-500/50 focus:border-red-500 focus:ring-red-500/20'
                   : 'border-zinc-800 focus:border-orange-500 focus:ring-orange-500/20'

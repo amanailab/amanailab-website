@@ -7,6 +7,7 @@ import {
   ArrowLeft, BrainCircuit, Trophy, Clock, CheckCircle2,
   XCircle, AlertCircle, Lightbulb, Target, RotateCcw, ChevronDown, ChevronUp,
 } from 'lucide-react'
+import { SessionPageSkeleton } from '@/components/ui/SkeletonCard'
 
 interface Entry {
   question:    string
@@ -73,8 +74,8 @@ export default function SessionReplayPage() {
   }, [id])
 
   if (loading) return (
-    <div className="min-h-screen bg-zinc-950 pt-20 flex items-center justify-center">
-      <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    <div className="min-h-screen bg-zinc-950 pt-24 pb-16">
+      <SessionPageSkeleton />
     </div>
   )
 
@@ -128,7 +129,7 @@ export default function SessionReplayPage() {
               <div key={s.label} className="bg-zinc-800/50 rounded-xl p-3 text-center">
                 <div className="flex justify-center mb-1">{s.icon}</div>
                 <p className="text-sm font-bold text-zinc-100">{s.value}</p>
-                <p className="text-[10px] text-zinc-600">{s.label}</p>
+                <p className="text-[10px] text-zinc-500">{s.label}</p>
               </div>
             ))}
           </div>

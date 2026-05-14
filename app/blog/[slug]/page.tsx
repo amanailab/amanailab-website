@@ -163,11 +163,11 @@ export default async function BlogPostPage({ params }: Props) {
           <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20">
             {post.category}
           </span>
-          <span className="text-xs text-zinc-600 flex items-center gap-1">
+          <span className="text-xs text-zinc-500 flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {post.read_time}
           </span>
-          <span className="text-xs text-zinc-600">{formatDate(post.created_at)}</span>
+          <span className="text-xs text-zinc-500">{formatDate(post.created_at)}</span>
           {/* Share buttons */}
           <div className="flex items-center gap-1.5 ml-auto">
             <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(`https://amanailab.com/blog/${post.slug}`)}`}
@@ -259,7 +259,7 @@ export default async function BlogPostPage({ params }: Props) {
                   <span className="text-[10px] font-semibold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">
                     {r.category}
                   </span>
-                  {r.read_time && <span className="text-[10px] text-zinc-600">{r.read_time}</span>}
+                  {r.read_time && <span className="text-[10px] text-zinc-500">{r.read_time}</span>}
                 </div>
               </Link>
             ))}

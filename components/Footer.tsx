@@ -41,7 +41,7 @@ function FooterNewsletter() {
             onChange={e => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
-            className="flex-1 bg-zinc-800 border border-zinc-700 focus:border-orange-500/60 rounded-lg px-3 py-2 text-xs text-zinc-300 placeholder:text-zinc-600 outline-none transition-colors min-w-0"
+            className="flex-1 bg-zinc-800 border border-zinc-700 focus:border-orange-500/60 rounded-lg px-3 py-2 text-xs text-zinc-300 placeholder:text-zinc-500 outline-none transition-colors min-w-0"
           />
           <button type="submit" disabled={status === "loading"}
             className="flex items-center justify-center w-8 h-8 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white rounded-lg transition-colors shrink-0">

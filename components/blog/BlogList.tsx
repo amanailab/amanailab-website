@@ -111,7 +111,7 @@ export default function BlogList({ posts, total, page, perPage, search, category
             value={searchValue}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search articles..."
-            className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-600"
+            className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-600"
           />
         </div>
 
@@ -179,7 +179,7 @@ export default function BlogList({ posts, total, page, perPage, search, category
                     <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${getCategoryStyle(posts[0].category)}`}>
                       {posts[0].category}
                     </span>
-                    <span className="text-xs text-zinc-600">{formatDate(posts[0].created_at)}</span>
+                    <span className="text-xs text-zinc-500">{formatDate(posts[0].created_at)}</span>
                   </div>
                   <h2 className="text-xl font-bold text-zinc-100 mb-3 leading-snug group-hover:text-orange-400 transition-colors line-clamp-2">
                     {posts[0].title}
@@ -187,7 +187,7 @@ export default function BlogList({ posts, total, page, perPage, search, category
                   {posts[0].description && (
                     <p className="text-sm text-zinc-400 line-clamp-2 mb-4 leading-relaxed">{posts[0].description}</p>
                   )}
-                  <div className="flex items-center gap-1 text-xs text-zinc-600">
+                  <div className="flex items-center gap-1 text-xs text-zinc-500">
                     <Clock className="w-3 h-3" />
                     <span>{posts[0].read_time}</span>
                   </div>
@@ -223,7 +223,7 @@ export default function BlogList({ posts, total, page, perPage, search, category
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getCategoryStyle(post.category)}`}>
                     {post.category}
                   </span>
-                  <span className="text-xs text-zinc-600">{formatDate(post.created_at)}</span>
+                  <span className="text-xs text-zinc-500">{formatDate(post.created_at)}</span>
                 </div>
 
                 <h2 className="text-sm font-semibold text-zinc-100 mb-1.5 line-clamp-2 group-hover:text-orange-400 transition-colors">
@@ -231,10 +231,10 @@ export default function BlogList({ posts, total, page, perPage, search, category
                 </h2>
 
                 {post.description && (
-                  <p className="text-xs text-zinc-500 line-clamp-2 mb-3">{post.description}</p>
+                  <p className="text-xs text-zinc-400 line-clamp-2 mb-3">{post.description}</p>
                 )}
 
-                <div className="flex items-center gap-1 text-xs text-zinc-600">
+                <div className="flex items-center gap-1 text-xs text-zinc-500">
                   <Clock className="w-3 h-3" />
                   <span>{post.read_time}</span>
                 </div>

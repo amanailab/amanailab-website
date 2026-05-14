@@ -68,3 +68,43 @@ export function CommunityCardSkeleton() {
     </div>
   )
 }
+
+export function LeaderboardRowSkeleton() {
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-2xl border border-zinc-800 bg-zinc-900">
+      <SkeletonLine className="w-9 h-9 rounded-xl shrink-0" />
+      <SkeletonLine className="w-9 h-9 rounded-full shrink-0" />
+      <div className="flex-1 flex flex-col gap-1.5">
+        <SkeletonLine className="h-4 w-32" />
+        <SkeletonLine className="h-3 w-20" />
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <SkeletonLine className="h-6 w-10" />
+        <SkeletonLine className="h-3 w-14" />
+      </div>
+    </div>
+  )
+}
+
+export function SessionPageSkeleton() {
+  return (
+    <div className="max-w-3xl mx-auto px-4">
+      <SkeletonLine className="h-4 w-32 mb-8" />
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 mb-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex flex-col gap-2">
+            <SkeletonLine className="h-6 w-52" />
+            <SkeletonLine className="h-3 w-36" />
+          </div>
+          <SkeletonLine className="h-14 w-16 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {[0, 1, 2].map(i => <SkeletonLine key={i} className="h-20 rounded-xl" />)}
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        {[0, 1, 2, 3].map(i => <SkeletonLine key={i} className="h-16 rounded-2xl" />)}
+      </div>
+    </div>
+  )
+}

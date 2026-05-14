@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Trophy, BrainCircuit, Flame, ArrowRight, Loader2, Medal } from 'lucide-react'
+import { Trophy, BrainCircuit, Flame, ArrowRight, Medal } from 'lucide-react'
+import { LeaderboardRowSkeleton } from '@/components/ui/SkeletonCard'
 
 interface Entry {
   uid: string
@@ -83,13 +84,13 @@ export default function LeaderboardPage() {
 
         {/* List */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
+          <div className="flex flex-col gap-2">
+            {[0, 1, 2, 3, 4].map(i => <LeaderboardRowSkeleton key={i} />)}
           </div>
         ) : !loading && error ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
             <p className="text-zinc-400 font-semibold mb-1">Failed to load rankings</p>
-            <p className="text-zinc-600 text-sm mb-4">Please refresh the page to try again</p>
+            <p className="text-zinc-500 text-sm mb-4">Please refresh the page to try again</p>
             <button
               onClick={() => window.location.reload()}
               className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all"
@@ -101,7 +102,7 @@ export default function LeaderboardPage() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
             <BrainCircuit className="w-10 h-10 text-zinc-700 mx-auto mb-4" />
             <p className="text-zinc-400 font-semibold mb-1">No rankings yet</p>
-            <p className="text-zinc-600 text-sm mb-6">Be the first on the leaderboard this week</p>
+            <p className="text-zinc-500 text-sm mb-6">Be the first on the leaderboard this week</p>
             <Link href="/interview?tab=simulator"
               className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all">
               <BrainCircuit className="w-4 h-4" /> Start a Session
@@ -126,13 +127,13 @@ export default function LeaderboardPage() {
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-zinc-200 truncate">{entry.name}</p>
-                  <p className="text-xs text-zinc-600">{entry.sessions} session{entry.sessions !== 1 ? 's' : ''}</p>
+                  <p className="text-xs text-zinc-500">{entry.sessions} session{entry.sessions !== 1 ? 's' : ''}</p>
                 </div>
 
                 {/* Score */}
                 <div className="flex flex-col items-end shrink-0">
                   <span className={`text-lg font-extrabold ${scoreColor(entry.avg)}`}>{entry.avg}</span>
-                  <span className="text-[10px] text-zinc-600">avg /10</span>
+                  <span className="text-[10px] text-zinc-500">avg /10</span>
                 </div>
               </div>
             ))}

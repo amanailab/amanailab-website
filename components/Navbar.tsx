@@ -466,6 +466,7 @@ export default function Navbar() {
                   <div key={item.label}>
                     <button
                       onClick={() => setMobileExpanded(isExp ? null : item.label)}
+                      aria-expanded={isExp}
                       className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${
                         active
                           ? "text-orange-400 bg-orange-500/10"
@@ -501,7 +502,7 @@ export default function Navbar() {
                                 <span className="text-zinc-500 group-hover:text-orange-400 transition-colors shrink-0">{sub.icon}</span>
                                 <div>
                                   <p className="text-sm font-medium">{sub.label}</p>
-                                  <p className="text-xs text-zinc-600">{sub.description}</p>
+                                  <p className="text-xs text-zinc-500">{sub.description}</p>
                                 </div>
                               </Link>
                             ))}

@@ -633,7 +633,7 @@ export default function JobTrackerClient() {
             <div className="relative hidden sm:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…"
-                className="pl-9 pr-3 py-2 text-xs bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-orange-500/50 w-44 transition-colors" />
+                className="pl-9 pr-3 py-2 text-xs bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-orange-500/50 w-44 transition-colors" />
             </div>
             {/* View toggle */}
             <button

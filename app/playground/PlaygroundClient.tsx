@@ -283,7 +283,7 @@ export default function PlaygroundClient() {
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search templates…"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-8 pr-8 py-1.5 text-xs text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-orange-500/50"
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-8 pr-8 py-1.5 text-xs text-zinc-300 placeholder:text-zinc-500 outline-none focus:border-orange-500/50"
                 />
                 {search && (
                   <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -406,7 +406,7 @@ export default function PlaygroundClient() {
                   onChange={e => setGenerateDesc(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && generateDesc.trim()) callAI('generate') }}
                   placeholder="Describe code to generate…"
-                  className="flex-1 bg-zinc-800 border border-zinc-700 focus:border-orange-500/60 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 placeholder:text-zinc-600 outline-none transition-colors min-w-0"
+                  className="flex-1 bg-zinc-800 border border-zinc-700 focus:border-orange-500/60 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 placeholder:text-zinc-500 outline-none transition-colors min-w-0"
                 />
                 <button
                   onClick={() => callAI('generate')}

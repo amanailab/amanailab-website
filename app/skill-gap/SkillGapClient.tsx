@@ -96,7 +96,7 @@ export default function SkillGapClient() {
             onChange={e => setJd(e.target.value)}
             placeholder="Paste the full job description here — requirements, responsibilities, nice-to-haves..."
             rows={9}
-            className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500/60 rounded-xl px-4 py-3 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none transition-colors resize-none"
+            className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500/60 rounded-xl px-4 py-3 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition-colors resize-none"
           />
           <div className="flex items-center justify-between mt-3">
             <p className="text-[10px] text-zinc-600">{jd.length} chars · {userPerf.length > 0 ? `${userPerf.length} topics tracked` : 'Log in for personalized analysis'}</p>

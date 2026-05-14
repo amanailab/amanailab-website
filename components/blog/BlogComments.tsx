@@ -143,7 +143,7 @@ export default function BlogComments({ slug }: Props) {
             placeholder="Share your thoughts…"
             rows={3}
             maxLength={2000}
-            className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/60 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 outline-none resize-none transition-colors"
+            className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/60 rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-500 outline-none resize-none transition-colors"
           />
           {error && <p className="text-xs text-red-400">{error}</p>}
           <div className="flex items-center justify-between">

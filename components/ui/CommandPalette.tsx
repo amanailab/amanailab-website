@@ -125,7 +125,7 @@ export default function CommandPalette() {
             value={query}
             onChange={e => { setQuery(e.target.value); setCursor(0) }}
             placeholder="Search tools, pages, actions…"
-            className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-600 outline-none"
+            className="flex-1 bg-transparent text-sm text-zinc-200 placeholder:text-zinc-500 outline-none"
           />
           <button onClick={() => setOpen(false)} className="p-1 hover:bg-zinc-800 rounded transition-colors">
             <X className="w-3.5 h-3.5 text-zinc-600" />

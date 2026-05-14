@@ -203,11 +203,11 @@ function NewPostModal({
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Your Name *</label>
-                  <input value={form.author_name} onChange={e => setForm(f => ({ ...f, author_name: e.target.value }))} required placeholder="Aman" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors" />
+                  <input value={form.author_name} onChange={e => setForm(f => ({ ...f, author_name: e.target.value }))} required placeholder="Aman" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Email (optional)</label>
-                  <input value={form.author_email} onChange={e => setForm(f => ({ ...f, author_email: e.target.value }))} type="email" placeholder="not shown publicly" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors" />
+                  <input value={form.author_email} onChange={e => setForm(f => ({ ...f, author_email: e.target.value }))} type="email" placeholder="not shown publicly" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors" />
                 </div>
               </div>
             )}
@@ -232,12 +232,12 @@ function NewPostModal({
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Title *</label>
-              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required placeholder="What questions did Google ask me…" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors" />
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required placeholder="What questions did Google ask me…" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors" />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Your Post *</label>
-              <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} required rows={5} placeholder="Share your experience, question, or tip in detail…" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none resize-none transition-colors" />
+              <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))} required rows={5} placeholder="Share your experience, question, or tip in detail…" className="bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-500 outline-none resize-none transition-colors" />
             </div>
 
             {error && <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{error}</p>}

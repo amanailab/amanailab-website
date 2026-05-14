@@ -10,7 +10,8 @@ export type EmailSource =
   | "prompt_generator"
   | "career_tools"
   | "resources"
-  | "footer";
+  | "footer"
+  | "paper_explainer";
 
 export const EMAIL_CAPTURED_KEY = "email_captured";
 

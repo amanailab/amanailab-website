@@ -40,7 +40,7 @@ export default function NotFound() {
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search tools, questions, articles…"
-              className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl pl-9 pr-3 py-2.5 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl pl-9 pr-3 py-2.5 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition-colors"
             />
           </div>
           <button type="submit"

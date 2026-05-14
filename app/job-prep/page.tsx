@@ -241,7 +241,7 @@ export default function JobPrepPage() {
                 onChange={(e) => setJd(e.target.value)}
                 placeholder={PLACEHOLDER}
                 rows={13}
-                className="w-full bg-transparent px-5 py-4 text-sm text-zinc-200 placeholder-zinc-600 outline-none resize-none leading-relaxed"
+                className="w-full bg-transparent px-5 py-4 text-sm text-zinc-200 placeholder-zinc-500 outline-none resize-none leading-relaxed"
               />
               <div className="flex items-center justify-between px-5 py-3 border-t border-zinc-800">
                 <span className={`text-xs ${wordCount >= 50 ? 'text-green-400' : 'text-zinc-600'}`}>

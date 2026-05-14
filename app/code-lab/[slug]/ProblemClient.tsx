@@ -741,7 +741,7 @@ export default function ProblemClient({
                 <div key={ct.id} className="flex items-center gap-1.5 mb-1.5">
                   <input value={ct.input} onChange={e => setCustomTests(p => p.map(t => t.id===ct.id?{...t,input:e.target.value,output:null,status:'idle'}:t))}
                     placeholder="softmax([1.0, 2.0, 3.0])"
-                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-[10px] text-zinc-300 font-mono placeholder:text-zinc-600 outline-none focus:border-blue-500/50 transition-colors" />
+                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-[10px] text-zinc-300 font-mono placeholder:text-zinc-500 outline-none focus:border-blue-500/50 transition-colors" />
                   <button onClick={() => runCustomTest(ct.id)} disabled={ct.status==='running'||!ct.input.trim()||pyStatus!=='ready'}
                     className="p-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 rounded transition-colors disabled:opacity-40">
                     {ct.status==='running'?<Loader2 className="w-3 h-3 animate-spin"/>:<Play className="w-3 h-3"/>}

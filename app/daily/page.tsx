@@ -329,7 +329,7 @@ export default function DailyChallengePage() {
                   onChange={e => setAnswer(e.target.value)}
                   placeholder="Write your answer here… Aim for 3-5 sentences covering the key concepts."
                   rows={7}
-                  className="w-full bg-zinc-900 border border-zinc-700 focus:border-orange-500/60 rounded-xl px-4 py-3 text-zinc-200 text-sm resize-none outline-none transition-colors placeholder:text-zinc-600"
+                  className="w-full bg-zinc-900 border border-zinc-700 focus:border-orange-500/60 rounded-xl px-4 py-3 text-zinc-200 text-sm resize-none outline-none transition-colors placeholder:text-zinc-500"
                 />
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-zinc-600">{answer.length} characters</p>

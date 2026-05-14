@@ -32,7 +32,7 @@ export default function CompaniesClient({
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search companies…"
-          className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none transition-colors"
+          className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl pl-10 pr-4 py-2.5 text-sm text-zinc-200 placeholder:text-zinc-500 outline-none transition-colors"
         />
       </div>
 

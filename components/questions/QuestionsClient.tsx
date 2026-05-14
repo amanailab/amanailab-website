@@ -72,8 +72,8 @@ function QuestionCard({ q, bookmarked, onBookmark }: { q: Question; bookmarked: 
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={e => { e.stopPropagation(); onBookmark(q.id) }}
-            className={`p-1.5 rounded-lg transition-colors ${bookmarked ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'}`}
-            title={bookmarked ? 'Remove bookmark' : 'Bookmark this question'}
+            aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark this question'}
+            className={`p-1.5 rounded-lg transition-colors ${bookmarked ? 'text-orange-400 bg-orange-500/10' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}
           >
             {bookmarked ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
           </button>
@@ -147,7 +147,7 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
           <input value={search} onChange={e => { setSearch(e.target.value); setPage(0) }}
             placeholder="Search questions…"
-            className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl pl-9 pr-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors" />
+            className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl pl-9 pr-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors" />
         </div>
         <div className="flex flex-wrap gap-2 items-center">
           <select value={filterTopic} onChange={e => { setFilterTopic(e.target.value); setPage(0) }} className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none">
@@ -168,7 +168,7 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
             <BookmarkCheck className="w-3.5 h-3.5" /> Saved {bookmarks.size > 0 && `(${bookmarks.size})`}
           </button>
           {(hasFilters || showSaved) && <button onClick={() => { reset(); setShowSaved(false) }} className="text-xs text-zinc-500 hover:text-zinc-300 px-3 py-2 rounded-lg hover:bg-zinc-800 transition-colors">Clear</button>}
-          <span className="text-xs text-zinc-600 ml-auto">{filtered.length} of {totalCount} questions</span>
+          <span className="text-xs text-zinc-500 ml-auto">{filtered.length} of {totalCount} questions</span>
         </div>
       </div>
 

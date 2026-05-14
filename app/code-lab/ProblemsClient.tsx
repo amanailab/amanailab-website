@@ -200,7 +200,7 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search problems…"
-              className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl pl-9 pr-4 py-2.5 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none transition-colors"
+              className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500/50 rounded-xl pl-9 pr-4 py-2.5 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition-colors"
             />
           </div>
 
@@ -251,7 +251,13 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
             </div>
 
             {filtered.length === 0 ? (
-              <div className="py-12 text-center text-zinc-600 text-sm">No problems match your filters</div>
+              <div className="py-14 text-center flex flex-col items-center gap-2">
+                <Code2 className="w-8 h-8 text-zinc-700 mb-1" />
+                <p className="text-zinc-400 font-semibold text-sm">No problems match your filters</p>
+                <button onClick={() => { setTopic('All'); setDiff('All'); setSearch('') }} className="text-xs text-orange-400 hover:text-orange-300 transition-colors">
+                  Clear filters
+                </button>
+              </div>
             ) : (
               filtered.map((p, i) => (
                 <Link
@@ -274,7 +280,7 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
                     </p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {p.tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="text-[9px] font-medium text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded">
+                        <span key={tag} className="text-[9px] font-medium text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">
                           {tag}
                         </span>
                       ))}
@@ -289,7 +295,7 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
 
                   <div className="hidden sm:flex flex-wrap gap-1">
                     {p.companies.slice(0, 2).map(c => (
-                      <span key={c} className="text-[9px] text-zinc-600 bg-zinc-800/80 px-1.5 py-0.5 rounded border border-zinc-700/50">
+                      <span key={c} className="text-[9px] text-zinc-500 bg-zinc-800/80 px-1.5 py-0.5 rounded border border-zinc-700/50">
                         {c}
                       </span>
                     ))}
