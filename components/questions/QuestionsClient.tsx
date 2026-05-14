@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search, ChevronDown, ChevronUp, Lightbulb, Library, Bookmark, BookmarkCheck } from 'lucide-react'
 import Link from 'next/link'
 
@@ -103,6 +104,7 @@ interface Props {
 
 export default function QuestionsClient({ initialQuestions, companies, totalCount }: Props) {
   const { bookmarks, toggle: toggleBookmark } = useBookmarks()
+  const searchParams = useSearchParams()
   const [search, setSearch]               = useState('')
   const [filterTopic, setFilterTopic]     = useState('all')
   const [filterLevel, setFilterLevel]     = useState('all')
@@ -110,6 +112,12 @@ export default function QuestionsClient({ initialQuestions, companies, totalCoun
   const [showSaved, setShowSaved]         = useState(false)
   const [page, setPage]                   = useState(0)
   const topRef = useRef<HTMLDivElement>(null)
+
+  // Pre-fill search from URL ?q= param (e.g. coming from GlobalSearch)
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) { setSearch(q); setPage(0) }
+  }, [searchParams])
 
   // Scroll to the top of the question list whenever the page changes
   useEffect(() => {

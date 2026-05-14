@@ -1,5 +1,6 @@
 export const revalidate = 86400 // questions rarely change — rebuild once a day
 
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { Library, BookmarkCheck } from 'lucide-react'
 import Link from 'next/link'
@@ -86,11 +87,13 @@ export default async function QuestionsPage() {
           </Link>
         </div>
 
-        <QuestionsClient
-          initialQuestions={questions}
-          companies={companies}
-          totalCount={questions.length}
-        />
+        <Suspense fallback={null}>
+          <QuestionsClient
+            initialQuestions={questions}
+            companies={companies}
+            totalCount={questions.length}
+          />
+        </Suspense>
       </div>
     </div>
   )

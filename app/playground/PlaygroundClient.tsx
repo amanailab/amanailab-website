@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import {
   Sparkles, Bug, Zap, BarChart2, HelpCircle, Wand2,
   Copy, Check, ChevronDown, ChevronUp, ExternalLink,
-  Search, X, Play, Loader2, ChevronRight,
+  Search, X, Play, Loader2, ChevronRight, Download, Share2,
 } from 'lucide-react'
 import { TEMPLATES, CATEGORIES, type Template } from './templates'
 import { useUser } from '@/hooks/useUser'
@@ -121,6 +121,40 @@ function InlineFormat({ text }: { text: string }) {
   )
 }
 
+// ─── localStorage key helper ─────────────────────────────────────────────────
+
+const SAVE_KEY = (label: string) => `playground_code_${label.replace(/\s+/g, '_').toLowerCase()}`
+
+// ─── Export as .py ───────────────────────────────────────────────────────────
+
+function exportCode(code: string, filename: string) {
+  const blob = new Blob([code], { type: 'text/x-python' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${filename.replace(/\s+/g, '_').toLowerCase()}.py`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ─── Share URL helpers ────────────────────────────────────────────────────────
+
+function getShareUrl(code: string): string {
+  try {
+    const encoded = btoa(unescape(encodeURIComponent(code)))
+    return `${window.location.origin}/playground#code=${encoded}`
+  } catch { return window.location.href }
+}
+
+function loadFromHash(): string | null {
+  try {
+    const hash = window.location.hash
+    if (!hash.startsWith('#code=')) return null
+    const encoded = hash.slice(6)
+    return decodeURIComponent(escape(atob(encoded)))
+  } catch { return null }
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PlaygroundClient() {
@@ -138,7 +172,10 @@ export default function PlaygroundClient() {
   const [generateDesc, setGenerateDesc]     = useState('')
   const [copied, setCopied]                 = useState(false)
   const [sidebarOpen, setSidebarOpen]       = useState(true)
-  const editorRef = useRef<unknown>(null)
+  const [savedIndicator, setSavedIndicator] = useState(false)
+  const [shareCopied, setShareCopied]       = useState(false)
+  const editorRef   = useRef<unknown>(null)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   // Filter templates
   const filtered = TEMPLATES.filter(t => {
@@ -148,10 +185,36 @@ export default function PlaygroundClient() {
     return matchCat && matchSearch
   })
 
-  // Load a template
+  // On mount: load code from URL hash if present
+  useEffect(() => {
+    const shared = loadFromHash()
+    if (shared) {
+      setCode(shared)
+      history.replaceState(null, '', window.location.pathname)
+    }
+  }, [])
+
+  // Auto-save code to localStorage after 800ms of inactivity
+  useEffect(() => {
+    if (!activeTemplate) return
+    clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      try { localStorage.setItem(SAVE_KEY(activeTemplate.label), code) } catch {}
+      setSavedIndicator(true)
+      setTimeout(() => setSavedIndicator(false), 1500)
+    }, 800)
+    return () => clearTimeout(saveTimerRef.current)
+  }, [code, activeTemplate])
+
+  // Load a template (restore saved code if available)
   const loadTemplate = useCallback((t: Template) => {
     setActiveTemplate(t)
-    setCode(t.code)
+    try {
+      const saved = localStorage.getItem(SAVE_KEY(t.label))
+      setCode(saved ?? t.code)
+    } catch {
+      setCode(t.code)
+    }
     setAiResult('')
     setAiAction(null)
     setPanelOpen(false)
@@ -174,7 +237,15 @@ export default function PlaygroundClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, action, description: generateDesc }),
       })
-      if (!res.ok) throw new Error('Failed')
+      if (res.status === 429) {
+        setAiResult('**Rate limit reached** — you can make 10 requests per minute. Please wait a moment and try again.')
+        return
+      }
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        setAiResult(`Something went wrong: ${(errData as { error?: string }).error ?? 'Please try again.'}`)
+        return
+      }
       const data = await res.json()
       setAiResult(data.result ?? 'No response.')
 
@@ -186,8 +257,13 @@ export default function PlaygroundClient() {
           setGenerateDesc('')
         }
       }
-    } catch {
-      setAiResult('Something went wrong. Please try again.')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error'
+      if (msg.includes('Failed to fetch') || msg.toLowerCase().includes('network')) {
+        setAiResult('**Network error** — check your connection and try again.')
+      } else {
+        setAiResult('Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -247,6 +323,60 @@ export default function PlaygroundClient() {
           <span className="text-xs font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-400 px-2.5 py-1 rounded-lg">
             Python
           </span>
+
+          {/* Auto-save indicator */}
+          {savedIndicator && (
+            <span className="text-[10px] text-green-400 flex items-center gap-1">
+              <Check className="w-3 h-3" /> Saved
+            </span>
+          )}
+
+          {/* Reset to template */}
+          {code !== activeTemplate?.code && (
+            <button
+              onClick={() => {
+                setCode(activeTemplate?.code ?? '')
+                try { localStorage.removeItem(SAVE_KEY(activeTemplate?.label ?? '')) } catch {}
+              }}
+              className="text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
+              title="Reset to template default"
+            >
+              Reset
+            </button>
+          )}
+
+          {/* Download as .py */}
+          <button
+            onClick={() => exportCode(code, activeTemplate?.label ?? 'code')}
+            title="Download as .py"
+            className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded border border-zinc-700 hover:border-zinc-500 transition-colors"
+          >
+            <Download className="w-3 h-3" /> .py
+          </button>
+
+          {/* Share */}
+          <button
+            onClick={async () => {
+              const url = getShareUrl(code)
+              try { await navigator.clipboard.writeText(url) } catch {
+                const ta = document.createElement('textarea')
+                ta.value = url
+                ta.style.cssText = 'position:fixed;opacity:0'
+                document.body.appendChild(ta)
+                ta.select()
+                document.execCommand('copy')
+                document.body.removeChild(ta)
+              }
+              setShareCopied(true)
+              setTimeout(() => setShareCopied(false), 2000)
+            }}
+            title="Copy shareable link"
+            className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded border border-zinc-700 hover:border-zinc-500 transition-colors"
+          >
+            {shareCopied
+              ? <><Check className="w-3 h-3 text-green-400" /> Copied!</>
+              : <><Share2 className="w-3 h-3" /> Share</>}
+          </button>
 
           {/* Copy */}
           <button

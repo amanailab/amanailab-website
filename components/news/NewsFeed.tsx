@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { RefreshCw, Newspaper, ExternalLink } from "lucide-react";
+import { RefreshCw, Newspaper, ExternalLink, Loader2 } from "lucide-react";
 import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 
 const supabase = createClient(
@@ -167,14 +167,23 @@ function lastUpdatedLabel(iso: string): string {
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
 
+const PAGE_SIZE = 20
+
 export default function NewsFeed() {
-  const { readIds, markRead }       = useReadArticles()
-  const [articles, setArticles]     = useState<NewsArticle[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [category, setCategory]     = useState<Category>("all");
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshMsg, setRefreshMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const { readIds, markRead }         = useReadArticles()
+  const [articles, setArticles]       = useState<NewsArticle[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore]         = useState(true);
+  const [offset, setOffset]           = useState(0);
+  const [category, setCategory]       = useState<Category>("all");
+  const [sortBy, setSortBy]           = useState<'date' | 'impact'>('date');
+  const [refreshing, setRefreshing]   = useState(false);
+  const [refreshMsg, setRefreshMsg]   = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+
+  // Alias for use in category filter — keeps ref stable
+  const activeCategory = category;
 
   useEffect(() => {
     const stored = localStorage.getItem("news_last_updated");
@@ -183,11 +192,13 @@ export default function NewsFeed() {
 
   const fetchArticles = useCallback(async (cat: Category) => {
     setLoading(true);
+    setOffset(0);
+    setHasMore(true);
     let query = supabase
       .from("news_articles")
       .select("id, title, summary, developer_take, impact_score, source, source_url, category, published_at")
       .order("published_at", { ascending: false })
-      .limit(50);
+      .range(0, PAGE_SIZE - 1);
 
     if (cat !== "all") {
       query = query.eq("category", cat);
@@ -196,6 +207,7 @@ export default function NewsFeed() {
     const { data, error } = await query;
     if (!error) {
       setArticles(data ?? []);
+      setHasMore((data?.length ?? 0) === PAGE_SIZE);
       const now = new Date().toISOString();
       localStorage.setItem("news_last_updated", now);
       setLastUpdated(now);
@@ -206,6 +218,36 @@ export default function NewsFeed() {
   useEffect(() => {
     fetchArticles(category);
   }, [category, fetchArticles]);
+
+  async function loadMore() {
+    const newOffset = offset + PAGE_SIZE;
+    setLoadingMore(true);
+    try {
+      let q = supabase
+        .from("news_articles")
+        .select("id, title, summary, developer_take, impact_score, source, source_url, category, published_at")
+        .order("published_at", { ascending: false })
+        .range(newOffset, newOffset + PAGE_SIZE - 1);
+      if (activeCategory !== "all") q = q.eq("category", activeCategory);
+      const { data } = await q;
+      if (data?.length) {
+        setArticles(prev => [...prev, ...data]);
+        setOffset(newOffset);
+        setHasMore(data.length === PAGE_SIZE);
+      } else {
+        setHasMore(false);
+      }
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  const sortedArticles = sortBy === 'impact'
+    ? [...articles].sort((a, b) => {
+        const order: Record<string, number> = { game_changer: 3, important: 2, good_to_know: 1 };
+        return (order[b.impact_score] ?? 0) - (order[a.impact_score] ?? 0);
+      })
+    : articles;
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -266,8 +308,8 @@ export default function NewsFeed() {
 
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          {/* Category tabs — scrollable on mobile */}
-          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 pb-0">
+          {/* Category tabs + sort — scrollable on mobile */}
+          <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 pb-0 flex-1 min-w-0">
             <div className="flex items-center gap-1 border-b border-zinc-800 w-max sm:w-auto sm:flex-wrap sm:border-b-0">
               {CATEGORIES.map((cat) => (
                 <button
@@ -282,6 +324,16 @@ export default function NewsFeed() {
                   {cat.label}
                 </button>
               ))}
+              {/* Sort buttons */}
+              <div className="flex items-center gap-1.5 ml-3 pl-3 border-l border-zinc-800">
+                <span className="text-[10px] text-zinc-600 whitespace-nowrap">Sort:</span>
+                {(['date', 'impact'] as const).map(s => (
+                  <button key={s} onClick={() => setSortBy(s)}
+                    className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-colors whitespace-nowrap ${sortBy === s ? 'bg-zinc-700 border-zinc-600 text-zinc-100' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}>
+                    {s === 'date' ? 'Latest' : 'Impact'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -332,12 +384,22 @@ export default function NewsFeed() {
         )}
 
         {/* Article grid */}
-        {!loading && articles.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {articles.map((article) => (
-              <NewsCard key={article.id} article={article} isRead={readIds.has(String(article.id))} onRead={markRead} />
-            ))}
-          </div>
+        {!loading && sortedArticles.length > 0 && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {sortedArticles.map((article) => (
+                <NewsCard key={article.id} article={article} isRead={readIds.has(String(article.id))} onRead={markRead} />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="text-center mt-8">
+                <button onClick={loadMore} disabled={loadingMore}
+                  className="flex items-center gap-2 mx-auto bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 text-zinc-300 text-sm font-semibold px-6 py-3 rounded-xl transition-colors disabled:opacity-40">
+                  {loadingMore ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading…</> : 'Load more news'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>

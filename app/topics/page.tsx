@@ -1,10 +1,10 @@
 export const revalidate = 3600
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { BookOpen, ArrowRight, Layers, HelpCircle, Code2 } from 'lucide-react'
+import { Layers } from 'lucide-react'
 import { TOPICS } from '@/lib/topic-data'
 import { getAdminSupabase } from '@/lib/admin'
+import TopicsGrid from './TopicsGrid'
 
 export const metadata: Metadata = {
   title: 'AI/ML Interview Topics — Complete Preparation Guides',
@@ -47,6 +47,15 @@ async function getCodeLabCounts(): Promise<Record<string, number>> {
 export default async function TopicsPage() {
   const [qCounts, codeCounts] = await Promise.all([getQuestionCounts(), getCodeLabCounts()])
 
+  const topicsWithCounts = TOPICS.map(t => {
+    const dbTopic = TOPIC_DB_MAP[t.slug]
+    return {
+      ...t,
+      qCount:    dbTopic ? (qCounts[dbTopic] ?? 0)    : 0,
+      codeCount: dbTopic ? (codeCounts[dbTopic] ?? 0) : 0,
+    }
+  })
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
       <div className="max-w-5xl mx-auto px-4">
@@ -64,43 +73,7 @@ export default async function TopicsPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {TOPICS.map((topic) => {
-            const dbTopic   = TOPIC_DB_MAP[topic.slug]
-            const qCount    = dbTopic ? (qCounts[dbTopic] ?? 0) : 0
-            const codeCount = dbTopic ? (codeCounts[dbTopic] ?? 0) : 0
-            return (
-              <Link
-                key={topic.slug}
-                href={`/topics/${topic.slug}`}
-                className="group bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-2xl p-5 flex flex-col gap-3 transition-all hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                <div className="flex items-center justify-between">
-                  <div className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${topic.bg} ${topic.color}`}>
-                    {topic.label}
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 group-hover:translate-x-0.5 transition-all" />
-                </div>
-                <p className="text-xs text-zinc-500 leading-relaxed line-clamp-3">{topic.description}</p>
-                <div className="flex items-center gap-3 pt-2 border-t border-zinc-800 mt-auto flex-wrap">
-                  <div className="flex items-center gap-1 text-[10px] text-zinc-600">
-                    <BookOpen className="w-3 h-3" /> {topic.cards.length} flashcards
-                  </div>
-                  {qCount > 0 && (
-                    <div className="flex items-center gap-1 text-[10px] text-zinc-600">
-                      <HelpCircle className="w-3 h-3" /> {qCount} questions
-                    </div>
-                  )}
-                  {codeCount > 0 && (
-                    <div className="flex items-center gap-1 text-[10px] text-orange-400/70">
-                      <Code2 className="w-3 h-3" /> {codeCount} problems
-                    </div>
-                  )}
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+        <TopicsGrid topics={topicsWithCounts} />
       </div>
     </div>
   )

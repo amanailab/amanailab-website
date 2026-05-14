@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { MessageSquare, Plus, X, Loader2, Users, Lightbulb, HelpCircle, Building2, Clock, CheckCircle2 } from 'lucide-react'
+import { MessageSquare, Plus, X, Loader2, Users, Lightbulb, HelpCircle, Building2, Clock, CheckCircle2, Search } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -42,31 +42,58 @@ const REACTIONS = [
   { emoji: '💡', label: 'insightful' },
 ]
 const REACTIONS_KEY = 'community_reactions'
+const SESSION_KEY   = 'community_session_id'
+
+function getSessionId(): string {
+  try {
+    let id = localStorage.getItem(SESSION_KEY)
+    if (!id) { id = crypto.randomUUID(); localStorage.setItem(SESSION_KEY, id) }
+    return id
+  } catch { return 'anon' }
+}
 
 function useReactions(postId: string) {
   const key = `${REACTIONS_KEY}_${postId}`
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [mine, setMine]     = useState<string | null>(null)
 
+  // Load from localStorage immediately for instant UI, then sync from server
   useEffect(() => {
     try {
       const stored = JSON.parse(localStorage.getItem(key) ?? '{}')
-      setCounts(stored.counts ?? {})
-      setMine(stored.mine ?? null)
+      if (stored.counts) setCounts(stored.counts)
+      if (stored.mine)   setMine(stored.mine)
     } catch { /* ignore */ }
-  }, [key])
+
+    fetch(`/api/community/react?postId=${postId}`)
+      .then(r => r.json())
+      .then(d => { if (d.counts) setCounts(d.counts) })
+      .catch(() => { /* ignore */ })
+  }, [key, postId])
 
   const react = useCallback((label: string) => {
+    const sessionId = getSessionId()
+    const newMine   = mine === label ? null : label
+
+    // Optimistic update
     setCounts(prev => {
       const next = { ...prev }
-      if (mine) next[mine] = Math.max(0, (next[mine] ?? 1) - 1)
-      const newMine = mine === label ? null : label
+      if (mine)    next[mine]    = Math.max(0, (next[mine]    ?? 1) - 1)
       if (newMine) next[newMine] = (next[newMine] ?? 0) + 1
-      setMine(newMine)
-      try { localStorage.setItem(key, JSON.stringify({ counts: next, mine: newMine })) } catch { /* ignore */ }
       return next
     })
-  }, [mine, key])
+    setMine(newMine)
+    try { localStorage.setItem(key, JSON.stringify({ counts: {}, mine: newMine })) } catch { /* ignore */ }
+
+    // Persist to server
+    fetch('/api/community/react', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId, reaction: newMine, sessionId }),
+    }).then(r => r.json())
+      .then(d => { if (d.counts) setCounts(d.counts) })
+      .catch(() => { /* ignore */ })
+  }, [mine, key, postId])
 
   return { counts, mine, react }
 }
@@ -269,6 +296,7 @@ export default function CommunityPage() {
   const [user, setUser]           = useState<User | null>(null)
   const [loading, setLoading]     = useState(true)
   const [filter, setFilter]       = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [visibleCount, setVisibleCount] = useState(10)
 
@@ -282,7 +310,8 @@ export default function CommunityPage() {
 
   // Fetch posts + companies
   useEffect(() => {
-    setVisibleCount(10) // reset pagination on filter change
+    setVisibleCount(10)   // reset pagination on filter change
+    setSearchQuery('')    // reset search on filter change
     const url = filter !== 'all' ? `/api/community/posts?type=${filter}` : '/api/community/posts'
     Promise.all([
       fetch(url).then(r => r.json()),
@@ -297,6 +326,16 @@ export default function CommunityPage() {
   function handleNewPost(post: Post) {
     setMyPosts(prev => [post, ...prev])
   }
+
+  const displayPosts = posts.filter(p => {
+    const matchType   = filter === 'all' || p.type === filter
+    const q           = searchQuery.toLowerCase().trim()
+    const matchSearch = !q ||
+      p.title.toLowerCase().includes(q) ||
+      p.body.toLowerCase().includes(q) ||
+      p.author_name.toLowerCase().includes(q)
+    return matchType && matchSearch
+  })
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
@@ -358,6 +397,23 @@ export default function CommunityPage() {
           </div>
         )}
 
+        {/* ── Search ── */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search experiences, questions, tips…"
+            className="w-full pl-10 pr-4 py-2.5 bg-zinc-900 border border-zinc-800 focus:border-orange-500 rounded-xl text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         {/* ── Filters ── */}
         <div className="flex gap-2 mb-6 flex-wrap">
           {[
@@ -396,23 +452,31 @@ export default function CommunityPage() {
               <Plus className="w-4 h-4" /> Share Your Experience
             </button>
           </div>
+        ) : displayPosts.length === 0 ? (
+          <div className="text-center py-12 bg-zinc-900 border border-zinc-800 rounded-2xl">
+            <p className="text-zinc-500 text-sm">No posts match your search</p>
+            <button onClick={() => { setSearchQuery(''); setFilter('all') }}
+              className="text-xs text-orange-400 hover:text-orange-300 mt-2">
+              Clear filters
+            </button>
+          </div>
         ) : (
           <>
             <div className="flex flex-col gap-3">
-              {posts.slice(0, visibleCount).map(p => <PostCard key={p.id} post={p} />)}
+              {displayPosts.slice(0, visibleCount).map(p => <PostCard key={p.id} post={p} />)}
             </div>
-            {posts.length > visibleCount && (
+            {displayPosts.length > visibleCount && (
               <div className="text-center mt-5">
                 <button
                   onClick={() => setVisibleCount(c => c + 10)}
                   className="flex items-center gap-2 mx-auto bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 text-zinc-400 hover:text-zinc-200 text-sm font-semibold px-6 py-2.5 rounded-xl transition-all"
                 >
-                  Load More ({posts.length - visibleCount} remaining)
+                  Load More ({displayPosts.length - visibleCount} remaining)
                 </button>
               </div>
             )}
-            {posts.length > 0 && posts.length <= visibleCount && (
-              <p className="text-xs text-zinc-700 text-center mt-4">{posts.length} posts total</p>
+            {displayPosts.length > 0 && displayPosts.length <= visibleCount && (
+              <p className="text-xs text-zinc-700 text-center mt-4">{displayPosts.length} posts total</p>
             )}
           </>
         )}
