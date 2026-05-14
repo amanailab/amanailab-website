@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import Image from "next/image";
 import { EmailGateInline, isCaptured } from "@/components/shared/EmailGateModal";
 import {
   Rocket,
@@ -24,7 +23,7 @@ import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type PostType = "project" | "learning" | "career" | "tech" | "hottake";
+type PostType = "project" | "learning" | "career" | "tech" | "hottake" | "ideas";
 type Variation = "shorter" | "personal" | "data";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
@@ -70,6 +69,12 @@ interface HotTakeForm {
   industry: string;
 }
 
+interface IdeasForm {
+  role: string;
+  recentWork: string;
+  audience: string;
+}
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DAILY_LIMIT = 3;
@@ -112,6 +117,12 @@ const TYPES: {
     title: "Hot Take",
     description: "Bold opinion, professionally",
     Icon: Flame,
+  },
+  {
+    id: "ideas",
+    title: "Post Ideas",
+    description: "Get 5 post ideas when you're stuck",
+    Icon: Lightbulb,
   },
 ];
 
@@ -173,6 +184,7 @@ const INITIAL_HOTTAKE: HotTakeForm = {
   evidence: "",
   industry: "",
 };
+const INITIAL_IDEAS: IdeasForm = { role: "", recentWork: "", audience: "" };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -235,6 +247,8 @@ export default function LinkedInGenerator() {
   const [career, setCareer] = useState<CareerForm>(INITIAL_CAREER);
   const [tech, setTech] = useState<TechForm>(INITIAL_TECH);
   const [hottake, setHottake] = useState<HotTakeForm>(INITIAL_HOTTAKE);
+  const [ideasForm, setIdeasForm] = useState<IdeasForm>(INITIAL_IDEAS);
+  const [ideasList, setIdeasList] = useState<string[]>([]);
   const [working, setWorking] = useState(false);
   const [variationLoading, setVariationLoading] = useState<Variation | null>(null);
   const [error, setError] = useState("");
@@ -245,31 +259,64 @@ export default function LinkedInGenerator() {
   const [tagsCopied, setTagsCopied] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
 
+  // Change 1: Post history
+  const [postHistory, setPostHistory] = useState<{ type: PostType; post: string; hashtags: string; ts: number }[]>([]);
+
+  // Change 2: A/B comparison
+  const [prevPost, setPrevPost] = useState<string>('');
+  const [showingVariation, setShowingVariation] = useState(false);
+
+  // Change 4: Author name
+  const [authorName, setAuthorName] = useState('Your Name');
+
   useEffect(() => {
     setUsedToday(getUsage());
   }, []);
 
+  // Load post history on mount
+  useEffect(() => {
+    try { setPostHistory(JSON.parse(localStorage.getItem('linkedin_post_history') ?? '[]')); } catch {}
+  }, []);
+
+  // Load author name on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('linkedin_author_name');
+      if (saved) setAuthorName(saved);
+    } catch {}
+  }, []);
+
   // Load drafts on mount
   useEffect(() => {
-    const types = ['project', 'learning', 'career', 'tech', 'hottake'] as const;
-    const setters = { project: setProject, learning: setLearning, career: setCareer, tech: setTech, hottake: setHottake };
-    const initials = { project: INITIAL_PROJECT, learning: INITIAL_LEARNING, career: INITIAL_CAREER, tech: INITIAL_TECH, hottake: INITIAL_HOTTAKE };
-    let anyRestored = false;
+    const types = ['project', 'learning', 'career', 'tech', 'hottake', 'ideas'] as const;
+    const setters = {
+      project: setProject,
+      learning: setLearning,
+      career: setCareer,
+      tech: setTech,
+      hottake: setHottake,
+      ideas: setIdeasForm,
+    };
+    const initials = {
+      project: INITIAL_PROJECT,
+      learning: INITIAL_LEARNING,
+      career: INITIAL_CAREER,
+      tech: INITIAL_TECH,
+      hottake: INITIAL_HOTTAKE,
+      ideas: INITIAL_IDEAS,
+    };
     types.forEach(t => {
       try {
         const saved = JSON.parse(localStorage.getItem(`linkedin_draft_${t}`) ?? 'null');
         if (saved) {
-          // Only restore if the draft differs from initial (has at least one non-empty field)
           const hasData = Object.values(saved).some((v) => typeof v === 'string' && v.trim() !== '');
           if (hasData) {
             setters[t](saved as never);
-            if (!anyRestored && t === 'project') anyRestored = true;
           }
         }
-        void initials[t]; // suppress unused warning
+        void initials[t];
       } catch {}
     });
-    // Show "Draft restored" briefly if any draft was loaded
     const anyDraft = types.some(t => {
       try {
         const saved = JSON.parse(localStorage.getItem(`linkedin_draft_${t}`) ?? 'null');
@@ -288,6 +335,7 @@ export default function LinkedInGenerator() {
   useEffect(() => { try { localStorage.setItem('linkedin_draft_career', JSON.stringify(career)); } catch {} }, [career]);
   useEffect(() => { try { localStorage.setItem('linkedin_draft_tech', JSON.stringify(tech)); } catch {} }, [tech]);
   useEffect(() => { try { localStorage.setItem('linkedin_draft_hottake', JSON.stringify(hottake)); } catch {} }, [hottake]);
+  useEffect(() => { try { localStorage.setItem('linkedin_draft_ideas', JSON.stringify(ideasForm)); } catch {} }, [ideasForm]);
 
   const limitReached = usedToday >= DAILY_LIMIT;
   const remaining = useMemo(() => Math.max(0, DAILY_LIMIT - usedToday), [usedToday]);
@@ -302,6 +350,9 @@ export default function LinkedInGenerator() {
     setError("");
     setPost("");
     setHashtags("");
+    setIdeasList([]);
+    setShowingVariation(false);
+    setPrevPost('');
   }
 
   function currentFormData(): Record<string, unknown> {
@@ -309,6 +360,7 @@ export default function LinkedInGenerator() {
     if (postType === "learning") return { ...learning };
     if (postType === "career") return { ...career };
     if (postType === "tech") return { ...tech };
+    if (postType === "ideas") return { ...ideasForm };
     return { ...hottake };
   }
 
@@ -318,6 +370,7 @@ export default function LinkedInGenerator() {
     else if (postType === "learning") setLearning(INITIAL_LEARNING);
     else if (postType === "career") setCareer(INITIAL_CAREER);
     else if (postType === "tech") setTech(INITIAL_TECH);
+    else if (postType === "ideas") setIdeasForm(INITIAL_IDEAS);
     else setHottake(INITIAL_HOTTAKE);
   }
 
@@ -325,10 +378,17 @@ export default function LinkedInGenerator() {
     if (working || limitReached) return;
     setError("");
     setWorking(true);
-    if (opts.variation) setVariationLoading(opts.variation);
+    if (opts.variation) {
+      setVariationLoading(opts.variation);
+      setPrevPost(post); // save current post as "original"
+      setShowingVariation(true);
+    }
     if (!opts.variation) {
       setPost("");
       setHashtags("");
+      setShowingVariation(false);
+      setPrevPost('');
+      setIdeasList([]);
     }
     try {
       const res = await fetch("/api/linkedin/generate", {
@@ -347,8 +407,25 @@ export default function LinkedInGenerator() {
         const newCount = incrementUsage();
         setUsedToday(newCount);
       }
-      setPost(typeof data.post === "string" ? data.post : "");
-      setHashtags(typeof data.hashtags === "string" ? data.hashtags : "");
+
+      if (Array.isArray(data.ideas)) {
+        setIdeasList(data.ideas);
+        setPost('');
+        setHashtags('');
+      } else {
+        setPost(typeof data.post === "string" ? data.post : "");
+        setHashtags(typeof data.hashtags === "string" ? data.hashtags : "");
+
+        // Change 1: Save to history (only for non-variation, non-ideas generates)
+        if (!opts.variation && postType !== "ideas" && typeof data.post === "string" && data.post) {
+          const newEntry = { type: postType, post: data.post, hashtags: typeof data.hashtags === "string" ? data.hashtags : "", ts: Date.now() };
+          setPostHistory(prev => {
+            const updated = [newEntry, ...prev].slice(0, 5);
+            try { localStorage.setItem('linkedin_post_history', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
+        }
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -433,7 +510,7 @@ export default function LinkedInGenerator() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
             {[
-              { label: "5 Post Types" },
+              { label: "6 Post Types" },
               { label: "AI Powered" },
               { label: "100% Free" },
             ].map((stat) => (
@@ -868,6 +945,47 @@ export default function LinkedInGenerator() {
             </>
           )}
 
+          {/* ── Post Ideas ── */}
+          {postType === "ideas" && (
+            <>
+              <div className="flex flex-col gap-2">
+                <label className={labelClass}>Your role / expertise *</label>
+                <input
+                  type="text"
+                  value={ideasForm.role}
+                  onChange={(e) => setIdeasForm((s) => ({ ...s, role: e.target.value }))}
+                  placeholder="e.g. ML Engineer with 3 years experience"
+                  className={inputBase}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className={labelClass}>Recent work / project (optional)</label>
+                <input
+                  type="text"
+                  value={ideasForm.recentWork}
+                  onChange={(e) => setIdeasForm((s) => ({ ...s, recentWork: e.target.value }))}
+                  placeholder="e.g. Just deployed a RAG pipeline at work"
+                  className={inputBase}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className={labelClass}>Target audience</label>
+                <select
+                  value={ideasForm.audience}
+                  onChange={(e) => setIdeasForm((s) => ({ ...s, audience: e.target.value }))}
+                  className={inputBase}
+                >
+                  <option value="">Choose…</option>
+                  {AUDIENCES.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+
           {error && (
             <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
               <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -890,12 +1008,12 @@ export default function LinkedInGenerator() {
               {working && !variationLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Writing your post…
+                  {postType === "ideas" ? "Finding ideas…" : "Writing your post…"}
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  Generate Post
+                  {postType === "ideas" ? "Get Post Ideas" : "Generate Post"}
                 </>
               )}
             </button>
@@ -911,26 +1029,96 @@ export default function LinkedInGenerator() {
           </div>
         </div>
 
+        {/* Ideas list (ideas mode) */}
+        {postType === "ideas" && ideasList.length > 0 && (
+          <div className="mt-6 flex flex-col gap-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+              <p className="text-sm font-semibold text-zinc-100 mb-4">5 Post Ideas for You</p>
+              <div className="flex flex-col gap-2.5">
+                {ideasList.map((idea, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 p-3 rounded-xl border border-zinc-800 hover:border-orange-500/30 cursor-pointer bg-zinc-800/40 hover:bg-orange-500/5 transition-all group"
+                    onClick={() => {
+                      setLearning((s) => ({ ...s, topic: idea, insight: '', timeInvested: '', audience: ideasForm.audience, style: '' }));
+                      switchType('learning');
+                      setIdeasList([]);
+                    }}
+                  >
+                    <span className="w-6 h-6 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                      {i + 1}
+                    </span>
+                    <p className="text-sm text-zinc-300 group-hover:text-zinc-100 transition-colors leading-relaxed">
+                      {idea}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Result */}
         {post && (
           <div className="mt-6 flex flex-col gap-4">
+
+            {/* Change 2: A/B Comparison */}
+            {showingVariation && prevPost && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                <p className="text-sm font-semibold text-zinc-100 mb-3">Which version do you prefer?</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-zinc-500 uppercase">Original</span>
+                      <button
+                        onClick={() => { setPost(prevPost); setShowingVariation(false); setPrevPost(''); }}
+                        className="text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-800 px-2 py-1 rounded-lg border border-zinc-700 transition-colors"
+                      >
+                        Use this
+                      </button>
+                    </div>
+                    <p className="text-xs text-zinc-400 bg-zinc-800/60 rounded-xl p-3 line-clamp-6 leading-relaxed">
+                      {prevPost}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-orange-400 uppercase">New Version</span>
+                      <button
+                        onClick={() => { setShowingVariation(false); setPrevPost(''); }}
+                        className="text-xs text-orange-400 hover:text-orange-300 bg-orange-500/10 px-2 py-1 rounded-lg border border-orange-500/20 transition-colors"
+                      >
+                        Keep this
+                      </button>
+                    </div>
+                    <p className="text-xs text-zinc-400 bg-zinc-800/60 rounded-xl p-3 line-clamp-6 leading-relaxed">
+                      {post}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* LinkedIn-style preview */}
             <div className="bg-white text-zinc-900 rounded-2xl shadow-2xl shadow-black/40 border border-zinc-200 overflow-hidden">
               <div className="flex items-center gap-3 px-5 pt-5">
-                <div className="w-12 h-12 rounded-full overflow-hidden ring-1 ring-zinc-200 shrink-0">
-                  <Image
-                    src="/logo.jpg"
-                    alt="Aman Chauhan"
-                    width={48}
-                    height={48}
-                    className="object-cover"
-                  />
+                {/* Change 4: User-configurable author */}
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center ring-1 ring-zinc-200 shrink-0">
+                  <span className="text-white text-lg font-bold">
+                    {authorName[0]?.toUpperCase() ?? 'Y'}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-zinc-900">Aman Chauhan</p>
-                  <p className="text-xs text-zinc-600 truncate">
-                    AI Engineer · AmanAI Lab
-                  </p>
+                  <input
+                    value={authorName}
+                    onChange={(e) => {
+                      setAuthorName(e.target.value);
+                      try { localStorage.setItem('linkedin_author_name', e.target.value); } catch {}
+                    }}
+                    className="text-sm font-bold text-zinc-900 bg-transparent border-b border-zinc-200 focus:border-zinc-500 outline-none w-full"
+                    placeholder="Your Name"
+                  />
+                  <p className="text-xs text-zinc-600 truncate">AI/ML Engineer</p>
                   <p className="text-[10px] text-zinc-500 mt-0.5">Just now · 🌐</p>
                 </div>
                 <LinkedinIcon className="w-5 h-5 text-[#0A66C2]" />
@@ -1000,8 +1188,8 @@ export default function LinkedInGenerator() {
               </div>
             )}
 
-            {/* Action buttons */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Action buttons — Change 3: 4 columns + LinkedIn share */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <button
                 onClick={copyPost}
                 className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
@@ -1052,6 +1240,14 @@ export default function LinkedInGenerator() {
                   </>
                 )}
               </button>
+              <a
+                href={`https://www.linkedin.com/sharing/share-offsite/?mini=true&text=${encodeURIComponent(post + (hashtags ? '\n\n' + hashtags : ''))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-[#0A66C2] hover:bg-[#0A5AB0] text-white text-sm font-semibold px-4 py-3 rounded-xl transition-colors"
+              >
+                <LinkedinIcon className="w-4 h-4" /> Post to LinkedIn
+              </a>
             </div>
 
             {/* Variations */}
@@ -1104,6 +1300,34 @@ export default function LinkedInGenerator() {
                 hurts reach.
               </p>
             </div>
+
+            {/* Change 1: Post History */}
+            {postHistory.length > 1 && (
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                <p className="text-sm font-semibold text-zinc-100 mb-3">Today's Generated Posts</p>
+                <div className="flex flex-col gap-2">
+                  {postHistory.map((h, i) => (
+                    <div
+                      key={h.ts}
+                      className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
+                        h.post === post
+                          ? 'border-orange-500/40 bg-orange-500/5'
+                          : 'border-zinc-800 hover:border-zinc-700 bg-zinc-800/40'
+                      }`}
+                      onClick={() => { setPost(h.post); setHashtags(h.hashtags); }}
+                    >
+                      <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full shrink-0 mt-0.5 capitalize">
+                        {h.type}
+                      </span>
+                      <p className="text-xs text-zinc-400 line-clamp-2 flex-1">{h.post}</p>
+                      <span className="text-[10px] text-zinc-600 shrink-0">
+                        {i === 0 ? 'Latest' : `#${i + 1}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {!isCaptured() && (
               <EmailGateInline

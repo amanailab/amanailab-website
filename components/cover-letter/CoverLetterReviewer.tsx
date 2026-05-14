@@ -9,6 +9,23 @@ import {
 import Link from 'next/link'
 import { EmailGateInline, isCaptured } from '@/components/shared/EmailGateModal'
 
+function DiffHighlight({ text, keywords }: { text: string; keywords: string[] }) {
+  if (!keywords.length) return <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">{text}</p>
+
+  const pattern = new RegExp(`(${keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')
+  const parts = text.split(pattern)
+
+  return (
+    <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-line">
+      {parts.map((part, i) =>
+        keywords.some(k => k.toLowerCase() === part.toLowerCase())
+          ? <mark key={i} className="bg-green-500/20 text-green-300 px-0.5 rounded not-italic">{part}</mark>
+          : <span key={i}>{part}</span>
+      )}
+    </p>
+  )
+}
+
 interface ReviewResult {
   overallScore: number
   grade: string
@@ -59,6 +76,7 @@ export default function CoverLetterReviewer() {
   const [coverLetter,    setCoverLetter]    = useState('')
   const [jobDescription, setJobDescription] = useState('')
   const [targetRole,     setTargetRole]     = useState('')
+  const [targetTone,     setTargetTone]     = useState('Professional')
   const [result,         setResult]         = useState<ReviewResult | null>(null)
   const [loading,        setLoading]        = useState(false)
   const [error,          setError]          = useState('')
@@ -75,7 +93,7 @@ export default function CoverLetterReviewer() {
       const res = await fetch('/api/cover-letter/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coverLetter, jobDescription, targetRole }),
+        body: JSON.stringify({ coverLetter, jobDescription, targetRole, targetTone }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to review.')
@@ -100,6 +118,9 @@ export default function CoverLetterReviewer() {
   }
 
   const clr = result ? gradeColor(result.grade) : null
+  const estimatedRewriteScore = result
+    ? Math.min(100, result.overallScore + Math.min(30, result.missingKeywords.length * 4 + result.weaknesses.length * 2))
+    : 0
 
   return (
     <section className="min-h-screen bg-zinc-950 text-zinc-50">
@@ -164,6 +185,20 @@ export default function CoverLetterReviewer() {
                 />
               </div>
 
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Desired Tone for Rewrite</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Professional', 'Conversational', 'Confident', 'Enthusiastic', 'Concise'].map(tone => (
+                    <button key={tone} onClick={() => setTargetTone(tone)}
+                      className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-colors ${
+                        targetTone === tone
+                          ? 'bg-purple-600 border-purple-500 text-white'
+                          : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
+                      }`}>{tone}</button>
+                  ))}
+                </div>
+              </div>
+
               {error && (
                 <div className="flex items-start gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
@@ -226,6 +261,20 @@ export default function CoverLetterReviewer() {
                     <div>
                       <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-0.5">Overall Score</p>
                       <p className="text-3xl font-black text-zinc-100">{result.overallScore}<span className="text-lg text-zinc-500">/100</span></p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-zinc-500">Current:</span>
+                          <span className={`text-sm font-bold ${clr.text}`}>{result.overallScore}/100</span>
+                        </div>
+                        <span className="text-zinc-700">→</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-zinc-500">With rewrite:</span>
+                          <span className="text-sm font-bold text-green-400">~{estimatedRewriteScore}/100</span>
+                        </div>
+                        <span className="text-xs text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+                          +{estimatedRewriteScore - result.overallScore} pts
+                        </span>
+                      </div>
                     </div>
                     <div className={`text-4xl font-black px-5 py-3 rounded-2xl border-2 ${clr.bg} ${clr.text}`}>
                       {result.grade}
@@ -335,6 +384,33 @@ export default function CoverLetterReviewer() {
                           ))}
                         </div>
                         <p className="text-xs text-zinc-600 mt-3">Add these keywords naturally in your rewrite — the AI rewrite does this automatically.</p>
+                        <div className="mt-3 flex flex-col gap-2">
+                          <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-semibold">Where to add these keywords</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {(() => {
+                              const techTerms = result.missingKeywords.filter(k =>
+                                /python|pytorch|tensorflow|langchain|llm|rag|transformer|bert|gpt|ml|ai|docker|kubernetes|aws|gcp|sql|api|fastapi|flask|react|node|git|ci\/cd/i.test(k)
+                              )
+                              const softTerms = result.missingKeywords.filter(k => !techTerms.includes(k))
+                              return (
+                                <>
+                                  {techTerms.length > 0 && (
+                                    <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-3">
+                                      <p className="text-[10px] font-bold text-blue-400 uppercase mb-2">→ Technical skills paragraph</p>
+                                      <p className="text-[10px] text-zinc-400">{techTerms.join(', ')}</p>
+                                    </div>
+                                  )}
+                                  {softTerms.length > 0 && (
+                                    <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-3">
+                                      <p className="text-[10px] font-bold text-orange-400 uppercase mb-2">→ Experience/achievement paragraphs</p>
+                                      <p className="text-[10px] text-zinc-400">{softTerms.join(', ')}</p>
+                                    </div>
+                                  )}
+                                </>
+                              )
+                            })()}
+                          </div>
+                        </div>
                       </div>
                     )}
 
@@ -371,8 +447,15 @@ export default function CoverLetterReviewer() {
                         </button>
                       </div>
                     </div>
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <span className="text-xs text-zinc-500">Legend:</span>
+                      <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded">Added keywords</span>
+                      {result.missingKeywords.length > 0 && (
+                        <span className="text-xs text-zinc-500">{result.missingKeywords.length} keywords woven in</span>
+                      )}
+                    </div>
                     <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 max-h-96 overflow-y-auto">
-                      <p className="text-sm text-zinc-300 leading-[1.8] whitespace-pre-line">{result.improvedVersion}</p>
+                      <DiffHighlight text={result.improvedVersion} keywords={result.missingKeywords ?? []} />
                     </div>
                   </div>
                 )}

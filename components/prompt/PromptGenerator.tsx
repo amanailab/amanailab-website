@@ -18,11 +18,12 @@ import {
   RotateCcw,
   Wand2,
   ArrowRight,
+  ChevronRight,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Mode = "chatgpt" | "image" | "code" | "data";
+type Mode = "chatgpt" | "image" | "code" | "data" | "system";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
 
@@ -57,6 +58,15 @@ interface DataForm {
   output: string;
 }
 
+interface SystemForm {
+  aiRole: string;
+  task: string;
+  constraints: string;
+  outputFormat: string;
+  tone: string;
+  persona: string;
+}
+
 interface HistoryEntry {
   mode: Mode;
   prompt: string;
@@ -65,7 +75,7 @@ interface HistoryEntry {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DAILY_LIMIT = 3;
+const DAILY_LIMIT = 10;
 const LS_USES_KEY = "prompt_gen_uses";
 const LS_DATE_KEY = "prompt_gen_date";
 const LS_HISTORY_KEY = "prompt_gen_history";
@@ -96,6 +106,12 @@ const MODES: { id: Mode; title: string; description: string; Icon: IconComponent
     title: "Data Analysis",
     description: "Prompts for Pandas, SQL, and BI tools",
     Icon: BarChart3,
+  },
+  {
+    id: "system",
+    title: "System Prompt",
+    description: "Design AI system prompts for apps and agents",
+    Icon: Wand2,
   },
 ];
 
@@ -163,6 +179,14 @@ const INITIAL_DATA: DataForm = {
   tool: "",
   output: "",
 };
+const INITIAL_SYSTEM: SystemForm = {
+  aiRole: "",
+  task: "",
+  constraints: "",
+  outputFormat: "",
+  tone: "",
+  persona: "",
+};
 
 const PLATFORM_TIPS: Record<string, string> = {
   Midjourney:
@@ -175,11 +199,118 @@ const PLATFORM_TIPS: Record<string, string> = {
     "Firefly works best with shorter, descriptive prompts and preset style options.",
 };
 
+const PROMPT_TEMPLATES: {
+  mode: Mode;
+  label: string;
+  icon: string;
+  fill: Partial<ChatGptForm & ImageForm & CodeForm & DataForm>;
+}[] = [
+  {
+    mode: "chatgpt",
+    label: "Explain a concept",
+    icon: "💡",
+    fill: {
+      task: "Explain [concept] to me like I have a software background but am new to AI/ML. Use a concrete real-world analogy.",
+      tone: "Casual",
+      format: "Paragraph",
+      audience: "Developer",
+    },
+  },
+  {
+    mode: "chatgpt",
+    label: "Debug my code",
+    icon: "🐛",
+    fill: {
+      task: "Debug this [language] code and explain what is wrong and how to fix it: [paste code]",
+      tone: "Technical",
+      format: "Step by Step",
+      audience: "Developer",
+    },
+  },
+  {
+    mode: "chatgpt",
+    label: "Summarize a paper",
+    icon: "📄",
+    fill: {
+      task: "Summarize this AI research paper for a practitioner. Highlight: what problem it solves, how it works, key results, and practical applications: [paste paper abstract]",
+      tone: "Professional",
+      format: "Bullet Points",
+      audience: "Researcher",
+    },
+  },
+  {
+    mode: "chatgpt",
+    label: "Write a LinkedIn post",
+    icon: "💼",
+    fill: {
+      task: "Write a LinkedIn post about [topic] for AI/ML developers. Make it engaging, 150-200 words, with a hook and call to action.",
+      tone: "Professional",
+      format: "Paragraph",
+      audience: "LinkedIn",
+    },
+  },
+  {
+    mode: "code",
+    label: "Implement from scratch",
+    icon: "⚡",
+    fill: {
+      task: "Implement [algorithm/model] from scratch without using high-level libraries. Show each step clearly.",
+      language: "Python",
+      level: "Intermediate",
+      includes: ["Comments", "Examples"],
+    },
+  },
+  {
+    mode: "image",
+    label: "AI model visualization",
+    icon: "🧠",
+    fill: {
+      description:
+        "A neural network with glowing blue connections, data flowing through layers, dark background, futuristic tech aesthetic",
+      style: "Digital Art",
+      mood: "Dramatic",
+      angle: "Wide shot",
+      platform: "Midjourney",
+    },
+  },
+];
+
+const MODE_TIPS: Record<Mode, string[]> = {
+  chatgpt: [
+    'Start with a role assignment: "You are an expert in..."',
+    'Specify output format explicitly: "Return as a numbered list"',
+    'Add examples with "For example:" to get consistent output',
+    "Use XML tags for complex prompts: <context>, <task>, <format>",
+  ],
+  image: [
+    'Specify lighting: "golden hour", "dramatic studio lighting", "soft diffused light"',
+    'Add artist references: "in the style of Greg Rutkowski" boosts quality',
+    'Include negative prompts to avoid common issues: "no blur, no distortion"',
+  ],
+  code: [
+    'Specify Python version if important: "Python 3.11+"',
+    "Ask for type hints and docstrings for production-ready code",
+    'Request edge case handling explicitly: "handle empty inputs and None values"',
+    'Ask it to explain trade-offs: "explain why you chose this approach"',
+  ],
+  data: [
+    'Specify data shape: "DataFrame with columns: date, value, category"',
+    'Ask for null value handling: "show how to handle missing data"',
+    "Request performance tips for large datasets",
+  ],
+  system: [
+    "Be specific about scope — vague personas produce inconsistent behavior",
+    'Include examples of ideal responses: "For example, when asked X, respond with Y"',
+    'Add a "format reminder" at the end: always restate your output format requirements',
+    "Test edge cases: specify how the AI should handle off-topic requests",
+  ],
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function todayKey() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function getUsage(): number {
@@ -217,7 +348,8 @@ function loadHistory(): HistoryEntry[] {
         (e.mode === "chatgpt" ||
           e.mode === "image" ||
           e.mode === "code" ||
-          e.mode === "data")
+          e.mode === "data" ||
+          e.mode === "system")
     );
   } catch {
     return [];
@@ -249,12 +381,14 @@ export default function PromptGenerator() {
   const [imageForm, setImageForm] = useState<ImageForm>(INITIAL_IMAGE);
   const [codeForm, setCodeForm] = useState<CodeForm>(INITIAL_CODE);
   const [dataForm, setDataForm] = useState<DataForm>(INITIAL_DATA);
+  const [systemForm, setSystemForm] = useState<SystemForm>(INITIAL_SYSTEM);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
   const [generated, setGenerated] = useState("");
   const [usedToday, setUsedToday] = useState(0);
   const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   useEffect(() => {
     setUsedToday(getUsage());
@@ -279,6 +413,7 @@ export default function PromptGenerator() {
     if (mode === "chatgpt") return { ...chatgpt };
     if (mode === "image") return { ...imageForm };
     if (mode === "code") return { ...codeForm };
+    if (mode === "system") return { ...systemForm };
     return { ...dataForm };
   }
 
@@ -444,6 +579,44 @@ export default function PromptGenerator() {
               </button>
             );
           })}
+        </div>
+
+        {/* Quick Templates */}
+        <div className="mb-4">
+          <button
+            onClick={() => setShowTemplates((v) => !v)}
+            className="flex items-center gap-2 text-xs font-semibold text-zinc-400 hover:text-zinc-200 transition-colors mb-2"
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            Quick Templates
+            <ChevronRight
+              className={`w-3 h-3 transition-transform ${showTemplates ? "rotate-90" : ""}`}
+            />
+          </button>
+          {showTemplates && (
+            <div className="flex gap-2 flex-wrap">
+              {PROMPT_TEMPLATES.map((tpl, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    switchMode(tpl.mode);
+                    if (tpl.mode === "chatgpt")
+                      setChatgpt((s) => ({ ...s, ...(tpl.fill as Partial<ChatGptForm>) }));
+                    else if (tpl.mode === "image")
+                      setImageForm((s) => ({ ...s, ...(tpl.fill as Partial<ImageForm>) }));
+                    else if (tpl.mode === "code")
+                      setCodeForm((s) => ({ ...s, ...(tpl.fill as Partial<CodeForm>) }));
+                    else if (tpl.mode === "data")
+                      setDataForm((s) => ({ ...s, ...(tpl.fill as Partial<DataForm>) }));
+                    setShowTemplates(false);
+                  }}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300 hover:text-zinc-100 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-600 px-3 py-1.5 rounded-xl transition-colors"
+                >
+                  <span>{tpl.icon}</span> {tpl.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Form card */}
@@ -767,6 +940,93 @@ export default function PromptGenerator() {
             </>
           )}
 
+          {/* ── System Prompt mode ── */}
+          {mode === "system" && (
+            <>
+              <div className="flex flex-col gap-2">
+                <label className={labelClass}>AI Role / Persona *</label>
+                <input
+                  type="text"
+                  value={systemForm.aiRole}
+                  onChange={(e) => setSystemForm((s) => ({ ...s, aiRole: e.target.value }))}
+                  placeholder="e.g. You are an expert ML engineer who helps developers..."
+                  className={inputBase}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className={labelClass}>Primary Task *</label>
+                <textarea
+                  value={systemForm.task}
+                  onChange={(e) => setSystemForm((s) => ({ ...s, task: e.target.value }))}
+                  rows={3}
+                  placeholder="e.g. Help users debug Python ML code, explain errors, and suggest fixes"
+                  className={`${inputBase} resize-y`}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className={labelClass}>
+                    Constraints / Don&apos;ts
+                  </label>
+                  <textarea
+                    value={systemForm.constraints}
+                    onChange={(e) =>
+                      setSystemForm((s) => ({ ...s, constraints: e.target.value }))
+                    }
+                    rows={3}
+                    placeholder="e.g. Never write harmful code, always ask for clarification when ambiguous"
+                    className={`${inputBase} resize-y`}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className={labelClass}>Output Format</label>
+                  <textarea
+                    value={systemForm.outputFormat}
+                    onChange={(e) =>
+                      setSystemForm((s) => ({ ...s, outputFormat: e.target.value }))
+                    }
+                    rows={3}
+                    placeholder="e.g. Always start with a brief explanation, then show code, then explain the code"
+                    className={`${inputBase} resize-y`}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className={labelClass}>Tone / Style</label>
+                  <select
+                    value={systemForm.tone}
+                    onChange={(e) => setSystemForm((s) => ({ ...s, tone: e.target.value }))}
+                    className={inputBase}
+                  >
+                    <option value="">Choose…</option>
+                    {["Concise", "Detailed", "Friendly", "Professional", "Teaching", "Socratic"].map(
+                      (t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className={labelClass}>
+                    Persona Name <span className="text-zinc-600">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={systemForm.persona}
+                    onChange={(e) =>
+                      setSystemForm((s) => ({ ...s, persona: e.target.value }))
+                    }
+                    placeholder="e.g. CodeBot, Alex, TechHelper"
+                    className={inputBase}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
           {error && (
             <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
               <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -793,6 +1053,8 @@ export default function PromptGenerator() {
                   ? "Generate Code Prompt"
                   : mode === "data"
                   ? "Generate Analysis Prompt"
+                  : mode === "system"
+                  ? "Generate System Prompt"
                   : "Generate Prompt"}
               </>
             )}
@@ -880,7 +1142,29 @@ export default function PromptGenerator() {
                     ChatGPT alongside a sample of your dataset.
                   </>
                 )}
+                {mode === "system" && (
+                  <>
+                    <span className="font-semibold">Pro tip:</span> Paste this as the system
+                    prompt in your LLM app, Claude Project, or GPT configuration.
+                  </>
+                )}
               </p>
+            </div>
+
+            {/* Mode tips */}
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-2">
+              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide flex items-center gap-1.5">
+                <Lightbulb className="w-3.5 h-3.5 text-yellow-400" /> Tips for{" "}
+                {MODES.find((m) => m.id === mode)?.title} Prompts
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {MODE_TIPS[mode].map((tip, i) => (
+                  <li key={i} className="text-xs text-zinc-400 flex items-start gap-1.5">
+                    <span className="text-yellow-400 shrink-0">•</span>
+                    {tip}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         )}

@@ -28,6 +28,7 @@ import {
   ChevronUp,
   AlertTriangle,
   HelpCircle,
+  BrainCircuit,
 } from "lucide-react";
 import { LinkedinIcon } from "@/components/icons/SocialIcons";
 import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
@@ -2192,7 +2193,28 @@ export default function ResumeAnalyzer() {
             )}
             {/* Score */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6">
-              <ScoreCircle score={analysis.score} />
+              <div className="flex flex-col items-center gap-4">
+                <ScoreCircle score={analysis.score} />
+                {/* ATS Score benchmark */}
+                <div className="w-full max-w-xs">
+                  <p className="text-[10px] text-zinc-500 text-center mb-2 uppercase tracking-wide font-semibold">Score Benchmarks</p>
+                  <div className="flex flex-col gap-1.5">
+                    {[
+                      { label: 'Most startups', min: 70, color: 'bg-yellow-500' },
+                      { label: 'Top tech cos', min: 80, color: 'bg-blue-500' },
+                      { label: 'FAANG / Top AI labs', min: 90, color: 'bg-green-500' },
+                    ].map(b => (
+                      <div key={b.label} className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full shrink-0 ${b.color}`} />
+                        <p className="text-[10px] text-zinc-400 flex-1">{b.label}</p>
+                        <span className={`text-[10px] font-bold ${analysis && analysis.score >= b.min ? 'text-green-400' : 'text-zinc-600'}`}>
+                          {b.min}+{analysis && analysis.score >= b.min ? ' ✓' : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
               <div className="flex-1 text-center sm:text-left">
                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">
                   ATS Score
@@ -2399,6 +2421,44 @@ export default function ResumeAnalyzer() {
                     </span>
                   ))}
                 </div>
+                {match.missingKeywords.length > 0 && (
+                  <div className="mt-4 flex flex-col gap-2">
+                    <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide">Where to Add These Keywords</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {(() => {
+                        const skillsKeywords = match.missingKeywords.filter(k => {
+                          const lower = k.toLowerCase()
+                          return /python|pytorch|tensorflow|langchain|mlflow|docker|kubernetes|sql|aws|gcp|azure|spark|hadoop|fastapi|flask|react|typescript|javascript|node|git|ci\/cd|rag|llm|gpt|bert|transformer|vector|embedding/i.test(lower)
+                        })
+                        const expKeywords = match.missingKeywords.filter(k => !skillsKeywords.includes(k))
+                        return (
+                          <>
+                            {skillsKeywords.length > 0 && (
+                              <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-3">
+                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wide mb-2">→ Add to Skills Section</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {skillsKeywords.map(k => (
+                                    <span key={k} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">{k}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {expKeywords.length > 0 && (
+                              <div className="bg-zinc-800/60 border border-zinc-700 rounded-xl p-3">
+                                <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wide mb-2">→ Mention in Experience Bullets</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {expKeywords.map(k => (
+                                    <span key={k} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-300 border border-orange-500/20">{k}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -3057,6 +3117,20 @@ export default function ResumeAnalyzer() {
                 </div>
               </div>
             )}
+
+            {/* Practice now CTA */}
+            <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-5 flex items-center gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-bold text-zinc-100 mb-0.5">Ready to practice these questions?</p>
+                <p className="text-xs text-zinc-500">Launch an AI interview session focused on your predicted question topics</p>
+              </div>
+              <Link
+                href="/interview?tab=simulator"
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shrink-0 hover:shadow-lg hover:shadow-orange-500/20"
+              >
+                <BrainCircuit className="w-4 h-4" /> Practice Now
+              </Link>
+            </div>
 
             {/* WhatsApp CTA */}
             <div className="bg-gradient-to-br from-orange-500/15 to-orange-500/5 border border-orange-500/30 rounded-2xl p-6 sm:p-8 text-center">
