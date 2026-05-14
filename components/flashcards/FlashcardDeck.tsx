@@ -8,26 +8,57 @@ import type { TopicMeta } from '@/lib/topic-data'
 interface Props { topic: TopicMeta }
 
 export default function FlashcardDeck({ topic }: Props) {
-  const [index, setIndex]       = useState(0)
-  const [flipped, setFlipped]   = useState(false)
-  const [known, setKnown]       = useState<Set<number>>(new Set())
-  const [learning, setLearning] = useState<Set<number>>(new Set())
-  const [done, setDone]         = useState(false)
+  const total = topic.cards.length
 
-  const card    = topic.cards[index]
-  const total   = topic.cards.length
-  const progress = Math.round(((known.size + learning.size) / total) * 100)
+  const [queue, setQueue]               = useState<number[]>(() => topic.cards.map((_, i) => i))
+  const [queuePos, setQueuePos]         = useState(0)
+  const [repeatCounts, setRepeatCounts] = useState<Record<number, number>>({})
+  const [flipped, setFlipped]           = useState(false)
+  const [known, setKnown]               = useState<Set<number>>(new Set())
+  const [learning, setLearning]         = useState<Set<number>>(new Set())
+  const [done, setDone]                 = useState(false)
+
+  const cardIdx       = queue[queuePos]
+  const card          = topic.cards[cardIdx]
+  const repeatsQueued = queue.length - total
 
   const next = useCallback((mark?: 'known' | 'learning') => {
-    if (mark === 'known')    setKnown(s => new Set([...s, index]))
-    if (mark === 'learning') setLearning(s => new Set([...s, index]))
+    if (mark === 'known') {
+      setKnown(s => new Set([...s, cardIdx]))
+    }
+
+    let appendCard = false
+    if (mark === 'learning') {
+      setLearning(s => new Set([...s, cardIdx]))
+      const count = repeatCounts[cardIdx] ?? 0
+      if (count < 2) {
+        appendCard = true
+        setRepeatCounts(r => ({ ...r, [cardIdx]: count + 1 }))
+      }
+    }
+
     setFlipped(false)
-    if (index + 1 >= total) { setDone(true); return }
-    setTimeout(() => setIndex(i => i + 1), 150)
-  }, [index, total])
+
+    setQueue(q => {
+      const nextQueue = appendCard ? [...q, cardIdx] : q
+      const nextPos = queuePos + 1
+      if (nextPos >= nextQueue.length) {
+        setTimeout(() => setDone(true), 0)
+      }
+      return nextQueue
+    })
+
+    setQueuePos(pos => pos + 1)
+  }, [cardIdx, queuePos, repeatCounts])
 
   function restart() {
-    setIndex(0); setFlipped(false); setKnown(new Set()); setLearning(new Set()); setDone(false)
+    setQueue(topic.cards.map((_, i) => i))
+    setQueuePos(0)
+    setRepeatCounts({})
+    setFlipped(false)
+    setKnown(new Set())
+    setLearning(new Set())
+    setDone(false)
   }
 
   // Keyboard shortcuts: Space = flip, → = known, ← = learning
@@ -100,13 +131,16 @@ export default function FlashcardDeck({ topic }: Props) {
         {/* Progress bar */}
         <div className="mb-6">
           <div className="flex justify-between text-xs text-zinc-500 mb-2">
-            <span>{index + 1} / {total}</span>
+            <span>
+              {queuePos + 1} / {queue.length}
+              {repeatsQueued > 0 && <span className="text-orange-400 ml-1">(+{repeatsQueued} repeats)</span>}
+            </span>
             <span>{known.size} known · {learning.size} learning</span>
           </div>
           <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
             <div
               className={`h-full ${topic.bar} rounded-full transition-all duration-300`}
-              style={{ width: `${((index) / total) * 100}%` }}
+              style={{ width: `${(queuePos / queue.length) * 100}%` }}
             />
           </div>
         </div>
@@ -184,7 +218,7 @@ export default function FlashcardDeck({ topic }: Props) {
             <div
               key={i}
               className={`w-2 h-2 rounded-full transition-all ${
-                i === index ? `${topic.bar} scale-125` :
+                i === cardIdx ? `${topic.bar} scale-125` :
                 known.has(i) ? 'bg-green-500' :
                 learning.has(i) ? 'bg-orange-500' :
                 'bg-zinc-700'

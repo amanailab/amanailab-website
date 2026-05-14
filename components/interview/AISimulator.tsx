@@ -545,13 +545,9 @@ export default function AISimulator() {
     setPhase('feedback')
   }
 
-  // ── Next question ── (email gate after Q1 if not captured)
+  // ── Next question ──
   function nextQuestion() {
     const next = currentIdx + 1
-    if (currentIdx === 0 && !isCaptured() && !emailUnlocked) {
-      setShowEmailGate(true)
-      return
-    }
     if (next >= questions.length) {
       setPhase('summary')
       saveSession(session)
@@ -566,23 +562,12 @@ export default function AISimulator() {
     }
   }
 
-  function handleEmailSuccess() {
-    setEmailUnlocked(true)
-    setShowEmailGate(false)
-    const next = currentIdx + 1
-    if (next >= questions.length) {
-      setPhase('summary')
-      saveSession(session)
-    } else {
-      setCurrentIdx(next)
-      setAnswer('')
-      setTranscript('')
-      answerRef.current = ''
-      totalFinalRef.current = ''
-      setIsListening(false)
-      setPhase('question')
+  // ── Show email gate when summary is reached (if not already captured) ──
+  useEffect(() => {
+    if (phase === 'summary' && !isCaptured() && !emailUnlocked) {
+      setShowEmailGate(true)
     }
-  }
+  }, [phase, emailUnlocked])
 
   // ── Reset ──
   function reset() {
@@ -946,16 +931,6 @@ export default function AISimulator() {
     const skipped = !currentEntry?.answer
 
     return (
-      <>
-      <EmailGateModal
-        open={showEmailGate}
-        onSuccess={handleEmailSuccess}
-        source="interview_simulator"
-        title="Great job on Question 1! 🎉"
-        subtitle="Enter your email to unlock your full interview session. We'll also send you 50 curated AI/ML questions straight to your inbox — free."
-        benefit="Unlock remaining questions + 50 bonus Q&As"
-        emoji="🎯"
-      />
       <div className="max-w-2xl mx-auto py-6 px-4 flex flex-col gap-5">
         {/* Question recap */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
@@ -1059,7 +1034,6 @@ export default function AISimulator() {
           )}
         </button>
       </div>
-      </>
     )
   }
 
@@ -1074,6 +1048,16 @@ export default function AISimulator() {
     const gradeMsg = avg >= 8 ? 'Excellent performance!' : avg >= 6 ? 'Good work — keep practicing.' : 'Keep studying and try again.'
 
     return (
+      <>
+      <EmailGateModal
+        open={showEmailGate}
+        onSuccess={() => { setEmailUnlocked(true); setShowEmailGate(false) }}
+        source="interview_simulator"
+        title="Session Complete! 🎉"
+        subtitle="Enter your email to unlock your full results breakdown. We'll also send you 50 curated AI/ML questions straight to your inbox — free."
+        benefit="Unlock full results + 50 bonus Q&As"
+        emoji="🏆"
+      />
       <div className="max-w-2xl mx-auto py-6 px-4 flex flex-col gap-6">
         {/* Hero score */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center">
@@ -1205,6 +1189,7 @@ export default function AISimulator() {
           </button>
         </div>
       </div>
+      </>
     )
   }
 

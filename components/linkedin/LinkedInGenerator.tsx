@@ -243,10 +243,51 @@ export default function LinkedInGenerator() {
   const [usedToday, setUsedToday] = useState(0);
   const [postCopied, setPostCopied] = useState(false);
   const [tagsCopied, setTagsCopied] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   useEffect(() => {
     setUsedToday(getUsage());
   }, []);
+
+  // Load drafts on mount
+  useEffect(() => {
+    const types = ['project', 'learning', 'career', 'tech', 'hottake'] as const;
+    const setters = { project: setProject, learning: setLearning, career: setCareer, tech: setTech, hottake: setHottake };
+    const initials = { project: INITIAL_PROJECT, learning: INITIAL_LEARNING, career: INITIAL_CAREER, tech: INITIAL_TECH, hottake: INITIAL_HOTTAKE };
+    let anyRestored = false;
+    types.forEach(t => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`linkedin_draft_${t}`) ?? 'null');
+        if (saved) {
+          // Only restore if the draft differs from initial (has at least one non-empty field)
+          const hasData = Object.values(saved).some((v) => typeof v === 'string' && v.trim() !== '');
+          if (hasData) {
+            setters[t](saved as never);
+            if (!anyRestored && t === 'project') anyRestored = true;
+          }
+        }
+        void initials[t]; // suppress unused warning
+      } catch {}
+    });
+    // Show "Draft restored" briefly if any draft was loaded
+    const anyDraft = types.some(t => {
+      try {
+        const saved = JSON.parse(localStorage.getItem(`linkedin_draft_${t}`) ?? 'null');
+        return saved && Object.values(saved).some((v) => typeof v === 'string' && (v as string).trim() !== '');
+      } catch { return false; }
+    });
+    if (anyDraft) {
+      setDraftRestored(true);
+      setTimeout(() => setDraftRestored(false), 3000);
+    }
+  }, []);
+
+  // Save drafts on change
+  useEffect(() => { try { localStorage.setItem('linkedin_draft_project', JSON.stringify(project)); } catch {} }, [project]);
+  useEffect(() => { try { localStorage.setItem('linkedin_draft_learning', JSON.stringify(learning)); } catch {} }, [learning]);
+  useEffect(() => { try { localStorage.setItem('linkedin_draft_career', JSON.stringify(career)); } catch {} }, [career]);
+  useEffect(() => { try { localStorage.setItem('linkedin_draft_tech', JSON.stringify(tech)); } catch {} }, [tech]);
+  useEffect(() => { try { localStorage.setItem('linkedin_draft_hottake', JSON.stringify(hottake)); } catch {} }, [hottake]);
 
   const limitReached = usedToday >= DAILY_LIMIT;
   const remaining = useMemo(() => Math.max(0, DAILY_LIMIT - usedToday), [usedToday]);
@@ -271,6 +312,15 @@ export default function LinkedInGenerator() {
     return { ...hottake };
   }
 
+  function clearDraft() {
+    try { localStorage.removeItem(`linkedin_draft_${postType}`); } catch {}
+    if (postType === "project") setProject(INITIAL_PROJECT);
+    else if (postType === "learning") setLearning(INITIAL_LEARNING);
+    else if (postType === "career") setCareer(INITIAL_CAREER);
+    else if (postType === "tech") setTech(INITIAL_TECH);
+    else setHottake(INITIAL_HOTTAKE);
+  }
+
   async function generate(opts: { variation?: Variation } = {}) {
     if (working || limitReached) return;
     setError("");
@@ -293,8 +343,10 @@ export default function LinkedInGenerator() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to generate post.");
 
-      const newCount = incrementUsage();
-      setUsedToday(newCount);
+      if (!opts.variation) {
+        const newCount = incrementUsage();
+        setUsedToday(newCount);
+      }
       setPost(typeof data.post === "string" ? data.post : "");
       setHashtags(typeof data.hashtags === "string" ? data.hashtags : "");
     } catch (e: unknown) {
@@ -823,23 +875,40 @@ export default function LinkedInGenerator() {
             </div>
           )}
 
-          <button
-            onClick={() => generate()}
-            disabled={working}
-            className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
-          >
-            {working && !variationLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Writing your post…
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Generate Post
-              </>
-            )}
-          </button>
+          {draftRestored && (
+            <p className="text-xs text-green-400 text-center transition-opacity duration-500">
+              Draft restored
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => generate()}
+              disabled={working}
+              className="flex items-center justify-center gap-2 flex-1 bg-orange-500 hover:bg-orange-400 disabled:bg-zinc-800 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25"
+            >
+              {working && !variationLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Writing your post…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate Post
+                </>
+              )}
+            </button>
+            <button
+              onClick={clearDraft}
+              disabled={working}
+              title="Clear draft"
+              className="flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-400 hover:text-zinc-200 text-sm font-semibold px-4 py-3.5 rounded-xl transition-colors"
+            >
+              <XCircle className="w-4 h-4" />
+              Clear
+            </button>
+          </div>
         </div>
 
         {/* Result */}

@@ -105,9 +105,16 @@ export default function LinkedInOptimizer() {
               <h2 className="text-base font-bold text-zinc-100">Your Profile Sections</h2>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
-                  Headline <span className="text-zinc-600 normal-case font-normal">(optional)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                    Headline <span className="text-zinc-600 normal-case font-normal">(optional)</span>
+                  </label>
+                  <span className={`text-xs font-mono ${
+                    headline.length > 200 ? 'text-red-400' : headline.length > 150 ? 'text-yellow-400' : 'text-zinc-500'
+                  }`}>
+                    {headline.length}/220
+                  </span>
+                </div>
                 <input
                   type="text"
                   value={headline}
@@ -116,13 +123,19 @@ export default function LinkedInOptimizer() {
                   maxLength={220}
                   className="w-full bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
                 />
-                <p className="text-xs text-zinc-600 text-right">{headline.length}/220</p>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
-                  About / Summary <span className="text-zinc-600 normal-case font-normal">(paste your current About)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                    About / Summary <span className="text-zinc-600 normal-case font-normal">(paste your current About)</span>
+                  </label>
+                  <span className={`text-xs font-mono ${
+                    about.length > 2400 ? 'text-red-400' : about.length > 2000 ? 'text-yellow-400' : 'text-zinc-500'
+                  }`}>
+                    {about.length}/2600
+                  </span>
+                </div>
                 <textarea
                   value={about}
                   onChange={(e) => setAbout(e.target.value)}
@@ -131,9 +144,6 @@ export default function LinkedInOptimizer() {
                   maxLength={2600}
                   className="w-full bg-zinc-800 border border-zinc-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors resize-none"
                 />
-                <p className={`text-xs text-right ${about.length > 2400 ? 'text-yellow-400' : 'text-zinc-600'}`}>
-                  {about.length}/2,600 <span className="text-zinc-700">· LinkedIn About limit</span>
-                </p>
               </div>
 
               <div className="flex flex-col gap-2">

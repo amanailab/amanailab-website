@@ -8,8 +8,11 @@ function todayIndex(): number {
   return Math.floor(Date.now() / 86400000)
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url)
+    const topic = searchParams.get('topic') // optional filter
+
     const supabase = getAdminSupabase()
 
     const { data: questions, error } = await supabase
@@ -21,8 +24,14 @@ export async function GET() {
       return NextResponse.json({ error: 'No questions available' }, { status: 404 })
     }
 
-    const idx = todayIndex() % questions.length
-    const q = questions[idx]
+    const filtered = topic ? questions.filter(q => q.topic === topic) : questions
+
+    if (filtered.length === 0) {
+      return NextResponse.json({ error: 'No questions available for this topic' }, { status: 404 })
+    }
+
+    const idx = todayIndex() % filtered.length
+    const q = filtered[idx]
     const date = new Date().toISOString().split('T')[0]
 
     return NextResponse.json({

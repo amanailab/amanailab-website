@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { BrainCircuit, Send, RotateCcw, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react'
+import { BrainCircuit, Send, RotateCcw, ArrowRight, CheckCircle2, AlertCircle, Volume2, VolumeX } from 'lucide-react'
 
 const TOPICS = ['LLM', 'RAG', 'Agents', 'Fine-Tuning', 'MLOps', 'Transformers', 'System Design', 'Python', 'Vector DB']
 const LEVELS = ['Fresher', 'Mid', 'Senior']
+const TURN_OPTIONS = [3, 5, 7]
 
 interface Message {
   role: 'user' | 'assistant'
@@ -19,8 +20,6 @@ interface FinalFeedback {
 
 type Phase = 'setup' | 'chat' | 'done'
 
-const MAX_TURNS = 5
-
 function scoreColor(s: number) {
   if (s >= 8) return 'text-green-400'
   if (s >= 5) return 'text-yellow-400'
@@ -28,20 +27,46 @@ function scoreColor(s: number) {
 }
 
 export default function MockInterviewChat() {
-  const [topic, setTopic] = useState(TOPICS[0])
-  const [level, setLevel] = useState(LEVELS[0])
-  const [phase, setPhase] = useState<Phase>('setup')
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [turnCount, setTurnCount] = useState(0)
+  const [topic, setTopic]             = useState(TOPICS[0])
+  const [level, setLevel]             = useState(LEVELS[0])
+  const [maxTurns, setMaxTurns]       = useState(5)
+  const [phase, setPhase]             = useState<Phase>('setup')
+  const [messages, setMessages]       = useState<Message[]>([])
+  const [input, setInput]             = useState('')
+  const [loading, setLoading]         = useState(false)
+  const [turnCount, setTurnCount]     = useState(0)
   const [finalFeedback, setFinalFeedback] = useState<FinalFeedback | null>(null)
-  const [error, setError] = useState('')
+  const [error, setError]             = useState('')
+  const [ttsEnabled, setTtsEnabled]   = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('mock_tts') === 'true'
+  })
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
+
+  function speak(text: string) {
+    if (!ttsEnabled || typeof window === 'undefined' || !window.speechSynthesis) return
+    window.speechSynthesis.cancel()
+    const utter = new SpeechSynthesisUtterance(text.slice(0, 400))
+    utter.rate = 0.92
+    window.speechSynthesis.speak(utter)
+  }
+
+  function toggleTts() {
+    setTtsEnabled(prev => {
+      const next = !prev
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mock_tts', String(next))
+        if (!next && window.speechSynthesis) {
+          window.speechSynthesis.cancel()
+        }
+      }
+      return next
+    })
+  }
 
   async function startChat() {
     setError('')
@@ -55,6 +80,7 @@ export default function MockInterviewChat() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to start interview.')
       setMessages([{ role: 'assistant', content: data.reply }])
+      speak(data.reply)
       setTurnCount(1)
       setPhase('chat')
     } catch (e: unknown) {
@@ -82,6 +108,7 @@ export default function MockInterviewChat() {
       if (!res.ok) throw new Error(data.error ?? 'Failed to get response.')
       const aiMsg: Message = { role: 'assistant', content: data.reply }
       setMessages([...updated, aiMsg])
+      speak(data.reply)
       setTurnCount(nextTurn)
       if (data.finalFeedback) {
         setFinalFeedback(data.finalFeedback)
@@ -95,7 +122,7 @@ export default function MockInterviewChat() {
           body: JSON.stringify({
             topic,
             level,
-            question_count: MAX_TURNS,
+            question_count: maxTurns,
             avg_score: score,
             grade,
             entries: null,
@@ -113,6 +140,9 @@ export default function MockInterviewChat() {
   }
 
   function restart() {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
     setPhase('setup')
     setMessages([])
     setInput('')
@@ -127,7 +157,7 @@ export default function MockInterviewChat() {
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 flex flex-col gap-6">
           <div>
             <h2 className="text-xl font-bold text-zinc-100 mb-1">Chat-Based Mock Interview</h2>
-            <p className="text-zinc-500 text-sm">AI acts as your interviewer — asks questions, gives follow-ups, and scores you at the end. {MAX_TURNS} exchange session.</p>
+            <p className="text-zinc-500 text-sm">AI acts as your interviewer — asks questions, gives follow-ups, and scores you at the end. {maxTurns} exchange session.</p>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -148,6 +178,19 @@ export default function MockInterviewChat() {
                     level === l ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-500'
                   }`}
                 >{l}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Session Length</label>
+            <div className="flex gap-2">
+              {TURN_OPTIONS.map((t) => (
+                <button key={t} onClick={() => setMaxTurns(t)}
+                  className={`flex-1 py-2 text-sm font-semibold rounded-xl border transition-colors ${
+                    maxTurns === t ? 'bg-orange-500 border-orange-500 text-white' : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-500'
+                  }`}
+                >{t} turns</button>
               ))}
             </div>
           </div>
@@ -178,7 +221,14 @@ export default function MockInterviewChat() {
           <span className="text-sm font-semibold text-zinc-200">{topic} Interview · {level}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-zinc-500">Turn {Math.min(turnCount, MAX_TURNS)}/{MAX_TURNS}</span>
+          <span className="text-xs text-zinc-500">Turn {Math.min(turnCount, maxTurns)}/{maxTurns}</span>
+          <button
+            onClick={toggleTts}
+            title={ttsEnabled ? 'Mute TTS' : 'Unmute TTS'}
+            className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors"
+          >
+            {ttsEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+          </button>
           <button onClick={restart} className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors">
             <RotateCcw className="w-3.5 h-3.5" /> Restart
           </button>
@@ -189,12 +239,12 @@ export default function MockInterviewChat() {
       <div
         className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden mb-6"
         role="progressbar"
-        aria-valuenow={Math.min(turnCount, MAX_TURNS)}
+        aria-valuenow={Math.min(turnCount, maxTurns)}
         aria-valuemin={0}
-        aria-valuemax={MAX_TURNS}
-        aria-label={`Interview progress: turn ${Math.min(turnCount, MAX_TURNS)} of ${MAX_TURNS}`}
+        aria-valuemax={maxTurns}
+        aria-label={`Interview progress: turn ${Math.min(turnCount, maxTurns)} of ${maxTurns}`}
       >
-        <div className="h-full bg-orange-500 rounded-full transition-all duration-300" style={{ width: `${(Math.min(turnCount, MAX_TURNS) / MAX_TURNS) * 100}%` }} />
+        <div className="h-full bg-orange-500 rounded-full transition-all duration-300" style={{ width: `${(Math.min(turnCount, maxTurns) / maxTurns) * 100}%` }} />
       </div>
 
       {/* Messages */}

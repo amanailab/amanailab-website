@@ -114,6 +114,14 @@ function ScoreCircle({ score }: { score: number }) {
   )
 }
 
+// ─── Constants ─────────────────────────────────────────────────────────────────
+
+const DAILY_TOPICS = [
+  'LLM', 'RAG', 'Agents', 'Fine-Tuning', 'MLOps', 'Transformers',
+  'System Design', 'Python', 'Vector DB', 'Computer Vision', 'NLP',
+  'Statistics', 'SQL & Data', 'Behavioral',
+]
+
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
 // Clean up history entries older than 60 days to prevent localStorage bloat
@@ -134,6 +142,27 @@ export default function DailyChallengePage() {
   const [streak, setStreak]             = useState(0)
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState('')
+  const [selectedTopic, setSelectedTopic] = useState('') // '' = random
+
+  // Fetch question for a given topic ('' = random)
+  const fetchQuestion = useCallback(async (topic: string) => {
+    setLoading(true)
+    setError('')
+    try {
+      const url = topic ? `/api/daily/question?topic=${encodeURIComponent(topic)}` : '/api/daily/question'
+      const res = await fetch(url)
+      if (!res.ok) throw new Error('Failed to load')
+      const data = await res.json()
+      setQuestion(data.question)
+      setTodayDate(data.date)
+      return data.date as string
+    } catch {
+      setError("Could not load today's challenge. Please try again.")
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   // Load question + check if already done today
   useEffect(() => {
@@ -158,13 +187,26 @@ export default function DailyChallengePage() {
           setAlreadyDone(true)
         }
       } catch {
-        setError("Could not load today’s challenge. Please try again.")
+        setError("Could not load today's challenge. Please try again.")
       } finally {
         setLoading(false)
       }
     }
     init()
   }, [])
+
+  // Re-fetch when topic changes (only if not already done)
+  const handleTopicChange = useCallback(async (topic: string) => {
+    setSelectedTopic(topic)
+    if (alreadyDone) return // don't refetch if already answered today
+    setResult(null)
+    setAnswer('')
+    const date = await fetchQuestion(topic)
+    if (date) {
+      const history = loadHistory()
+      setStreak(calcStreak(history, date))
+    }
+  }, [alreadyDone, fetchQuestion])
 
   // Countdown timer
   useEffect(() => {
@@ -300,6 +342,38 @@ export default function DailyChallengePage() {
         {error && (
           <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm px-4 py-3 rounded-xl mb-6 text-center">
             {error}
+          </div>
+        )}
+
+        {/* ── Topic picker (shown only before answering) ── */}
+        {!alreadyDone && (
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2.5">Filter by Topic</p>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <button
+                onClick={() => handleTopicChange('')}
+                className={`shrink-0 px-3 py-1.5 text-xs font-semibold rounded-full border transition-all ${
+                  selectedTopic === ''
+                    ? 'bg-orange-500 border-orange-500 text-white'
+                    : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-orange-500/40 hover:text-zinc-200'
+                }`}
+              >
+                Random
+              </button>
+              {DAILY_TOPICS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => handleTopicChange(t)}
+                  className={`shrink-0 px-3 py-1.5 text-xs font-semibold rounded-full border transition-all ${
+                    selectedTopic === t
+                      ? 'bg-orange-500 border-orange-500 text-white'
+                      : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-orange-500/40 hover:text-zinc-200'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

@@ -16,6 +16,21 @@ const TOPICS = [
 const LEVELS  = ['Fresher', 'Mid', 'Senior']
 const COUNTS  = [5, 7, 10, 15]
 
+// ── Mastery helpers ────────────────────────────────────────────────────────────
+const MASTERY_KEY = 'quiz_mastery'
+type MasteryData = Record<string, { score: number; attempts: number; lastDate: string }>
+
+function loadMastery(): MasteryData {
+  try { return JSON.parse(localStorage.getItem(MASTERY_KEY) ?? '{}') } catch { return {} }
+}
+function saveMastery(topic: string, level: string, score: number) {
+  const data = loadMastery()
+  const key = `${topic}_${level}`
+  const existing = data[key]
+  data[key] = { score, attempts: (existing?.attempts ?? 0) + 1, lastDate: new Date().toISOString().split('T')[0] }
+  localStorage.setItem(MASTERY_KEY, JSON.stringify(data))
+}
+
 const NEXT_STUDY: Record<string, string> = {
   LLM: '/topics/llm', RAG: '/topics/rag', Agents: '/topics/agents',
   'Fine-Tuning': '/topics/fine-tuning', MLOps: '/topics/mlops',
@@ -73,7 +88,13 @@ export default function SkillQuiz() {
   const [error,           setError]           = useState('')
   const [showExplanation, setShowExplanation] = useState(false)
   const [elapsed,         setElapsed]         = useState(0)
+  const [mastery,         setMastery]         = useState<MasteryData>({})
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Load mastery on mount
+  useEffect(() => {
+    setMastery(loadMastery())
+  }, [])
 
   useEffect(() => {
     if (phase === 'quiz') {
@@ -121,6 +142,11 @@ export default function SkillQuiz() {
       setCurrent(current + 1)
       setShowExplanation(false)
     } else {
+      // Save mastery before transitioning to results
+      const finalScore = answers.filter((a, i) => a === questions[i]?.correctIndex).length
+      const pctScore = Math.round((finalScore / questions.length) * 100)
+      saveMastery(topic, level, pctScore)
+      setMastery(loadMastery())
       setPhase('results')
     }
   }
@@ -174,16 +200,34 @@ export default function SkillQuiz() {
             <div className="flex flex-col gap-3">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">Topic</label>
               <div className="flex flex-wrap gap-2">
-                {TOPICS.map((t) => (
-                  <button key={t} onClick={() => setTopic(t)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                      topic === t
-                        ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20'
-                        : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-green-500/40 hover:text-zinc-200'
-                    }`}
-                  >{t}</button>
-                ))}
+                {TOPICS.map((t) => {
+                  const masteryEntry = mastery[`${t}_${level}`]
+                  return (
+                    <button key={t} onClick={() => setTopic(t)}
+                      className={`flex flex-col items-start px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
+                        topic === t
+                          ? 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/20'
+                          : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-green-500/40 hover:text-zinc-200'
+                      }`}
+                    >
+                      <span>{t}</span>
+                      {masteryEntry && (
+                        <span className={`text-[10px] font-normal leading-tight mt-0.5 ${topic === t ? 'text-green-100' : 'text-zinc-500'}`}>
+                          {masteryEntry.score}% · {masteryEntry.attempts}×
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
+              {(() => {
+                const currentMastery = mastery[`${topic}_${level}`]
+                return currentMastery ? (
+                  <p className="text-xs text-zinc-500">
+                    Last attempt: <span className="text-zinc-300">{currentMastery.score}%</span> ({level}) · {currentMastery.attempts} {currentMastery.attempts === 1 ? 'try' : 'tries'} · {currentMastery.lastDate}
+                  </p>
+                ) : null
+              })()}
             </div>
 
             {/* Level */}

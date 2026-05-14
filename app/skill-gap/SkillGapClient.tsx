@@ -34,19 +34,51 @@ export default function SkillGapClient() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
-      const { data: sessions } = await supabase
-        .from('user_interview_sessions')
-        .select('topic, avg_score')
-        .eq('user_id', user.id) // Won't work with anon key, but try
-      if (!sessions) return
-      const topicMap: Record<string, number[]> = {}
-      sessions.forEach((s: { topic: string; avg_score: number }) => {
-        topicMap[s.topic] = [...(topicMap[s.topic] ?? []), s.avg_score]
-      })
-      setUserPerf(Object.entries(topicMap).map(([topic, scores]) => ({
-        topic, avg: Math.round((scores.reduce((a,b) => a+b,0)/scores.length)*10)/10, sessions: scores.length
-      })))
+      if (user) {
+        const { data: sessions } = await supabase
+          .from('user_interview_sessions')
+          .select('topic, avg_score')
+          .eq('user_id', user.id) // Won't work with anon key, but try
+        if (sessions) {
+          const topicMap: Record<string, number[]> = {}
+          sessions.forEach((s: { topic: string; avg_score: number }) => {
+            topicMap[s.topic] = [...(topicMap[s.topic] ?? []), s.avg_score]
+          })
+          setUserPerf(Object.entries(topicMap).map(([topic, scores]) => ({
+            topic, avg: Math.round((scores.reduce((a,b) => a+b,0)/scores.length)*10)/10, sessions: scores.length
+          })))
+        }
+      }
+
+      // Load quiz mastery from localStorage (runs for all users, logged-in or not)
+      try {
+        const quizData = JSON.parse(localStorage.getItem('quiz_mastery') ?? '{}')
+        // quizData format: { 'LLM_Mid': { score: 85, attempts: 3, lastDate: '...' } }
+        // Convert quiz percentages (0-100) to 0-10 scale to match session scores
+        const quizPerf: Record<string, { scores: number[]; sessions: number }> = {}
+        Object.entries(quizData).forEach(([key, val]) => {
+          const topic = key.split('_')[0] // 'LLM_Mid' → 'LLM'
+          const v = val as { score: number; attempts: number }
+          if (!quizPerf[topic]) quizPerf[topic] = { scores: [], sessions: 0 }
+          quizPerf[topic].scores.push(v.score / 10) // convert 85% → 8.5
+          quizPerf[topic].sessions += v.attempts
+        })
+        // Merge with existing userPerf
+        setUserPerf(prev => {
+          const merged = [...prev]
+          Object.entries(quizPerf).forEach(([topic, qp]) => {
+            const existing = merged.find(p => p.topic === topic)
+            const quizAvg = qp.scores.reduce((a, b) => a + b, 0) / qp.scores.length
+            if (existing) {
+              // Weighted average: interview 60%, quiz 40%
+              existing.avg = Math.round((existing.avg * 0.6 + quizAvg * 0.4) * 10) / 10
+            } else {
+              merged.push({ topic, avg: Math.round(quizAvg * 10) / 10, sessions: qp.sessions })
+            }
+          })
+          return merged
+        })
+      } catch { /* ignore localStorage errors */ }
     }).catch(() => {})
   }, [])
 
@@ -99,7 +131,7 @@ export default function SkillGapClient() {
             className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500/60 rounded-xl px-4 py-3 text-sm text-zinc-300 placeholder:text-zinc-500 outline-none transition-colors resize-none"
           />
           <div className="flex items-center justify-between mt-3">
-            <p className="text-[10px] text-zinc-600">{jd.length} chars · {userPerf.length > 0 ? `${userPerf.length} topics tracked` : 'Log in for personalized analysis'}</p>
+            <p className="text-[10px] text-zinc-600">{jd.length} chars · {userPerf.length > 0 ? `${userPerf.length} topics tracked` : 'No performance data yet — practice quizzes or interviews first'}</p>
             <button onClick={analyze} disabled={!jd.trim() || loading}
               className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-40 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20">
               {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing…</> : <><Target className="w-4 h-4" /> Analyze Gap</>}
