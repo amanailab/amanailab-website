@@ -162,15 +162,89 @@ function downloadNotes(r: PaperResult) {
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false)
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback for browsers that block clipboard without user gesture
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
   return (
     <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+      onClick={handleCopy}
       aria-label={copied ? 'Copied' : 'Copy to clipboard'}
       className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded border border-zinc-800 hover:border-zinc-600 transition-colors"
     >
       {copied
         ? <><Check className="w-3 h-3 text-green-400" /> Copied</>
         : <><Copy className="w-3 h-3" /> {label ?? 'Copy'}</>}
+    </button>
+  )
+}
+
+function ShareButton({ title, text, url }: { title: string; text: string; url: string }) {
+  const [state, setState] = useState<'idle' | 'shared' | 'copied' | 'error'>('idle')
+
+  async function handleShare() {
+    // Try native Web Share API first (works on mobile + some desktop)
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title, text: `${text}\n\n🔗 ${url}`, url })
+        setState('shared')
+        setTimeout(() => setState('idle'), 2000)
+        return
+      } catch (e) {
+        // User cancelled — don't fall through
+        if (e instanceof Error && e.name === 'AbortError') return
+      }
+    }
+    // Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(`${text}\n\n🔗 ${url}`)
+      setState('copied')
+    } catch {
+      // execCommand fallback for restrictive browsers
+      try {
+        const ta = document.createElement('textarea')
+        ta.value = `${text}\n\n🔗 ${url}`
+        ta.style.cssText = 'position:fixed;opacity:0'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+        setState('copied')
+      } catch {
+        setState('error')
+      }
+    }
+    setTimeout(() => setState('idle'), 2000)
+  }
+
+  return (
+    <button
+      onClick={handleShare}
+      aria-label="Share this paper"
+      className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-500 bg-zinc-800/50 transition-colors"
+    >
+      {state === 'shared'
+        ? <><Check className="w-3.5 h-3.5 text-green-400" /> Shared!</>
+        : state === 'copied'
+          ? <><Check className="w-3.5 h-3.5 text-green-400" /> Copied!</>
+          : state === 'error'
+            ? <><AlertCircle className="w-3.5 h-3.5 text-red-400" /> Failed</>
+            : <><Share2 className="w-3.5 h-3.5" /> Share</>}
     </button>
   )
 }
@@ -681,10 +755,11 @@ export default function PaperExplainer() {
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-500 bg-zinc-800/50 transition-colors">
                   <Download className="w-3.5 h-3.5" /> .txt
                 </button>
-                <button onClick={() => navigator.clipboard.writeText(`📄 ${result.originalTitle || result.inferredTitle}\n\n${result.tweetSummary}\n\n🔗 https://amanailab.com/paper-explainer`)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-500 bg-zinc-800/50 transition-colors">
-                  <Share2 className="w-3.5 h-3.5" /> Share
-                </button>
+                <ShareButton
+                  title={result.originalTitle || result.inferredTitle}
+                  text={`📄 ${result.originalTitle || result.inferredTitle}\n\n${result.tweetSummary}`}
+                  url="https://amanailab.com/paper-explainer"
+                />
                 <button onClick={() => { setResult(null); setChatHistory([]); setInput(''); setPdfFile(null) }}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-300 px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-600 transition-colors">
                   <RotateCcw className="w-3.5 h-3.5" /> New
