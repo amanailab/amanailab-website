@@ -216,7 +216,7 @@ export default function LinkedInOptimizer() {
             LinkedIn Profile Optimizer
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            Get Noticed by Recruiters
+            Free LinkedIn Profile Optimizer for AI/ML Engineers
           </h1>
           <p className="text-zinc-400 text-lg max-w-xl mx-auto">
             Upload your LinkedIn PDF or paste your sections — AI rewrites your full profile with the right keywords for AI/ML roles.

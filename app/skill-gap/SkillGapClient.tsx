@@ -136,7 +136,7 @@ export default function SkillGapClient() {
             <span className="text-xs font-semibold text-orange-400 uppercase tracking-wide">Skill Gap Analyzer</span>
           </div>
           <h1 className="text-3xl font-extrabold text-zinc-100 mb-3">
-            Know Exactly What to Study
+            Free AI/ML Skill Gap Analyzer
           </h1>
           <p className="text-zinc-400 text-sm max-w-lg mx-auto">
             Paste any AI/ML job description → get a personalized gap analysis based on your interview performance. Stop guessing, start targeting.

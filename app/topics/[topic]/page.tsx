@@ -56,8 +56,19 @@ export default async function TopicPage({ params }: Props) {
     })),
   ]
 
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://amanailab.com' },
+      { '@type': 'ListItem', position: 2, name: 'Topics', item: 'https://amanailab.com/topics' },
+      { '@type': 'ListItem', position: 3, name: meta.label, item: `https://amanailab.com/topics/${slug}` },
+    ],
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <div className="max-w-4xl mx-auto px-4">
 
         <Link href="/topics" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 mb-6 transition-colors">

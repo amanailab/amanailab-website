@@ -8,12 +8,12 @@ import { getAdminSupabase } from '@/lib/admin'
 import QuestionsClient from '@/components/questions/QuestionsClient'
 
 export const metadata: Metadata = {
-  title: 'AI/ML Interview Question Bank',
-  description: 'Browse 500+ AI/ML interview questions covering LLM, RAG, Agents, MLOps, System Design and more. Filter by topic, level, and company. Free.',
+  title: 'Free AI/ML Interview Questions — 500+ Questions with Model Answers',
+  description: 'Browse 500+ real AI/ML interview questions with model answers. Filter by topic (LLM, RAG, Agents, MLOps, System Design), level (Fresher/Mid/Senior), and company (Google, Meta, OpenAI). Free.',
   alternates: { canonical: 'https://amanailab.com/questions' },
   openGraph: {
-    title: 'AI/ML Interview Question Bank',
-    description: '500+ real AI/ML interview questions with model answers. Filter by topic, level, and company.',
+    title: '500+ Free AI/ML Interview Questions with Answers',
+    description: 'Filter by topic, level, and company. LLM, RAG, Agents, Transformers, MLOps, System Design and more. Model answers included.',
   },
 }
 
@@ -70,9 +70,22 @@ export default async function QuestionsPage() {
     })),
   }
 
+  const staticFaqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      { '@type': 'Question', name: 'How many AI/ML interview questions are available?', acceptedAnswer: { '@type': 'Answer', text: '500+ questions covering 14 topics: LLM, RAG, Agents, Fine-Tuning, MLOps, Transformers, System Design, Python, Vector DB, Computer Vision, NLP, Statistics, SQL & Data, and Behavioral.' } },
+      { '@type': 'Question', name: 'Are all interview questions free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. All 500+ questions with model answers are completely free — no login required.' } },
+      { '@type': 'Question', name: 'Can I filter by company?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Filter by companies including Google, Meta, OpenAI, Anthropic, Microsoft, Amazon, and more to see role-specific questions.' } },
+      { '@type': 'Question', name: 'Do questions come with model answers?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Click any question to expand a detailed model answer written by AI/ML interview experts.' } },
+      { '@type': 'Question', name: 'Can I bookmark questions for later review?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Click the bookmark icon on any question to save it. Filter by "Saved" to review your bookmarked questions.' } },
+    ],
+  }
+
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(staticFaqJsonLd) }} />
       <div className="max-w-4xl mx-auto px-4">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 rounded-full px-4 py-1.5 mb-4">

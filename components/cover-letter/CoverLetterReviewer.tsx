@@ -132,7 +132,7 @@ export default function CoverLetterReviewer() {
             <FileText className="w-3.5 h-3.5" /> Cover Letter Reviewer
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            Will Your Cover Letter Get You an Interview?
+            Free AI Cover Letter Reviewer &amp; Rewriter
           </h1>
           <p className="text-zinc-400 text-lg max-w-xl mx-auto">
             AI scores your letter against the JD, shows exactly what to fix, and rewrites it for maximum impact.

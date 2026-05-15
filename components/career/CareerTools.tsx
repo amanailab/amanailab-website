@@ -1447,7 +1447,7 @@ export default function CareerTools() {
             <Target className="w-3.5 h-3.5" /> Career Tools
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            Land Your AI/ML Job
+            Free AI Career Tools for AI/ML Engineers
           </h1>
           <p className="text-zinc-400 text-lg max-w-xl mx-auto">
             Everything you need — from planning your learning path to analyzing your offer letter.

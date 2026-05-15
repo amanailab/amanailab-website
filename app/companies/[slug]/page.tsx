@@ -32,16 +32,16 @@ async function getData(slug: string) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const data = await getData(slug)
-  if (!data) return { title: 'Company Not Found' }
-  const { company } = data
+  const result = await getData(slug)
+  if (!result) return {}
   return {
-    title: `${company.name} AI/ML Interview Questions & Prep`,
-    description: `Prepare for your ${company.name} interview. Real questions asked at ${company.name}, interview format, what they look for, and insider tips from AmanAI Lab.`,
+    title: `${result.company.name} AI/ML Interview Prep — Questions & Tips`,
+    description: `${result.company.name} interview process, common questions, tech stack, and insider tips for AI/ML engineers. ${result.questions.length} company-specific questions included.`,
     alternates: { canonical: `https://amanailab.com/companies/${slug}` },
     openGraph: {
-      title: `${company.name} Interview Prep`,
-      description: `${company.interview_rounds} interview rounds · ${company.hq} · Practice real ${company.name} AI/ML questions`,
+      title: `${result.company.name} AI/ML Interview Guide`,
+      description: `Interview process, ${result.questions.length} questions, tech stack, and tips for ${result.company.name}. Free.`,
+      url: `https://amanailab.com/companies/${slug}`,
     },
   }
 }
