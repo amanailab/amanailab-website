@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'),
+  metadataBase: new URL('https://amanailab.com'),
   title: {
     default: "AmanAI Lab | AI/ML Career Platform — Tools, Interview Prep & Learning",
     template: "%s | AmanAI Lab",

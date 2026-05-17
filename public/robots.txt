@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 
+# Private/auth areas
 Disallow: /admin/
 Disallow: /api/
 Disallow: /dashboard/
@@ -10,7 +11,11 @@ Disallow: /login
 Disallow: /signup
 Disallow: /reset-password
 Disallow: /forgot-password
+Disallow: /verify-email
 
-Crawl-delay: 1
+# Don't crawl search/filter variants (prevents duplicate content)
+Disallow: /*?*
 
+# Sitemap — both www and non-www for safety
 Sitemap: https://amanailab.com/sitemap.xml
+Host: amanailab.com

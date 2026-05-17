@@ -42,11 +42,36 @@ const nextConfig: NextConfig = {
   compress: true,
   serverExternalPackages: ["pdf-parse"],
 
+  // 301 redirect www → non-www for canonical URL consistency
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.amanailab.com' }],
+        destination: 'https://amanailab.com/:path*',
+        permanent: true,
+      },
+    ]
+  },
+
   async headers() {
     return [
       {
         source: '/(.*)',
-        headers: securityHeaders,
+        headers: [
+          ...securityHeaders,
+          // Explicitly tell Google to index all pages
+          { key: 'X-Robots-Tag', value: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' },
+        ],
+      },
+      // Cache static assets aggressively, but revalidate HTML frequently
+      {
+        source: '/sitemap.xml',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' }],
+      },
+      {
+        source: '/robots.txt',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
       },
     ]
   },

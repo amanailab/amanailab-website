@@ -5,7 +5,7 @@ import { getPlaylists } from '@/lib/youtube'
 import { SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
 import { SHEET_TRACKS } from '@/lib/sheet-data'
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
+const BASE = 'https://amanailab.com'
 
 const staticPages: MetadataRoute.Sitemap = [
   { url: BASE,                             priority: 1.0, changeFrequency: 'daily'   },
