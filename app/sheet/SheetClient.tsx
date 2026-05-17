@@ -204,15 +204,21 @@ function SheetRow({
 // ─── Column header ─────────────────────────────────────────────────────────────
 function ColHeader() {
   return (
-    <div className="hidden sm:grid grid-cols-[28px_32px_1fr_28px_28px_28px_28px_28px] gap-x-1 px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest text-zinc-600 border-b border-zinc-800 bg-zinc-950/50">
+    <div className="hidden sm:grid grid-cols-[28px_32px_1fr_28px_28px_28px_28px_28px] gap-x-1 px-4 py-2 border-b border-zinc-800 bg-zinc-950/60">
       <span />
-      <span className="text-right">#</span>
-      <span>Topic</span>
-      <span className="text-center" title="Theory">📖</span>
-      <span className="text-center" title="Code Lab">💻</span>
-      <span className="text-center" title="Flashcards">🎴</span>
-      <span className="text-center" title="Quiz">❓</span>
-      <span className="text-center" title="Interview">🎯</span>
+      <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 text-right self-center">#</span>
+      <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 self-center">Topic</span>
+      {[
+        { icon: <BookOpen size={11} />, label: 'Theory' },
+        { icon: <Code2 size={11} />, label: 'Code Lab' },
+        { icon: <Layers size={11} />, label: 'Flashcards' },
+        { icon: <HelpCircle size={11} />, label: 'Quiz' },
+        { icon: <MessageCircle size={11} />, label: 'Interview' },
+      ].map(({ icon, label }) => (
+        <span key={label} title={label} className="flex justify-center items-center text-zinc-700">
+          {icon}
+        </span>
+      ))}
     </div>
   )
 }
