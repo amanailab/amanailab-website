@@ -69,9 +69,12 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
     return matchTopic && matchDiff && matchSearch
   })
 
-  const easy   = problems.filter(p => p.difficulty === 'Easy').length
-  const medium = problems.filter(p => p.difficulty === 'Medium').length
-  const hard   = problems.filter(p => p.difficulty === 'Hard').length
+  const easy        = problems.filter(p => p.difficulty === 'Easy').length
+  const medium      = problems.filter(p => p.difficulty === 'Medium').length
+  const hard        = problems.filter(p => p.difficulty === 'Hard').length
+  const solvedCount = problems.filter(p => solvedIds.has(p.id)).length
+  const progressPct = problems.length > 0 ? Math.round(solvedCount / problems.length * 100) : 0
+  const nextProblem = filtered.find(p => !solvedIds.has(p.id))
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-16">
@@ -89,19 +92,40 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
             </div>
           </div>
 
-          {/* Stats row */}
-          <div className="flex items-center gap-4 mt-4 flex-wrap">
-            {[
-              { label: 'Total', value: problems.length, color: 'text-zinc-300' },
-              { label: 'Easy',   value: easy,   color: 'text-green-400' },
-              { label: 'Medium', value: medium, color: 'text-yellow-400' },
-              { label: 'Hard',   value: hard,   color: 'text-red-400' },
-            ].map(s => (
-              <div key={s.label} className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5">
-                <span className={`text-sm font-extrabold ${s.color}`}>{s.value}</span>
-                <span className="text-xs text-zinc-600">{s.label}</span>
+          {/* Stats + Progress */}
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              {[
+                { label: 'Total',  value: problems.length, color: 'text-zinc-300' },
+                { label: 'Easy',   value: easy,            color: 'text-green-400'  },
+                { label: 'Medium', value: medium,          color: 'text-yellow-400' },
+                { label: 'Hard',   value: hard,            color: 'text-red-400'    },
+              ].map(s => (
+                <div key={s.label} className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5">
+                  <span className={`text-sm font-extrabold ${s.color}`}>{s.value}</span>
+                  <span className="text-xs text-zinc-600">{s.label}</span>
+                </div>
+              ))}
+              {solvedCount > 0 && (
+                <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/25 rounded-lg px-3 py-1.5">
+                  <span className="text-sm font-extrabold text-emerald-400">{solvedCount}</span>
+                  <span className="text-xs text-emerald-600">Solved</span>
+                </div>
+              )}
+            </div>
+            {/* Progress bar */}
+            {solvedCount > 0 && (
+              <div>
+                <div className="flex justify-between text-[10px] text-zinc-600 mb-1">
+                  <span>{solvedCount}/{problems.length} problems solved</span>
+                  <span className="font-semibold text-emerald-500">{progressPct}%</span>
+                </div>
+                <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-700"
+                    style={{ width: `${progressPct}%` }} />
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -217,17 +241,32 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
           </div>
         </div>
 
-        {/* Topic filter */}
-        <div className="flex flex-wrap gap-1.5 mb-5">
+        {/* Topic filter — horizontal scroll on mobile */}
+        <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-thin scrollbar-thumb-zinc-800">
           {TOPICS.map(t => (
             <button key={t} onClick={() => setTopic(t)}
-              className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-all ${
-                topic === t ? 'bg-zinc-200 border-zinc-200 text-zinc-900' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'
+              className={`flex-shrink-0 text-xs font-semibold px-2.5 py-1.5 rounded-full border transition-all ${
+                topic === t ? 'bg-zinc-200 border-zinc-200 text-zinc-900' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
               }`}>
               {t}
             </button>
           ))}
         </div>
+
+        {/* Next problem indicator */}
+        {nextProblem && solvedCount > 0 && (
+          <div className="flex items-center gap-3 px-4 py-2.5 mb-4 bg-zinc-900 border border-orange-500/20 rounded-xl">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0 animate-pulse" />
+            <span className="text-xs text-zinc-500 flex-shrink-0">Continue →</span>
+            <Link href={`/code-lab/${nextProblem.slug}`}
+              className="text-xs font-semibold text-zinc-300 hover:text-orange-300 transition-colors truncate">
+              {nextProblem.title}
+            </Link>
+            <span className={`ml-auto flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${DIFF_COLOR[nextProblem.difficulty as keyof typeof DIFF_COLOR] ?? ''}`}>
+              {nextProblem.difficulty}
+            </span>
+          </div>
+        )}
 
         {/* Problems table */}
         {problems.length === 0 ? (

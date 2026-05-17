@@ -197,6 +197,27 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   const resetTimer = () => { setTimerOn(false); setTimerSec(45 * 60); setTimerStarted(false) }
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current)
+      if (timerInterval.current) clearInterval(timerInterval.current)
+    }
+  }, [])
+
+  // Download design as Markdown
+  const downloadDesign = () => {
+    const blob = new Blob([design], { type: 'text/markdown;charset=utf-8' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `${problem.slug}-design.md`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   // Auto-save
   const saveDesign = useCallback((text: string, cl: Record<string, boolean>) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
@@ -327,6 +348,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               <Save size={9} /> {savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
+          {/* Download */}
+          <button onClick={downloadDesign} title="Download as Markdown"
+            className="hidden sm:flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0">
+            <Save size={11} /> .md
+          </button>
 
           {/* AI Review */}
           <button onClick={handleReview} disabled={reviewing}

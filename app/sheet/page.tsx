@@ -24,20 +24,33 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Course',
-  name: 'AI A2Z Interview Sheet 2026',
-  description:
-    'Comprehensive AI/ML learning path covering Generative AI, Agentic AI, Deep Learning, Machine Learning, MLOps and System Design.',
+  name: 'AI Interview Prep Sheet 2026',
+  description: 'Comprehensive AI/ML interview prep sheet covering Generative AI, Agentic AI, Deep Learning, Machine Learning, MLOps and System Design with inline theory, code problems, flashcards, and system design workspace.',
   url: 'https://amanailab.com/sheet',
   provider: { '@type': 'Organization', name: 'AmanAI Lab', url: 'https://amanailab.com' },
   educationalLevel: 'Beginner to Advanced',
   teaches: ['Generative AI', 'LLMs', 'RAG', 'Fine-Tuning', 'Agentic AI', 'Deep Learning', 'MLOps', 'System Design'],
   isAccessibleForFree: true,
+  hasCourseInstance: { '@type': 'CourseInstance', courseMode: 'online', instructor: { '@type': 'Person', name: 'Aman Chauhan', url: 'https://amanailab.com/about' } },
+}
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    { '@type': 'Question', name: 'What is the AI Interview Prep Sheet?', acceptedAnswer: { '@type': 'Answer', text: 'A structured roadmap of 218 topics across 6 tracks (Generative AI, Agentic AI, Deep Learning, ML, MLOps, System Design) with inline theory, linked code problems, flashcards, quizzes, and a system design practice workspace. Inspired by Striver\'s A2Z DSA Sheet but built for 2026 AI/ML interviews.' } },
+    { '@type': 'Question', name: 'Is the AI Interview Prep Sheet free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes, completely free. Your progress is saved automatically to your browser — no account required to start.' } },
+    { '@type': 'Question', name: 'What tracks does the sheet cover?', acceptedAnswer: { '@type': 'Answer', text: '6 complete tracks: Generative AI (60 topics), Agentic AI (34 topics), Deep Learning (40 topics), Machine Learning (36 topics), MLOps (28 topics), and System Design (20 topics).' } },
+    { '@type': 'Question', name: 'Does the sheet link to practice resources?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Each item links to: inline theory explanation, Code Lab problems (specific algorithm to implement), topic flashcard decks, AI-generated quizzes, mock interview, and a System Design Workspace for design problems.' } },
+    { '@type': 'Question', name: 'What is the System Design Workspace?', acceptedAnswer: { '@type': 'Answer', text: 'A dedicated practice environment for 15 system design problems (LLM Serving, RAG System, Recommendation System, etc.) with a structured editor, must-cover checklist, FAANG interview framework guide, architecture component snippets, 45-minute timer, and AI review of your written answer.' } },
+  ],
 }
 
 export default function SheetPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <SheetClient />
     </>
   )
