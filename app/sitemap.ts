@@ -2,12 +2,16 @@ import { MetadataRoute } from 'next'
 import { getAdminSupabase } from '@/lib/admin'
 import { TOPICS } from '@/lib/topic-data'
 import { getPlaylists } from '@/lib/youtube'
+import { SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
+import { SHEET_TRACKS } from '@/lib/sheet-data'
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
 
 const staticPages: MetadataRoute.Sitemap = [
   { url: BASE,                             priority: 1.0, changeFrequency: 'daily'   },
   { url: `${BASE}/code-lab`,               priority: 0.95, changeFrequency: 'weekly' },
+  { url: `${BASE}/sheet`,                  priority: 0.95, changeFrequency: 'weekly' },
+  { url: `${BASE}/system-design`,          priority: 0.85, changeFrequency: 'monthly'},
   { url: `${BASE}/daily`,                  priority: 0.85, changeFrequency: 'daily'  },
   { url: `${BASE}/skill-gap`,              priority: 0.85, changeFrequency: 'monthly'},
   { url: `${BASE}/job-tracker`,            priority: 0.75, changeFrequency: 'monthly'},
@@ -97,7 +101,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }))
     } catch { /* YouTube API failure — skip series pages */ }
 
-    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages, ...codeLabPages, ...seriesPages]
+    // System design problem pages
+    const systemDesignPages: MetadataRoute.Sitemap = SYSTEM_DESIGN_PROBLEMS.map(p => ({
+      url: `${BASE}/system-design/${p.slug}`,
+      lastModified: new Date(),
+      priority: 0.85,
+      changeFrequency: 'monthly' as const,
+    }))
+
+    // Static code lab problems (fallback when DB is empty)
+    const staticCodeLabPages: MetadataRoute.Sitemap = codeProblems && codeProblems.length > 0 ? [] :
+      (await import('@/lib/code-problems-static')).STATIC_PROBLEMS.map(p => ({
+        url: `${BASE}/code-lab/${p.slug}`,
+        priority: 0.85,
+        changeFrequency: 'monthly' as const,
+      }))
+
+    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages, ...codeLabPages, ...staticCodeLabPages, ...systemDesignPages, ...seriesPages]
   } catch {
     const topicPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/topics/${t.slug}`, priority: 0.9, changeFrequency: 'monthly' as const }))
     const flashcardPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/flashcards/${t.slug}`, priority: 0.7, changeFrequency: 'monthly' as const }))

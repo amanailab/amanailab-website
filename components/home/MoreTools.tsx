@@ -43,8 +43,8 @@ export default function MoreTools() {
             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-[0.2em]">More Free Tools</p>
             <p className="text-sm text-zinc-600 mt-0.5">15 more tools — all free, no sign-up required</p>
           </div>
-          <Link href="/interview" className="hidden sm:flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
-            See all tools <ArrowRight className="w-3 h-3" />
+          <Link href="/skill-gap" className="hidden sm:flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
+            Explore all tools <ArrowRight className="w-3 h-3" />
           </Link>
         </motion.div>
 

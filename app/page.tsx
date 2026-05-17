@@ -71,10 +71,11 @@ export default async function HomePage() {
       {/* 6. How it works — user journey */}
       <HowItWorks />
 
-      {/* 7. Learning content — YouTube playlists */}
-      {featured.length > 0 && (
-        <FeaturedSeries playlists={featured as Parameters<typeof FeaturedSeries>[0]['playlists']} />
-      )}
+      {/* 7. Learning content — YouTube playlists (with static fallback) */}
+      <FeaturedSeries playlists={featured.length > 0
+        ? featured as Parameters<typeof FeaturedSeries>[0]['playlists']
+        : []
+      } />
 
       {/* 8. Final CTA */}
       <CTASection />

@@ -155,6 +155,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gl-6', 'RLHF — Reward Model, PPO & Alignment', 'theory', 'hard', {
             topic: 'llm', quizTopic: 'LLM', hasFlashcard: true,
             companies: ['OpenAI', 'Anthropic', 'Google', 'Meta'],
+            preview: { q: 'Walk through the 3 stages of RLHF and what can go wrong at each.', a: 'Stage 1 — SFT: Fine-tune base model on high-quality demonstrations. Risk: distribution mismatch between demo quality and model capability. Stage 2 — Reward Model: Train on preference pairs (which of A/B is better?). Risk: reward hacking — the LLM finds ways to get high reward without being genuinely helpful (e.g., sycophantic responses score highly). Stage 3 — PPO optimisation: Maximise reward while KL-penalising divergence from SFT model. Risk: KL too low → catastrophic forgetting of helpful behaviours; KL too high → model doesn\'t improve. DPO eliminates stages 2 and 3 by directly optimising on preference pairs without a reward model, avoiding most of these failure modes.' },
           }),
           item('gl-7', 'Sampling — Temperature, Top-p, Top-k, Repetition Penalty', 'theory', 'easy', {
             topic: 'llm', quizTopic: 'LLM', hasQuiz: true, hasCode: true, codeSlug: 'softmax-function',
@@ -305,6 +306,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gf-7', 'Catastrophic Forgetting & Continual Learning', 'theory', 'hard', {
             topic: 'fine-tuning', quizTopic: 'Fine-Tuning', hasFlashcard: true,
             companies: ['Google', 'Meta', 'OpenAI'],
+            preview: { q: 'A model fine-tuned on customer service data now fails at general Q&A. How do you diagnose and fix catastrophic forgetting?', a: 'Diagnosis: evaluate the model on a general benchmark (MMLU, MT-Bench) before and after fine-tuning. If scores drop significantly, catastrophic forgetting occurred. Fixes: (1) LoRA — don\'t update base weights at all; the adapter captures task-specific knowledge while base knowledge stays intact. (2) Replay — mix ~5-10% original pre-training data into the fine-tuning dataset. (3) Lower learning rate — use 1e-5 or 1e-6 instead of 1e-4 to make smaller weight changes. (4) EWC (Elastic Weight Consolidation) — adds a penalty for changing weights that were important for previous tasks. In practice, LoRA + low LR eliminates most forgetting for instruction fine-tuning.' },
           }),
           item('gf-8', 'Fine-Tune Llama 3.2 with QLoRA (Hands-On)', 'project', 'hard', {
             hasCode: true, companies: ['Meta', 'Microsoft'],
@@ -664,6 +666,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('do-8', 'Distributed Training — DDP, FSDP, DeepSpeed ZeRO', 'theory', 'hard', {
             topic: 'deep-learning', hasFlashcard: true,
             companies: ['Meta', 'Google', 'Microsoft', 'Nvidia', 'OpenAI'],
+            preview: { q: 'You need to train a 70B parameter model on 8×A100 GPUs. Which parallelism strategy do you use and why?', a: 'At 70B params × 2 bytes/param (BF16) = 140GB — too large for one A100 (80GB). Strategy: FSDP (Fully Sharded Data Parallel) or DeepSpeed ZeRO-3. Both shard: (1) model parameters, (2) gradients, (3) optimiser states across all 8 GPUs. Each GPU holds 1/8th of each shard, reducing memory from 140GB → ~18GB per GPU + activations. Trade-off: communication overhead for AllGather operations before each forward pass. For very large models (175B+), add pipeline parallelism (different layers on different nodes) and tensor parallelism (split individual weight matrices). Llama 2 70B training used FSDP with gradient checkpointing on A100 clusters.' },
           }),
         ],
       },
@@ -817,6 +820,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('ma-6', 'Support Vector Machines & Kernel Trick', 'theory', 'hard', {
             topic: 'machine-learning', hasFlashcard: true, hasCode: true,
             companies: ['Google', 'Apple', 'Amazon'],
+            preview: { q: 'When would you choose SVM over gradient boosting, and why does the kernel trick work?', a: 'Choose SVM over GBM when: (1) Very high-dimensional sparse data (text classification with TF-IDF — SVMs excel here). (2) Small/medium dataset where GBM overfits but SVM\'s margin finds a robust boundary. (3) You need a maximum-margin guarantee — SVMs are theoretically optimal for binary classification. Kernel trick: SVMs find a hyperplane in the feature space by maximising the margin between classes. The kernel function K(x,z) computes the dot product in a high-dimensional space WITHOUT explicitly transforming the data — we only need K(xᵢ, xⱼ) for support vectors. The RBF kernel K(x,z) = exp(-γ||x-z||²) implicitly maps to infinite dimensions, enabling non-linear boundaries at the cost of O(n²) training.' },
           }),
           item('ma-7', 'Naive Bayes — Gaussian, Multinomial, Bernoulli', 'theory', 'easy', {
             topic: 'machine-learning', hasCode: true, codeSlug: 'naive-bayes-predict',
@@ -960,6 +964,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('mos-1', 'REST API for ML — FastAPI + Pydantic', 'theory', 'medium', {
             topic: 'mlops', quizTopic: 'MLOps', hasCode: true,
             companies: ['Amazon', 'Google', 'Netflix', 'Microsoft'],
+            preview: { q: 'Design a production-ready FastAPI endpoint for a 500ms P99 latency ML prediction service.', a: 'Key design decisions: (1) Async endpoint with async def — releases event loop during model inference. (2) Global model loading in lifespan context manager (not per-request). (3) Pydantic input/output schemas for automatic validation. (4) Background tasks for logging (don\'t block response). (5) Batching: accumulate requests over 10ms windows, batch-predict, return individual results. (6) Caching: hash(input) → prediction in Redis for identical inputs. (7) Circuit breaker: if P99 > threshold, return cached fallback prediction. (8) Health endpoint: /health (is server running) + /ready (is model loaded). Typical bottleneck: model forward pass — use GPU, ONNX export, or quantisation to hit 500ms P99.' },
           }),
           item('mos-2', 'NVIDIA Triton Inference Server', 'theory', 'hard', {
             topic: 'mlops', quizTopic: 'MLOps',
@@ -1035,6 +1040,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('mop-3', 'CI/CD for Machine Learning — GitHub Actions', 'theory', 'hard', {
             topic: 'mlops', quizTopic: 'MLOps', hasFlashcard: true,
             companies: ['Google', 'Amazon', 'Netflix', 'Microsoft'],
+            preview: { q: 'What does a good ML CI/CD pipeline include beyond standard software CI?', a: 'Standard CI: lint, unit tests, type check, build. ML additions: (1) Data validation gate — run Great Expectations/Pandera schema checks; fail if data distribution shifts. (2) Training job — trigger retraining on new data or code changes; log to MLflow. (3) Model evaluation gate — compare new model vs production model on a held-out eval set; only proceed if metrics improve or don\'t regress. (4) Bias/fairness check — ensure metrics are stable across demographic groups. (5) Inference smoke test — start the serving container, send test requests, verify output format and latency. (6) Conditional deployment — auto-deploy to staging; require manual approval for production. Tools: GitHub Actions + DVC + MLflow + Docker + Kubernetes.' },
           }),
           item('mop-4', 'Data Quality & Validation — Great Expectations', 'theory', 'medium', {
             topic: 'mlops', quizTopic: 'MLOps',
@@ -1119,6 +1125,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('sdl-4', 'Caching Strategies for LLM Responses (Semantic Cache)', 'theory', 'hard', {
             topic: 'system-design', quizTopic: 'System Design', isNew2026: true,
             companies: ['OpenAI', 'Anthropic', 'Amazon', 'Microsoft'],
+            preview: { q: 'Design a semantic cache for LLM responses that handles near-duplicate queries.', a: 'Exact cache (L1): hash(system_prompt + user_message) → response in Redis. Fast but only catches identical queries. Semantic cache (L2): embed the user query → ANN search against stored query embeddings with similarity threshold 0.97. If match found, return cached response. If miss, call LLM, store {query, embedding, response}. TTL: 24h for factual queries, 1h for time-sensitive. Prompt caching (L3): Anthropic/OpenAI server-side cache of the system prompt prefix at 90% cost discount — free for your top-K system prompts. Eviction: LRU for L1, similarity-weighted for L2. Expected hit rate: 30-40% in enterprise RAG (users ask similar questions). Cost savings: each cached response saves $0.01-$0.10 in API costs.' },
           }),
           item('sdl-5', 'Design a ChatGPT-like Product (Full Architecture)', 'interview', 'hard', {
             hasInterview: true, companies: ['OpenAI', 'Microsoft', 'Google', 'Meta'],
@@ -1196,6 +1203,93 @@ export const SHEET_TRACKS: SheetTrack[] = [
           }),
           item('sdi-5', 'Salary Negotiation for AI/ML Roles 2026', 'theory', 'easy', {
             hasInterview: true, isNew2026: true,
+          }),
+        ],
+      },
+    ],
+  },
+
+  // ─── TRACK 7: 2026 FRONTIER ──────────────────────────────────────────────────
+  {
+    id: 'frontier2026',
+    title: '2026 Frontier',
+    description: 'Cutting-edge 2026 topics: DeepSeek R1, o3 reasoning, Mamba/SSM, Computer Use, long-context vs RAG & more',
+    color: 'text-pink-400',
+    bg: 'bg-pink-500/10 border-pink-500/20',
+    bar: 'bg-pink-500',
+    icon: '🚀',
+    sections: [
+      {
+        id: 'f26-reasoning',
+        title: 'Reasoning & Test-Time Compute',
+        estimatedTime: '~2h',
+        items: [
+          item('f26-r1', 'DeepSeek R1 — Open-Source Reasoning at Scale', 'theory', 'hard', {
+            topic: 'llm', quizTopic: 'LLM', isNew2026: true,
+            companies: ['OpenAI', 'Google', 'Meta'],
+            preview: { q: 'How did DeepSeek R1 match OpenAI o1 at a fraction of the training cost?', a: 'DeepSeek R1 used GRPO (Group Relative Policy Optimization) instead of PPO — eliminating the value/critic network and saving ~50% memory. Trained with RL on verifiable outcomes (math, code, logic) without SFT warmup. The model developed thinking behavior emergently: chain-of-thought, self-verification, and backtracking. Cost saving: trained on H800 GPUs, used curriculum from simple to hard problems. Total training cost ~$6M vs estimated $100M+ for comparable US models — showing that algorithmic efficiency can close the gap with raw compute.' },
+          }),
+          item('f26-r2', 'o3 / o4-mini — Test-Time Compute Scaling', 'theory', 'hard', {
+            topic: 'llm', quizTopic: 'LLM', isNew2026: true,
+            companies: ['OpenAI', 'Google', 'Anthropic'],
+            preview: { q: 'What is the key insight behind test-time compute scaling?', a: 'o3-style models scale compute at inference, not just training time. The model generates a long internal "thinking" chain before answering — more thinking tokens → better answers up to a logarithmic limit. Unlike normal generation, thinking models do extensive deliberation, exploring multiple paths, self-checking, and backtracking. The insight: intelligence can be purchased at inference time via more compute, even with the same weights. This shifts cost from one-time training to per-query inference — expensive for hard problems, cheap for easy ones.' },
+          }),
+          item('f26-r3', 'Process Reward Models (PRMs) for Training Reasoners', 'theory', 'hard', {
+            topic: 'fine-tuning', quizTopic: 'Fine-Tuning', isNew2026: true,
+            companies: ['OpenAI', 'Google'],
+          }),
+          item('f26-r4', 'Chain-of-Draft vs Chain-of-Thought Efficiency', 'theory', 'medium', {
+            topic: 'llm', quizTopic: 'LLM', isNew2026: true,
+            companies: ['Anthropic', 'OpenAI'],
+          }),
+        ],
+      },
+      {
+        id: 'f26-models',
+        title: '2026 Frontier Models',
+        estimatedTime: '~1.5h',
+        items: [
+          item('f26-m1', 'Gemini 2.0 / 2.5 — Native Multimodal & 1M Context', 'theory', 'medium', {
+            topic: 'llm', quizTopic: 'LLM', isNew2026: true,
+            companies: ['Google'],
+          }),
+          item('f26-m2', 'Claude 3.7 — Extended Thinking & Hybrid Reasoning', 'theory', 'medium', {
+            topic: 'llm', quizTopic: 'LLM', isNew2026: true,
+            companies: ['Anthropic', 'Amazon'],
+          }),
+          item('f26-m3', 'Llama 3.3 / Llama 4 — Meta Open-Source Frontier', 'theory', 'medium', {
+            topic: 'llm', quizTopic: 'LLM', isNew2026: true,
+            companies: ['Meta', 'Microsoft'],
+          }),
+          item('f26-m4', 'Mamba / SSM — Linear-Time Sequence Models', 'theory', 'hard', {
+            topic: 'transformers', quizTopic: 'Transformers', isNew2026: true,
+            companies: ['Google', 'Meta'],
+            preview: { q: 'How does Mamba achieve linear-time sequence modelling vs O(n²) attention?', a: 'Mamba (Selective State Space Model) processes sequences recurrently but with input-dependent parameters: the state-space matrices (A, B, C) are dynamically selected based on the input, not fixed. This "selective" mechanism lets the model choose what to remember and forget — similar to LSTM gating but more efficient. Complexity: O(n) vs Transformer O(n²). For sequences >10K tokens, Mamba is dramatically faster. However, Transformers win on tasks requiring precise recall of arbitrary past positions. The 2025-2026 trend: hybrid Mamba-Transformer architectures (Jamba) combine both for quality and efficiency.' },
+          }),
+        ],
+      },
+      {
+        id: 'f26-agentic',
+        title: 'Agentic & Long-Context 2026',
+        estimatedTime: '~2h',
+        items: [
+          item('f26-a1', 'Computer Use — Desktop GUI Agents (Anthropic/OpenAI)', 'theory', 'hard', {
+            topic: 'agents', quizTopic: 'Agents', isNew2026: true,
+            companies: ['Anthropic', 'OpenAI', 'Microsoft'],
+            preview: { q: 'What are the key safety challenges in computer use agents?', a: 'Computer use agents face unique risks: (1) Irreversibility — clicking delete, sending emails, making purchases can\'t be undone. (2) Prompt injection — malicious text on a web page can hijack the agent\'s actions. (3) Scope creep — agent may take unintended actions navigating complex UIs. (4) Full access to authenticated services. Mitigations: human-in-the-loop confirmation for irreversible actions, sandboxed environments, read-only exploration modes, action whitelisting, and careful system prompts limiting the agent\'s perceived authority.' },
+          }),
+          item('f26-a2', 'Long-Context vs RAG — When to Use Each in 2026', 'theory', 'medium', {
+            topic: 'rag', quizTopic: 'RAG', isNew2026: true,
+            companies: ['Google', 'Anthropic', 'OpenAI'],
+            preview: { q: 'With 1M+ context windows, when should you still use RAG in 2026?', a: 'Even with 1M context windows (Gemini 2.5), RAG still wins when: (1) Knowledge base exceeds context limit (10M+ docs). (2) Real-time updates needed — avoid re-encoding full context for new documents. (3) Cost — processing 1M tokens costs ~$5-10/query; RAG retrieves only the relevant 1-5%. (4) Latency — TTFT scales with context length. (5) Multi-tenant security — enforce user-level access controls at retrieval time. Use long-context when: document count is small (<20), exact recall is critical, or holistic reading across documents is required.' },
+          }),
+          item('f26-a3', 'Mixture of Agents — Routing to Specialized Models', 'theory', 'hard', {
+            topic: 'agents', quizTopic: 'Agents', isNew2026: true,
+            companies: ['OpenAI', 'Anthropic', 'Google'],
+          }),
+          item('f26-a4', 'Agentic RAG — Self-Directing Retrieval', 'theory', 'hard', {
+            topic: 'rag', quizTopic: 'RAG', isNew2026: true,
+            companies: ['Anthropic', 'OpenAI', 'Microsoft'],
           }),
         ],
       },
