@@ -3,7 +3,7 @@ import { getAdminSupabase } from '@/lib/admin'
 import { TOPICS } from '@/lib/topic-data'
 import { getPlaylists } from '@/lib/youtube'
 import { SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
-import { SHEET_TRACKS } from '@/lib/sheet-data'
+import { STATIC_PROBLEMS } from '@/lib/code-problems-static'
 
 const BASE = 'https://amanailab.com'
 
@@ -111,7 +111,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     // Static code lab problems (fallback when DB is empty)
     const staticCodeLabPages: MetadataRoute.Sitemap = codeProblems && codeProblems.length > 0 ? [] :
-      (await import('@/lib/code-problems-static')).STATIC_PROBLEMS.map(p => ({
+      STATIC_PROBLEMS.map(p => ({
         url: `${BASE}/code-lab/${p.slug}`,
         priority: 0.85,
         changeFrequency: 'monthly' as const,

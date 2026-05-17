@@ -38,18 +38,26 @@ type SimStep = "settings" | "question" | "feedback";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TOPICS_BANK: { label: string; value: string }[] = [
-  { label: "All", value: "all" },
-  { label: "LLM", value: "llm" },
-  { label: "RAG", value: "rag" },
-  { label: "Agents", value: "agents" },
-  { label: "Fine-Tuning", value: "fine-tuning" },
-  { label: "MLOps", value: "mlops" },
-  { label: "Transformers", value: "transformers" },
-  { label: "System Design", value: "system-design" },
-  { label: "Python", value: "python" },
-  { label: "Vector DB", value: "vector-db" },
+  { label: "All",            value: "all"           },
+  { label: "LLM",            value: "llm"           },
+  { label: "RAG",            value: "rag"           },
+  { label: "Agents",         value: "agents"        },
+  { label: "Fine-Tuning",    value: "fine-tuning"   },
+  { label: "MLOps",          value: "mlops"         },
+  { label: "Transformers",   value: "transformers"  },
+  { label: "System Design",  value: "system-design" },
+  { label: "Python",         value: "python"        },
+  { label: "Vector DB",      value: "vector-db"     },
+  { label: "Computer Vision",value: "computer-vision"},
+  { label: "NLP",            value: "nlp"           },
+  { label: "Statistics",     value: "statistics"    },
+  { label: "Behavioral",     value: "behavioral"    },
 ];
-const TOPICS_SIM  = ["LLM", "RAG", "Agents", "Fine-Tuning", "MLOps", "Transformers", "System Design", "Python", "Vector DB"];
+const TOPICS_SIM = [
+  "LLM", "RAG", "Agents", "Fine-Tuning", "MLOps",
+  "Transformers", "System Design", "Python", "Vector DB",
+  "Computer Vision", "NLP", "Statistics", "Behavioral",
+];
 const LEVELS_BANK = ["All", "Fresher", "Mid", "Senior"];
 const LEVELS_SIM  = ["Fresher", "Mid", "Senior"];
 
