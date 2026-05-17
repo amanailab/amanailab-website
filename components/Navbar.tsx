@@ -74,7 +74,7 @@ const navItems: NavItem[] = [
     label: "Interview",
     columns: 1,
     items: [
-      { href: "/sheet",      label: "AI A2Z Sheet ✨",   description: "218+ topics — complete roadmap to interview ready", icon: <ListChecks className="w-4 h-4" /> },
+      { href: "/sheet",      label: "AmanAI Lab Sheet ✨", description: "218+ topics — complete roadmap to interview ready", icon: <ListChecks className="w-4 h-4" /> },
       { href: "/daily",      label: "Daily Challenge",  description: "One question a day — build your streak",  icon: <Flame className="w-4 h-4" /> },
       { href: "/interview",  label: "AI Simulator",    description: "Timed interview with AI scoring",         icon: <BrainCircuit className="w-4 h-4" /> },
       { href: "/job-prep",   label: "Job Prep",        description: "Paste a JD, get tailored questions",      icon: <Briefcase className="w-4 h-4" /> },

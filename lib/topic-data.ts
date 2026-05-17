@@ -16,7 +16,7 @@ export interface TopicMeta {
   cards: Flashcard[]
 }
 
-export const TOPICS: TopicMeta[] = [
+const TOPICS_BASE: TopicMeta[] = [
   {
     slug: 'llm',
     label: 'LLM',
@@ -213,6 +213,104 @@ export const TOPICS: TopicMeta[] = [
   },
 ]
 
+// ─── New topics added for AmanAI Lab Sheet ────────────────────────────────────
+const EXTENDED_TOPICS: TopicMeta[] = [
+  {
+    slug: 'deep-learning',
+    label: 'Deep Learning',
+    description: 'Neural networks, backpropagation, CNNs, RNNs, optimization algorithms and advanced architectures. Core for any ML engineer role.',
+    seoTitle: 'Deep Learning Interview Questions — Neural Networks, CNN, RNN, Backprop | AmanAI Lab',
+    seoDescription: 'Top deep learning interview questions with answers. Covers backpropagation, CNNs, LSTMs, optimizers, batch norm, transformers, and PyTorch for ML engineer interviews.',
+    color: 'text-sky-400', bg: 'bg-sky-500/10 border-sky-500/20', bar: 'bg-sky-500',
+    concepts: ['Backpropagation','Activation functions','CNNs & pooling','LSTMs & GRUs','Adam vs SGD','Batch normalization','Dropout','Transfer learning'],
+    cards: [
+      { front: 'What is backpropagation?', back: 'Computes gradients of the loss w.r.t. each weight using the chain rule, propagating errors backward through the network. For each layer: ∂L/∂W = ∂L/∂output × ∂output/∂W. Weights updated via gradient descent: W -= lr × ∂L/∂W. Core of all neural network training.' },
+      { front: 'What is the vanishing gradient problem?', back: 'In deep networks, gradients shrink exponentially as they propagate backward through many layers (especially with sigmoid/tanh). Early layers receive near-zero gradients and learn very slowly. Fixed by: ReLU activations (no saturation for positive values), batch normalization, residual connections, LSTMs.' },
+      { front: 'How does Batch Normalization work?', back: 'Normalizes each mini-batch to zero mean, unit variance, then applies learnable scale (γ) and shift (β). Placed before/after activation. Benefits: reduces internal covariate shift, enables higher learning rates, acts as regularizer, makes training more stable. At inference: uses running mean/variance.' },
+      { front: 'What is the difference between LSTM and GRU?', back: 'LSTM: 3 gates (forget, input, output) + separate cell state. Can model very long sequences. GRU: 2 gates (reset, update) — simpler, faster, merges cell/hidden state. In practice: similar performance, GRU trains faster. Use LSTM when sequence length > 1000; GRU otherwise.' },
+      { front: 'Why is ReLU preferred over Sigmoid in hidden layers?', back: 'Sigmoid saturates at 0 and 1, causing near-zero gradients (vanishing gradients) in deep networks. ReLU = max(0,x): no saturation for positive values → strong gradients, fast training. Computationally cheap. Sparse activation (50% zeros) aids generalization. Variants: LeakyReLU, GELU, SiLU for dying ReLU problem.' },
+      { front: 'What is Dropout and how does it prevent overfitting?', back: 'Randomly zeros p% of neurons during training each forward pass. Forces network not to rely on specific neurons — acts as ensemble of 2^n sub-networks. At test time: scale weights by (1-p) or use inverted dropout. Typical p=0.1-0.5. Effective regularizer, especially for fully connected layers.' },
+      { front: 'What is the difference between Adam and SGD?', back: 'Adam: adaptive per-parameter learning rates using first moment (momentum: β₁=0.9) and second moment (variance: β₂=0.999). Handles sparse gradients well. SGD with momentum: single global learning rate, often better generalization with careful tuning. AdamW adds weight decay properly. Modern practice: AdamW for LLMs, SGD+cosine for image models.' },
+      { front: 'What is transfer learning and when to use it?', back: 'Initialize with weights pre-trained on large dataset (ImageNet, large text corpus). Freeze early layers (generic features: edges, textures), fine-tune later layers (task-specific). Use when: limited labeled data, similar domain to pre-training. Usually outperforms training from scratch with <100K examples. Foundation of modern ML.' },
+    ],
+  },
+  {
+    slug: 'machine-learning',
+    label: 'Machine Learning',
+    description: 'Core ML algorithms, evaluation metrics, feature engineering and ensemble methods. Essential for all ML engineer and data scientist interviews.',
+    seoTitle: 'Machine Learning Interview Questions — Algorithms, XGBoost, Evaluation | AmanAI Lab',
+    seoDescription: 'Top ML interview questions on linear regression, decision trees, XGBoost, bias-variance tradeoff, cross-validation, feature engineering and more.',
+    color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', bar: 'bg-emerald-500',
+    concepts: ['Bias-variance tradeoff','Decision trees','XGBoost & LightGBM','SVM & kernels','Cross-validation','Precision & recall','Feature engineering','Class imbalance'],
+    cards: [
+      { front: 'What is the bias-variance tradeoff?', back: 'Total error = Bias² + Variance + Irreducible Noise. Bias: error from wrong assumptions (underfitting — too simple model). Variance: error from sensitivity to training data (overfitting — too complex model). Reducing one often increases the other. Sweet spot via regularization, ensemble methods, and proper model complexity.' },
+      { front: 'How does XGBoost differ from Random Forest?', back: 'Random Forest: builds trees in parallel on bootstrap samples, averages predictions (bagging). XGBoost: sequential boosting — each tree corrects residuals of previous, uses regularized objective, handles sparse data. XGBoost: usually higher accuracy, slower training, more hyperparameters. RF: faster, less tuning, more robust to overfitting.' },
+      { front: 'What is the kernel trick in SVM?', back: 'Maps data to higher-dimensional space implicitly via kernel function K(xᵢ,xⱼ) without explicit transformation. RBF kernel: K(x,z) = exp(-γ||x-z||²) — handles non-linear boundaries. Poly kernel: K(x,z) = (xᵀz+c)^d. Enables non-linear classification with O(n²) complexity instead of O(n³) explicit mapping.' },
+      { front: 'When do you use precision vs recall?', back: 'Precision = TP/(TP+FP): how many predicted positives are actually positive. Use when false positives are costly (spam detection, drug recommendations). Recall = TP/(TP+FN): how many actual positives we caught. Use when false negatives are costly (cancer detection, fraud). F1 = harmonic mean. ROC-AUC: ranking quality across all thresholds.' },
+      { front: 'What is regularization and why does it work?', back: 'Adds penalty to loss function to constrain model complexity. L1 (Lasso): λΣ|wᵢ| → sparse weights, automatic feature selection. L2 (Ridge): λΣwᵢ² → small, distributed weights, stable. ElasticNet: combines both. Works because: penalizes large weights, prevents fitting noise, reduces effective model complexity. λ chosen via cross-validation.' },
+      { front: 'How does a Decision Tree choose splits?', back: 'CART: minimizes weighted Gini impurity = Σ p(1-p) across classes in each child node. ID3/C4.5: maximizes Information Gain = parent entropy - weighted child entropy. Process: try all features + all thresholds, pick split with lowest impurity. Greedy, no backtracking. Prone to overfitting — use Random Forest or depth limiting.' },
+      { front: 'What is k-fold cross-validation?', back: 'Split data into k equal folds. Train on k-1 folds, evaluate on remaining fold. Repeat k times (each fold serves as validation once). Average k scores for robust estimate. k=5 or 10 standard. Stratified: preserves class distribution in each fold. Reduces variance vs single train/test split. Expensive: k×training time.' },
+      { front: 'How do you handle class imbalance?', back: 'Data-level: oversample minority (SMOTE: synthetic minority oversampling), undersample majority. Algorithm-level: class_weight="balanced" in sklearn, focal loss (penalizes easy examples). Threshold tuning: lower classification threshold for minority class. Evaluation: use F1, ROC-AUC, precision-recall AUC — never raw accuracy on imbalanced data.' },
+    ],
+  },
+  {
+    slug: 'statistics',
+    label: 'Statistics',
+    description: 'Probability, distributions, hypothesis testing, Bayesian inference and A/B testing for ML engineers.',
+    seoTitle: 'Statistics Interview Questions for ML Engineers — Probability, Testing | AmanAI Lab',
+    seoDescription: 'Essential statistics for ML interviews: probability distributions, hypothesis testing, Bayesian inference, A/B testing, MLE, confidence intervals.',
+    color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20', bar: 'bg-amber-500',
+    concepts: ['Central Limit Theorem','Bayes theorem','Hypothesis testing','p-values','A/B testing','MLE & MAP','Confidence intervals','Type I & II errors'],
+    cards: [
+      { front: 'What is the Central Limit Theorem?', back: 'The sampling distribution of the mean approaches N(μ, σ²/n) as n → ∞, regardless of population distribution. With n ≥ 30, approximation is generally good. Foundation for: confidence intervals, hypothesis tests, bootstrap. Explains why Gaussian appears everywhere in practice.' },
+      { front: 'What is Bayes\' Theorem and why is it important for ML?', back: 'P(A|B) = P(B|A) × P(A) / P(B). Posterior ∝ Likelihood × Prior. Enables updating beliefs given evidence. In ML: Naive Bayes classifier, Bayesian optimization, probabilistic inference. Bayesian approach treats model parameters as distributions, not point estimates — better uncertainty quantification.' },
+      { front: 'What is a p-value and what are its limitations?', back: 'Probability of observing data ≥ as extreme as actual, assuming H₀ is true. p < 0.05 → reject H₀ (at 5% significance). NOT P(H₀ is true). Limitations: doesn\'t measure effect size, sensitive to sample size (huge n makes trivial effects significant), publication bias, multiple comparison problem. Always report effect size (Cohen\'s d) alongside p-value.' },
+      { front: 'What is MLE (Maximum Likelihood Estimation)?', back: 'Finds parameter θ that maximizes P(data|θ). Derivation: take log-likelihood (log transforms products to sums), take derivative, set to zero, solve. For Gaussian: gives sample mean & variance. Logistic regression: MLE of log-odds = cross-entropy minimization. MLE = unbiased, consistent, efficient estimator.' },
+      { front: 'What are Type I and Type II errors?', back: 'Type I (α): False Positive — reject H₀ when true. Controlled by significance level (typically α=0.05). Type II (β): False Negative — fail to reject H₀ when false. Power = 1-β (want high). Trade-off: reducing α increases β. Power analysis before experiment: determines needed sample size to detect given effect at desired power (typically 0.8).' },
+      { front: 'When does A/B testing fail?', back: 'Peeking: checking results early inflates false positive rate — use sequential testing. Novelty effect: users behave differently to new features temporarily. Network effects: treatment/control groups interact (social networks). Simpson\'s paradox: overall trend reverses within subgroups. Insufficient power: underpowered tests miss real effects. Sample ratio mismatch: unequal traffic split.' },
+    ],
+  },
+  {
+    slug: 'computer-vision',
+    label: 'Computer Vision',
+    description: 'CNNs, object detection, segmentation, vision transformers and image processing fundamentals.',
+    seoTitle: 'Computer Vision Interview Questions — CNN, YOLO, ViT, Segmentation | AmanAI Lab',
+    seoDescription: 'Computer vision interview questions covering CNNs, object detection (YOLO), semantic segmentation, Vision Transformers, transfer learning, and data augmentation.',
+    color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/20', bar: 'bg-cyan-500',
+    concepts: ['CNNs & pooling','Receptive field','ResNet & skip connections','YOLO detection','Segmentation','Vision Transformers','Transfer learning','Data augmentation'],
+    cards: [
+      { front: 'What is the receptive field and why does it matter?', back: 'The region of the input image that influences a neuron\'s output. Grows with depth: stacking two 3×3 convs = 5×5 receptive field with fewer parameters than one 5×5. Deeper layers "see" more of the image. Dilated convolutions expand receptive field without increasing parameters or losing resolution. Key for detecting large objects.' },
+      { front: 'How does YOLO detect objects?', back: 'Divides image into S×S grid. Each cell predicts B bounding boxes (x,y,w,h,confidence) and C class probabilities simultaneously in one forward pass. Non-Maximum Suppression removes duplicates. YOLOv8+ uses anchor-free detection, decoupled head. Speed: 50+ FPS. Trade-off: faster than two-stage (R-CNN) but historically lower accuracy on small objects.' },
+      { front: 'What is semantic vs instance segmentation?', back: 'Semantic: assigns a class label to every pixel — no distinction between separate instances of same class. Instance: detects and masks each individual object instance separately (can distinguish car1 from car2). Panoptic segmentation combines both. Models: DeepLab (semantic), Mask R-CNN (instance), Panoptic-DeepLab (panoptic).' },
+      { front: 'Why do ResNets work for very deep networks?', back: 'Skip connections: F(x) + x where F is the residual function. Key insight: easier to learn residuals than unreferenced mappings. Provides gradient highways — gradients flow directly through skip connections, mitigating vanishing gradients in 100+ layer networks. Also enables identity shortcuts when optimal (network learns F(x)=0). ResNet-152 won ImageNet 2015.' },
+      { front: 'How does Vision Transformer (ViT) work?', back: 'Split image into N fixed patches (16×16), flatten each patch to vector, linearly project to embedding dimension, add positional embeddings, prepend [CLS] token. Process with standard Transformer encoder (multi-head self-attention + FFN). [CLS] token output → classifier. No convolutions. Requires large-scale pre-training (ImageNet-21K or JFT). ViT-L/16 achieves SOTA with enough data.' },
+      { front: 'What data augmentations work best for vision?', back: 'Geometric: random crop/flip/rotation (free invariance). Color: jitter brightness/contrast/saturation/hue. Mixing: Mixup (blend two images + labels proportionally), CutMix (paste patch from another image). AutoAugment/RandAugment: learned augmentation policies. Mosaic (YOLO): combine 4 images. Test-time augmentation (TTA): average predictions across augmentations.' },
+    ],
+  },
+  {
+    slug: 'nlp',
+    label: 'NLP',
+    description: 'Text processing, word embeddings, sequence models, BERT and language understanding fundamentals.',
+    seoTitle: 'NLP Interview Questions — Word2Vec, BERT, Text Classification | AmanAI Lab',
+    seoDescription: 'NLP interview questions covering tokenization, Word2Vec, GloVe, BERT, sequence labeling, text classification, summarization and language models.',
+    color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/20', bar: 'bg-indigo-500',
+    concepts: ['Tokenization','Word2Vec & GloVe','BERT & embeddings','Named entity recognition','Text classification','Seq2Seq','Attention','Summarization'],
+    cards: [
+      { front: 'What is the difference between Word2Vec and BERT embeddings?', back: 'Word2Vec: static embeddings — one vector per word regardless of context (bank = financial OR river bank). Trained by predicting context (skip-gram) or center word (CBOW). GloVe: global co-occurrence statistics. BERT: contextual embeddings — different vectors for same word in different contexts. Modern standard is contextual embeddings for most NLP tasks.' },
+      { front: 'How does BERT handle bidirectionality?', back: 'Masked Language Modeling (MLM): randomly mask 15% of tokens, predict masked tokens using BOTH left AND right context. This bidirectional attention is the key innovation vs GPT\'s left-only context. Next Sentence Prediction (NSP): predict if sentence B follows A. Pre-trained on BookCorpus + Wikipedia. Fine-tune with task-specific head.' },
+      { front: 'What is TF-IDF and when is it still useful?', back: 'TF-IDF = Term Frequency × Inverse Document Frequency. TF = word count in doc / total words. IDF = log(N / df). High score = frequent in document but rare overall = discriminative term. Still useful: keyword extraction, search (BM25 is TF-IDF variant), sparse retrieval component in hybrid search, fast baseline for text classification.' },
+      { front: 'What is Named Entity Recognition (NER)?', back: 'Sequence labeling: identify and classify named entities (PERSON, ORG, LOC, DATE, etc.) in text. IOB/BIOES tagging scheme. Models: CRF over features (classical), BiLSTM-CRF (deep learning), BERT with token classification head (SOTA). Evaluated with span-level F1. Applications: information extraction, knowledge graph building, document analysis.' },
+      { front: 'What is the difference between extractive and abstractive summarization?', back: 'Extractive: selects and concatenates important sentences/phrases from source. No new words generated. Methods: TextRank (graph-based), BertSum (fine-tuned BERT). Abstractive: generates new text — may paraphrase or synthesize. Models: BART, T5, Pegasus (pre-trained with summarization objective). Abstractive is more fluent but can hallucinate. ROUGE metric for both.' },
+      { front: 'How does attention work in seq2seq models?', back: 'Bahdanau attention: at each decoder step t, compute alignment score eᵢₜ = vᵀtanh(Wₐhᵢ + Uₐsₜ) for each encoder hidden state hᵢ. Softmax → attention weights αᵢₜ. Context vector cₜ = Σαᵢₜhᵢ. Concatenate with decoder hidden state for output. Allows decoder to focus on relevant encoder positions. Foundation of Transformer\'s self-attention.' },
+    ],
+  },
+]
+
+export const TOPICS: TopicMeta[] = [
+  ...TOPICS_BASE,
+  ...EXTENDED_TOPICS,
+]
+
 export const TOPIC_MAP: Record<string, TopicMeta> = Object.fromEntries(
   TOPICS.map(t => [t.slug, t])
 )
@@ -233,6 +331,8 @@ export const DB_TOPIC_TO_SLUG: Record<string, string> = {
   'Statistics': 'statistics',
   'SQL & Data': 'sql-data',
   'Behavioral': 'behavioral',
+  'Deep Learning': 'deep-learning',
+  'Machine Learning': 'machine-learning',
 }
 
 export const SLUG_TO_DB_TOPIC: Record<string, string> = Object.fromEntries(

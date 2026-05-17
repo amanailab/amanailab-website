@@ -2,12 +2,12 @@ import type { Metadata } from 'next'
 import SheetClient from './SheetClient'
 
 export const metadata: Metadata = {
-  title: 'AI A2Z Interview Sheet 2026 — Complete Generative AI, Deep Learning & MLOps Roadmap',
+  title: 'AmanAI Lab Sheet 2026 — Complete AI/ML Interview Prep Roadmap',
   description:
-    'The most complete AI/ML interview prep sheet for 2026. 218+ topics covering Generative AI, Agentic AI, Deep Learning, Machine Learning, MLOps and System Design — theory, code, projects and mock interviews.',
+    'AmanAI Lab Sheet: the most complete AI/ML interview prep sheet for 2026. 218+ topics covering Generative AI, Agentic AI, Deep Learning, Machine Learning, MLOps and System Design — theory, code, projects and mock interviews.',
   alternates: { canonical: 'https://amanailab.com/sheet' },
   openGraph: {
-    title: 'AI A2Z Interview Sheet 2026 — Complete AI/ML Learning Path',
+    title: 'AmanAI Lab Sheet 2026 — Complete AI/ML Interview Prep',
     description:
       '218+ curated topics: Transformers, RAG, LoRA, LangGraph, MCP, MLOps and more. Complete this sheet and land your dream AI/ML job.',
     images: [

@@ -38,13 +38,18 @@ const faqJsonLd = {
   ],
 }
 
-export default function QuizPage() {
+export default async function QuizPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ topic?: string }>
+}) {
+  const { topic } = await searchParams
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <div className="pt-20">
-        <SkillQuiz />
+        <SkillQuiz defaultTopic={topic} />
       </div>
     </>
   )

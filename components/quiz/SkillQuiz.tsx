@@ -36,8 +36,8 @@ const NEXT_STUDY: Record<string, string> = {
   'Fine-Tuning': '/topics/fine-tuning', MLOps: '/topics/mlops',
   Transformers: '/topics/transformers', 'System Design': '/topics/system-design',
   Python: '/topics/python', 'Vector DB': '/topics/vector-db',
-  NLP: '/flashcards', 'Computer Vision': '/flashcards',
-  Statistics: '/flashcards', Behavioral: '/topics/behavioral',
+  NLP: '/flashcards/nlp', 'Computer Vision': '/flashcards/computer-vision',
+  Statistics: '/flashcards/statistics', Behavioral: '/topics/behavioral',
 }
 
 const GRADE_INFO: Record<string, { label: string; msg: string; color: string; bg: string }> = {
@@ -76,8 +76,14 @@ function formatTime(s: number) {
   return m > 0 ? `${m}m ${sec}s` : `${sec}s`
 }
 
-export default function SkillQuiz() {
-  const [topic,           setTopic]           = useState(TOPICS[0])
+export default function SkillQuiz({ defaultTopic }: { defaultTopic?: string }) {
+  const [topic, setTopic] = useState(() => {
+    if (defaultTopic) {
+      const found = TOPICS.find(t => t.toLowerCase() === defaultTopic.toLowerCase())
+      if (found) return found
+    }
+    return TOPICS[0]
+  })
   const [level,           setLevel]           = useState(LEVELS[0])
   const [count,           setCount]           = useState(5)
   const [questions,       setQuestions]       = useState<Question[]>([])
