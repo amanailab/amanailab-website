@@ -7,7 +7,8 @@ import ToolsShowcase from "@/components/home/ToolsShowcase";
 import StatsSection from "@/components/home/StatsSection";
 import FeaturedSeries from "@/components/home/FeaturedSeries";
 import LatestVideos from "@/components/home/LatestVideos";
-import CTASection from "@/components/home/CTASection";
+import CTASection from "@/components/home/CTASection"
+import SheetPromo from "@/components/home/SheetPromo";
 
 import type { Metadata } from 'next'
 
@@ -47,7 +48,10 @@ export default async function HomePage() {
       {/* 3. What we offer — all tools */}
       <ToolsShowcase />
 
-      {/* 4. How it works — user journey */}
+      {/* 4. Sheet promo — interview prep roadmap */}
+      <SheetPromo />
+
+      {/* 5. How it works — user journey */}
       <HowItWorks />
 
       {/* 5. Daily habit loop */}
