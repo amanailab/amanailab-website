@@ -288,8 +288,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           {/* Company tags */}
           <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
             {problem.companies.slice(0, 4).map(c => (
-              <span key={c} className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700">
-                {c.slice(0, 4)}
+              <span key={c} className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700 whitespace-nowrap">
+                {c === 'Microsoft' ? 'MSFT' : c === 'Anthropic' ? 'Anth' : c === 'DeepMind' ? 'DeepM' : c}
               </span>
             ))}
           </div>

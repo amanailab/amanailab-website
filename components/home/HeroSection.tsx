@@ -2,11 +2,11 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, ListChecks } from "lucide-react";
 
 const techPills = [
-  "LLMs", "AI Agents", "RAG", "LangChain", "OpenAI API",
-  "Fine-tuning", "Prompt Engineering", "LlamaIndex", "Vector DBs",
+  "LLMs", "RAG", "AI Agents", "Fine-Tuning", "LangGraph",
+  "MCP", "GRPO", "vLLM", "MLOps", "System Design",
 ];
 
 export default function HeroSection() {
@@ -47,7 +47,7 @@ export default function HeroSection() {
           className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-sm font-medium px-4 py-2 rounded-full mb-8"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          Live AI scoring + 500 real questions — 100% Free
+          18 free AI tools · 500+ questions · A‑to‑Z Interview Sheet
         </motion.div>
 
         {/* Headline */}
@@ -89,7 +89,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+          className="flex flex-col sm:flex-row gap-3 justify-center items-center"
         >
           <Link
             href="/interview?tab=simulator"
@@ -99,13 +99,24 @@ export default function HeroSection() {
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
-            href="/resume"
-            className="inline-flex items-center gap-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-600 text-zinc-100 font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 text-[15px]"
+            href="/sheet"
+            className="inline-flex items-center gap-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-orange-500/40 text-zinc-100 font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 text-[15px]"
           >
-            Analyze My Resume
-            <ArrowRight className="w-4 h-4" />
+            <ListChecks className="w-4 h-4 text-orange-400" />
+            A‑to‑Z Interview Sheet
           </Link>
         </motion.div>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.5 }}
+          className="mt-4 text-xs text-zinc-600"
+        >
+          No account required ·{" "}
+          <Link href="/resume" className="hover:text-zinc-400 underline underline-offset-2 transition-colors">Analyze my resume</Link>
+          {" · "}
+          <Link href="/skill-gap" className="hover:text-zinc-400 underline underline-offset-2 transition-colors">Check skill gaps</Link>
+        </motion.p>
 
         {/* Tech pills */}
         <motion.div

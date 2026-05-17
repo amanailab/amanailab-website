@@ -69,89 +69,111 @@ function SheetRow({
   const designSlug = SHEET_TO_DESIGN[item.id]
   const hasExpand = !!(it.theory || it.preview || designSlug)
 
+  // Compute available resource links for mobile strip
+  const mobileLinks = [
+    it.theory && { label: 'Theory', icon: <BookOpen size={10} />, action: onExpand, className: 'text-orange-400 hover:text-orange-300' },
+    it.codeSlug ? { label: 'Code', icon: <Code2 size={10} />, href: `/code-lab/${it.codeSlug}`, className: 'text-green-400 hover:text-green-300' }
+      : it.hasCode ? { label: 'Code Lab', icon: <Code2 size={10} />, href: '/code-lab', className: 'text-zinc-400 hover:text-zinc-200' } : null,
+    it.hasFlashcard && it.topic ? { label: 'Flashcards', icon: <Layers size={10} />, href: `/flashcards/${it.topic}`, className: 'text-yellow-400 hover:text-yellow-300' } : null,
+    it.hasQuiz && quizName ? { label: 'Quiz', icon: <HelpCircle size={10} />, href: `/quiz?topic=${encodeURIComponent(quizName)}`, className: 'text-violet-400 hover:text-violet-300' } : null,
+    it.hasInterview ? { label: 'Interview', icon: <MessageCircle size={10} />, href: '/interview', className: 'text-zinc-400 hover:text-zinc-200' } : null,
+    designSlug ? { label: 'Design', icon: <PenLine size={10} />, href: `/system-design/${designSlug}`, className: 'text-violet-400 hover:text-violet-300' } : null,
+  ].filter(Boolean) as { label: string; icon: React.ReactNode; href?: string; action?: () => void; className: string }[]
+
   return (
     <>
-      <div className={`grid grid-cols-[28px_32px_1fr_28px_28px_28px_28px_28px] items-center gap-x-1 px-3 sm:px-4 py-2.5 border-b border-zinc-800/50 transition-colors group ${
+      {/* ── Desktop row ── */}
+      <div className={`hidden sm:grid grid-cols-[28px_32px_1fr_28px_28px_28px_28px_28px] items-center gap-x-1 px-4 py-2.5 border-b border-zinc-800/50 transition-colors ${
         done ? 'bg-emerald-950/20' : 'hover:bg-zinc-800/20'
       }`}>
-        {/* Checkbox */}
-        <button
-          onClick={onToggle}
-          aria-label={done ? 'Mark incomplete' : 'Mark complete'}
+        <button onClick={onToggle} aria-label={done ? 'Mark incomplete' : 'Mark complete'}
           className={`w-[18px] h-[18px] mx-auto rounded border transition-all flex items-center justify-center ${
             done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 hover:border-zinc-400 bg-transparent'
-          }`}
-        >
+          }`}>
           {done && <Check size={10} strokeWidth={3} className="text-white" />}
         </button>
 
-        {/* Number */}
         <span className="text-[10px] text-zinc-700 text-right font-mono">{index}</span>
 
-        {/* Title */}
-        <div className="min-w-0 flex items-center gap-2">
-          <button
-            onClick={hasExpand ? onExpand : undefined}
-            className={`text-sm font-medium leading-snug text-left transition-colors ${
-              done ? 'line-through text-zinc-500' : 'text-zinc-200'
-            } ${hasExpand ? 'hover:text-orange-300 cursor-pointer' : ''}`}
-          >
+        <div className="min-w-0">
+          <button onClick={hasExpand ? onExpand : undefined}
+            className={`text-sm font-medium leading-snug text-left transition-colors ${done ? 'line-through text-zinc-500' : 'text-zinc-200'} ${hasExpand ? 'hover:text-orange-300 cursor-pointer' : ''}`}>
             {it.title}
             {it.isNew2026 && (
-              <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wide align-middle">
-                2026
-              </span>
+              <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wide align-middle">2026</span>
             )}
             {designSlug && (
-              <span className="hidden sm:inline-flex items-center gap-0.5 ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30 uppercase tracking-wide align-middle">
+              <span className="inline-flex items-center gap-0.5 ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30 uppercase tracking-wide align-middle">
                 <PenLine size={8} /> Design
               </span>
             )}
           </button>
-          {/* Mobile: difficulty inline */}
-          <span className={`sm:hidden text-[10px] font-bold ml-auto flex-shrink-0 ${DIFF_COLOR[it.difficulty]}`}>
-            {it.difficulty.charAt(0).toUpperCase()}
-          </span>
-          {hasExpand && (
-            <button onClick={onExpand} className="sm:hidden text-zinc-700 hover:text-zinc-500 ml-1 flex-shrink-0">
-              {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-            </button>
-          )}
         </div>
 
-        {/* Resource icons — desktop 5 columns */}
-        <ResIcon
-          href={it.theory ? undefined : it.hasFlashcard && it.topic ? `/flashcards/${it.topic}` : undefined}
-          title={it.theory ? 'Click title to read theory' : it.hasFlashcard && it.topic ? 'Flashcard Revision' : 'No theory available'}
-          icon={<BookOpen size={13} />}
-          available={!!(it.theory || (it.hasFlashcard && it.topic))}
-          highlight={false}
-        />
-        <ResIcon
-          href={it.codeSlug ? `/code-lab/${it.codeSlug}` : it.hasCode ? '/code-lab' : undefined}
+        <ResIcon href={it.theory ? undefined : it.hasFlashcard && it.topic ? `/flashcards/${it.topic}` : undefined}
+          title={it.theory ? 'Click title to read theory' : 'Flashcard Revision'}
+          icon={<BookOpen size={13} />} available={!!(it.theory || (it.hasFlashcard && it.topic))} />
+        <ResIcon href={it.codeSlug ? `/code-lab/${it.codeSlug}` : it.hasCode ? '/code-lab' : undefined}
           title={it.codeSlug ? `Solve: ${it.codeSlug}` : 'Browse Code Lab'}
-          icon={<Code2 size={13} />}
-          available={!!it.hasCode}
-          highlight={!!it.codeSlug}
-        />
-        <ResIcon
-          href={it.hasFlashcard && it.topic ? `/flashcards/${it.topic}` : undefined}
-          title="Flashcard Revision"
-          icon={<Layers size={13} />}
-          available={!!(it.hasFlashcard && it.topic)}
-        />
-        <ResIcon
-          href={it.hasQuiz && quizName ? `/quiz?topic=${encodeURIComponent(quizName)}` : undefined}
-          title="Take Quiz"
-          icon={<HelpCircle size={13} />}
-          available={!!(it.hasQuiz && quizName)}
-        />
-        <ResIcon
-          href={it.hasInterview ? '/interview' : undefined}
-          title="Mock Interview"
-          icon={<MessageCircle size={13} />}
-          available={!!it.hasInterview}
-        />
+          icon={<Code2 size={13} />} available={!!it.hasCode} highlight={!!it.codeSlug} />
+        <ResIcon href={it.hasFlashcard && it.topic ? `/flashcards/${it.topic}` : undefined}
+          title="Flashcard Revision" icon={<Layers size={13} />} available={!!(it.hasFlashcard && it.topic)} />
+        <ResIcon href={it.hasQuiz && quizName ? `/quiz?topic=${encodeURIComponent(quizName)}` : undefined}
+          title="Take Quiz" icon={<HelpCircle size={13} />} available={!!(it.hasQuiz && quizName)} />
+        <ResIcon href={it.hasInterview ? '/interview' : undefined}
+          title="Mock Interview" icon={<MessageCircle size={13} />} available={!!it.hasInterview} />
+      </div>
+
+      {/* ── Mobile row ── */}
+      <div className={`sm:hidden flex items-start gap-3 px-3 py-3 border-b border-zinc-800/50 transition-colors ${done ? 'bg-emerald-950/20' : ''}`}>
+        <button onClick={onToggle}
+          className={`mt-0.5 w-[18px] h-[18px] rounded border flex-shrink-0 flex items-center justify-center transition-all ${
+            done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 hover:border-zinc-400'
+          }`}>
+          {done && <Check size={10} strokeWidth={3} className="text-white" />}
+        </button>
+
+        <div className="flex-1 min-w-0">
+          {/* Title + expand toggle */}
+          <div className="flex items-start gap-2">
+            <button onClick={hasExpand ? onExpand : undefined}
+              className={`text-sm font-medium leading-snug text-left flex-1 min-w-0 transition-colors ${done ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+              {it.title}
+              {it.isNew2026 && (
+                <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wide align-middle">2026</span>
+              )}
+            </button>
+            <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+              <span className={`text-[10px] font-bold ${DIFF_COLOR[it.difficulty]}`}>
+                {it.difficulty.charAt(0).toUpperCase() + it.difficulty.slice(1)}
+              </span>
+              {hasExpand && (
+                <button onClick={onExpand} className="text-zinc-600 hover:text-zinc-400 transition-colors">
+                  {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile resource strip — only available links */}
+          {mobileLinks.length > 0 && (
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              {mobileLinks.map(link => (
+                link.href ? (
+                  <Link key={link.label} href={link.href}
+                    className={`flex items-center gap-1 text-[11px] font-medium transition-colors ${link.className}`}>
+                    {link.icon} {link.label}
+                  </Link>
+                ) : (
+                  <button key={link.label} onClick={link.action}
+                    className={`flex items-center gap-1 text-[11px] font-medium transition-colors ${link.className}`}>
+                    {link.icon} {link.label}
+                  </button>
+                )
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Expand panel */}

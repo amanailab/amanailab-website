@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   ChevronDown, ChevronUp, BrainCircuit,
   CheckCircle2, XCircle, SkipForward, RotateCcw, ArrowRight,
-  Search, X, Dice5, MessageCircle,
+  Search, X, Dice5, MessageCircle, Library, Sparkles,
 } from "lucide-react";
 import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 import MockInterviewChat from "@/components/interview/MockInterviewChat";
@@ -600,60 +600,79 @@ export default function InterviewHub() {
   const currentTopicLabel =
     TOPICS_BANK.find((t) => t.value === topicFilter)?.label ?? "";
 
+  const TABS = [
+    {
+      id: "bank" as const,
+      label: "Question Bank",
+      desc: "Browse 500+ real AI/ML questions",
+      icon: <Library className="w-4 h-4" />,
+      color: "text-blue-400",
+      bg: "bg-blue-500/10 border-blue-500/25",
+    },
+    {
+      id: "simulator" as const,
+      label: "AI Simulator",
+      desc: "Timed interview with instant scoring",
+      icon: <BrainCircuit className="w-4 h-4" />,
+      color: "text-orange-400",
+      bg: "bg-orange-500/10 border-orange-500/25",
+    },
+    {
+      id: "chat" as const,
+      label: "Chat Interview",
+      desc: "Conversational AI practice session",
+      icon: <MessageCircle className="w-4 h-4" />,
+      color: "text-violet-400",
+      bg: "bg-violet-500/10 border-violet-500/25",
+    },
+  ]
+
   return (
     <section className="min-h-screen bg-zinc-950 text-zinc-50">
-      {/* Hero */}
-      <div className="relative py-20 px-4 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 via-transparent to-transparent pointer-events-none" />
-        <div className="relative max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold px-3 py-1.5 rounded-full mb-6 tracking-wide uppercase">
-            <BrainCircuit className="w-3.5 h-3.5" />
-            Interview Prep
+
+      {/* ── Compact page header ─────────────────────────────────────────── */}
+      <div className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-5">
+          {/* Title row */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
+              <BrainCircuit className="w-4.5 h-4.5 text-orange-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-extrabold text-zinc-100 leading-tight">AI Interview Prep Hub</h1>
+              <p className="text-xs text-zinc-500">Practice real AI/ML questions · Free · No login needed</p>
+            </div>
+            <div className="ml-auto hidden sm:flex items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
+                <Sparkles className="w-3 h-3" /> Free · 14 Topics
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            AI Interview Prep Hub
-          </h1>
-          <p className="text-zinc-400 text-lg max-w-xl mx-auto">
-            Practice real AI/ML interview questions. Free. No login needed.
-          </p>
+
+          {/* Tool tabs — card style */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mb-px scrollbar-thin scrollbar-thumb-zinc-800">
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-semibold whitespace-nowrap transition-all flex-shrink-0 ${
+                  activeTab === tab.id
+                    ? `${tab.bg} ${tab.color}`
+                    : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+                }`}
+              >
+                <span className={activeTab === tab.id ? tab.color : "text-zinc-600"}>{tab.icon}</span>
+                {tab.label}
+                {activeTab === tab.id && (
+                  <span className="text-[10px] hidden md:inline opacity-70">{tab.desc}</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
-        {/* Tabs */}
-        <div className="flex items-center gap-2 mb-8 border-b border-zinc-800">
-          <button
-            onClick={() => setActiveTab("bank")}
-            className={`px-5 py-3 text-sm font-semibold transition-colors ${
-              activeTab === "bank"
-                ? "text-orange-400 border-b-2 border-orange-500"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            Question Bank
-          </button>
-          <button
-            onClick={() => setActiveTab("simulator")}
-            className={`px-5 py-3 text-sm font-semibold transition-colors ${
-              activeTab === "simulator"
-                ? "text-orange-400 border-b-2 border-orange-500"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            AI Simulator
-          </button>
-          <button
-            onClick={() => setActiveTab("chat")}
-            className={`flex items-center gap-1.5 px-5 py-3 text-sm font-semibold transition-colors ${
-              activeTab === "chat"
-                ? "text-orange-400 border-b-2 border-orange-500"
-                : "text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            Chat Interview
-          </button>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 pt-6">
 
         {/* Question Bank tab */}
         {activeTab === "bank" && (
