@@ -1,4 +1,4 @@
-import { getChannelStats, getPlaylists, formatStats } from "@/lib/youtube";
+import { getChannelStats, getLatestVideos, getPlaylists, formatStats } from "@/lib/youtube";
 import HeroSection    from "@/components/home/HeroSection";
 import SocialProofBar from "@/components/home/SocialProofBar";
 import FeaturedTools  from "@/components/home/FeaturedTools";
@@ -6,6 +6,7 @@ import MoreTools      from "@/components/home/MoreTools";
 import SheetPromo     from "@/components/home/SheetPromo";
 import HowItWorks     from "@/components/home/HowItWorks";
 import FeaturedSeries from "@/components/home/FeaturedSeries";
+import LatestVideos   from "@/components/home/LatestVideos";
 import CTASection     from "@/components/home/CTASection";
 
 import type { Metadata } from 'next'
@@ -35,49 +36,57 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function HomePage() {
-  let stats = null, playlists: unknown[] = []
+  let stats = null
+  let playlists: unknown[] = []
+  let videos:   unknown[] = []
+
   try {
-    ;[stats, playlists] = await Promise.all([
+    ;[stats, playlists, videos] = await Promise.all([
       getChannelStats(),
       getPlaylists(20),
+      getLatestVideos(6),   // now filters out Shorts automatically
     ])
   } catch {
     // YouTube API failed — pages render fine with defaults
   }
 
   const formattedStats = stats ? formatStats(stats) : null
-  const featured = (playlists as { id: string }[]).slice(0, 3)
+  const featured       = (playlists as { id: string }[]).slice(0, 3)
+  const latestVideos   = videos as Parameters<typeof LatestVideos>[0]['videos']
 
   return (
     <>
-      {/* 1. Hook — immediate value prop */}
+      {/* 1. Hook */}
       <HeroSection />
 
-      {/* 2. Credibility — show scale */}
+      {/* 2. Credibility */}
       <SocialProofBar
         subscriberCount={formattedStats ? `${formattedStats.subs.value}${formattedStats.subs.suffix}` : undefined}
         videoCount={formattedStats ? `${formattedStats.videos.value}${formattedStats.videos.suffix}` : undefined}
       />
 
-      {/* 3. Core 3 tools — featured spotlight */}
+      {/* 3. Core 3 tools + Resume */}
       <FeaturedTools />
 
-      {/* 4. Remaining 15 tools — compact grid */}
+      {/* 4. All 15 remaining tools */}
       <MoreTools />
 
-      {/* 5. Interview prep sheet — key differentiator */}
+      {/* 5. Interview prep sheet */}
       <SheetPromo />
 
-      {/* 6. How it works — user journey */}
+      {/* 6. How it works */}
       <HowItWorks />
 
-      {/* 7. Learning content — YouTube playlists (with static fallback) */}
+      {/* 7. YouTube playlists */}
       <FeaturedSeries playlists={featured.length > 0
         ? featured as Parameters<typeof FeaturedSeries>[0]['playlists']
         : []
       } />
 
-      {/* 8. Final CTA */}
+      {/* 8. Latest YouTube videos (Shorts filtered out) */}
+      {latestVideos.length > 0 && <LatestVideos videos={latestVideos} />}
+
+      {/* 9. Final CTA */}
       <CTASection />
     </>
   );

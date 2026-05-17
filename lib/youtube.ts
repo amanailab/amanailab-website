@@ -269,16 +269,59 @@ export async function getPlaylistVideos(playlistId: string, limit = 30): Promise
     });
 }
 
+// ── Duration helpers (for Shorts filtering) ──────────────────────────────────
+
+function parseISO8601Duration(duration: string): number {
+  // e.g. "PT30S" → 30, "PT1M" → 60, "PT5M30S" → 330, "PT1H2M3S" → 3723
+  const m = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!m) return 0;
+  return (parseInt(m[1] ?? '0') * 3600) +
+         (parseInt(m[2] ?? '0') * 60)  +
+          parseInt(m[3] ?? '0');
+}
+
 export async function getLatestVideos(limit = 6): Promise<Video[]> {
-  // Get uploads playlist ID from channel data
-  const data = await ytFetch<YT>(
+  // Step 1 — Get the channel's uploads playlist ID
+  const channelData = await ytFetch<YT>(
     `channels?part=contentDetails&id=${CHANNEL_ID}`,
     REVALIDATE_VIDEOS
   );
-
   const uploadsId: string =
-    data?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? "";
-
+    channelData?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads ?? '';
   if (!uploadsId) return [];
-  return getPlaylistVideos(uploadsId, limit);
+
+  // Step 2 — Fetch recent uploads (grab extra so we have room to filter Shorts)
+  const playlistData = await ytFetch<YT>(
+    `playlistItems?part=snippet,contentDetails&playlistId=${uploadsId}&maxResults=${limit + 15}`,
+    REVALIDATE_VIDEOS
+  );
+  if (!playlistData?.items?.length) return [];
+
+  const videoIds = playlistData.items
+    .filter((item) => item.snippet?.resourceId?.videoId)
+    .map((item) => item.snippet.resourceId.videoId as string);
+
+  if (!videoIds.length) return [];
+
+  // Step 3 — Fetch video details to get duration (needed to filter Shorts)
+  const detailsData = await ytFetch<YT>(
+    `videos?part=contentDetails,snippet&id=${videoIds.join(',')}&maxResults=50`,
+    REVALIDATE_VIDEOS
+  );
+  if (!detailsData?.items?.length) return [];
+
+  return detailsData.items
+    .filter((item) => {
+      const secs = parseISO8601Duration(item.contentDetails?.duration ?? '');
+      return secs >= 60; // Skip YouTube Shorts (< 60 seconds)
+    })
+    .slice(0, limit)
+    .map((item) => ({
+      id: item.id as string,
+      title: item.snippet?.title ?? 'Untitled',
+      description: (item.snippet?.description ?? '').slice(0, 200),
+      thumbnail: `https://img.youtube.com/vi/${item.id}/maxresdefault.jpg`,
+      publishedAt: item.snippet?.publishedAt ?? '',
+      url: `https://www.youtube.com/watch?v=${item.id}`,
+    }));
 }

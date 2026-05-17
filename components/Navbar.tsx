@@ -9,7 +9,7 @@ import {
   BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
   BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
-  User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2, ListChecks,
+  User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2, ListChecks, PenLine,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -74,8 +74,9 @@ const navItems: NavItem[] = [
     label: "Interview",
     columns: 1,
     items: [
-      { href: "/sheet",      label: "Interview Prep Sheet ✨", description: "Complete AI/ML roadmap — theory, code, flashcards & mock interview", icon: <ListChecks className="w-4 h-4" /> },
-      { href: "/daily",      label: "Daily Challenge",  description: "One question a day — build your streak",  icon: <Flame className="w-4 h-4" /> },
+      { href: "/sheet",          label: "Interview Prep Sheet ✨", description: "Complete AI/ML roadmap — theory, code, flashcards & mock interview", icon: <ListChecks className="w-4 h-4" /> },
+      { href: "/system-design",  label: "System Design Practice", description: "15 real design problems with editor, checklist & AI review",         icon: <PenLine className="w-4 h-4" /> },
+      { href: "/daily",          label: "Daily Challenge",  description: "One question a day — build your streak",  icon: <Flame className="w-4 h-4" /> },
       { href: "/interview",  label: "AI Simulator",    description: "Timed interview with AI scoring",         icon: <BrainCircuit className="w-4 h-4" /> },
       { href: "/job-prep",   label: "Job Prep",        description: "Paste a JD, get tailored questions",      icon: <Briefcase className="w-4 h-4" /> },
       { href: "/companies",  label: "Companies",       description: "Google, Meta, OpenAI & more",             icon: <Building2 className="w-4 h-4" /> },

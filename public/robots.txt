@@ -1,7 +1,13 @@
 User-agent: *
 Allow: /
 
-# Private/auth areas
+# Important pages with query params — must be explicitly allowed
+Allow: /interview?tab=
+Allow: /quiz?topic=
+Allow: /career?tab=
+Allow: /flashcards/
+
+# Private/auth areas — block crawling
 Disallow: /admin/
 Disallow: /api/
 Disallow: /dashboard/
@@ -13,9 +19,14 @@ Disallow: /reset-password
 Disallow: /forgot-password
 Disallow: /verify-email
 
-# Don't crawl search/filter variants (prevents duplicate content)
-Disallow: /*?*
+# Block tracking/session query params to prevent duplicate content
+Disallow: /*?utm_
+Disallow: /*?ref=
+Disallow: /*?fbclid=
+Disallow: /*?gclid=
 
-# Sitemap — both www and non-www for safety
-Sitemap: https://amanailab.com/sitemap.xml
+# Canonical host — helps some crawlers
 Host: amanailab.com
+
+# Sitemap
+Sitemap: https://amanailab.com/sitemap.xml
