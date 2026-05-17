@@ -17,6 +17,7 @@ export interface SheetItem {
   hasQuiz?: boolean       // link to /quiz?topic=
   hasInterview?: boolean  // link to /interview
   codeSlug?: string       // direct link to /code-lab/[slug]
+  designSlug?: string     // direct link to /system-design/[slug] practice workspace
   theory?: string         // inline concept explanation shown in sheet
   companies?: Company[]
   isNew2026?: boolean

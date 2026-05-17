@@ -5,13 +5,14 @@ import Link from 'next/link'
 import {
   Check, BookOpen, Code2, Layers, HelpCircle, MessageCircle,
   ChevronDown, ChevronRight, Filter, Trophy, RotateCcw,
-  CheckSquare, Search, X, Clock, ChevronUp, Sparkles,
+  CheckSquare, Search, X, Clock, ChevronUp, Sparkles, PenLine,
 } from 'lucide-react'
 import {
   SHEET_TRACKS, getTotalItems, TOPIC_TO_QUIZ,
   type SheetItem, type ItemType, type Difficulty,
 } from '@/lib/sheet-data'
 import { SHEET_THEORY } from '@/lib/sheet-theory'
+import { SHEET_TO_DESIGN } from '@/lib/system-design-problems'
 
 const STORAGE_KEY = 'ai_sheet_progress_v1'
 
@@ -65,7 +66,8 @@ function SheetRow({
 }) {
   const it = withTheory(item)
   const quizName = it.quizTopic ?? (it.topic ? TOPIC_TO_QUIZ[it.topic] : undefined)
-  const hasExpand = !!(it.theory || it.preview)
+  const designSlug = SHEET_TO_DESIGN[item.id]
+  const hasExpand = !!(it.theory || it.preview || designSlug)
 
   return (
     <>
@@ -169,10 +171,23 @@ function SheetRow({
             </div>
           )}
           {it.preview && (
-            <div className="px-4 sm:px-[76px] py-3">
+            <div className={`px-4 sm:px-[76px] py-3 ${designSlug ? 'border-b border-zinc-800/40' : ''}`}>
               <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1.5">Interview Q&A</p>
               <p className="text-sm text-zinc-200 font-medium leading-snug mb-2">{it.preview.q}</p>
               <p className="text-xs text-zinc-400 leading-relaxed">{it.preview.a}</p>
+            </div>
+          )}
+          {designSlug && (
+            <div className="px-4 sm:px-[76px] py-3">
+              <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider mb-2">Practice Workspace</p>
+              <Link
+                href={`/system-design/${designSlug}`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-300 hover:bg-violet-500/20 hover:text-violet-200 transition-all text-sm font-semibold"
+              >
+                <PenLine size={14} />
+                Open Design Workspace
+              </Link>
+              <p className="text-[11px] text-zinc-600 mt-1.5">Write your answer, check key areas, get AI review</p>
             </div>
           )}
         </div>
