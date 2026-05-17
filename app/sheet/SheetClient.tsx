@@ -102,6 +102,11 @@ function SheetRow({
                 2026
               </span>
             )}
+            {designSlug && (
+              <span className="hidden sm:inline-flex items-center gap-0.5 ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30 uppercase tracking-wide align-middle">
+                <PenLine size={8} /> Design
+              </span>
+            )}
           </button>
           {/* Mobile: difficulty inline */}
           <span className={`sm:hidden text-[10px] font-bold ml-auto flex-shrink-0 ${DIFF_COLOR[it.difficulty]}`}>

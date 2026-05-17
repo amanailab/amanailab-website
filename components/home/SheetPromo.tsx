@@ -1,139 +1,195 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { ArrowRight, CheckCircle2, BookOpen, Code2, Layers, HelpCircle, MessageCircle } from 'lucide-react'
+import { motion } from "framer-motion";
+import Link from "next/link";
+import {
+  ArrowRight, BookOpen, Code2, Layers, PenLine,
+  CheckCircle2, Sparkles, HelpCircle, MessageCircle,
+} from "lucide-react";
 
 const TRACKS = [
-  { icon: '✨', label: 'Generative AI',   color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/20' },
-  { icon: '🤖', label: 'Agentic AI',      color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
-  { icon: '🧠', label: 'Deep Learning',   color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20' },
-  { icon: '📊', label: 'Machine Learning',color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20' },
-  { icon: '⚙️', label: 'MLOps',           color: 'text-teal-400',   bg: 'bg-teal-500/10 border-teal-500/20' },
-  { icon: '🏗️', label: 'System Design',   color: 'text-red-400',    bg: 'bg-red-500/10 border-red-500/20' },
+  { icon: "✨", label: "Generative AI",    color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
+  { icon: "🤖", label: "Agentic AI",       color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
+  { icon: "🧠", label: "Deep Learning",    color: "text-blue-400",   bg: "bg-blue-500/10 border-blue-500/20"   },
+  { icon: "📊", label: "Machine Learning", color: "text-green-400",  bg: "bg-green-500/10 border-green-500/20" },
+  { icon: "⚙️", label: "MLOps",            color: "text-teal-400",   bg: "bg-teal-500/10 border-teal-500/20"   },
+  { icon: "🏗️", label: "System Design",    color: "text-red-400",    bg: "bg-red-500/10 border-red-500/20"     },
 ]
 
 const FEATURES = [
-  { icon: <BookOpen size={15} />, text: 'Inline theory for every concept — no page navigation needed' },
-  { icon: <Code2 size={15} />,    text: '45+ code problems that open directly in the Code Lab editor' },
-  { icon: <Layers size={15} />,   text: 'Flashcard decks and topic quizzes linked per item' },
-  { icon: <MessageCircle size={15} />, text: 'Mock interview and Q&A previews for every topic' },
+  {
+    icon: BookOpen,
+    color: "text-orange-400",
+    bg: "bg-orange-500/10 border-orange-500/20",
+    label: "Theory for every concept",
+    desc: "Click any item to expand an inline explanation — no page navigation, no context switching.",
+  },
+  {
+    icon: Code2,
+    color: "text-green-400",
+    bg: "bg-green-500/10 border-green-500/20",
+    label: "45+ Code Lab problems",
+    desc: "Code icons open the Code Lab editor with that exact algorithm pre-loaded and ready to solve.",
+  },
+  {
+    icon: Layers,
+    color: "text-blue-400",
+    bg: "bg-blue-500/10 border-blue-500/20",
+    label: "Flashcards & topic quizzes",
+    desc: "Every topic links directly to focused flashcard decks and AI-generated MCQ quizzes.",
+  },
+  {
+    icon: PenLine,
+    color: "text-violet-400",
+    bg: "bg-violet-500/10 border-violet-500/20",
+    label: "System Design Workspace",
+    desc: "15 classic design problems with a structured editor, must-cover checklist, and AI review.",
+  },
 ]
 
-const SAMPLE_ITEMS = [
-  { title: 'Self-Attention Mechanism (Q, K, V)',  track: '✨ Gen AI',   diff: 'Medium', companies: ['G','OAI','M'] },
-  { title: 'LoRA — Low-Rank Adaptation',          track: '✨ Gen AI',   diff: 'Hard',   companies: ['M','MS','G'] },
-  { title: 'LangGraph — State Machine Agents',    track: '🤖 Agentic',  diff: 'Hard',   companies: ['AMZ','G','MS'] },
-  { title: 'Backpropagation (Chain Rule)',         track: '🧠 DL',       diff: 'Hard',   companies: ['G','M','AMZ'] },
-  { title: 'Bias-Variance Tradeoff',              track: '📊 ML',       diff: 'Medium', companies: ['G','M','AMZ','N'] },
-  { title: 'Design RAG System End-to-End',        track: '🏗️ SD',       diff: 'Hard',   companies: ['MS','AMZ','G'] },
+const CHECKLIST = [
+  "Theory · Code · Projects · Mock Interviews — all in one place",
+  "Progress saved automatically to localStorage, no account needed",
+  "Covers Transformers, RAG, LangGraph, MCP, GRPO and 2026 hot topics",
+  "Company tags show which problems Google, Meta, OpenAI actually ask",
+  "System Design Workspace with AI feedback on your written answers",
 ]
-
-const DIFF_COLOR: Record<string, string> = {
-  Easy: 'text-emerald-400', Medium: 'text-yellow-400', Hard: 'text-red-400',
-}
 
 export default function SheetPromo() {
   return (
-    <section className="py-16 sm:py-20 bg-zinc-950 border-t border-zinc-800/60">
-      <div className="max-w-6xl mx-auto px-4">
+    <section className="py-20 px-4 sm:px-6 bg-zinc-900/30">
+      <div className="max-w-6xl mx-auto">
 
-        {/* Header */}
-        <div className="text-center mb-10">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold mb-4">
-            🗂️ NEW — 2026 Edition
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-zinc-100 mb-3 tracking-tight">
-            AI Interview Prep Sheet
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
+        >
+          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-4 uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5" />
+            AI Interview Prep Sheet · 2026 Edition
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-3">
+            The A‑to‑Z AI/ML Interview Roadmap
           </h2>
-          <p className="text-zinc-400 max-w-2xl mx-auto text-sm sm:text-base">
-            The only structured AI/ML roadmap inspired by Striver&apos;s A2Z — but built for 2026 AI/ML interviews.
-            Complete it and walk into any interview ready.
+          <p className="text-zinc-400 text-base max-w-2xl mx-auto">
+            Inspired by Striver&apos;s A2Z DSA Sheet — but built for 2026 AI/ML interviews.
+            One structured path from zero to interview-ready across 6 complete tracks.
           </p>
+        </motion.div>
+
+        {/* ── 6 Tracks ───────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-12">
+          {TRACKS.map((t, i) => (
+            <motion.div
+              key={t.label}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: i * 0.07 }}
+              className={`flex flex-col items-center gap-2 p-4 rounded-2xl border text-center ${t.bg}`}
+            >
+              <span className="text-2xl leading-none">{t.icon}</span>
+              <span className={`text-[11px] font-semibold leading-snug ${t.color}`}>{t.label}</span>
+            </motion.div>
+          ))}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
+        {/* ── 2-col: Features left, checklist right ──────────────────────── */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12">
 
-          {/* Left — tracks + features */}
-          <div>
-            {/* Tracks */}
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">6 Complete Tracks</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-7">
-              {TRACKS.map(t => (
-                <div key={t.label} className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium ${t.bg} ${t.color}`}>
-                  <span>{t.icon}</span>
-                  <span className="truncate">{t.label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Features */}
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">Everything Linked</p>
-            <div className="space-y-2.5 mb-8">
-              {FEATURES.map(({ icon, text }) => (
-                <div key={text} className="flex items-start gap-3">
-                  <span className="text-orange-400 mt-0.5 flex-shrink-0">{icon}</span>
-                  <span className="text-sm text-zinc-300">{text}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <Link
-              href="/sheet"
-              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:scale-105 shadow-lg shadow-orange-500/20"
-            >
-              Start the Sheet
-              <ArrowRight size={16} />
-            </Link>
-            <p className="text-xs text-zinc-600 mt-2">Free · Progress saved automatically · No login required</p>
-          </div>
-
-          {/* Right — sample items preview */}
-          <div>
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">Sample Topics</p>
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-              {/* Table header */}
-              <div className="grid grid-cols-[24px_1fr_auto] gap-3 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-zinc-600 border-b border-zinc-800 bg-zinc-950/50">
-                <span />
-                <span>Topic</span>
-                <span>Level</span>
-              </div>
-              {SAMPLE_ITEMS.map((item, i) => (
-                <div key={item.title}
-                  className={`grid grid-cols-[24px_1fr_auto] gap-3 px-4 py-3 items-center ${i < SAMPLE_ITEMS.length - 1 ? 'border-b border-zinc-800/60' : ''}`}>
-                  {/* Fake checkbox */}
-                  <div className={`w-[18px] h-[18px] rounded border flex items-center justify-center flex-shrink-0 ${i < 2 ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-700'}`}>
-                    {i < 2 && <CheckCircle2 size={11} className="text-white" />}
+          {/* Feature cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {FEATURES.map((f, i) => {
+              const Icon = f.icon
+              return (
+                <motion.div
+                  key={f.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: 0.2 + i * 0.08 }}
+                  className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col gap-3 hover:border-zinc-700 transition-colors"
+                >
+                  <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${f.bg}`}>
+                    <Icon className={`w-4 h-4 ${f.color}`} />
                   </div>
                   <div>
-                    <p className={`text-sm font-medium ${i < 2 ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>{item.title}</p>
-                    <p className={`text-[10px] mt-0.5 ${i < 2 ? 'text-zinc-600' : 'text-zinc-500'}`}>{item.track}</p>
+                    <p className="text-sm font-semibold text-zinc-100 mb-1">{f.label}</p>
+                    <p className="text-xs text-zinc-500 leading-relaxed">{f.desc}</p>
                   </div>
-                  <span className={`text-[11px] font-bold flex-shrink-0 ${DIFF_COLOR[item.diff]}`}>{item.diff}</span>
-                </div>
-              ))}
-              {/* Footer */}
-              <div className="px-4 py-3 border-t border-zinc-800 bg-zinc-950/40 text-center">
-                <Link href="/sheet" className="text-xs text-orange-400 hover:text-orange-300 font-medium transition-colors">
-                  View all topics →
-                </Link>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {/* Checklist CTA card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-7 flex flex-col justify-between overflow-hidden"
+          >
+            {/* Gradient accent */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-orange-500/60 to-transparent" />
+
+            <div>
+              <p className="text-xs font-semibold text-orange-400 uppercase tracking-[0.2em] mb-4">
+                What&apos;s included
+              </p>
+              <div className="space-y-3 mb-8">
+                {CHECKLIST.map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-zinc-300 leading-relaxed">{item}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Resource icons legend */}
-            <div className="flex items-center gap-4 mt-3 text-[11px] text-zinc-600 flex-wrap">
-              {[
-                { icon: <BookOpen size={12} />, label: 'Theory' },
-                { icon: <Code2 size={12} />,    label: 'Code Lab' },
-                { icon: <Layers size={12} />,   label: 'Flashcards' },
-                { icon: <HelpCircle size={12} />, label: 'Quiz' },
-                { icon: <MessageCircle size={12} />, label: 'Interview' },
-              ].map(({ icon, label }) => (
-                <span key={label} className="flex items-center gap-1">{icon} {label}</span>
-              ))}
+            <div>
+              <Link
+                href="/sheet"
+                className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/25 text-sm"
+              >
+                Start the Interview Prep Sheet
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <p className="text-xs text-zinc-600 text-center mt-2.5">
+                Free · Auto-saves progress · No sign-up required
+              </p>
             </div>
-          </div>
+          </motion.div>
         </div>
+
+        {/* ── Bottom resource legend ──────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+          className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-zinc-600"
+        >
+          <span className="font-medium text-zinc-500 mr-1">Each item is linked to:</span>
+          {[
+            { icon: <BookOpen className="w-3.5 h-3.5" />, label: "Theory" },
+            { icon: <Code2 className="w-3.5 h-3.5" />, label: "Code Lab" },
+            { icon: <Layers className="w-3.5 h-3.5" />, label: "Flashcards" },
+            { icon: <HelpCircle className="w-3.5 h-3.5" />, label: "Quiz" },
+            { icon: <MessageCircle className="w-3.5 h-3.5" />, label: "Mock Interview" },
+            { icon: <PenLine className="w-3.5 h-3.5" />, label: "Design Workspace" },
+          ].map(({ icon, label }) => (
+            <span key={label} className="flex items-center gap-1.5 text-zinc-500">
+              {icon}
+              <span>{label}</span>
+            </span>
+          ))}
+        </motion.div>
+
       </div>
     </section>
   )

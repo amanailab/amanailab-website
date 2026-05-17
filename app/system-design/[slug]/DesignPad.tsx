@@ -116,9 +116,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const coveredCount = Object.values(checklist).filter(Boolean).length
 
   return (
-    <div className="min-h-screen bg-zinc-950 pt-16">
+    <div className="min-h-full bg-zinc-950">
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800">
+      <div className="sticky top-0 z-20 bg-zinc-950/98 backdrop-blur-sm border-b border-zinc-800">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/sheet" className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-sm transition-colors flex-shrink-0">
@@ -149,10 +149,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 grid lg:grid-cols-[380px_1fr] gap-6 items-start">
+      <div className="max-w-7xl mx-auto px-4 py-6 grid lg:grid-cols-[360px_1fr] gap-5 items-start">
 
         {/* ── Left: Problem panel ──────────────────────────────────────────── */}
-        <aside className="lg:sticky lg:top-20 space-y-4">
+        <aside className="lg:sticky lg:top-14 space-y-3 max-h-[calc(100vh-128px)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800">
           {/* Problem statement */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
