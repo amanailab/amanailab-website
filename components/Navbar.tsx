@@ -9,7 +9,7 @@ import {
   BookOpen, Newspaper, FileText,
   BarChart2, Mail, Wand2,
   BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
-  User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2,
+  User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2, ListChecks,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -74,6 +74,7 @@ const navItems: NavItem[] = [
     label: "Interview",
     columns: 1,
     items: [
+      { href: "/sheet",      label: "AI A2Z Sheet ✨",   description: "218+ topics — complete roadmap to interview ready", icon: <ListChecks className="w-4 h-4" /> },
       { href: "/daily",      label: "Daily Challenge",  description: "One question a day — build your streak",  icon: <Flame className="w-4 h-4" /> },
       { href: "/interview",  label: "AI Simulator",    description: "Timed interview with AI scoring",         icon: <BrainCircuit className="w-4 h-4" /> },
       { href: "/job-prep",   label: "Job Prep",        description: "Paste a JD, get tailored questions",      icon: <Briefcase className="w-4 h-4" /> },
