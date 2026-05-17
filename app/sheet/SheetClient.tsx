@@ -11,6 +11,14 @@ import {
   SHEET_TRACKS, getTotalItems, COMPANY_CONFIG, TOPIC_TO_QUIZ,
   type SheetItem, type ItemType, type Difficulty,
 } from '@/lib/sheet-data'
+import { SHEET_THEORY } from '@/lib/sheet-theory'
+
+// Merge inline theory with the theory map — inline takes priority
+function withTheory(item: SheetItem): SheetItem {
+  if (item.theory) return item
+  const t = SHEET_THEORY[item.id]
+  return t ? { ...item, theory: t } : item
+}
 
 const STORAGE_KEY = 'ai_sheet_progress_v1'
 
@@ -403,7 +411,7 @@ export default function SheetClient() {
                       </div>
                     )}
                     <SheetRow
-                      item={item} index={idx + 1} done={!!progress[item.id]}
+                      item={withTheory(item)} index={idx + 1} done={!!progress[item.id]}
                       onToggle={() => toggleItem(item.id)}
                       expanded={expandedItem === item.id}
                       onExpand={() => toggleExpand(item.id)}
@@ -564,7 +572,7 @@ export default function SheetClient() {
                           <ColHeader />
                           {section.items.map((item, idx) => (
                             <SheetRow
-                              key={item.id} item={item} index={idx + 1}
+                              key={item.id} item={withTheory(item)} index={idx + 1}
                               done={!!progress[item.id]}
                               onToggle={() => toggleItem(item.id)}
                               expanded={expandedItem === item.id}

@@ -609,7 +609,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             preview: { q: 'Why do transformers use Layer Norm instead of Batch Norm?', a: 'Batch Norm normalizes across the batch dimension — problematic for: (1) variable-length sequences (padding ruins statistics), (2) small/variable batch sizes at inference, (3) auto-regressive generation (batch size = 1). Layer Norm normalizes across the feature dimension within each sample — batch-size independent, works on any sequence length. RMS Norm (used in Llama): simpler variant of LN without mean centering — removes re-centering step, slightly faster, empirically similar quality.' },
           }),
           item('df-7', 'Dropout, L1/L2 Regularization & Weight Decay', 'theory', 'medium', {
-            topic: 'deep-learning', hasFlashcard: true,
+            topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'dropout-forward',
             companies: ['Google', 'Meta', 'Amazon', 'Netflix'],
           }),
           item('df-8', 'Universal Approximation Theorem', 'theory', 'hard', {
@@ -684,7 +684,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Apple'],
           }),
           item('dc-4', 'Object Detection — YOLO Family (v8, v11)', 'theory', 'hard', {
-            topic: 'computer-vision', quizTopic: 'Computer Vision', hasCode: true,
+            topic: 'computer-vision', quizTopic: 'Computer Vision', hasCode: true, codeSlug: 'iou-score',
             companies: ['Google', 'Meta', 'Amazon', 'Apple'],
           }),
           item('dc-5', 'Semantic & Instance Segmentation', 'theory', 'hard', {
@@ -719,7 +719,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             preview: { q: 'Explain LSTM\'s gating mechanism and how it solves vanishing gradients.', a: 'LSTM maintains a cell state Cₜ that flows with only multiplicative and additive operations — a "gradient highway". Three gates all using sigmoid (0–1 gate): Forget gate fₜ = σ(Wf[hₜ₋₁,xₜ]+bf) — selectively erases. Input gate iₜ = σ(Wi[hₜ₋₁,xₜ]+bi) — selectively writes. Output gate oₜ = σ(Wo[hₜ₋₁,xₜ]+bo) — selectively reads. Cell update: Cₜ = fₜ⊙Cₜ₋₁ + iₜ⊙tanh(Wc[hₜ₋₁,xₜ]+bc). Gradient flows through Cₜ: ∂Cₜ/∂Cₜ₋₁ = fₜ — forget gate close to 1 means unobstructed gradient flow for many timesteps.' },
           }),
           item('dr-3', 'GRU — Simplified LSTM', 'theory', 'medium', {
-            topic: 'deep-learning', hasFlashcard: true,
+            topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'gru-step',
             companies: ['Google', 'Meta', 'Amazon'],
           }),
           item('dr-4', 'Vanishing & Exploding Gradients in RNNs', 'theory', 'hard', {
@@ -805,11 +805,11 @@ export const SHEET_TRACKS: SheetTrack[] = [
             preview: { q: 'How does a decision tree choose the best split and what prevents overfitting?', a: 'Split criterion: CART minimizes weighted Gini impurity = Σ p(1-p) across child nodes. ID3/C4.5 maximizes Information Gain = H(parent) - Σ wᵢH(childᵢ). Process: enumerate all features and thresholds, select split with lowest impurity. Greedy — no backtracking, not globally optimal. Overfitting prevention: max_depth (shallow trees), min_samples_split, min_samples_leaf, max_features (random selection), post-pruning (reduced error pruning). Single trees always overfit — use ensembles.' },
           }),
           item('ma-4', 'Random Forests & Feature Importance', 'theory', 'medium', {
-            topic: 'machine-learning', hasFlashcard: true, hasCode: true,
+            topic: 'machine-learning', hasFlashcard: true, hasCode: true, codeSlug: 'random-forest-vote',
             companies: ['Google', 'Meta', 'Amazon', 'Netflix', 'Apple'],
           }),
           item('ma-5', 'XGBoost, LightGBM & CatBoost — Gradient Boosting', 'theory', 'hard', {
-            topic: 'machine-learning', hasFlashcard: true, hasCode: true,
+            topic: 'machine-learning', hasFlashcard: true, hasCode: true, codeSlug: 'l2-regularization-loss',
             companies: ['Amazon', 'Microsoft', 'Netflix', 'Nvidia'],
             preview: { q: 'Explain how XGBoost builds trees and what regularization it adds.', a: 'XGBoost minimizes: L = Σℓ(yᵢ, ŷᵢ) + Σ[γT + ½λ||w||²] where T = number of leaves, w = leaf scores. Each tree fits the negative gradient (residuals) of the loss. Second-order Taylor expansion: uses both gradient g and Hessian h for smarter splits — more numerically stable, better convergence. Column subsampling + row subsampling (like RF) for regularization. Optimal leaf weight: wⱼ* = -Gⱼ/(Hⱼ+λ). Learning rate (shrinkage) scales each tree contribution. L1/L2 penalty on leaf weights. Best on tabular data — Kaggle standard.' },
           }),
@@ -818,7 +818,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Apple', 'Amazon'],
           }),
           item('ma-7', 'Naive Bayes — Gaussian, Multinomial, Bernoulli', 'theory', 'easy', {
-            topic: 'machine-learning', hasCode: true,
+            topic: 'machine-learning', hasCode: true, codeSlug: 'naive-bayes-predict',
             companies: ['Google', 'Amazon'],
           }),
           item('ma-8', 'K-Nearest Neighbors & Distance Metrics', 'theory', 'easy', {
@@ -866,11 +866,11 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta', 'Amazon', 'Microsoft', 'Netflix'],
           }),
           item('me-5', 'Confusion Matrix, Type I & Type II Errors', 'theory', 'easy', {
-            topic: 'machine-learning', hasCode: true,
+            topic: 'machine-learning', hasCode: true, codeSlug: 'confusion-matrix',
             companies: ['Google', 'Meta', 'Amazon'],
           }),
           item('me-6', 'NDCG, MAP & Ranking Evaluation Metrics', 'theory', 'hard', {
-            topic: 'machine-learning', hasCode: true,
+            topic: 'machine-learning', hasCode: true, codeSlug: 'ndcg-score',
             companies: ['Google', 'Amazon', 'Netflix', 'Meta'],
           }),
           item('me-7', 'Class Imbalance — SMOTE, Focal Loss, Class Weights', 'theory', 'hard', {
@@ -927,9 +927,9 @@ export const SHEET_TRACKS: SheetTrack[] = [
             topic: 'statistics', quizTopic: 'Statistics', hasFlashcard: true,
             companies: ['Google', 'Meta', 'Amazon'],
           }),
-          item('ms-6', 'Covariance, Correlation & Causation', 'theory', 'medium', { hasCode: true, companies: ['Google', 'Meta', 'Netflix'] }),
+          item('ms-6', 'Covariance, Correlation & Causation', 'theory', 'medium', { hasCode: true, codeSlug: 'covariance-matrix', companies: ['Google', 'Meta', 'Netflix'] }),
           item('ms-7', 'MLE & MAP Estimation', 'theory', 'hard', {
-            topic: 'statistics', quizTopic: 'Statistics', hasFlashcard: true,
+            topic: 'statistics', quizTopic: 'Statistics', hasFlashcard: true, hasCode: true, codeSlug: 'mle-gaussian',
             companies: ['Google', 'Meta', 'DeepMind'],
           }),
           item('ms-8', 'Statistics for ML Interviews', 'interview', 'medium', {
