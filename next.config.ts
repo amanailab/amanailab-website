@@ -42,18 +42,6 @@ const nextConfig: NextConfig = {
   compress: true,
   serverExternalPackages: ["pdf-parse"],
 
-  // 301 redirect www → non-www for canonical URL consistency
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.amanailab.com' }],
-        destination: 'https://amanailab.com/:path*',
-        permanent: true,
-      },
-    ]
-  },
-
   async headers() {
     return [
       {

@@ -4,16 +4,6 @@ import type { NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const host = request.headers.get('host') ?? ''
-
-  // ── www → non-www canonical redirect ────────────────────────────────────
-  if (host.startsWith('www.')) {
-    const url = request.nextUrl.clone()
-    url.host = host.slice(4)
-    url.protocol = 'https:'
-    return NextResponse.redirect(url, { status: 301 })
-  }
-
   // ── Admin auth ────────────────────────────────────────────────────────────
   const isAdminPage = pathname === '/admin' || pathname.startsWith('/admin/')
   const isAdminApi  = pathname.startsWith('/api/admin')
