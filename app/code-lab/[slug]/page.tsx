@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/admin'
+import { STATIC_PROBLEMS_MAP } from '@/lib/code-problems-static'
 import ProblemClient from './ProblemClient'
 
 interface Props { params: Promise<{ slug: string }> }
@@ -9,10 +10,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const sb = getAdminSupabase()
   const { data } = await sb.from('code_problems').select('title, difficulty, topic').eq('slug', slug).single()
-  if (!data) return { title: 'Problem' }
+  const staticFallback = STATIC_PROBLEMS_MAP[slug]
+  if (!data && !staticFallback) return { title: 'Problem' }
+  const meta = data ?? staticFallback
+  if (!meta) return { title: 'Problem' }
   return {
-    title: `${data.title} (${data.difficulty}) | AI Code Lab`,
-    description: `Solve ${data.title} — ${data.topic} coding problem for AI/ML engineers. Free.`,
+    title: `${meta.title} (${meta.difficulty}) | AI Code Lab`,
+    description: `Solve ${meta.title} — ${meta.topic} coding problem for AI/ML engineers. Free.`,
     alternates: { canonical: `https://amanailab.com/code-lab/${slug}` },
   }
 }
@@ -21,7 +25,9 @@ export default async function ProblemPage({ params }: Props) {
   const { slug } = await params
   const sb = getAdminSupabase()
 
-  const { data: problem } = await sb.from('code_problems').select('*').eq('slug', slug).single()
+  const { data: dbProblem } = await sb.from('code_problems').select('*').eq('slug', slug).single()
+  const staticProblem = STATIC_PROBLEMS_MAP[slug]
+  const problem = dbProblem ?? (staticProblem ? { ...staticProblem, id: slug, created_at: new Date().toISOString() } : null)
   if (!problem) notFound()
 
   // Fetch adjacent + similar problems

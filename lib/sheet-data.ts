@@ -17,6 +17,7 @@ export interface SheetItem {
   hasQuiz?: boolean       // link to /quiz?topic=
   hasInterview?: boolean  // link to /interview
   codeSlug?: string       // direct link to /code-lab/[slug]
+  theory?: string         // inline concept explanation shown in sheet
   companies?: Company[]
   isNew2026?: boolean
   preview?: { q: string; a: string }
@@ -70,17 +71,20 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gt-1', 'Self-Attention Mechanism (Q, K, V Deep Dive)', 'theory', 'medium', {
             topic: 'transformers', quizTopic: 'Transformers', hasFlashcard: true, hasQuiz: true,
             companies: ['Google', 'OpenAI', 'Meta', 'Microsoft'],
+            theory: 'Self-attention lets each token attend to all other tokens by computing scaled dot-products of Query and Key vectors, then using the resulting weights to sum Value vectors. Each token produces its own Q, K, V via learned linear projections. The scaling by √dₖ prevents dot products from growing too large in high dimensions, keeping softmax gradients healthy. Output at each position is a context-aware blend of all positions\' values.',
             preview: { q: 'What is the computational complexity of self-attention and how does it scale?', a: 'O(n²·d) where n = sequence length, d = head dimension. Each of the n tokens attends to all n tokens, computing dot products with d-dimensional keys. This quadratic n² bottleneck is why long contexts are expensive — doubling context length quadruples attention compute. Flash Attention optimizes memory access but does not reduce the O(n²) compute; Sparse/Linear attention variants attempt to break the quadratic barrier.' },
           }),
           item('gt-2', 'Multi-Head Attention & Scaled Dot-Product', 'theory', 'hard', {
-            topic: 'transformers', quizTopic: 'Transformers', hasFlashcard: true,
+            topic: 'transformers', quizTopic: 'Transformers', hasFlashcard: true, hasCode: true, codeSlug: 'attention-mask',
             companies: ['Google', 'OpenAI', 'Meta'],
+            theory: 'Multi-head attention runs h attention operations in parallel on different learned projections of Q, K, V. Each head can specialise — some attend to syntactic relationships, others to semantic similarity. Outputs are concatenated and projected back down. GQA (Grouped Query Attention) shares K/V heads across groups of query heads, reducing KV cache size by 8× with minimal quality loss.',
             preview: { q: 'Why do we divide by √dₖ in scaled dot-product attention?', a: 'As dₖ (key dimension) grows large, dot products between Q and K grow in magnitude, pushing softmax into regions with very small gradients (near-saturation). Dividing by √dₖ keeps dot product variance at ~1 regardless of dimension, ensuring stable gradients during training. Without scaling, the softmax becomes near-one-hot, effectively ignoring most keys.' },
           }),
           item('gt-3', 'Positional Encoding — Absolute, RoPE, ALiBi', 'theory', 'medium', {
             topic: 'transformers', quizTopic: 'Transformers', hasFlashcard: true,
             companies: ['Meta', 'Google', 'Microsoft'],
             hasCode: true, codeSlug: 'positional-encoding', isNew2026: false,
+            theory: 'Transformers process tokens in parallel and have no inherent sense of order — self-attention is permutation-invariant. Sinusoidal PE adds position-specific vectors to embeddings using sin/cos at varying frequencies. RoPE (Rotary PE) encodes position by rotating Q/K vectors, making relative positions emerge naturally from dot products. RoPE enables length extrapolation to contexts longer than seen during training.',
           }),
           item('gt-4', 'Feed-Forward Layers & Pre-LN vs Post-LN', 'theory', 'easy', {
             topic: 'transformers', quizTopic: 'Transformers', hasQuiz: true,
@@ -95,6 +99,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             topic: 'transformers', quizTopic: 'Transformers', hasFlashcard: true,
             companies: ['OpenAI', 'Meta', 'Google', 'Nvidia'],
             isNew2026: true,
+            theory: 'Standard attention materialises the full n×n attention matrix in HBM GPU memory, requiring O(n²) memory. Flash Attention tiles Q/K/V into SRAM blocks, fuses the entire attention computation into one kernel, and streams output — never materialising the full matrix. Memory drops from O(n²) to O(n) and training speeds up 2-4× for long sequences. FA2 improves parallelism; FA3 targets H100 tensor cores.',
           }),
           item('gt-7', 'Grouped Query Attention (GQA) & Multi-Query Attention', 'theory', 'hard', {
             topic: 'transformers', quizTopic: 'Transformers',
@@ -143,6 +148,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gl-5', 'Hallucination — Causes, Types & Mitigation', 'theory', 'medium', {
             topic: 'llm', quizTopic: 'LLM', hasFlashcard: true,
             companies: ['OpenAI', 'Anthropic', 'Google', 'Meta', 'Microsoft'],
+            theory: 'LLMs hallucinate when they generate plausible-sounding but factually wrong content. Root causes: the model interpolates between training patterns rather than reasoning from facts; RLHF may reward confident-sounding answers. Mitigations: RAG grounds outputs in retrieved documents, Citation requirements force attribution, Constitutional AI and factuality RLHF reduce confabulation, and lower temperature reduces sampling variance.',
             preview: { q: 'What causes LLM hallucination and how do you mitigate it in production?', a: 'Causes: (1) training data gaps — model "confabulates" plausible-sounding facts, (2) pattern completion bias — overconfidently extrapolates from statistical patterns, (3) reward hacking during RLHF — optimizes for sounding confident. Mitigations: RAG (ground answers in retrieved documents), citation requirements (force model to cite sources), low temperature (more deterministic), self-consistency sampling (majority vote), Constitutional AI / RLHF for factuality, NLI-based post-hoc verification.' },
           }),
           item('gl-6', 'RLHF — Reward Model, PPO & Alignment', 'theory', 'hard', {
@@ -156,6 +162,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gl-8', 'KV Cache — How It Works & Why It Matters', 'theory', 'hard', {
             topic: 'llm', quizTopic: 'LLM', hasFlashcard: true,
             companies: ['OpenAI', 'Google', 'Meta', 'Microsoft', 'Nvidia'],
+            theory: 'Without KV cache, generating n tokens requires n forward passes each recomputing attention over the full context — O(n²) total compute. KV cache stores Key and Value tensors of all past tokens so each new token only needs one forward pass computing its own K/V and attending to cached values. Memory grows linearly with sequence length and becomes the primary bottleneck for serving 100K+ token contexts.',
             preview: { q: 'Explain KV cache and how PagedAttention improves on it.', a: 'KV cache: during autoregressive generation, stores the Key and Value tensors of all previous tokens — avoids recomputing them for each new token. Reduces generation from O(n²) to O(n) per token. Problem: KV cache for a 70B model at seq length 4K uses ~80GB — often the bottleneck. PagedAttention (vLLM): manages KV cache in non-contiguous memory pages (like OS virtual memory), enabling efficient sharing across parallel requests. Increases GPU utilization from ~10% to ~60-80%.' },
           }),
           item('gl-9', 'Scaling Laws — Chinchilla, Kaplan et al.', 'theory', 'hard', {
@@ -218,6 +225,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gr-1', 'Naive RAG — Retrieve, Augment, Generate', 'theory', 'easy', {
             topic: 'rag', quizTopic: 'RAG', hasFlashcard: true,
             companies: ['Microsoft', 'Amazon', 'Google', 'OpenAI'],
+            theory: 'RAG combats hallucination and knowledge cutoffs by retrieving relevant documents before generation. The 3-step pipeline: embed the query → ANN search the vector DB → inject retrieved chunks into the LLM context window. The model conditions its answer on retrieved text rather than parametric memory. Groundedness is measurable via RAGAS faithfulness: is the answer entailed by the retrieved context?',
           }),
           item('gr-2', 'Chunking Strategies — Fixed, Semantic, Recursive, Late', 'theory', 'medium', {
             topic: 'rag', quizTopic: 'RAG', hasFlashcard: true,
@@ -237,7 +245,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta', 'Microsoft'],
           }),
           item('gr-6', 'Hybrid Search — BM25 + Dense Retrieval Fusion', 'theory', 'hard', {
-            topic: 'rag', quizTopic: 'RAG', hasFlashcard: true,
+            topic: 'rag', quizTopic: 'RAG', hasFlashcard: true, hasCode: true, codeSlug: 'bm25-score',
             companies: ['Microsoft', 'Amazon', 'Google'],
             preview: { q: 'Why does hybrid search outperform dense-only retrieval?', a: 'Dense (semantic) search: catches synonyms and paraphrases, misses exact keyword matches and rare terms. BM25 (sparse): excellent for exact keywords, product codes, named entities; fails on semantic similarity. Hybrid fuses both via Reciprocal Rank Fusion (RRF): score = Σ 1/(k + rankᵢ). Complementary failure modes make the combination robust — dense handles semantic gaps, sparse handles vocabulary gaps. Consistently 5-15% better recall@10 in benchmarks.' },
           }),
@@ -276,6 +284,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gf-3', 'LoRA — Low-Rank Adaptation (Math + Intuition)', 'theory', 'hard', {
             topic: 'fine-tuning', quizTopic: 'Fine-Tuning', hasFlashcard: true,
             companies: ['Meta', 'Microsoft', 'Google', 'OpenAI'],
+            theory: 'LoRA freezes all pre-trained weights W₀ and injects trainable low-rank decompositions ΔW = BA where A∈ℝᵐˣʳ, B∈ℝʳˣⁿ with rank r ≪ min(m,n). With r=16 on a 4096×4096 matrix, trainable parameters drop from 16.7M to 131K (0.8%). At inference, ΔW merges into W₀ — zero added latency. Works because task-specific weight updates have low intrinsic rank.',
             preview: { q: 'Explain LoRA mathematically and why it works.', a: 'Pre-trained weight W₀ ∈ ℝᵐˣⁿ. LoRA: freeze W₀, inject ΔW = BA where B ∈ ℝᵐˣʳ, A ∈ ℝʳˣⁿ, rank r ≪ min(m,n). Forward: h = W₀x + BAx. Only train A and B: r×(m+n) params vs m×n for full fine-tune. With r=8, d=4096: 65,536 params vs 16.7M (0.4% of original). Why it works: pre-trained models have low intrinsic rank for task-specific updates — the full-rank ΔW is approximately low-rank. At inference: merge W = W₀ + BA, zero latency overhead.' },
           }),
           item('gf-4', 'QLoRA — 4-bit Quantized LoRA', 'theory', 'hard', {
@@ -580,8 +589,9 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta', 'OpenAI'],
           }),
           item('df-3', 'Forward Pass & Backpropagation (Chain Rule)', 'theory', 'hard', {
-            topic: 'deep-learning', hasFlashcard: true, hasCode: true,
+            topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'backpropagation',
             companies: ['Google', 'Meta', 'Amazon', 'Apple', 'Netflix'],
+            theory: 'Backprop applies the chain rule recursively from loss to every weight. Each layer\'s backward pass receives an upstream gradient, multiplies by the local Jacobian to get the gradient w.r.t. its inputs (passed downstream) and parameters (used to update weights). PyTorch builds a dynamic computation graph during the forward pass and traverses it in reverse during backward. The key insight: gradients of a composition of functions multiply.',
             preview: { q: 'Walk me through backpropagation for a 2-layer neural network.', a: 'Forward: h = ReLU(W₁x + b₁), ŷ = softmax(W₂h + b₂), L = CrossEntropy(ŷ, y). Backward (chain rule): ∂L/∂W₂ = ∂L/∂ŷ × ∂ŷ/∂W₂ = (ŷ-y)⊗h. ∂L/∂h = W₂ᵀ(ŷ-y). ∂L/∂W₁ = (W₂ᵀ(ŷ-y) ⊙ ReLU\'(W₁x)) ⊗ x. Update: W -= lr × ∂L/∂W. Key: chain rule propagates gradient backward through each layer. Each layer just needs to implement ∂output/∂input and multiply incoming gradient.' },
           }),
           item('df-4', 'Loss Functions — Cross-Entropy, MSE, Focal Loss', 'theory', 'medium', {
@@ -595,6 +605,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('df-6', 'Batch Norm, Layer Norm & RMS Norm', 'theory', 'medium', {
             topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'batch-normalisation',
             companies: ['Google', 'Meta', 'OpenAI', 'Amazon'],
+            theory: 'Batch Norm normalises each feature across the mini-batch to zero mean/unit variance, then applies learnable scale γ and shift β. Enables higher learning rates and acts as regulariser. Key limitation: batch statistics are unstable at small batch sizes and don\'t work for variable-length sequences. Transformers use Layer Norm (normalise across feature dimension within each sample) or RMS Norm (like LN but without mean centering — used by Llama).',
             preview: { q: 'Why do transformers use Layer Norm instead of Batch Norm?', a: 'Batch Norm normalizes across the batch dimension — problematic for: (1) variable-length sequences (padding ruins statistics), (2) small/variable batch sizes at inference, (3) auto-regressive generation (batch size = 1). Layer Norm normalizes across the feature dimension within each sample — batch-size independent, works on any sequence length. RMS Norm (used in Llama): simpler variant of LN without mean centering — removes re-centering step, slightly faster, empirically similar quality.' },
           }),
           item('df-7', 'Dropout, L1/L2 Regularization & Weight Decay', 'theory', 'medium', {
@@ -606,7 +617,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'DeepMind'],
           }),
           item('df-9', 'Implement MLP from Scratch in NumPy', 'code', 'hard', {
-            hasCode: true, companies: ['Google', 'Meta', 'Amazon'],
+            hasCode: true, codeSlug: 'mlp-forward-pass', companies: ['Google', 'Meta', 'Amazon'],
           }),
           item('df-10', 'Neural Network Interview Deep Dive', 'interview', 'medium', {
             topic: 'deep-learning', hasInterview: true,
@@ -622,14 +633,15 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('do-1', 'SGD, Momentum, RMSProp, Adam, AdamW — Intuition & Math', 'theory', 'medium', {
             topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'gradient-descent-step',
             companies: ['Google', 'Meta', 'OpenAI', 'Apple'],
+            theory: 'Adam maintains per-parameter adaptive learning rates using first moment (momentum β₁=0.9) and second moment (variance β₂=0.999). AdamW fixes weight decay: instead of folding it into the gradient update (which interacts with adaptive rates), it applies weight decay directly to weights — giving consistent regularisation across all parameters. AdamW is the standard for all modern LLM training.',
             preview: { q: 'Why is AdamW preferred over Adam for training LLMs?', a: 'Adam\'s weight decay is implemented by adding λw to the gradient — this interacts with the adaptive learning rates, scaling weight decay by 1/√v̂ (larger for infrequent params). AdamW decouples weight decay: applies it directly to weights regardless of gradient statistics: w -= lr×(gradient_update) - lr×λ×w. This gives consistent regularization across all parameters. Empirically, AdamW generalizes better and is the standard for all modern LLM training (GPT-4, Llama, Mistral). The difference matters most for large-scale training.' },
           }),
           item('do-2', 'Learning Rate Scheduling — Cosine Warmup, OneCycleLR', 'theory', 'medium', {
-            topic: 'deep-learning', hasCode: true,
+            topic: 'deep-learning', hasCode: true, codeSlug: 'learning-rate-warmup',
             companies: ['Google', 'Meta', 'OpenAI'],
           }),
           item('do-3', 'Gradient Clipping & Gradient Explosion', 'theory', 'medium', {
-            topic: 'deep-learning', hasCode: true,
+            topic: 'deep-learning', hasCode: true, codeSlug: 'gradient-clipping',
             companies: ['Google', 'Meta', 'OpenAI'],
           }),
           item('do-4', 'Mixed Precision Training — FP16 & BF16', 'theory', 'hard', {
@@ -660,7 +672,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
         estimatedTime: '~2h',
         items: [
           item('dc-1', 'Convolution, Padding, Stride & Receptive Field', 'theory', 'medium', {
-            topic: 'computer-vision', quizTopic: 'Computer Vision', hasFlashcard: true, hasCode: true,
+            topic: 'computer-vision', quizTopic: 'Computer Vision', hasFlashcard: true, hasCode: true, codeSlug: 'convolution-1d',
             companies: ['Google', 'Meta', 'Apple', 'Amazon'],
           }),
           item('dc-2', 'ResNet — Skip Connections & Deep Network Training', 'theory', 'medium', {
@@ -698,11 +710,11 @@ export const SHEET_TRACKS: SheetTrack[] = [
         estimatedTime: '~2h',
         items: [
           item('dr-1', 'RNN Architecture & Unrolling Through Time', 'theory', 'medium', {
-            topic: 'deep-learning', hasFlashcard: true, hasCode: true,
+            topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'rnn-step',
             companies: ['Google', 'Meta', 'Amazon'],
           }),
           item('dr-2', 'LSTM — Cell State, Forget, Input & Output Gates', 'theory', 'hard', {
-            topic: 'deep-learning', hasFlashcard: true, hasCode: true,
+            topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'lstm-step',
             companies: ['Google', 'Meta', 'Amazon', 'Apple'],
             preview: { q: 'Explain LSTM\'s gating mechanism and how it solves vanishing gradients.', a: 'LSTM maintains a cell state Cₜ that flows with only multiplicative and additive operations — a "gradient highway". Three gates all using sigmoid (0–1 gate): Forget gate fₜ = σ(Wf[hₜ₋₁,xₜ]+bf) — selectively erases. Input gate iₜ = σ(Wi[hₜ₋₁,xₜ]+bi) — selectively writes. Output gate oₜ = σ(Wo[hₜ₋₁,xₜ]+bo) — selectively reads. Cell update: Cₜ = fₜ⊙Cₜ₋₁ + iₜ⊙tanh(Wc[hₜ₋₁,xₜ]+bc). Gradient flows through Cₜ: ∂Cₜ/∂Cₜ₋₁ = fₜ — forget gate close to 1 means unobstructed gradient flow for many timesteps.' },
           }),
@@ -788,7 +800,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta', 'Amazon', 'Apple'],
           }),
           item('ma-3', 'Decision Trees — Information Gain & Gini', 'theory', 'medium', {
-            topic: 'machine-learning', hasFlashcard: true, hasCode: true,
+            topic: 'machine-learning', hasFlashcard: true, hasCode: true, codeSlug: 'gini-impurity',
             companies: ['Google', 'Meta', 'Amazon', 'Microsoft'],
             preview: { q: 'How does a decision tree choose the best split and what prevents overfitting?', a: 'Split criterion: CART minimizes weighted Gini impurity = Σ p(1-p) across child nodes. ID3/C4.5 maximizes Information Gain = H(parent) - Σ wᵢH(childᵢ). Process: enumerate all features and thresholds, select split with lowest impurity. Greedy — no backtracking, not globally optimal. Overfitting prevention: max_depth (shallow trees), min_samples_split, min_samples_leaf, max_features (random selection), post-pruning (reduced error pruning). Single trees always overfit — use ensembles.' },
           }),
@@ -818,7 +830,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta', 'Netflix', 'Amazon'],
           }),
           item('ma-10', 'PCA & t-SNE for Dimensionality Reduction', 'theory', 'medium', {
-            topic: 'machine-learning', hasFlashcard: true, hasCode: true,
+            topic: 'machine-learning', hasFlashcard: true, hasCode: true, codeSlug: 'pca-variance',
             companies: ['Google', 'Meta', 'Netflix'],
           }),
           item('ma-11', 'Implement Gradient Boosting from Scratch', 'code', 'hard', {
@@ -838,6 +850,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('me-1', 'Bias-Variance Tradeoff', 'theory', 'medium', {
             topic: 'machine-learning', hasFlashcard: true,
             companies: ['Google', 'Meta', 'Amazon', 'Microsoft', 'Netflix'],
+            theory: 'Total generalisation error = Bias² + Variance + Irreducible Noise. High bias: model is too simple, underfits both train and test data. High variance: model memorises training data, low train error but high test error. Fixes for high variance: more data, regularisation (L1/L2, dropout), simpler model, early stopping, ensembles. Fixes for high bias: larger model, more features, less regularisation.',
             preview: { q: 'A model has high training accuracy but low validation accuracy. What do you do?', a: 'This is overfitting: high variance, low bias. Diagnosis: plot learning curves (train/val error vs dataset size). Fixes: (1) More data — overfitting reduces with more examples. (2) Regularization: L1/L2, dropout, weight decay. (3) Simpler model: fewer parameters, lower max_depth, smaller network. (4) Early stopping. (5) Data augmentation. (6) Ensembles (bagging reduces variance). (7) Feature selection — removing noisy features. First step: always try more data, it\'s usually the highest ROI fix.' },
           }),
           item('me-2', 'Overfitting, Underfitting & Regularization', 'theory', 'easy', {
@@ -845,7 +858,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta', 'Amazon', 'Netflix'],
           }),
           item('me-3', 'K-Fold & Stratified Cross-Validation', 'theory', 'medium', {
-            topic: 'machine-learning', hasCode: true,
+            topic: 'machine-learning', hasCode: true, codeSlug: 'k-fold-split',
             companies: ['Google', 'Meta', 'Amazon'],
           }),
           item('me-4', 'Precision, Recall, F1-Score, ROC-AUC', 'theory', 'medium', {

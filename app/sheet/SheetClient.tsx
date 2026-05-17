@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Check, BookOpen, Code2, Layers, HelpCircle, MessageCircle,
-  ChevronDown, ChevronRight, Filter, Trophy, Target, RotateCcw,
-  CheckSquare, Search, X, Clock, ChevronUp,
+  ChevronDown, ChevronRight, Filter, Trophy, RotateCcw,
+  CheckSquare, Search, X, Clock, ChevronUp, Zap,
 } from 'lucide-react'
 import {
   SHEET_TRACKS, getTotalItems, COMPANY_CONFIG, TOPIC_TO_QUIZ,
@@ -14,161 +14,187 @@ import {
 
 const STORAGE_KEY = 'ai_sheet_progress_v1'
 
-const TYPE_CONFIG: Record<ItemType, { label: string; color: string; dot: string }> = {
-  theory:    { label: 'Theory',    color: 'bg-blue-500/15 text-blue-400 border-blue-500/25',      dot: 'bg-blue-400' },
-  code:      { label: 'Code',      color: 'bg-green-500/15 text-green-400 border-green-500/25',   dot: 'bg-green-400' },
-  project:   { label: 'Project',   color: 'bg-orange-500/15 text-orange-400 border-orange-500/25',dot: 'bg-orange-400' },
-  interview: { label: 'Interview', color: 'bg-purple-500/15 text-purple-400 border-purple-500/25',dot: 'bg-purple-400' },
+const DIFF_COLOR: Record<Difficulty, string> = {
+  easy:   'text-emerald-400',
+  medium: 'text-yellow-400',
+  hard:   'text-red-400',
 }
 
-const DIFF_CONFIG: Record<Difficulty, { label: string; color: string }> = {
-  easy:   { label: 'Easy',   color: 'text-emerald-400' },
-  medium: { label: 'Medium', color: 'text-yellow-400' },
-  hard:   { label: 'Hard',   color: 'text-red-400' },
+const TYPE_COLOR: Record<ItemType, string> = {
+  theory:    'text-blue-400',
+  code:      'text-green-400',
+  project:   'text-orange-400',
+  interview: 'text-purple-400',
 }
 
-// ─── Resource links ────────────────────────────────────────────────────────────
-function ResourceLinks({ item }: { item: SheetItem }) {
-  const quizName = item.quizTopic ?? (item.topic ? TOPIC_TO_QUIZ[item.topic] : undefined)
+// ─── Resource icon cell ────────────────────────────────────────────────────────
+function ResIcon({
+  href, title, icon, available, highlight,
+}: {
+  href?: string
+  title: string
+  icon: React.ReactNode
+  available: boolean
+  highlight?: boolean
+}) {
+  if (!available || !href) {
+    return (
+      <span title="Not available" className="flex items-center justify-center w-7 h-7 opacity-15 cursor-default">
+        {icon}
+      </span>
+    )
+  }
   return (
-    <div className="flex items-center gap-2">
-      {item.topic && (
-        <Link href={`/topics/${item.topic}`} title="Study Topic" className="text-zinc-600 hover:text-blue-400 transition-colors">
-          <BookOpen size={13} />
-        </Link>
-      )}
-      {item.hasFlashcard && item.topic && (
-        <Link href={`/flashcards/${item.topic}`} title="Flashcard Revision" className="text-zinc-600 hover:text-yellow-400 transition-colors">
-          <Layers size={13} />
-        </Link>
-      )}
-      {item.hasCode && (
-        <Link
-          href={item.codeSlug ? `/code-lab/${item.codeSlug}` : '/code-lab'}
-          title={item.codeSlug ? 'Solve in Code Lab' : 'Browse Code Lab'}
-          className={`transition-colors ${item.codeSlug ? 'text-green-500 hover:text-green-300' : 'text-zinc-600 hover:text-green-400'}`}
-        >
-          <Code2 size={13} />
-        </Link>
-      )}
-      {item.hasQuiz && quizName && (
-        <Link href={`/quiz?topic=${encodeURIComponent(quizName)}`} title="Take Quiz" className="text-zinc-600 hover:text-violet-400 transition-colors">
-          <HelpCircle size={13} />
-        </Link>
-      )}
-      {item.hasInterview && (
-        <Link href="/interview" title="Mock Interview" className="text-zinc-600 hover:text-orange-400 transition-colors">
-          <MessageCircle size={13} />
-        </Link>
-      )}
-    </div>
+    <Link
+      href={href}
+      title={title}
+      target={href.startsWith('http') ? '_blank' : undefined}
+      className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-110 ${
+        highlight
+          ? 'text-green-400 hover:text-green-300 bg-green-500/10 hover:bg-green-500/20'
+          : 'text-zinc-400 hover:text-orange-300 hover:bg-zinc-700/60'
+      }`}
+    >
+      {icon}
+    </Link>
   )
 }
 
-// ─── Company badges ────────────────────────────────────────────────────────────
-function CompanyBadges({ companies }: { companies?: string[] }) {
-  if (!companies?.length) return null
-  return (
-    <div className="flex items-center gap-1 flex-wrap">
-      {companies.slice(0, 4).map(c => {
-        const cfg = COMPANY_CONFIG[c]
-        if (!cfg) return null
-        return (
-          <span key={c} title={c} className={`text-[9px] font-bold px-1 py-0.5 rounded border ${cfg.color}`}>
-            {cfg.abbr}
-          </span>
-        )
-      })}
-      {companies.length > 4 && (
-        <span className="text-[9px] text-zinc-600">+{companies.length - 4}</span>
-      )}
-    </div>
-  )
-}
-
-// ─── Sheet Row ─────────────────────────────────────────────────────────────────
+// ─── Row ──────────────────────────────────────────────────────────────────────
 function SheetRow({
-  item, done, onToggle, isExpanded, onExpandToggle,
+  item, index, done, onToggle, expanded, onExpand,
 }: {
   item: SheetItem
+  index: number
   done: boolean
   onToggle: () => void
-  isExpanded: boolean
-  onExpandToggle: () => void
+  expanded: boolean
+  onExpand: () => void
 }) {
-  const tc = TYPE_CONFIG[item.type]
-  const dc = DIFF_CONFIG[item.difficulty]
+  const quizName = item.quizTopic ?? (item.topic ? TOPIC_TO_QUIZ[item.topic] : undefined)
+  const hasExpand = !!(item.theory || item.preview)
 
   return (
-    <div className={`transition-colors ${done ? 'bg-emerald-500/5' : ''}`}>
+    <>
       {/* Main row */}
-      <div className={`flex items-start gap-3 px-4 py-3 ${!done && 'hover:bg-zinc-800/30'}`}>
+      <div
+        className={`grid grid-cols-[32px_36px_1fr_auto] sm:grid-cols-[32px_36px_1fr_28px_28px_28px_28px_28px] items-center gap-x-1 px-3 sm:px-4 py-2.5 border-b border-zinc-800/60 transition-colors group ${
+          done ? 'bg-emerald-950/20' : 'hover:bg-zinc-800/25'
+        }`}
+      >
         {/* Checkbox */}
         <button
           onClick={onToggle}
           aria-label={done ? 'Mark incomplete' : 'Mark complete'}
-          className={`mt-0.5 w-[18px] h-[18px] rounded flex items-center justify-center border flex-shrink-0 transition-all ${
-            done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-zinc-700 hover:border-zinc-400'
+          className={`w-[18px] h-[18px] mx-auto rounded flex items-center justify-center border transition-all ${
+            done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 hover:border-zinc-400 bg-transparent'
           }`}
         >
-          {done && <Check size={10} strokeWidth={3} />}
+          {done && <Check size={10} strokeWidth={3} className="text-white" />}
         </button>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          {/* Title row */}
-          <div className="flex items-start justify-between gap-2">
-            <button
-              onClick={item.preview ? onExpandToggle : undefined}
-              className={`text-sm font-medium leading-snug text-left flex-1 ${
-                done ? 'line-through text-zinc-500' : 'text-zinc-200'
-              } ${item.preview ? 'hover:text-orange-300 cursor-pointer' : ''}`}
-            >
-              {item.title}
-              {item.isNew2026 && (
-                <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wide align-middle">
-                  2026
-                </span>
-              )}
-            </button>
-            {item.preview && (
-              <button onClick={onExpandToggle} className="text-zinc-600 hover:text-zinc-400 flex-shrink-0 mt-0.5">
-                {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-              </button>
-            )}
-          </div>
+        {/* Number */}
+        <span className="text-[11px] text-zinc-600 text-right font-mono">{index}</span>
 
-          {/* Badges row */}
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border ${tc.color}`}>
-              <span className={`w-1 h-1 rounded-full ${tc.dot}`} />
-              {tc.label}
-            </span>
-            <span className={`text-[10px] font-bold ${dc.color}`}>{dc.label}</span>
-            <ResourceLinks item={item} />
-            <CompanyBadges companies={item.companies} />
-          </div>
+        {/* Title + badges */}
+        <div className="min-w-0 flex items-center gap-2 flex-wrap">
+          <button
+            onClick={hasExpand ? onExpand : undefined}
+            className={`text-sm font-medium leading-snug text-left transition-colors ${
+              done ? 'line-through text-zinc-500' : 'text-zinc-200'
+            } ${hasExpand ? 'hover:text-orange-300 cursor-pointer' : ''}`}
+          >
+            {item.title}
+            {item.isNew2026 && (
+              <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wide align-middle">
+                2026
+              </span>
+            )}
+          </button>
+          {/* Mobile: type + diff inline */}
+          <span className={`sm:hidden text-[10px] font-semibold ${TYPE_COLOR[item.type]}`}>
+            {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+          </span>
+          <span className={`sm:hidden text-[10px] font-bold ${DIFF_COLOR[item.difficulty]}`}>
+            {item.difficulty.charAt(0).toUpperCase() + item.difficulty.slice(1)}
+          </span>
+          {hasExpand && (
+            <button onClick={onExpand} className="sm:hidden text-zinc-600 hover:text-zinc-400 ml-auto">
+              {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+          )}
         </div>
+
+        {/* Desktop resource columns */}
+        <ResIcon
+          href={
+            item.theory
+              ? undefined
+              : item.hasFlashcard && item.topic
+              ? `/flashcards/${item.topic}`
+              : undefined
+          }
+          title={item.theory ? 'Click title to read theory' : item.hasFlashcard && item.topic ? 'Flashcard Revision' : 'No theory'}
+          icon={<BookOpen size={13} />}
+          available={!!(item.theory || (item.hasFlashcard && item.topic))}
+          highlight={false}
+        />
+        <ResIcon
+          href={item.codeSlug ? `/code-lab/${item.codeSlug}` : item.hasCode ? '/code-lab' : undefined}
+          title={item.codeSlug ? `Solve: ${item.codeSlug}` : 'Browse Code Lab'}
+          icon={<Code2 size={13} />}
+          available={!!item.hasCode}
+          highlight={!!item.codeSlug}
+        />
+        <ResIcon
+          href={item.hasFlashcard && item.topic ? `/flashcards/${item.topic}` : undefined}
+          title="Flashcard Revision"
+          icon={<Layers size={13} />}
+          available={!!(item.hasFlashcard && item.topic)}
+        />
+        <ResIcon
+          href={item.hasQuiz && quizName ? `/quiz?topic=${encodeURIComponent(quizName)}` : undefined}
+          title="Take Quiz"
+          icon={<HelpCircle size={13} />}
+          available={!!(item.hasQuiz && quizName)}
+        />
+        <ResIcon
+          href={item.hasInterview ? '/interview' : undefined}
+          title="Mock Interview"
+          icon={<MessageCircle size={13} />}
+          available={!!item.hasInterview}
+        />
       </div>
 
-      {/* Inline Q&A Preview */}
-      {isExpanded && item.preview && (
-        <div className="mx-4 mb-3 rounded-xl border border-zinc-700/60 bg-zinc-900/60 overflow-hidden">
-          <div className="px-4 py-3 border-b border-zinc-800/60 bg-zinc-950/40">
-            <p className="text-xs font-semibold text-orange-400 mb-1">Interview Question</p>
-            <p className="text-sm text-zinc-200 leading-relaxed">{item.preview.q}</p>
-          </div>
-          <div className="px-4 py-3">
-            <p className="text-xs font-semibold text-emerald-400 mb-1">Model Answer</p>
-            <p className="text-xs text-zinc-300 leading-relaxed">{item.preview.a}</p>
-          </div>
+      {/* Expand panel */}
+      {expanded && hasExpand && (
+        <div className="border-b border-zinc-800/60 bg-zinc-900/40">
+          {item.theory && (
+            <div className="px-4 sm:px-12 py-3 border-b border-zinc-800/40">
+              <p className="text-[10px] font-semibold text-orange-400 uppercase tracking-wide mb-1.5">Theory</p>
+              <p className="text-sm text-zinc-300 leading-relaxed">{item.theory}</p>
+              {item.hasFlashcard && item.topic && (
+                <Link href={`/flashcards/${item.topic}`}
+                  className="inline-flex items-center gap-1 mt-2 text-[11px] text-zinc-500 hover:text-yellow-400 transition-colors">
+                  <Layers size={10} /> Study flashcards →
+                </Link>
+              )}
+            </div>
+          )}
+          {item.preview && (
+            <div className="px-4 sm:px-12 py-3">
+              <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wide mb-1.5">Interview Q&A</p>
+              <p className="text-sm text-zinc-200 font-medium leading-snug mb-2">{item.preview.q}</p>
+              <p className="text-xs text-zinc-400 leading-relaxed">{item.preview.a}</p>
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </>
   )
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main ──────────────────────────────────────────────────────────────────────
 export default function SheetClient() {
   const [progress, setProgress]         = useState<Record<string, boolean>>({})
   const [activeTrack, setActiveTrack]   = useState(SHEET_TRACKS[0].id)
@@ -187,176 +213,125 @@ export default function SheetClient() {
     } catch {}
   }, [])
 
-  const saveProgress = useCallback((next: Record<string, boolean>) => {
+  const save = useCallback((next: Record<string, boolean>) => {
     setProgress(next)
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
   }, [])
 
-  const toggleItem = useCallback((id: string) => {
-    saveProgress({ ...progress, [id]: !progress[id] })
-  }, [progress, saveProgress])
+  const toggleItem    = useCallback((id: string) => save({ ...progress, [id]: !progress[id] }), [progress, save])
+  const toggleSection = useCallback((id: string) => setOpenSections(p => ({ ...p, [id]: !p[id] })), [])
+  const toggleExpand  = useCallback((id: string) => setExpandedItem(p => p === id ? null : id), [])
 
   const markSectionAll = useCallback((items: SheetItem[], done: boolean) => {
     const next = { ...progress }
     items.forEach(i => { next[i.id] = done })
-    saveProgress(next)
-  }, [progress, saveProgress])
+    save(next)
+  }, [progress, save])
 
-  const toggleSection = useCallback((id: string) => {
-    setOpenSections(prev => ({ ...prev, [id]: !prev[id] }))
-  }, [])
-
-  const handleTrackChange = useCallback((trackId: string) => {
-    setActiveTrack(trackId)
+  const switchTrack = useCallback((id: string) => {
+    setActiveTrack(id)
     setFilterType('all')
     setFilterDiff('all')
     setSearchQuery('')
-    const track = SHEET_TRACKS.find(t => t.id === trackId)
-    if (track?.sections[0]) setOpenSections({ [track.sections[0].id]: true })
+    const t = SHEET_TRACKS.find(t => t.id === id)
+    if (t?.sections[0]) setOpenSections({ [t.sections[0].id]: true })
   }, [])
 
-  const resetProgress = useCallback(() => {
-    if (confirm('Reset all progress? This cannot be undone.')) saveProgress({})
-  }, [saveProgress])
-
-  // ── Stats ──────────────────────────────────────────────────────────────────
+  // ── Stats ───────────────────────────────────────────────────────────────────
   const totalItems = useMemo(() => getTotalItems(), [])
   const doneItems  = useMemo(
-    () => SHEET_TRACKS.reduce((sum, t) => sum + t.sections.reduce((s, sec) => s + sec.items.filter(i => progress[i.id]).length, 0), 0),
+    () => SHEET_TRACKS.reduce((s, t) => s + t.sections.reduce((ss, sec) => ss + sec.items.filter(i => progress[i.id]).length, 0), 0),
     [progress]
   )
-  const overallPct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0
+  const pct = totalItems > 0 ? Math.round((doneItems / totalItems) * 100) : 0
 
-  // ── Active track ──────────────────────────────────────────────────────────
-  const activeTrackData = SHEET_TRACKS.find(t => t.id === activeTrack)!
-  const trackAllItems   = useMemo(() => activeTrackData.sections.flatMap(s => s.items), [activeTrackData])
-  const trackDone       = trackAllItems.filter(i => progress[i.id]).length
-  const trackPct        = trackAllItems.length > 0 ? Math.round((trackDone / trackAllItems.length) * 100) : 0
+  // ── Active track ────────────────────────────────────────────────────────────
+  const track       = SHEET_TRACKS.find(t => t.id === activeTrack)!
+  const trackItems  = useMemo(() => track.sections.flatMap(s => s.items), [track])
+  const trackDone   = trackItems.filter(i => progress[i.id]).length
+  const trackPct    = trackItems.length > 0 ? Math.round(trackDone / trackItems.length * 100) : 0
 
-  // ── Next incomplete item (smart highlight) ────────────────────────────────
+  // ── Next item ───────────────────────────────────────────────────────────────
   const nextItem = useMemo(() => {
-    for (const sec of activeTrackData.sections) {
+    for (const sec of track.sections) {
       const found = sec.items.find(i => !progress[i.id])
       if (found) return found
     }
     return null
-  }, [activeTrackData, progress])
+  }, [track, progress])
 
-  // ── Search ────────────────────────────────────────────────────────────────
+  // ── Search ──────────────────────────────────────────────────────────────────
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return null
     const q = searchQuery.toLowerCase()
-    return SHEET_TRACKS.flatMap(track =>
-      track.sections.flatMap(sec =>
+    return SHEET_TRACKS.flatMap(t =>
+      t.sections.flatMap(sec =>
         sec.items
-          .filter(it => it.title.toLowerCase().includes(q))
-          .map(it => ({ item: it, trackTitle: track.title, trackColor: track.color, sectionTitle: sec.title }))
+          .filter(it => it.title.toLowerCase().includes(q) || it.theory?.toLowerCase().includes(q))
+          .map(it => ({ item: it, track: t, section: sec }))
       )
     )
   }, [searchQuery])
 
-  // ── Filtered sections (when not searching) ────────────────────────────────
+  // ── Filtered sections ───────────────────────────────────────────────────────
   const filteredSections = useMemo(
-    () => activeTrackData.sections
+    () => track.sections
       .map(sec => ({
         ...sec,
-        items: sec.items.filter(item => {
-          if (filterType !== 'all' && item.type !== filterType) return false
-          if (filterDiff !== 'all' && item.difficulty !== filterDiff) return false
+        items: sec.items.filter(it => {
+          if (filterType !== 'all' && it.type !== filterType) return false
+          if (filterDiff !== 'all' && it.difficulty !== filterDiff) return false
           return true
         }),
       }))
       .filter(sec => sec.items.length > 0),
-    [activeTrackData, filterType, filterDiff]
+    [track, filterType, filterDiff]
   )
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Column header ───────────────────────────────────────────────────────────
+  const ColHeader = () => (
+    <div className="hidden sm:grid grid-cols-[32px_36px_1fr_28px_28px_28px_28px_28px] gap-x-1 px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest text-zinc-600 border-b border-zinc-800 bg-zinc-950/60">
+      <span />
+      <span className="text-right">#</span>
+      <span>Topic</span>
+      <span className="text-center">📖</span>
+      <span className="text-center">💻</span>
+      <span className="text-center">🎴</span>
+      <span className="text-center">❓</span>
+      <span className="text-center">🎯</span>
+    </div>
+  )
+
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-20">
       <div className="max-w-5xl mx-auto px-4">
 
-        {/* ── Hero ─────────────────────────────────────────────────────── */}
-        <div className="text-center mb-10">
-          <span className="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 mb-4 tracking-wide uppercase">
-            2026 Edition
-          </span>
+        {/* ── Hero ────────────────────────────────────────────────────── */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold mb-4">
+            <Zap size={12} /> 2026 Edition · {totalItems} Topics
+          </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-zinc-100 mb-3 tracking-tight">
             AmanAI Lab Sheet
           </h1>
-          <p className="text-zinc-400 text-base sm:text-lg max-w-2xl mx-auto">
-            The most complete AI/ML interview prep sheet. Theory · Code · Projects · Mock Interviews.
-            Complete this → land your dream AI job.
+          <p className="text-zinc-400 max-w-xl mx-auto text-sm sm:text-base">
+            Complete this sheet → land your dream AI/ML role. Theory · Code · Projects · Mock Interview.
           </p>
         </div>
 
-        {/* ── Search ───────────────────────────────────────────────────── */}
-        <div className="relative mb-6">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
-          <input
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search any topic across all 218 items…"
-            className="w-full pl-10 pr-10 py-2.5 bg-zinc-900 border border-zinc-800 focus:border-orange-500 rounded-xl text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
-              <X size={14} />
-            </button>
-          )}
-        </div>
-
-        {/* ── Search results ───────────────────────────────────────────── */}
-        {searchResults !== null ? (
-          <div>
-            <p className="text-xs text-zinc-500 mb-3">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;</p>
-            {searchResults.length === 0 ? (
-              <div className="text-center py-12">
-                <Target size={32} className="text-zinc-700 mx-auto mb-2" />
-                <p className="text-zinc-500 text-sm">No items found. Try a different keyword.</p>
-              </div>
-            ) : (
-              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden divide-y divide-zinc-800/50">
-                {searchResults.map(({ item, trackTitle, trackColor, sectionTitle }) => (
-                  <div key={item.id}>
-                    <div className="px-4 pt-2 pb-0.5 flex items-center gap-2">
-                      <span className={`text-[10px] font-semibold ${trackColor}`}>{trackTitle}</span>
-                      <span className="text-zinc-700 text-[10px]">›</span>
-                      <span className="text-[10px] text-zinc-600">{sectionTitle}</span>
-                    </div>
-                    <SheetRow
-                      item={item} done={!!progress[item.id]}
-                      onToggle={() => toggleItem(item.id)}
-                      isExpanded={expandedItem === item.id}
-                      onExpandToggle={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            {/* ── Stats ────────────────────────────────────────────────── */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              {[
-                { label: 'Total Topics', value: totalItems, color: 'text-zinc-100' },
-                { label: 'Completed',    value: mounted ? doneItems : 0,    color: 'text-orange-400' },
-                { label: 'Progress',     value: `${mounted ? overallPct : 0}%`, color: 'text-emerald-400' },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-center">
-                  <div className={`text-2xl sm:text-3xl font-extrabold ${color}`}>{value}</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">{label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* ── Overall progress bar ─────────────────────────────────── */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-5 mb-6">
-              <div className="flex items-center justify-between text-sm mb-2.5">
-                <span className="text-zinc-400 font-medium">Overall Progress</span>
+        {/* ── Stats row ───────────────────────────────────────────────── */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-5">
+          <div className="flex items-center gap-4 mb-3 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-sm font-semibold text-zinc-300">Overall Progress</span>
                 <div className="flex items-center gap-3">
-                  <span className="text-zinc-500 text-xs">{mounted ? doneItems : 0}/{totalItems}</span>
-                  <button onClick={resetProgress} title="Reset progress" className="text-zinc-600 hover:text-zinc-400">
+                  <span className="text-xs text-zinc-500">{mounted ? doneItems : 0} / {totalItems}</span>
+                  <span className={`text-sm font-extrabold ${pct === 100 ? 'text-emerald-400' : 'text-orange-400'}`}>
+                    {mounted ? pct : 0}%
+                  </span>
+                  <button onClick={() => { if (confirm('Reset all progress?')) save({}) }} title="Reset" className="text-zinc-700 hover:text-zinc-400">
                     <RotateCcw size={12} />
                   </button>
                 </div>
@@ -364,73 +339,134 @@ export default function SheetClient() {
               <div className="h-2.5 bg-zinc-800 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-700"
-                  style={{ width: `${mounted ? overallPct : 0}%` }}
+                  style={{ width: `${mounted ? pct : 0}%` }}
                 />
               </div>
-              {mounted && overallPct === 100 && (
-                <p className="text-emerald-400 text-xs font-semibold mt-2 text-center">🎉 Sheet Complete — You&apos;re Interview Ready!</p>
-              )}
             </div>
+          </div>
+          {mounted && pct === 100 && (
+            <p className="text-center text-emerald-400 text-xs font-semibold">🎉 Sheet Complete — You&apos;re Interview Ready!</p>
+          )}
 
-            {/* ── Track tabs ───────────────────────────────────────────── */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-4 px-4 scrollbar-thin scrollbar-thumb-zinc-800">
-              {SHEET_TRACKS.map(track => {
-                const tItems = track.sections.flatMap(s => s.items)
-                const tDone  = tItems.filter(i => progress[i.id]).length
-                const isActive = activeTrack === track.id
+          {/* Track mini-stats */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mt-3">
+            {SHEET_TRACKS.map(t => {
+              const items = t.sections.flatMap(s => s.items)
+              const done  = items.filter(i => progress[i.id]).length
+              const p     = items.length > 0 ? Math.round(done / items.length * 100) : 0
+              return (
+                <button key={t.id} onClick={() => switchTrack(t.id)}
+                  className={`text-center p-2 rounded-xl border transition-all ${
+                    activeTrack === t.id ? `${t.bg} ${t.color}` : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                  }`}>
+                  <div className="text-base">{t.icon}</div>
+                  <div className="text-[10px] font-bold mt-0.5">{mounted ? p : 0}%</div>
+                  <div className="text-[9px] opacity-70 truncate">{t.title.split(' ')[0]}</div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── Search ──────────────────────────────────────────────────── */}
+        <div className="relative mb-4">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search all 218 topics…"
+            className="w-full pl-10 pr-9 py-2.5 bg-zinc-900 border border-zinc-800 focus:border-orange-500/60 rounded-xl text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* ── Search results ───────────────────────────────────────────── */}
+        {searchResults !== null ? (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+              <span className="text-xs text-zinc-500">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &ldquo;{searchQuery}&rdquo;</span>
+            </div>
+            {searchResults.length === 0 ? (
+              <div className="text-center py-10 text-zinc-600 text-sm">No topics found.</div>
+            ) : (
+              <>
+                <ColHeader />
+                {searchResults.map(({ item, track: t, section }, idx) => (
+                  <div key={item.id}>
+                    {(idx === 0 || searchResults[idx - 1].track.id !== t.id) && (
+                      <div className={`px-4 py-1 text-[10px] font-bold uppercase tracking-wider ${t.color} bg-zinc-950/40`}>
+                        {t.icon} {t.title} › {section.title}
+                      </div>
+                    )}
+                    <SheetRow
+                      item={item} index={idx + 1} done={!!progress[item.id]}
+                      onToggle={() => toggleItem(item.id)}
+                      expanded={expandedItem === item.id}
+                      onExpand={() => toggleExpand(item.id)}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        ) : (
+          <>
+            {/* ── Track tabs ──────────────────────────────────────────── */}
+            <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-thin scrollbar-thumb-zinc-800">
+              {SHEET_TRACKS.map(t => {
+                const items = t.sections.flatMap(s => s.items)
+                const done  = items.filter(i => progress[i.id]).length
+                const isActive = activeTrack === t.id
                 return (
-                  <button
-                    key={track.id}
-                    onClick={() => handleTrackChange(track.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-all border flex-shrink-0 ${
-                      isActive
-                        ? `${track.bg} ${track.color}`
-                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                    }`}
-                  >
-                    <span>{track.icon}</span>
-                    <span className="hidden sm:inline">{track.title}</span>
-                    <span className="sm:hidden">{track.title.split(' ')[0]}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-md font-semibold ${isActive ? 'bg-black/20' : 'bg-zinc-800 text-zinc-500'}`}>
-                      {mounted ? tDone : 0}/{tItems.length}
+                  <button key={t.id} onClick={() => switchTrack(t.id)}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex-shrink-0 ${
+                      isActive ? `${t.bg} ${t.color}` : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}>
+                    <span>{t.icon}</span>
+                    <span className="hidden sm:inline">{t.title}</span>
+                    <span className="sm:hidden">{t.title.split(' ')[0]}</span>
+                    <span className={`text-[10px] px-1 py-0.5 rounded font-bold ${isActive ? 'bg-black/20' : 'bg-zinc-800 text-zinc-500'}`}>
+                      {mounted ? done : 0}/{items.length}
                     </span>
                   </button>
                 )
               })}
             </div>
 
-            {/* ── Active track header ──────────────────────────────────── */}
-            <div className={`border rounded-2xl p-5 mb-4 ${activeTrackData.bg}`}>
-              <div className="flex items-start justify-between gap-4 flex-wrap">
+            {/* ── Active track header ─────────────────────────────────── */}
+            <div className={`${track.bg} border rounded-2xl px-4 sm:px-5 py-4 mb-4`}>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div>
-                  <h2 className={`text-lg font-bold mb-1 ${activeTrackData.color}`}>
-                    {activeTrackData.icon} {activeTrackData.title}
-                  </h2>
-                  <p className="text-zinc-400 text-sm max-w-xl">{activeTrackData.description}</p>
+                  <h2 className={`font-extrabold text-lg ${track.color}`}>{track.icon} {track.title}</h2>
+                  <p className="text-zinc-400 text-xs mt-0.5 max-w-lg">{track.description}</p>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <div className={`text-2xl font-extrabold ${activeTrackData.color}`}>{mounted ? trackPct : 0}%</div>
-                  <div className="text-xs text-zinc-500">{mounted ? trackDone : 0}/{trackAllItems.length} done</div>
+                <div className={`text-right flex-shrink-0 ${track.color}`}>
+                  <div className="text-2xl font-extrabold">{mounted ? trackPct : 0}%</div>
+                  <div className="text-[10px] text-zinc-500">{mounted ? trackDone : 0}/{trackItems.length}</div>
                 </div>
               </div>
-              <div className="mt-4 h-1.5 bg-black/20 rounded-full overflow-hidden">
-                <div className={`h-full ${activeTrackData.bar} rounded-full transition-all duration-500`}
+              <div className="h-1.5 bg-black/20 rounded-full mt-3 overflow-hidden">
+                <div className={`h-full ${track.bar} rounded-full transition-all duration-500`}
                   style={{ width: `${mounted ? trackPct : 0}%` }} />
               </div>
             </div>
 
-            {/* ── Smart next item ──────────────────────────────────────── */}
-            {mounted && nextItem && trackDone > 0 && trackDone < trackAllItems.length && (
-              <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900 border border-orange-500/20 rounded-xl mb-4">
-                <div className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0 animate-pulse" />
-                <span className="text-xs text-zinc-400">Continue here →</span>
-                <span className="text-xs font-medium text-zinc-200 truncate">{nextItem.title}</span>
+            {/* ── Smart next ──────────────────────────────────────────── */}
+            {mounted && nextItem && trackDone > 0 && trackDone < trackItems.length && (
+              <div className="flex items-center gap-2 px-4 py-2.5 mb-4 bg-zinc-900 border border-orange-500/20 rounded-xl">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0 animate-pulse" />
+                <span className="text-xs text-zinc-500 flex-shrink-0">Continue →</span>
+                <span className="text-xs font-medium text-zinc-300 truncate">{nextItem.title}</span>
               </div>
             )}
 
-            {/* ── Filters ──────────────────────────────────────────────── */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <span className="flex items-center gap-1 text-xs text-zinc-600 mr-1"><Filter size={11} /> Filter:</span>
+            {/* ── Filters ─────────────────────────────────────────────── */}
+            <div className="flex flex-wrap items-center gap-1.5 mb-4">
+              <Filter size={11} className="text-zinc-600 mr-0.5" />
               {(['all', 'theory', 'code', 'project', 'interview'] as const).map(t => (
                 <button key={t} onClick={() => setFilterType(t)}
                   className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
@@ -439,7 +475,7 @@ export default function SheetClient() {
                   {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
-              <div className="hidden sm:block w-px h-3.5 bg-zinc-800" />
+              <div className="w-px h-3 bg-zinc-800 mx-0.5" />
               {(['all', 'easy', 'medium', 'hard'] as const).map(d => (
                 <button key={d} onClick={() => setFilterDiff(d)}
                   className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
@@ -450,50 +486,46 @@ export default function SheetClient() {
               ))}
             </div>
 
-            {/* ── Legend ───────────────────────────────────────────────── */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-5 text-[10px] text-zinc-600">
-              <span className="font-medium text-zinc-500 mr-1">Links:</span>
+            {/* ── Legend ──────────────────────────────────────────────── */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-4 text-[10px] text-zinc-600">
+              <span className="font-semibold text-zinc-500">Columns:</span>
               {[
-                { icon: <BookOpen size={11} />, label: 'Topic' },
-                { icon: <Layers size={11} />,   label: 'Flashcards' },
-                { icon: <Code2 size={11} />,    label: 'Code Lab' },
-                { icon: <HelpCircle size={11} />, label: 'Quiz' },
-                { icon: <MessageCircle size={11} />, label: 'Interview' },
+                { icon: '📖', label: 'Theory/Flashcards' },
+                { icon: '💻', label: 'Code Lab' },
+                { icon: '🎴', label: 'Flashcards' },
+                { icon: '❓', label: 'Quiz' },
+                { icon: '🎯', label: 'Mock Interview' },
               ].map(({ icon, label }) => (
-                <span key={label} className="flex items-center gap-1">{icon} {label}</span>
+                <span key={label}>{icon} {label}</span>
               ))}
-              <span className="ml-2 text-orange-400/70 font-semibold">2026 = new hot topic</span>
-              <span className="text-zinc-600">· Click title with ▾ for Q&A preview</span>
+              <span className="text-green-500">Bright green 💻 = specific problem</span>
+              <span className="text-orange-400/70">2026 = new hot topic</span>
             </div>
 
-            {/* ── Sections ─────────────────────────────────────────────── */}
+            {/* ── Sections ────────────────────────────────────────────── */}
             {filteredSections.length === 0 ? (
-              <div className="text-center py-14">
-                <Target size={32} className="text-zinc-700 mx-auto mb-2" />
-                <p className="text-zinc-500 text-sm">No items match filters.</p>
-                <button onClick={() => { setFilterType('all'); setFilterDiff('all') }}
-                  className="text-xs text-orange-400 hover:text-orange-300 mt-2">Clear filters</button>
+              <div className="text-center py-14 text-zinc-600">
+                No items match. <button onClick={() => { setFilterType('all'); setFilterDiff('all') }} className="text-orange-400 hover:text-orange-300 ml-1">Clear filters</button>
               </div>
             ) : (
               <div className="space-y-3">
                 {filteredSections.map(section => {
-                  const sectionDone = section.items.filter(i => progress[i.id]).length
-                  const sectionPct  = section.items.length > 0 ? Math.round((sectionDone / section.items.length) * 100) : 0
-                  const isComplete  = mounted && sectionDone === section.items.length && section.items.length > 0
-                  const isOpen      = openSections[section.id] ?? false
+                  const secDone = section.items.filter(i => progress[i.id]).length
+                  const secPct  = section.items.length > 0 ? Math.round(secDone / section.items.length * 100) : 0
+                  const isComplete = mounted && secDone === section.items.length && section.items.length > 0
+                  const isOpen = openSections[section.id] ?? false
 
                   return (
                     <div key={section.id}
-                      className={`bg-zinc-900 border rounded-2xl overflow-hidden transition-colors ${isComplete ? 'border-emerald-500/30' : 'border-zinc-800'}`}>
-                      {/* Section Header */}
-                      <div className="flex items-center justify-between px-4 py-3.5 gap-3">
-                        <button onClick={() => toggleSection(section.id)}
-                          className="flex items-center gap-2.5 flex-1 text-left min-w-0">
+                      className={`bg-zinc-900 border rounded-2xl overflow-hidden ${isComplete ? 'border-emerald-500/30' : 'border-zinc-800'}`}>
+                      {/* Section header */}
+                      <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/60">
+                        <button onClick={() => toggleSection(section.id)} className="flex items-center gap-2 flex-1 text-left min-w-0">
                           <span className="text-zinc-500 flex-shrink-0">
                             {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                           </span>
-                          <span className="font-semibold text-zinc-200 text-sm truncate">{section.title}</span>
-                          <span className="text-xs text-zinc-600 flex-shrink-0 hidden sm:inline">{section.items.length} topics</span>
+                          <span className="font-bold text-zinc-200 text-sm truncate">{section.title}</span>
+                          <span className="text-[10px] text-zinc-600 flex-shrink-0 hidden sm:inline">{section.items.length} topics</span>
                           {section.estimatedTime && (
                             <span className="hidden sm:flex items-center gap-1 text-[10px] text-zinc-600 flex-shrink-0">
                               <Clock size={9} />{section.estimatedTime}
@@ -501,44 +533,45 @@ export default function SheetClient() {
                           )}
                         </button>
 
-                        <div className="flex items-center gap-2.5 flex-shrink-0">
-                          <button
-                            onClick={() => markSectionAll(section.items, sectionDone < section.items.length)}
-                            title={sectionDone < section.items.length ? 'Mark all done' : 'Unmark all'}
-                            className="text-zinc-700 hover:text-zinc-400 transition-colors hidden sm:block"
-                          >
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Mark all button */}
+                          <button onClick={() => markSectionAll(section.items, secDone < section.items.length)}
+                            title={secDone < section.items.length ? 'Mark all done' : 'Unmark all'}
+                            className="hidden sm:block text-zinc-700 hover:text-zinc-400 transition-colors">
                             <CheckSquare size={13} />
                           </button>
+                          {/* Progress */}
                           <div className="hidden sm:flex items-center gap-2">
-                            <div className="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                              <div className={`h-full ${activeTrackData.bar} rounded-full transition-all`}
-                                style={{ width: `${mounted ? sectionPct : 0}%` }} />
+                            <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                              <div className={`h-full ${track.bar} rounded-full transition-all`}
+                                style={{ width: `${mounted ? secPct : 0}%` }} />
                             </div>
-                            <span className="text-xs text-zinc-500 w-10 text-right">
-                              {mounted ? sectionDone : 0}/{section.items.length}
+                            <span className="text-[10px] text-zinc-500 w-9 text-right">
+                              {mounted ? secDone : 0}/{section.items.length}
                             </span>
                           </div>
                           {isComplete && (
-                            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
                               <Trophy size={10} /> Done
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Items */}
+                      {/* Rows */}
                       {isOpen && (
-                        <div className="border-t border-zinc-800 divide-y divide-zinc-800/40">
-                          {section.items.map(it => (
+                        <>
+                          <ColHeader />
+                          {section.items.map((item, idx) => (
                             <SheetRow
-                              key={it.id} item={it}
-                              done={!!progress[it.id]}
-                              onToggle={() => toggleItem(it.id)}
-                              isExpanded={expandedItem === it.id}
-                              onExpandToggle={() => setExpandedItem(expandedItem === it.id ? null : it.id)}
+                              key={item.id} item={item} index={idx + 1}
+                              done={!!progress[item.id]}
+                              onToggle={() => toggleItem(item.id)}
+                              expanded={expandedItem === item.id}
+                              onExpand={() => toggleExpand(item.id)}
                             />
                           ))}
-                        </div>
+                        </>
                       )}
                     </div>
                   )
@@ -547,17 +580,15 @@ export default function SheetClient() {
             )}
 
             {/* ── Bottom CTA ───────────────────────────────────────────── */}
-            <div className="mt-10 text-center">
-              <p className="text-zinc-600 text-sm">
-                Practice hands-on →{' '}
-                <Link href="/code-lab" className="text-orange-400 hover:text-orange-300 font-medium">Code Lab</Link>
-                {' · '}
-                <Link href="/quiz" className="text-orange-400 hover:text-orange-300 font-medium">Take a Quiz</Link>
-                {' · '}
-                <Link href="/interview" className="text-orange-400 hover:text-orange-300 font-medium">Mock Interview</Link>
-                {' · '}
-                <Link href="/flashcards" className="text-orange-400 hover:text-orange-300 font-medium">Flashcards</Link>
-              </p>
+            <div className="mt-10 text-center text-zinc-600 text-xs">
+              Practice live →{' '}
+              <Link href="/code-lab" className="text-orange-400 hover:text-orange-300 font-medium">Code Lab</Link>
+              {' · '}
+              <Link href="/quiz" className="text-orange-400 hover:text-orange-300 font-medium">Quiz</Link>
+              {' · '}
+              <Link href="/interview" className="text-orange-400 hover:text-orange-300 font-medium">Mock Interview</Link>
+              {' · '}
+              <Link href="/flashcards" className="text-orange-400 hover:text-orange-300 font-medium">Flashcards</Link>
             </div>
           </>
         )}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { getAdminSupabase } from '@/lib/admin'
+import { STATIC_PROBLEMS } from '@/lib/code-problems-static'
 import ProblemsClient from './ProblemsClient'
 
 export const metadata: Metadata = {
@@ -18,7 +19,18 @@ async function getProblems() {
     .from('code_problems')
     .select('id, title, slug, difficulty, topic, tags, companies, order_index')
     .order('order_index', { ascending: true })
-  return data ?? []
+  if (data && data.length > 0) return data
+  // Fall back to static problems when DB is empty
+  return STATIC_PROBLEMS.map(p => ({
+    id: p.slug,
+    title: p.title,
+    slug: p.slug,
+    difficulty: p.difficulty,
+    topic: p.topic,
+    tags: p.tags,
+    companies: p.companies,
+    order_index: p.order_index,
+  }))
 }
 
 const jsonLd = {
