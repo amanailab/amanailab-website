@@ -43,7 +43,11 @@ function ResourceLinks({ item }: { item: SheetItem }) {
         </Link>
       )}
       {item.hasCode && (
-        <Link href="/code-lab" title="Practice in Code Lab" className="text-zinc-600 hover:text-green-400 transition-colors">
+        <Link
+          href={item.codeSlug ? `/code-lab/${item.codeSlug}` : '/code-lab'}
+          title={item.codeSlug ? 'Solve in Code Lab' : 'Browse Code Lab'}
+          className={`transition-colors ${item.codeSlug ? 'text-green-500 hover:text-green-300' : 'text-zinc-600 hover:text-green-400'}`}
+        >
           <Code2 size={13} />
         </Link>
       )}

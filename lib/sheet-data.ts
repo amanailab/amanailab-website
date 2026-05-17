@@ -16,6 +16,7 @@ export interface SheetItem {
   hasFlashcard?: boolean  // link to /flashcards/[topic]
   hasQuiz?: boolean       // link to /quiz?topic=
   hasInterview?: boolean  // link to /interview
+  codeSlug?: string       // direct link to /code-lab/[slug]
   companies?: Company[]
   isNew2026?: boolean
   preview?: { q: string; a: string }
@@ -79,7 +80,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gt-3', 'Positional Encoding — Absolute, RoPE, ALiBi', 'theory', 'medium', {
             topic: 'transformers', quizTopic: 'Transformers', hasFlashcard: true,
             companies: ['Meta', 'Google', 'Microsoft'],
-            isNew2026: false,
+            hasCode: true, codeSlug: 'positional-encoding', isNew2026: false,
           }),
           item('gt-4', 'Feed-Forward Layers & Pre-LN vs Post-LN', 'theory', 'easy', {
             topic: 'transformers', quizTopic: 'Transformers', hasQuiz: true,
@@ -107,7 +108,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             isNew2026: true,
           }),
           item('gt-9', 'Implement Self-Attention from Scratch in PyTorch', 'code', 'hard', {
-            hasCode: true, companies: ['Google', 'OpenAI', 'Meta'],
+            hasCode: true, codeSlug: 'dot-product-attention', companies: ['Google', 'OpenAI', 'Meta'],
           }),
           item('gt-10', 'Transformer Architecture — Interview Q&A', 'interview', 'hard', {
             topic: 'transformers', quizTopic: 'Transformers', hasInterview: true, hasQuiz: true,
@@ -131,6 +132,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
           item('gl-3', 'Tokenization — BPE, WordPiece, SentencePiece', 'theory', 'medium', {
             topic: 'llm', quizTopic: 'LLM', hasFlashcard: true,
             companies: ['OpenAI', 'Google', 'Meta'],
+            hasCode: true, codeSlug: 'tokenise-text',
             preview: { q: 'How does Byte-Pair Encoding (BPE) tokenization work?', a: 'BPE starts with character-level vocabulary, then iteratively merges the most frequent pair of adjacent tokens. E.g. "lower" and "lowest" share "low" — merge to form "low" as a token. Repeat until desired vocab size (~50K). Benefits: handles unknown words via character fallback, efficient compression of common subwords, language-agnostic. GPT-4: ~100K vocab with BPE. Average English word ≈ 1.3 tokens.' },
           }),
           item('gl-4', 'Context Window & Long Context Techniques (RoPE, YaRN)', 'theory', 'hard', {
@@ -148,7 +150,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['OpenAI', 'Anthropic', 'Google', 'Meta'],
           }),
           item('gl-7', 'Sampling — Temperature, Top-p, Top-k, Repetition Penalty', 'theory', 'easy', {
-            topic: 'llm', quizTopic: 'LLM', hasQuiz: true,
+            topic: 'llm', quizTopic: 'LLM', hasQuiz: true, hasCode: true, codeSlug: 'softmax-function',
             companies: ['OpenAI', 'Google', 'Meta', 'Amazon'],
           }),
           item('gl-8', 'KV Cache — How It Works & Why It Matters', 'theory', 'hard', {
@@ -162,7 +164,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             preview: { q: 'What does Chinchilla\'s scaling law tell us about optimal training?', a: 'Chinchilla (DeepMind 2022) showed that previous LLMs were undertrained. Optimal compute allocation: equal scaling of model size AND training tokens. Rule of thumb: ~20 tokens per parameter. GPT-3 (175B params) was trained on 300B tokens — should have used 3.5T tokens. Chinchilla 70B trained on 1.4T tokens outperforms GPT-3. Implication: given a compute budget C, optimal N = 0.5×C^0.5, optimal D = 20×N.' },
           }),
           item('gl-10', 'LLM Evaluation — BLEU, ROUGE, Perplexity, LLM-as-Judge', 'theory', 'medium', {
-            topic: 'llm', quizTopic: 'LLM', hasQuiz: true,
+            topic: 'llm', quizTopic: 'LLM', hasQuiz: true, hasCode: true, codeSlug: 'perplexity',
             companies: ['OpenAI', 'Google', 'Anthropic', 'Amazon'],
           }),
         ],
@@ -223,11 +225,11 @@ export const SHEET_TRACKS: SheetTrack[] = [
             preview: { q: 'What chunking strategy would you recommend for a legal document RAG system?', a: 'Legal documents have hierarchical structure (sections, subsections, clauses). Recommended: (1) Recursive/structural chunking — split by section headers first, then by paragraph. (2) Semantic chunking — embed paragraphs, merge adjacent ones with high cosine similarity. (3) Overlap (15-20%) to preserve cross-chunk context. (4) Store parent-child relationships — retrieve small chunks, expand to full section. (5) Chunk size: 512 tokens for semantic, 256 for precise retrieval. Avoid fixed-size which breaks mid-sentence.' },
           }),
           item('gr-3', 'Embedding Models & Semantic Search', 'theory', 'medium', {
-            topic: 'rag', quizTopic: 'RAG', hasFlashcard: true,
+            topic: 'rag', quizTopic: 'RAG', hasFlashcard: true, hasCode: true, codeSlug: 'cosine-similarity',
             companies: ['OpenAI', 'Google', 'Amazon', 'Microsoft', 'Anthropic'],
           }),
           item('gr-4', 'Vector Databases — FAISS, Pinecone, Weaviate, Qdrant', 'theory', 'medium', {
-            topic: 'vector-db', quizTopic: 'Vector DB', hasFlashcard: true, hasQuiz: true,
+            topic: 'vector-db', quizTopic: 'Vector DB', hasFlashcard: true, hasQuiz: true, hasCode: true, codeSlug: 'euclidean-distance',
             companies: ['Microsoft', 'Amazon', 'Google', 'Meta'],
           }),
           item('gr-5', 'HNSW Algorithm for Approximate Nearest Neighbor', 'theory', 'hard', {
@@ -574,7 +576,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta', 'Amazon', 'Apple'],
           }),
           item('df-2', 'Activation Functions — ReLU, GELU, SiLU, Swish', 'theory', 'easy', {
-            topic: 'deep-learning', hasFlashcard: true,
+            topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'sigmoid-function',
             companies: ['Google', 'Meta', 'OpenAI'],
           }),
           item('df-3', 'Forward Pass & Backpropagation (Chain Rule)', 'theory', 'hard', {
@@ -583,7 +585,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             preview: { q: 'Walk me through backpropagation for a 2-layer neural network.', a: 'Forward: h = ReLU(W₁x + b₁), ŷ = softmax(W₂h + b₂), L = CrossEntropy(ŷ, y). Backward (chain rule): ∂L/∂W₂ = ∂L/∂ŷ × ∂ŷ/∂W₂ = (ŷ-y)⊗h. ∂L/∂h = W₂ᵀ(ŷ-y). ∂L/∂W₁ = (W₂ᵀ(ŷ-y) ⊙ ReLU\'(W₁x)) ⊗ x. Update: W -= lr × ∂L/∂W. Key: chain rule propagates gradient backward through each layer. Each layer just needs to implement ∂output/∂input and multiply incoming gradient.' },
           }),
           item('df-4', 'Loss Functions — Cross-Entropy, MSE, Focal Loss', 'theory', 'medium', {
-            topic: 'deep-learning', hasCode: true,
+            topic: 'deep-learning', hasCode: true, codeSlug: 'cross-entropy-loss',
             companies: ['Google', 'Meta', 'Amazon'],
           }),
           item('df-5', 'Weight Initialization — Xavier, Kaiming (He)', 'theory', 'medium', {
@@ -591,7 +593,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta'],
           }),
           item('df-6', 'Batch Norm, Layer Norm & RMS Norm', 'theory', 'medium', {
-            topic: 'deep-learning', hasFlashcard: true,
+            topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'batch-normalisation',
             companies: ['Google', 'Meta', 'OpenAI', 'Amazon'],
             preview: { q: 'Why do transformers use Layer Norm instead of Batch Norm?', a: 'Batch Norm normalizes across the batch dimension — problematic for: (1) variable-length sequences (padding ruins statistics), (2) small/variable batch sizes at inference, (3) auto-regressive generation (batch size = 1). Layer Norm normalizes across the feature dimension within each sample — batch-size independent, works on any sequence length. RMS Norm (used in Llama): simpler variant of LN without mean centering — removes re-centering step, slightly faster, empirically similar quality.' },
           }),
@@ -618,7 +620,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
         estimatedTime: '~2.5h',
         items: [
           item('do-1', 'SGD, Momentum, RMSProp, Adam, AdamW — Intuition & Math', 'theory', 'medium', {
-            topic: 'deep-learning', hasFlashcard: true,
+            topic: 'deep-learning', hasFlashcard: true, hasCode: true, codeSlug: 'gradient-descent-step',
             companies: ['Google', 'Meta', 'OpenAI', 'Apple'],
             preview: { q: 'Why is AdamW preferred over Adam for training LLMs?', a: 'Adam\'s weight decay is implemented by adding λw to the gradient — this interacts with the adaptive learning rates, scaling weight decay by 1/√v̂ (larger for infrequent params). AdamW decouples weight decay: applies it directly to weights regardless of gradient statistics: w -= lr×(gradient_update) - lr×λ×w. This gives consistent regularization across all parameters. Empirically, AdamW generalizes better and is the standard for all modern LLM training (GPT-4, Llama, Mistral). The difference matters most for large-scale training.' },
           }),
@@ -778,11 +780,11 @@ export const SHEET_TRACKS: SheetTrack[] = [
         estimatedTime: '~4h',
         items: [
           item('ma-1', 'Linear Regression — OLS, Ridge, Lasso, ElasticNet', 'theory', 'easy', {
-            topic: 'machine-learning', hasFlashcard: true, hasCode: true,
+            topic: 'machine-learning', hasFlashcard: true, hasCode: true, codeSlug: 'mean-squared-error',
             companies: ['Google', 'Meta', 'Amazon', 'Microsoft', 'Netflix'],
           }),
           item('ma-2', 'Logistic Regression & Decision Boundary', 'theory', 'easy', {
-            topic: 'machine-learning', hasFlashcard: true, hasCode: true,
+            topic: 'machine-learning', hasFlashcard: true, hasCode: true, codeSlug: 'label-encoding',
             companies: ['Google', 'Meta', 'Amazon', 'Apple'],
           }),
           item('ma-3', 'Decision Trees — Information Gain & Gini', 'theory', 'medium', {
@@ -808,11 +810,11 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Amazon'],
           }),
           item('ma-8', 'K-Nearest Neighbors & Distance Metrics', 'theory', 'easy', {
-            topic: 'machine-learning', hasCode: true,
+            topic: 'machine-learning', hasCode: true, codeSlug: 'knn-classifier',
             companies: ['Amazon', 'Netflix'],
           }),
           item('ma-9', 'K-Means & DBSCAN Clustering', 'theory', 'medium', {
-            topic: 'machine-learning', hasFlashcard: true, hasCode: true,
+            topic: 'machine-learning', hasFlashcard: true, hasCode: true, codeSlug: 'kmeans-centroid-update',
             companies: ['Google', 'Meta', 'Netflix', 'Amazon'],
           }),
           item('ma-10', 'PCA & t-SNE for Dimensionality Reduction', 'theory', 'medium', {
@@ -847,7 +849,7 @@ export const SHEET_TRACKS: SheetTrack[] = [
             companies: ['Google', 'Meta', 'Amazon'],
           }),
           item('me-4', 'Precision, Recall, F1-Score, ROC-AUC', 'theory', 'medium', {
-            topic: 'machine-learning', hasFlashcard: true, hasCode: true,
+            topic: 'machine-learning', hasFlashcard: true, hasCode: true, codeSlug: 'precision-recall-f1',
             companies: ['Google', 'Meta', 'Amazon', 'Microsoft', 'Netflix'],
           }),
           item('me-5', 'Confusion Matrix, Type I & Type II Errors', 'theory', 'easy', {
@@ -874,15 +876,15 @@ export const SHEET_TRACKS: SheetTrack[] = [
         estimatedTime: '~2h',
         items: [
           item('mf-1', 'Missing Data — Imputation Strategies', 'theory', 'medium', { hasCode: true, companies: ['Amazon', 'Netflix', 'Google'] }),
-          item('mf-2', 'Feature Scaling — Standard, MinMax, Robust Scaler', 'theory', 'easy', { hasCode: true, companies: ['Amazon', 'Google', 'Netflix'] }),
-          item('mf-3', 'Encoding — One-Hot, Target, Ordinal, Embeddings', 'theory', 'medium', { hasCode: true, companies: ['Amazon', 'Netflix', 'Google', 'Meta'] }),
+          item('mf-2', 'Feature Scaling — Standard, MinMax, Robust Scaler', 'theory', 'easy', { hasCode: true, codeSlug: 'min-max-normalisation', companies: ['Amazon', 'Google', 'Netflix'] }),
+          item('mf-3', 'Encoding — One-Hot, Target, Ordinal, Embeddings', 'theory', 'medium', { hasCode: true, codeSlug: 'one-hot-encoding', companies: ['Amazon', 'Netflix', 'Google', 'Meta'] }),
           item('mf-4', 'Feature Selection — Filter, Wrapper, Embedded Methods', 'theory', 'hard', { hasCode: true, companies: ['Google', 'Amazon', 'Netflix'] }),
           item('mf-5', 'Time Series Feature Engineering (Lags, Windows, FFT)', 'theory', 'hard', { hasCode: true, companies: ['Amazon', 'Netflix', 'Google'] }),
           item('mf-6', 'Text Features — TF-IDF, n-grams, Word Embeddings', 'theory', 'medium', {
-            topic: 'nlp', quizTopic: 'NLP', hasCode: true,
+            topic: 'nlp', quizTopic: 'NLP', hasCode: true, codeSlug: 'tfidf-score',
             companies: ['Google', 'Meta', 'Amazon'],
           }),
-          item('mf-7', 'EDA Best Practices & Statistical Visualization', 'theory', 'easy', { hasCode: true, companies: ['Amazon', 'Netflix', 'Google'] }),
+          item('mf-7', 'EDA Best Practices & Statistical Visualization', 'theory', 'easy', { hasCode: true, codeSlug: 'word-frequency-counter', companies: ['Amazon', 'Netflix', 'Google'] }),
           item('mf-8', 'Build an End-to-End Feature Pipeline', 'project', 'medium', { hasCode: true, companies: ['Amazon', 'Google'] }),
         ],
       },
