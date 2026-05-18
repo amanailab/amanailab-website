@@ -260,6 +260,11 @@ export default function SheetClient() {
   const [synced, setSynced]             = useState(false)
   const syncDebounce                    = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => { if (syncDebounce.current) clearTimeout(syncDebounce.current) }
+  }, [])
+
   // Load local progress, then merge with Supabase if logged in
   useEffect(() => {
     setMounted(true)
@@ -280,7 +285,7 @@ export default function SheetClient() {
         setIsLoggedIn(true)
 
         fetch('/api/sheet/progress')
-          .then(r => r.json())
+          .then(r => r.ok ? r.json() : { items: [] })
           .then(({ items }) => {
             if (!Array.isArray(items)) return
 
@@ -309,6 +314,7 @@ export default function SheetClient() {
           .catch(() => {})
       })
     })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Sync a single item to Supabase (debounced, fire-and-forget)

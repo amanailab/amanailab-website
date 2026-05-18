@@ -47,7 +47,7 @@ export default function HeroSection() {
           className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-sm font-medium px-4 py-2 rounded-full mb-8"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          18 free AI tools · 500+ questions · A‑to‑Z Interview Sheet
+          19+ free AI tools · 500+ questions · A‑to‑Z Interview Sheet
         </motion.div>
 
         {/* Headline */}
