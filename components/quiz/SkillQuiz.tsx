@@ -170,6 +170,7 @@ export default function SkillQuiz({ defaultTopic }: { defaultTopic?: string }) {
     setAnswers([])
     setCurrent(0)
     setShowExplanation(false)
+    setPhase('setup') // Reset to setup so blank screen doesn't show on API error
     await startQuiz()
   }
 

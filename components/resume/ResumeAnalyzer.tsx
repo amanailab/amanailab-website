@@ -1004,7 +1004,7 @@ export default function ResumeAnalyzer() {
 
   async function runCover({ regenerate = false }: { regenerate?: boolean } = {}) {
     if (!canCover || working) return;
-    if (!regenerate && limitReached) return;
+    if (limitReached) return; // Always enforce daily limit, even on regenerate
     setError("");
     setWorking(true);
     if (!regenerate) setCoverLetter("");
@@ -1030,6 +1030,7 @@ export default function ResumeAnalyzer() {
   }
 
   function reset() {
+    setWorking(false); // Clear any in-flight loading state
     setAnalysis(null);
     setMatch(null);
     setCoverLetter("");

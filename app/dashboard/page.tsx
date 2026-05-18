@@ -20,6 +20,7 @@ import CompanyReadiness from '@/components/dashboard/CompanyReadiness'
 import InterviewCountdown from '@/components/dashboard/InterviewCountdown'
 import AchievementAlert from '@/components/dashboard/AchievementAlert'
 import AchievementsPanel from '@/components/dashboard/AchievementsPanel'
+import RefreshButton from '@/components/dashboard/RefreshButton'
 
 export const metadata: Metadata = {
   title: 'My Dashboard | AmanAI Lab',
@@ -513,9 +514,7 @@ export default async function DashboardPage() {
           <div className="mb-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-3 flex items-center gap-3">
             <span className="text-yellow-400 text-sm">⚠</span>
             <p className="text-xs text-yellow-300 flex-1">Some data took too long to load. Your stats may be incomplete.</p>
-            <button onClick={() => window.location.reload()} className="text-xs font-semibold text-yellow-400 hover:text-yellow-300 transition-colors shrink-0">
-              Refresh
-            </button>
+            <RefreshButton />
           </div>
         )}
 

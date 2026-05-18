@@ -60,7 +60,7 @@ async function getRelatedPosts(category: string, currentSlug: string): Promise<P
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const post = await getPost(slug)
-  if (!post) return {}
+  if (!post) return { robots: { index: false } }
   const ogImage = post.cover_image ?? `https://amanailab.com/api/og/blog?title=${encodeURIComponent(post.title)}&category=${encodeURIComponent(post.category ?? '')}&rt=${post.read_time ?? 5}`
   return {
     title: `${post.title}`,
@@ -191,9 +191,9 @@ export default async function BlogPostPage({ params }: Props) {
           <p className="text-lg text-zinc-400 leading-relaxed">{post.description}</p>
         )}
 
-        {post.tags.length > 0 && (
+        {(post.tags ?? []).length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
-            {post.tags.map((tag) => (
+            {(post.tags ?? []).map((tag) => (
               <span key={tag} className="flex items-center gap-1 text-xs text-zinc-500 bg-zinc-800 px-2.5 py-1 rounded-full">
                 <Tag className="w-3 h-3" />
                 {tag}

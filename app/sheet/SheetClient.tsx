@@ -258,11 +258,11 @@ export default function SheetClient() {
   const [mounted, setMounted]           = useState(false)
   const [isLoggedIn, setIsLoggedIn]     = useState<boolean | null>(null)
   const [synced, setSynced]             = useState(false)
-  const syncDebounce                    = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const syncDebounces = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
-  // Cleanup debounce timer on unmount
+  // Cleanup all debounce timers on unmount
   useEffect(() => {
-    return () => { if (syncDebounce.current) clearTimeout(syncDebounce.current) }
+    return () => { Object.values(syncDebounces.current).forEach(t => clearTimeout(t)) }
   }, [])
 
   // Load local progress, then merge with Supabase if logged in
@@ -317,11 +317,12 @@ export default function SheetClient() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Sync a single item to Supabase (debounced, fire-and-forget)
+  // Sync a single item to Supabase (debounced per-item, fire-and-forget)
   const syncItemToSupabase = useCallback((id: string, completed: boolean) => {
     if (!isLoggedIn) return
-    if (syncDebounce.current) clearTimeout(syncDebounce.current)
-    syncDebounce.current = setTimeout(() => {
+    if (syncDebounces.current[id]) clearTimeout(syncDebounces.current[id])
+    syncDebounces.current[id] = setTimeout(() => {
+      delete syncDebounces.current[id]
       fetch('/api/sheet/progress', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -347,7 +348,19 @@ export default function SheetClient() {
     const next = { ...progress }
     items.forEach(i => { next[i.id] = done })
     save(next)
-  }, [progress, save])
+    if (!isLoggedIn) return
+    if (done) {
+      // Bulk sync completed items
+      fetch('/api/sheet/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_ids: items.map(i => i.id) }),
+      }).catch(() => {})
+    } else {
+      // Mark each item incomplete individually
+      items.forEach(i => syncItemToSupabase(i.id, false))
+    }
+  }, [progress, save, isLoggedIn, syncItemToSupabase])
 
   const switchTrack = useCallback((id: string) => {
     setActiveTrack(id)

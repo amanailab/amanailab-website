@@ -6,7 +6,7 @@ import type { BlogPost } from '@/lib/admin'
 import BlogList from '@/components/blog/BlogList'
 
 export const metadata: Metadata = {
-  title: 'Blog',
+  title: 'Blog | AmanAI Lab',
   description: 'In-depth articles on Generative AI, LLMs, RAG, AI Agents, and more.',
   alternates: { canonical: 'https://amanailab.com/blog' },
 }
@@ -34,7 +34,7 @@ async function getPostsPage(
       .order('created_at', { ascending: false })
       .range(start, end)
 
-    if (search) query = query.ilike('title', `%${search}%`)
+    if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
     if (category) query = query.eq('category', category)
 
     const { data, count, error } = await query

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import AboutContent from "@/components/about/AboutContent";
 import { getChannelStats, formatStats } from "@/lib/youtube";
 
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: "About AmanAI Lab — Free AI/ML Interview Prep Platform | Aman Chauhan",
   description:
@@ -16,12 +18,18 @@ export const metadata: Metadata = {
 };
 
 export default async function AboutPage() {
-  const stats = await getChannelStats();
-  const fmt = formatStats(stats);
-
-  const videoCount = `${fmt.videos.value}${fmt.videos.suffix}`;
-  const subscriberCount = `${fmt.subs.value}${fmt.subs.suffix}`;
-  const viewCount = `${fmt.views.value}${fmt.views.suffix}`;
+  let videoCount = '100+'
+  let subscriberCount = '10K+'
+  let viewCount = '500K+'
+  try {
+    const stats = await getChannelStats()
+    const fmt = formatStats(stats)
+    videoCount = `${fmt.videos.value}${fmt.videos.suffix}`
+    subscriberCount = `${fmt.subs.value}${fmt.subs.suffix}`
+    viewCount = `${fmt.views.value}${fmt.views.suffix}`
+  } catch {
+    // Fallback to defaults if YouTube API is unavailable
+  }
 
   return (
     <div className="pt-20">

@@ -24,7 +24,7 @@ const socials = [
     icon: TwitterIcon,
     label: "Twitter / X",
     handle: "@AmanAI_lab",
-    href: "https://twitter.com/AmanAI_lab",
+    href: "https://x.com/AmanAI_lab",
     hoverColor: "hover:text-blue-400",
   },
   {
@@ -151,10 +151,11 @@ export default function ContactForm() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  <label htmlFor="contact-name" className="block text-sm font-medium text-zinc-300 mb-2">
                     Name <span className="text-orange-500">*</span>
                   </label>
                   <input
+                    id="contact-name"
                     type="text"
                     name="name"
                     required
@@ -165,10 +166,11 @@ export default function ContactForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-zinc-300 mb-2">
+                  <label htmlFor="contact-email" className="block text-sm font-medium text-zinc-300 mb-2">
                     Email <span className="text-orange-500">*</span>
                   </label>
                   <input
+                    id="contact-email"
                     type="email"
                     name="email"
                     required
@@ -181,8 +183,9 @@ export default function ContactForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-2">Subject</label>
+                <label htmlFor="contact-subject" className="block text-sm font-medium text-zinc-300 mb-2">Subject</label>
                 <select
+                  id="contact-subject"
                   name="subject"
                   value={form.subject}
                   onChange={handleChange}
@@ -197,10 +200,11 @@ export default function ContactForm() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-2">
+                <label htmlFor="contact-message" className="block text-sm font-medium text-zinc-300 mb-2">
                   Message <span className="text-orange-500">*</span>
                 </label>
                 <textarea
+                  id="contact-message"
                   name="message"
                   required
                   rows={6}

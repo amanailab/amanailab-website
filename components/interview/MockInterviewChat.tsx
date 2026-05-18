@@ -50,7 +50,11 @@ export default function MockInterviewChat() {
   function speak(text: string) {
     if (!ttsEnabled || typeof window === 'undefined' || !window.speechSynthesis) return
     window.speechSynthesis.cancel()
-    const utter = new SpeechSynthesisUtterance(text.slice(0, 400))
+    // Truncate at word boundary to avoid cutting mid-word
+    const truncated = text.length > 600
+      ? text.slice(0, 600).replace(/\s+\S*$/, '') + '…'
+      : text
+    const utter = new SpeechSynthesisUtterance(truncated)
     utter.rate = 0.92
     window.speechSynthesis.speak(utter)
   }
@@ -143,6 +147,7 @@ export default function MockInterviewChat() {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel()
     }
+    setLoading(false)
     setPhase('setup')
     setMessages([])
     setInput('')

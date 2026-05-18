@@ -1,11 +1,24 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/admin'
 import { buildTestCode, runCode, outputsMatch } from '@/lib/piston'
+import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
 
 export async function POST(req: Request) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Sign in to run code' }, { status: 401 })
+  }
+
+  const rl = checkRateLimit(`code-run:${user.id}`, 30, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many requests. Please wait before running again.' }, { status: 429 })
+  }
+
   try {
     const { slug, code } = await req.json()
     if (!slug || !code?.trim()) {

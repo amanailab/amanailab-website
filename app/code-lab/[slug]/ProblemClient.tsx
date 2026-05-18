@@ -268,15 +268,18 @@ export default function ProblemClient({
     document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp)
   }, [leftWidth])
 
+  // Stable refs to avoid stale closures in the keyboard handler (initialized as no-ops, updated after callbacks are declared)
+  const handleRunRef = useRef<() => void>(() => {})
+  const handleSubmitRef = useRef<() => void>(() => {})
+
   // Keyboard shortcuts
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'Enter') { e.preventDefault(); handleSubmit() }
-      else if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleRun() }
+      if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key === 'Enter') { e.preventDefault(); handleSubmitRef.current() }
+      else if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { e.preventDefault(); handleRunRef.current() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Error line highlighting (declared before handleRun so it can be referenced)
@@ -344,13 +347,13 @@ export default function ProblemClient({
         })
         const isFirst = submissions.filter(s => s.status === 'Accepted').length === 0
         setFirstSolve(isFirst)
-        setSolvedCount(c => c + 1)
+        if (isFirst) setSolvedCount(c => c + 1) // Only increment on first solve
         clearErrorHighlight()
-        // XP calculation
+        // XP only awarded on first solve to prevent farming
         const base  = XP_MAP[problem.difficulty as keyof typeof XP_MAP] ?? 20
-        const speed = elapsed < 300 ? Math.round(base * 0.5) : 0
+        const speed = (isFirst && elapsed < 300) ? Math.round(base * 0.5) : 0
         const first = isFirst ? base : 0
-        const xp    = base + speed + first
+        const xp    = isFirst ? (base + speed + first) : 0
         setXpEarned(xp)
 
         // Save to localStorage immediately
@@ -382,7 +385,7 @@ export default function ProblemClient({
           }
         }).catch(() => { /* ignore — localStorage already updated */ })
 
-        toast(`+${xp} XP earned! ${isFirst ? '🎉 First solve!' : ''}`, 'success')
+        if (xp > 0) toast(`+${xp} XP earned! 🎉 First solve!`, 'success')
       }
       setSubmitResult({ status, passed_tests: passed, total_tests: total, runtime_ms: runtime,
         results: results.map(r => ({ ...r, expected: r.is_hidden&&r.passed ? '(hidden)' : r.expected, got: r.is_hidden&&r.passed ? '(hidden)' : r.got })) })
@@ -391,6 +394,10 @@ export default function ProblemClient({
         body: JSON.stringify({ problem_id: data.id, code, status, passed_tests: passed, total_tests: total, runtime_ms: runtime }) })
     } catch { setSubmitResult(null) } finally { setSubmitting(false) }
   }, [user, submitting, pyStatus, runTests, problem.slug, code, submissions])
+
+  // Keep refs in sync with latest callbacks
+  useEffect(() => { handleRunRef.current = handleRun }, [handleRun])
+  useEffect(() => { handleSubmitRef.current = handleSubmit }, [handleSubmit])
 
   // AI assist
   const callAI = useCallback(async (mode: 'debug'|'complexity'|'approach'|'review'|'solution') => {

@@ -35,7 +35,9 @@ function FooterNewsletter() {
         </div>
       ) : (
         <form onSubmit={subscribe} className="flex gap-1.5">
+          <label htmlFor="footer-email" className="sr-only">Email address</label>
           <input
+            id="footer-email"
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
@@ -109,7 +111,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-zinc-400 text-sm max-w-xs leading-relaxed mb-5">
-              The most complete AI/ML career platform. 15+ free tools for interview prep, job search, and learning.
+              The most complete AI/ML career platform. 19+ free tools for interview prep, job search, and learning.
             </p>
             <div className="flex items-center gap-2.5">
               <a href="https://youtube.com/@AmanAI_lab" target="_blank" rel="noopener noreferrer" aria-label="YouTube"
@@ -120,7 +122,7 @@ export default function Footer() {
                 className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
                 <GithubIcon className="w-4 h-4" />
               </a>
-              <a href="https://twitter.com/AmanAI_lab" target="_blank" rel="noopener noreferrer" aria-label="Twitter"
+              <a href="https://x.com/AmanAI_lab" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)"
                 className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
                 <TwitterIcon className="w-4 h-4" />
               </a>

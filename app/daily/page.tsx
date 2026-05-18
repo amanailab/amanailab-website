@@ -48,17 +48,25 @@ function localDateStr(date: Date = new Date()): string {
   return date.toLocaleDateString('en-CA') // en-CA gives YYYY-MM-DD format
 }
 
+function prevDay(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00') // Noon avoids DST edge cases
+  d.setDate(d.getDate() - 1)
+  return localDateStr(d)
+}
+
 function calcStreak(history: string[], todayDate: string): number {
   const dates = [...new Set([...history])].sort((a, b) => b.localeCompare(a))
   const today = todayDate
-  const yesterday = localDateStr(new Date(Date.now() - 86400000))
+  const yesterdayDate = new Date()
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1)
+  const yesterday = localDateStr(yesterdayDate)
   if (!dates.includes(today) && !dates.includes(yesterday)) return 0
   let streak = 0
   let cursor = today
   for (let i = 0; i < 365; i++) {
     if (dates.includes(cursor)) {
       streak++
-      cursor = localDateStr(new Date(new Date(cursor).getTime() - 86400000))
+      cursor = prevDay(cursor)
     } else {
       if (cursor === today) { cursor = yesterday; continue }
       break

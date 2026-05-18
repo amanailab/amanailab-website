@@ -39,17 +39,16 @@ export default function FlashcardDeck({ topic }: Props) {
 
     setFlipped(false)
 
-    setQueue(q => {
-      const nextQueue = appendCard ? [...q, cardIdx] : q
-      const nextPos = queuePos + 1
-      if (nextPos >= nextQueue.length) {
-        setTimeout(() => setDone(true), 0)
-      }
-      return nextQueue
-    })
-
+    setQueue(q => appendCard ? [...q, cardIdx] : q)
     setQueuePos(pos => pos + 1)
   }, [cardIdx, queuePos, repeatCounts])
+
+  // Detect deck completion after both queue and queuePos have updated
+  useEffect(() => {
+    if (!done && queuePos > 0 && queuePos >= queue.length) {
+      setDone(true)
+    }
+  }, [queuePos, queue.length, done])
 
   function restart() {
     setQueue(topic.cards.map((_, i) => i))

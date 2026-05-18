@@ -20,8 +20,18 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ ok: true }) // silently ignore for logged-out
 
-    const { date, questionId, score } = await req.json()
+    const { date, questionId, score: rawScore } = await req.json()
     if (!date) return NextResponse.json({ error: 'date required' }, { status: 400 })
+
+    // Validate date is today or yesterday (server time) to prevent fake streak manipulation
+    const serverToday = new Date().toISOString().split('T')[0]
+    const serverYesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    if (date !== serverToday && date !== serverYesterday) {
+      return NextResponse.json({ error: 'invalid date' }, { status: 400 })
+    }
+
+    // Clamp client-supplied score to valid range
+    const score = typeof rawScore === 'number' ? Math.max(0, Math.min(10, Math.round(rawScore))) : null
 
     const sb = admin()
 
@@ -37,7 +47,7 @@ export async function POST(req: NextRequest) {
       console.error('[daily/save]', error.message)
     }
 
-    // Award 15 XP for completing today's challenge (only once per day)
+    // Award XP only once per day — re-fetch after upsert to avoid TOCTOU race
     const { data: existing } = await sb
       .from('daily_completions')
       .select('xp_awarded')
@@ -47,17 +57,21 @@ export async function POST(req: NextRequest) {
 
     let xpAwarded = 0
     if (!existing?.xp_awarded) {
-      const baseXp = 15 + (score >= 9 ? 10 : score >= 7 ? 5 : 0)
-      xpAwarded = baseXp
+      // Mark XP as awarded first to minimise race window
+      const { error: markErr } = await sb.from('daily_completions')
+        .update({ xp_awarded: true })
+        .eq('user_id', user.id)
+        .eq('date', date)
+        .eq('xp_awarded', false) // Only update if still false (optimistic lock)
 
-      // Mark XP as awarded
-      await sb.from('daily_completions').update({ xp_awarded: true })
-        .eq('user_id', user.id).eq('date', date)
+      if (!markErr) {
+        // Flat XP — not based on client-supplied score to prevent manipulation
+        xpAwarded = 15
 
-      // Add to user_xp
-      const { data: xpRow } = await sb.from('user_xp').select('xp').eq('user_id', user.id).single()
-      const newXp = (xpRow?.xp ?? 0) + xpAwarded
-      await sb.from('user_xp').upsert({ user_id: user.id, xp: newXp, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+        const { data: xpRow } = await sb.from('user_xp').select('xp').eq('user_id', user.id).single()
+        const newXp = (xpRow?.xp ?? 0) + xpAwarded
+        await sb.from('user_xp').upsert({ user_id: user.id, xp: newXp, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      }
     }
 
     return NextResponse.json({ ok: true, xp_awarded: xpAwarded })

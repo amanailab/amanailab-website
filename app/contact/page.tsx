@@ -2,10 +2,15 @@ import type { Metadata } from "next";
 import ContactForm from "@/components/contact/ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact",
+  title: "Contact | AmanAI Lab",
   description:
     "Get in touch with AmanAI Lab — for questions, collaborations, sponsorships, or feedback.",
   alternates: { canonical: 'https://amanailab.com/contact' },
+  openGraph: {
+    title: "Contact AmanAI Lab",
+    description: "Get in touch for questions, collaborations, or feedback.",
+    url: "https://amanailab.com/contact",
+  },
 };
 
 export default function ContactPage() {

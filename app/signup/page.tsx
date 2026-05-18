@@ -142,10 +142,14 @@ export default function SignupPage() {
   async function handleGoogleSignIn() {
     setGooglePending(true)
     const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}` },
     })
+    if (oauthError) {
+      setGooglePending(false)
+    }
+    // On success the browser navigates away — no need to reset pending
   }
 
   function handleFormAction(formData: FormData) {
@@ -263,8 +267,8 @@ export default function SignupPage() {
             </div>
 
             {state && state !== 'check_email' && (
-              <div className="flex items-start gap-2.5 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                <span className="shrink-0 mt-0.5">⚠</span>
+              <div role="alert" aria-live="assertive" className="flex items-start gap-2.5 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <span className="shrink-0 mt-0.5" aria-hidden="true">⚠</span>
                 {state}
               </div>
             )}

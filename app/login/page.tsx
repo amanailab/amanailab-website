@@ -79,11 +79,17 @@ export default function LoginPage() {
 
   async function handleGoogleSignIn() {
     setGooglePending(true)
+    setError(null)
     const supabase = createClient()
-    await supabase.auth.signInWithOAuth({
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}` },
     })
+    if (oauthError) {
+      setError(oauthError.message)
+      setGooglePending(false)
+    }
+    // On success the browser navigates away — no need to reset pending
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -208,8 +214,8 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="flex items-start gap-2.5 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                <span className="shrink-0 mt-0.5">⚠</span>
+              <div role="alert" aria-live="assertive" className="flex items-start gap-2.5 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                <span className="shrink-0 mt-0.5" aria-hidden="true">⚠</span>
                 {error}
               </div>
             )}

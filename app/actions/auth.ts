@@ -11,7 +11,8 @@ export async function login(prevState: string | null, formData: FormData) {
   })
   if (error) return error.message
   const next = formData.get('next') as string
-  redirect(next?.startsWith('/') ? next : '/dashboard')
+  // Block open redirects: //evil.com and /\evil.com both start with '/' but are external
+  redirect(next && /^\/[^/\\]/.test(next) ? next : '/dashboard')
 }
 
 export async function signup(prevState: string | null, formData: FormData) {

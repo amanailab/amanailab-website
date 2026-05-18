@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -44,6 +45,12 @@ function getAdminSupabase() {
 }
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req)
+  const rl = checkRateLimit(`subscribe:${ip}`, 5, 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+  }
+
   try {
     const { email: rawEmail, source } = await req.json()
 
@@ -71,7 +78,7 @@ export async function POST(req: Request) {
     // ── Check if already exists ──
     const { data: existing } = await supabase
       .from('newsletter_subscribers')
-      .select('id, verified')
+      .select('id, verified, source')
       .eq('email', email)
       .maybeSingle()
 
@@ -88,7 +95,7 @@ export async function POST(req: Request) {
     if (existing) {
       await supabase
         .from('newsletter_subscribers')
-        .update({ verification_token: token, token_expires_at: expiresAt, source: source ?? existing })
+        .update({ verification_token: token, token_expires_at: expiresAt, source: source ?? existing.source })
         .eq('email', email)
     } else {
       const { error: insertErr } = await supabase

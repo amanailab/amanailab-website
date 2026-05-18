@@ -1,14 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { RefreshCw, Newspaper, ExternalLink, Loader2 } from "lucide-react";
 import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -170,6 +165,7 @@ function lastUpdatedLabel(iso: string): string {
 const PAGE_SIZE = 20
 
 export default function NewsFeed() {
+  const supabase = useMemo(() => createClient(), [])
   const { readIds, markRead }         = useReadArticles()
   const [articles, setArticles]       = useState<NewsArticle[]>([]);
   const [loading, setLoading]         = useState(true);

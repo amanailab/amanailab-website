@@ -95,7 +95,6 @@ Return this exact JSON:
       key_points_covered: ev.key_points_covered ?? [],
       key_points_missed: ev.key_points_missed ?? [],
       model_answer_highlight: ev.model_answer_highlight ?? '',
-      model_answer: today.answer,
     })
   } catch (err) {
     console.error('[Daily Evaluate]', err)
