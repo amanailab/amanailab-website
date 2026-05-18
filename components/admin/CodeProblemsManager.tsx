@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Loader2, CheckCircle2, Code2, ExternalLink, Database } from 'lucide-react'
+import { Plus, Loader2, CheckCircle2, Code2, ExternalLink, Database, Pencil, Trash2 } from 'lucide-react'
 
 interface Problem {
   id: string; title: string; slug: string; difficulty: string; topic: string; order_index: number
@@ -17,6 +17,26 @@ export default function CodeProblemsManager({ problems: initial }: { problems: P
   const [seeding, setSeeding]   = useState(false)
   const [msg, setMsg]           = useState('')
   const [password, setPassword] = useState('')
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  async function handleDelete(id: string, title: string) {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return
+    setDeleting(id)
+    try {
+      const res = await fetch(`/api/admin/code-problems/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (data.success) {
+        setProblems(prev => prev.filter(p => p.id !== id))
+        setMsg(`✓ Deleted "${title}"`)
+      } else {
+        setMsg(data.error ?? 'Delete failed')
+      }
+    } catch {
+      setMsg('Network error')
+    } finally {
+      setDeleting(null)
+    }
+  }
 
   async function seed() {
     if (!password) { setMsg('Enter admin password'); return }
@@ -106,8 +126,8 @@ export default function CodeProblemsManager({ problems: initial }: { problems: P
 
       {/* Problems list */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-        <div className="grid grid-cols-[40px_1fr_90px_110px_80px] gap-4 px-5 py-3 border-b border-zinc-800 text-[10px] font-bold text-zinc-600 uppercase tracking-wider">
-          <span>#</span><span>Title</span><span>Difficulty</span><span>Topic</span><span>Action</span>
+        <div className="grid grid-cols-[40px_1fr_90px_110px_140px] gap-4 px-5 py-3 border-b border-zinc-800 text-[10px] font-bold text-zinc-600 uppercase tracking-wider">
+          <span>#</span><span>Title</span><span>Difficulty</span><span>Topic</span><span>Actions</span>
         </div>
         {problems.length === 0 ? (
           <div className="py-16 text-center">
@@ -118,17 +138,34 @@ export default function CodeProblemsManager({ problems: initial }: { problems: P
         ) : (
           problems.map(p => (
             <div key={p.id}
-              className="grid grid-cols-[40px_1fr_90px_110px_80px] gap-4 px-5 py-3.5 border-b border-zinc-800/50 items-center hover:bg-zinc-800/20 transition-colors">
+              className="grid grid-cols-[40px_1fr_90px_110px_140px] gap-4 px-5 py-3.5 border-b border-zinc-800/50 items-center hover:bg-zinc-800/20 transition-colors">
               <span className="text-xs text-zinc-600 font-mono">{p.order_index}</span>
               <span className="text-sm font-medium text-zinc-200 truncate">{p.title}</span>
               <span className={`text-xs font-bold ${DIFF[p.difficulty as keyof typeof DIFF] ?? 'text-zinc-400'}`}>
                 {p.difficulty}
               </span>
               <span className="text-xs text-zinc-500">{p.topic}</span>
-              <Link href={`/code-lab/${p.slug}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 transition-colors">
-                <ExternalLink className="w-3 h-3" /> Open
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link href={`/code-lab/${p.slug}`} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 transition-colors">
+                  <ExternalLink className="w-3 h-3" /> Open
+                </Link>
+                <Link href={`/admin/code-problems/${p.slug}/edit`}
+                  className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors">
+                  <Pencil className="w-3 h-3" /> Edit
+                </Link>
+                <button
+                  onClick={() => handleDelete(p.id, p.title)}
+                  disabled={deleting === p.id}
+                  className="flex items-center gap-1 text-xs text-zinc-600 hover:text-red-400 disabled:opacity-40 transition-colors"
+                >
+                  {deleting === p.id
+                    ? <Loader2 className="w-3 h-3 animate-spin" />
+                    : <Trash2 className="w-3 h-3" />
+                  }
+                  Del
+                </button>
+              </div>
             </div>
           ))
         )}

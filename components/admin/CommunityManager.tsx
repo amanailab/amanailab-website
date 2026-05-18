@@ -53,9 +53,12 @@ function PostCard({ post, onApprove, onDelete, showApprove }: {
   )
 }
 
+const PAGE_SIZE = 20
+
 export default function CommunityManager({ pending: initialPending, approved: initialApproved }: Props) {
   const [pending, setPending] = useState<Post[]>(initialPending)
   const [approved, setApproved] = useState<Post[]>(initialApproved)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [banner, setBanner] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -111,7 +114,21 @@ export default function CommunityManager({ pending: initialPending, approved: in
         <h2 className="text-sm font-bold text-zinc-100 mb-3">Approved Posts ({approved.length})</h2>
         {approved.length === 0
           ? <p className="text-sm text-zinc-600 bg-zinc-900 border border-zinc-800 rounded-xl p-4">No approved posts yet.</p>
-          : <div className="flex flex-col gap-2">{approved.slice(0, 20).map(p => <PostCard key={p.id} post={p} showApprove={false} onDelete={() => handleDelete(p.id, true)} />)}</div>
+          : (
+            <div className="flex flex-col gap-2">
+              {approved.slice(0, visibleCount).map(p => (
+                <PostCard key={p.id} post={p} showApprove={false} onDelete={() => handleDelete(p.id, true)} />
+              ))}
+              {visibleCount < approved.length && (
+                <button
+                  onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
+                  className="self-center mt-2 text-sm text-zinc-400 hover:text-zinc-200 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-5 py-2 rounded-lg transition-colors"
+                >
+                  Load more ({approved.length - visibleCount} remaining)
+                </button>
+              )}
+            </div>
+          )
         }
       </div>
     </div>

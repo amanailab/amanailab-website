@@ -7,10 +7,14 @@ import {
   Trash2,
   RefreshCw,
   ExternalLink,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react'
 import {
   createNewsArticle,
   deleteNewsArticle,
+  updateNewsArticle,
   type NewsInput,
 } from '@/lib/admin-actions'
 import type { AdminNewsArticle } from '@/app/admin/news/page'
@@ -54,6 +58,124 @@ const EMPTY: NewsInput = {
   published_at: new Date().toISOString().slice(0, 10),
 }
 
+// ─── Inline Edit Row ──────────────────────────────────────────────────────────
+
+function EditRow({
+  article,
+  onSave,
+  onCancel,
+  isPending,
+}: {
+  article: AdminNewsArticle
+  onSave: (draft: Partial<NewsInput>) => void
+  onCancel: () => void
+  isPending: boolean
+}) {
+  const [draft, setDraft] = useState<NewsInput>({
+    title: article.title,
+    source: article.source,
+    source_url: article.source_url,
+    summary: article.summary,
+    developer_take: article.developer_take,
+    impact_score: article.impact_score,
+    category: article.category,
+    published_at: article.published_at.slice(0, 10),
+  })
+
+  function set<K extends keyof NewsInput>(key: K, value: NewsInput[K]) {
+    setDraft((d) => ({ ...d, [key]: value }))
+  }
+
+  return (
+    <tr className="border-t border-orange-500/20 bg-zinc-900/60">
+      <td colSpan={6} className="px-4 py-4">
+        <div className="flex flex-col gap-3">
+          <input
+            type="text"
+            value={draft.title}
+            onChange={(e) => set('title', e.target.value)}
+            placeholder="Title"
+            className={inputBase}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input
+              type="text"
+              value={draft.source}
+              onChange={(e) => set('source', e.target.value)}
+              placeholder="Source name"
+              className={inputBase}
+            />
+            <input
+              type="url"
+              value={draft.source_url}
+              onChange={(e) => set('source_url', e.target.value)}
+              placeholder="Source URL"
+              className={inputBase}
+            />
+          </div>
+          <textarea
+            value={draft.summary}
+            onChange={(e) => set('summary', e.target.value)}
+            placeholder="Summary"
+            rows={3}
+            className={`${inputBase} resize-y`}
+          />
+          <textarea
+            value={draft.developer_take}
+            onChange={(e) => set('developer_take', e.target.value)}
+            placeholder="Developer take"
+            rows={3}
+            className={`${inputBase} resize-y`}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <select
+              value={draft.impact_score}
+              onChange={(e) => set('impact_score', e.target.value as NewsInput['impact_score'])}
+              className={inputBase}
+            >
+              {IMPACTS.map((i) => (
+                <option key={i} value={i}>{IMPACT_LABEL[i]}</option>
+              ))}
+            </select>
+            <select
+              value={draft.category}
+              onChange={(e) => set('category', e.target.value as NewsInput['category'])}
+              className={inputBase}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={draft.published_at.slice(0, 10)}
+              onChange={(e) => set('published_at', e.target.value)}
+              className={inputBase}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onSave(draft)}
+              disabled={isPending}
+              className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+            >
+              <Check className="w-3.5 h-3.5" /> {isPending ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              onClick={onCancel}
+              className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
+            >
+              <X className="w-3.5 h-3.5" /> Cancel
+            </button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function NewsManager({
   initialArticles,
 }: {
@@ -64,6 +186,7 @@ export default function NewsManager({
   const [banner, setBanner] = useState<BannerState | null>(null)
   const [isPending, startTransition] = useTransition()
   const [refreshing, setRefreshing] = useState(false)
+  const [editId, setEditId] = useState<number | null>(null)
 
   function showSuccess(text: string) {
     setBanner({ type: 'success', text })
@@ -115,6 +238,25 @@ export default function NewsManager({
       }
       setArticles((prev) => prev.filter((a) => a.id !== id))
       showSuccess('Article deleted.')
+    })
+  }
+
+  function handleEdit(id: number, draft: Partial<NewsInput>) {
+    startTransition(async () => {
+      const payload = {
+        ...draft,
+        ...(draft.published_at ? { published_at: new Date(draft.published_at).toISOString() } : {}),
+      }
+      const res = await updateNewsArticle(id, payload)
+      if (res.error) {
+        showError(res.error)
+        return
+      }
+      setArticles((prev) =>
+        prev.map((a) => a.id === id ? { ...a, ...payload } as AdminNewsArticle : a)
+      )
+      setEditId(null)
+      showSuccess('Article updated.')
     })
   }
 
@@ -276,40 +418,62 @@ export default function NewsManager({
                 </tr>
               )}
               {articles.map((a) => (
-                <tr key={a.id} className="border-t border-zinc-800">
-                  <td className="px-4 py-3 max-w-md">
-                    <p className="text-zinc-100 font-medium line-clamp-2">{a.title}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <a
-                      href={a.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300"
-                    >
-                      {a.source}
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-zinc-300">{a.category}</td>
-                  <td className="px-4 py-3 text-xs text-zinc-300">
-                    {IMPACT_LABEL[a.impact_score]}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-zinc-400 tabular-nums">
-                    {new Date(a.published_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end">
-                      <button
-                        onClick={() => handleDelete(a.id)}
-                        disabled={isPending}
-                        className="inline-flex items-center gap-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors"
+                <>
+                  <tr key={a.id} className={`border-t border-zinc-800 ${editId === a.id ? 'bg-zinc-800/40' : ''}`}>
+                    <td className="px-4 py-3 max-w-md">
+                      <p className="text-zinc-100 font-medium line-clamp-2">{a.title}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <a
+                        href={a.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300"
                       >
-                        <Trash2 className="w-3 h-3" /> Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                        {a.source}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-zinc-300">{a.category}</td>
+                    <td className="px-4 py-3 text-xs text-zinc-300">
+                      {IMPACT_LABEL[a.impact_score]}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-zinc-400 tabular-nums">
+                      {new Date(a.published_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => setEditId(editId === a.id ? null : a.id)}
+                          className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors ${
+                            editId === a.id
+                              ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
+                              : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700'
+                          }`}
+                        >
+                          {editId === a.id ? <X className="w-3 h-3" /> : <Pencil className="w-3 h-3" />}
+                          {editId === a.id ? 'Close' : 'Edit'}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(a.id)}
+                          disabled={isPending}
+                          className="inline-flex items-center gap-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs font-semibold px-2.5 py-1.5 rounded-md transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {editId === a.id && (
+                    <EditRow
+                      key={`edit-${a.id}`}
+                      article={a}
+                      onSave={(draft) => handleEdit(a.id, draft)}
+                      onCancel={() => setEditId(null)}
+                      isPending={isPending}
+                    />
+                  )}
+                </>
               ))}
             </tbody>
           </table>

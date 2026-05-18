@@ -16,10 +16,12 @@ import {
   MessageSquare,
   Library,
   Code2,
+  Users,
 } from 'lucide-react'
 
 const navLinks = [
   { href: '/admin/dashboard',         label: 'Dashboard',       icon: LayoutDashboard },
+  { href: '/admin/users',             label: 'Users',           icon: Users },
   { href: '/admin/blog',              label: 'Blog Posts',      icon: FileText },
   { href: '/admin/questions',         label: "Interview Q's",   icon: HelpCircle },
   { href: '/admin/company-questions', label: 'Company Q\'s',    icon: Library },

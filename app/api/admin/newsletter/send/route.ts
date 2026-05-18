@@ -8,6 +8,39 @@ export const maxDuration = 60
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
+
+function buildHtml(subject: string, htmlBody: string, previewText: string, email: string): string {
+  const unsubscribeUrl = `${SITE_URL}/api/email/unsubscribe?email=${encodeURIComponent(email)}`
+  const previewDiv = previewText
+    ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0">${previewText}</div>`
+    : ''
+
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+${previewDiv}
+  <div style="max-width:600px;margin:0 auto;padding:40px 20px">
+    <div style="margin-bottom:32px">
+      <span style="font-size:20px;font-weight:700;color:#f4f4f5">Aman<span style="color:#f97316">AI</span> Lab</span>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:32px">
+      <h1 style="margin:0 0 24px 0;font-size:22px;font-weight:700;color:#f4f4f5;line-height:1.3">${subject}</h1>
+      ${htmlBody}
+    </div>
+    <div style="margin-top:24px;padding-top:24px;border-top:1px solid #27272a;text-align:center">
+      <p style="margin:0;font-size:12px;color:#52525b">You are receiving this because you subscribed at amanailab.com</p>
+      <p style="margin:8px 0 0 0;font-size:12px;color:#52525b">© ${new Date().getFullYear()} AmanAI Lab</p>
+      <p style="margin:8px 0 0 0;font-size:12px">
+        <a href="${unsubscribeUrl}" style="color:#71717a;text-decoration:underline">Unsubscribe</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
 export async function POST(req: Request) {
   try {
     const cookieStore = await cookies()
@@ -43,26 +76,6 @@ export async function POST(req: Request) {
       .map((line: string) => line.trim() ? `<p style="margin:0 0 12px 0;color:#d4d4d8;font-size:15px;line-height:1.6">${line}</p>` : '<br>')
       .join('')
 
-    const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
-  <div style="max-width:600px;margin:0 auto;padding:40px 20px">
-    <div style="margin-bottom:32px">
-      <span style="font-size:20px;font-weight:700;color:#f4f4f5">Aman<span style="color:#f97316">AI</span> Lab</span>
-    </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:32px">
-      <h1 style="margin:0 0 24px 0;font-size:22px;font-weight:700;color:#f4f4f5;line-height:1.3">${subject}</h1>
-      ${htmlBody}
-    </div>
-    <div style="margin-top:24px;padding-top:24px;border-top:1px solid #27272a;text-align:center">
-      <p style="margin:0;font-size:12px;color:#52525b">You are receiving this because you subscribed at amanailab.com</p>
-      <p style="margin:8px 0 0 0;font-size:12px;color:#52525b">© ${new Date().getFullYear()} AmanAI Lab</p>
-    </div>
-  </div>
-</body>
-</html>`
-
     const BATCH_SIZE = 50
     let sent = 0
     let failed = 0
@@ -75,8 +88,7 @@ export async function POST(req: Request) {
             from: 'AmanAI Lab <newsletter@amanailab.com>',
             to: email,
             subject,
-            html,
-            ...(previewText ? { headers: { 'X-Preview-Text': previewText } } : {}),
+            html: buildHtml(subject, htmlBody, previewText ?? '', email),
           })
         )
       )

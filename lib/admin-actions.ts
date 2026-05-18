@@ -109,6 +109,15 @@ export async function createNewsArticle(input: NewsInput) {
   return { success: true };
 }
 
+export async function updateNewsArticle(id: number, input: Partial<NewsInput>) {
+  const supabase = getAdminSupabase();
+  const { error } = await supabase.from("news").update(input).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/news");
+  revalidatePath("/admin/news");
+  return { success: true };
+}
+
 export async function deleteNewsArticle(id: number) {
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("news").delete().eq("id", id);
