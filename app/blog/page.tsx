@@ -34,7 +34,10 @@ async function getPostsPage(
       .order('created_at', { ascending: false })
       .range(start, end)
 
-    if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
+    if (search) {
+      const safe = search.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_')
+      query = query.or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
+    }
     if (category) query = query.eq('category', category)
 
     const { data, count, error } = await query

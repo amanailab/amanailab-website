@@ -1,7 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { getAdminSupabase } from "./admin";
+
+async function requireAdmin() {
+  const store = await cookies()
+  if (store.get('admin_session')?.value !== 'true') throw new Error('Unauthorized')
+}
 
 // ─── Interview Questions ──────────────────────────────────────────────────────
 
@@ -13,6 +19,7 @@ export interface QuestionInput {
 }
 
 export async function createQuestion(input: QuestionInput) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("interview_questions").insert(input);
   if (error) return { error: error.message };
@@ -22,6 +29,7 @@ export async function createQuestion(input: QuestionInput) {
 }
 
 export async function updateQuestion(id: number, input: QuestionInput) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase
     .from("interview_questions")
@@ -34,6 +42,7 @@ export async function updateQuestion(id: number, input: QuestionInput) {
 }
 
 export async function deleteQuestion(id: number) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("interview_questions").delete().eq("id", id);
   if (error) return { error: error.message };
@@ -43,6 +52,7 @@ export async function deleteQuestion(id: number) {
 }
 
 export async function bulkInsertQuestions(rows: QuestionInput[]) {
+  await requireAdmin()
   if (rows.length === 0) return { error: "No rows to insert." };
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("interview_questions").insert(rows);
@@ -64,6 +74,7 @@ export interface ResourceInput {
 }
 
 export async function createResource(input: ResourceInput) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("resources").insert({
     ...input,
@@ -76,6 +87,7 @@ export async function createResource(input: ResourceInput) {
 }
 
 export async function deleteResource(id: string, filePath?: string | null) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   if (filePath) {
     await supabase.storage.from("pdfs").remove([filePath]);
@@ -101,6 +113,7 @@ export interface NewsInput {
 }
 
 export async function createNewsArticle(input: NewsInput) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("news").insert(input);
   if (error) return { error: error.message };
@@ -110,6 +123,7 @@ export async function createNewsArticle(input: NewsInput) {
 }
 
 export async function updateNewsArticle(id: number, input: Partial<NewsInput>) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("news").update(input).eq("id", id);
   if (error) return { error: error.message };
@@ -119,6 +133,7 @@ export async function updateNewsArticle(id: number, input: Partial<NewsInput>) {
 }
 
 export async function deleteNewsArticle(id: number) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("news").delete().eq("id", id);
   if (error) return { error: error.message };
@@ -130,6 +145,7 @@ export async function deleteNewsArticle(id: number) {
 // ─── Emails / Waitlist ────────────────────────────────────────────────────────
 
 export async function deleteNewsletterSubscriber(id: string | number) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("newsletter_subscribers").delete().eq("id", id);
   if (error) return { error: error.message };
@@ -155,6 +171,7 @@ export interface CompanyInput {
 }
 
 export async function createCompany(input: CompanyInput) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("companies").insert(input);
   if (error) return { error: error.message };
@@ -164,6 +181,7 @@ export async function createCompany(input: CompanyInput) {
 }
 
 export async function updateCompany(id: number, input: Partial<CompanyInput>) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("companies").update(input).eq("id", id);
   if (error) return { error: error.message };
@@ -173,6 +191,7 @@ export async function updateCompany(id: number, input: Partial<CompanyInput>) {
 }
 
 export async function deleteCompany(id: number) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("companies").delete().eq("id", id);
   if (error) return { error: error.message };
@@ -192,6 +211,7 @@ export interface CompanyQuestionInput {
 }
 
 export async function createCompanyQuestion(input: CompanyQuestionInput) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("company_questions").insert(input);
   if (error) return { error: error.message };
@@ -201,6 +221,7 @@ export async function createCompanyQuestion(input: CompanyQuestionInput) {
 }
 
 export async function updateCompanyQuestion(id: number, input: Partial<CompanyQuestionInput>) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("company_questions").update(input).eq("id", id);
   if (error) return { error: error.message };
@@ -210,6 +231,7 @@ export async function updateCompanyQuestion(id: number, input: Partial<CompanyQu
 }
 
 export async function deleteCompanyQuestion(id: number) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("company_questions").delete().eq("id", id);
   if (error) return { error: error.message };
@@ -219,6 +241,7 @@ export async function deleteCompanyQuestion(id: number) {
 }
 
 export async function bulkInsertCompanyQuestions(rows: CompanyQuestionInput[]) {
+  await requireAdmin()
   if (rows.length === 0) return { error: "No rows to insert." };
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("company_questions").insert(rows);
@@ -231,6 +254,7 @@ export async function bulkInsertCompanyQuestions(rows: CompanyQuestionInput[]) {
 // ─── Community ────────────────────────────────────────────────────────────────
 
 export async function approveCommunityPost(id: string) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("community_posts").update({ approved: true }).eq("id", id);
   if (error) return { error: error.message };
@@ -240,6 +264,7 @@ export async function approveCommunityPost(id: string) {
 }
 
 export async function deleteCommunityPost(id: string) {
+  await requireAdmin()
   const supabase = getAdminSupabase();
   const { error } = await supabase.from("community_posts").delete().eq("id", id);
   if (error) return { error: error.message };

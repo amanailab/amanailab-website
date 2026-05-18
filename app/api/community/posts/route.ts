@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/admin'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import sanitizeHtml from 'sanitize-html'
 
 export const runtime = 'nodejs'
 
@@ -38,12 +39,25 @@ export async function POST(request: Request) {
     if (body.trim().length < 30) {
       return NextResponse.json({ error: 'Body must be at least 30 characters.' }, { status: 400 })
     }
+    if (body.trim().length > 5000) {
+      return NextResponse.json({ error: 'Body must be under 5000 characters.' }, { status: 400 })
+    }
+    if (title.trim().length > 200) {
+      return NextResponse.json({ error: 'Title must be under 200 characters.' }, { status: 400 })
+    }
+    if (author_name.trim().length > 100) {
+      return NextResponse.json({ error: 'Name must be under 100 characters.' }, { status: 400 })
+    }
+
+    // Strip all HTML — posts are plain text
+    const clean = (s: string) => sanitizeHtml(s, { allowedTags: [], allowedAttributes: {} })
+
     const supabase = getAdminSupabase()
     const { error } = await supabase.from('community_posts').insert({
-      author_name: author_name.trim(),
-      author_email: author_email?.trim() || null,
-      title: title.trim(),
-      body: body.trim(),
+      author_name: clean(author_name.trim()),
+      author_email: author_email?.trim() ? clean(author_email.trim()) : null,
+      title: clean(title.trim()),
+      body: clean(body.trim()),
       type: type ?? 'experience',
       company_slug: company_slug || null,
       approved: false,

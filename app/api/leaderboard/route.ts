@@ -3,10 +3,10 @@ import { getAdminSupabase } from '@/lib/admin'
 
 export const runtime = 'nodejs'
 
-function anonymize(email: string, name: string | null): string {
-  if (name && name.length > 1) return name
-  const local = email.split('@')[0]
-  return local.slice(0, 2) + '***'
+function anonymize(email: string, name: string | null, uid: string): string {
+  if (name && name.trim().length > 1) return name.trim()
+  // Use last 6 chars of uid for a stable pseudonym that doesn't leak the email
+  return `User_${uid.slice(-6)}`
 }
 
 export async function GET() {
@@ -18,6 +18,7 @@ export async function GET() {
       .from('user_interview_sessions')
       .select('user_id, avg_score, created_at')
       .order('created_at', { ascending: false })
+      .limit(10000)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -51,7 +52,7 @@ export async function GET() {
         const info = userNameMap.get(uid)
         return {
           uid,
-          name: info ? anonymize(info.email, info.name) : 'User',
+          name: info ? anonymize(info.email, info.name, uid) : `User_${uid.slice(-6)}`,
           avg: Math.round(avg * 10) / 10,
           sessions: scores.length,
           latest,
@@ -78,7 +79,7 @@ export async function GET() {
         const info = userNameMap.get(uid)
         return {
           uid,
-          name: info ? anonymize(info.email, info.name) : 'User',
+          name: info ? anonymize(info.email, info.name, uid) : `User_${uid.slice(-6)}`,
           avg: Math.round(avg * 10) / 10,
           sessions: scores.length,
         }

@@ -10,6 +10,10 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 function buildHtml(subject: string, htmlBody: string, previewText: string, email: string): string {
   const unsubscribeUrl = `${SITE_URL}/api/email/unsubscribe?email=${encodeURIComponent(email)}`
   const previewDiv = previewText
@@ -26,7 +30,7 @@ ${previewDiv}
       <span style="font-size:20px;font-weight:700;color:#f4f4f5">Aman<span style="color:#f97316">AI</span> Lab</span>
     </div>
     <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:32px">
-      <h1 style="margin:0 0 24px 0;font-size:22px;font-weight:700;color:#f4f4f5;line-height:1.3">${subject}</h1>
+      <h1 style="margin:0 0 24px 0;font-size:22px;font-weight:700;color:#f4f4f5;line-height:1.3">${escHtml(subject)}</h1>
       ${htmlBody}
     </div>
     <div style="margin-top:24px;padding-top:24px;border-top:1px solid #27272a;text-align:center">
@@ -73,7 +77,7 @@ export async function POST(req: Request) {
 
     const htmlBody = body
       .split('\n')
-      .map((line: string) => line.trim() ? `<p style="margin:0 0 12px 0;color:#d4d4d8;font-size:15px;line-height:1.6">${line}</p>` : '<br>')
+      .map((line: string) => line.trim() ? `<p style="margin:0 0 12px 0;color:#d4d4d8;font-size:15px;line-height:1.6">${escHtml(line)}</p>` : '<br>')
       .join('')
 
     const BATCH_SIZE = 50

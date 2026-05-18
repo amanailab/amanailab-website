@@ -11,13 +11,15 @@ import BlogComments from '@/components/blog/BlogComments'
 import TableOfContents from '@/components/blog/TableOfContents'
 import sanitizeHtml from 'sanitize-html'
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
+
 const ALLOWED_TAGS = [
   ...sanitizeHtml.defaults.allowedTags,
   'img','h1','h2','h3','h4','pre','code','figure','figcaption','mark','del','ins',
 ]
 const ALLOWED_ATTRS: sanitizeHtml.IOptions['allowedAttributes'] = {
   ...sanitizeHtml.defaults.allowedAttributes,
-  '*':   ['class','id','style'],
+  '*':   ['class','id'],
   'a':   ['href','target','rel','title'],
   'img': ['src','alt','width','height','loading'],
 }
@@ -61,14 +63,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const post = await getPost(slug)
   if (!post) return { robots: { index: false } }
-  const ogImage = post.cover_image ?? `https://amanailab.com/api/og/blog?title=${encodeURIComponent(post.title)}&category=${encodeURIComponent(post.category ?? '')}&rt=${post.read_time ?? 5}`
+  const ogImage = post.cover_image ?? `${SITE_URL}/api/og/blog?title=${encodeURIComponent(post.title)}&category=${encodeURIComponent(post.category ?? '')}&rt=${post.read_time ?? 5}`
   return {
     title: `${post.title}`,
     description: post.description ?? undefined,
-    alternates: { canonical: `https://amanailab.com/blog/${slug}` },
+    alternates: { canonical: `${SITE_URL}/blog/${slug}` },
     openGraph: {
       type: 'article',
-      url: `https://amanailab.com/blog/${slug}`,
+      url: `${SITE_URL}/blog/${slug}`,
       title: post.title,
       description: post.description ?? undefined,
       images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
@@ -120,7 +122,7 @@ export default async function BlogPostPage({ params }: Props) {
     '@type': 'Article',
     headline: post.title,
     description: post.description ?? '',
-    url: `https://amanailab.com/blog/${slug}`,
+    url: `${SITE_URL}/blog/${slug}`,
     datePublished: post.created_at,
     dateModified: post.updated_at ?? post.created_at,
     author: { '@type': 'Person', name: 'Aman Chauhan', url: 'https://amanailab.com/about' },
@@ -130,16 +132,16 @@ export default async function BlogPostPage({ params }: Props) {
       logo: { '@type': 'ImageObject', url: 'https://amanailab.com/logo.jpg' },
     },
     image: post.cover_image ? [post.cover_image] : ['https://amanailab.com/logo.jpg'],
-    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://amanailab.com/blog/${slug}` },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${slug}` },
   }
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://amanailab.com' },
-      { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://amanailab.com/blog' },
-      { '@type': 'ListItem', position: 3, name: post.title, item: `https://amanailab.com/blog/${slug}` },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_URL}/blog` },
+      { '@type': 'ListItem', position: 3, name: post.title, item: `${SITE_URL}/blog/${slug}` },
     ],
   }
 
@@ -170,12 +172,12 @@ export default async function BlogPostPage({ params }: Props) {
           <span className="text-xs text-zinc-500">{formatDate(post.created_at)}</span>
           {/* Share buttons */}
           <div className="flex items-center gap-1.5 ml-auto">
-            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(`https://amanailab.com/blog/${post.slug}`)}`}
+            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(`${SITE_URL}/blog/${post.slug}`)}`}
               target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 text-[10px] font-semibold text-zinc-500 hover:text-sky-400 bg-zinc-800 hover:bg-sky-500/10 border border-zinc-700 hover:border-sky-500/30 px-2 py-1 rounded-lg transition-all" title="Share on X">
               <Share2 className="w-3 h-3" /> X
             </a>
-            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://amanailab.com/blog/${post.slug}`)}`}
+            <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${SITE_URL}/blog/${post.slug}`)}`}
               target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1 text-[10px] font-semibold text-zinc-500 hover:text-blue-400 bg-zinc-800 hover:bg-blue-500/10 border border-zinc-700 hover:border-blue-500/30 px-2 py-1 rounded-lg transition-all" title="Share on LinkedIn">
               <Share2 className="w-3 h-3" /> in

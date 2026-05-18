@@ -24,8 +24,8 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
       // Fonts: Geist (Google) + Monaco editor icon font (codicon.ttf) from CDN
       "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
-      // Images: self + data URIs + YouTube + Supabase + GitHub avatars
-      "img-src 'self' data: blob: https://i.ytimg.com https://i3.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://yt3.googleusercontent.com https://nvjnfgdssukunoymhbmo.supabase.co https://avatars.githubusercontent.com",
+      // Images: self + data URIs + YouTube + Supabase + GitHub avatars + Twitter/X
+      "img-src 'self' data: blob: https://i.ytimg.com https://i3.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://yt3.googleusercontent.com https://nvjnfgdssukunoymhbmo.supabase.co https://avatars.githubusercontent.com https://pbs.twimg.com",
       // Frames: Giscus comments, YouTube embeds
       "frame-src https://giscus.app https://www.youtube.com",
       // Connections: self + all external APIs + Pyodide CDN (downloads .whl packages at runtime)
@@ -60,6 +60,11 @@ const nextConfig: NextConfig = {
       {
         source: '/robots.txt',
         headers: [{ key: 'Cache-Control', value: 'public, max-age=86400' }],
+      },
+      // Keep admin pages out of search engine indexes
+      {
+        source: '/admin/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
       },
     ]
   },

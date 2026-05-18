@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://amanailab.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'),
   title: {
     default: "AmanAI Lab | AI/ML Career Platform — Tools, Interview Prep & Learning",
     template: "%s | AmanAI Lab",
@@ -112,7 +112,7 @@ export default async function RootLayout({
         />
         {/* Clarity loaded via MicrosoftClarity component below — no duplicate here */}
       </head>
-      <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased" suppressHydrationWarning={true}>
+      <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased">
         {/* Skip link for keyboard/screen-reader users */}
         <a
           href="#main-content"

@@ -118,8 +118,9 @@ export async function POST(req: Request) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
     const verifyUrl = `${baseUrl}/api/email/confirm?token=${token}`
 
+    const fromAddr = process.env.RESEND_FROM_EMAIL ?? 'AmanAI Lab <onboarding@resend.dev>'
     const { error: resendErr } = await resend.emails.send({
-      from: 'AmanAI Lab <onboarding@resend.dev>',
+      from: fromAddr,
       to: email,
       subject: 'Confirm your AmanAI Lab subscription',
       html: `<!DOCTYPE html>
@@ -164,9 +165,9 @@ export async function POST(req: Request) {
 
     if (resendErr) {
       console.error('[subscribe] Resend error:', resendErr)
-      // Resend with onboarding@resend.dev only works for your own verified email.
-      // Domain verification needed to send to any address.
-      // Still return success so UX isn't broken — user gets "check inbox" message.
+      // IMPORTANT: Set RESEND_FROM_EMAIL to a verified sender address (e.g. "AmanAI Lab <newsletter@amanailab.com>")
+      // in your environment. onboarding@resend.dev only delivers to your own Resend-registered email.
+      // Without a verified domain, verification emails won't reach external users.
     }
 
     return NextResponse.json({ success: true, alreadyVerified: false })

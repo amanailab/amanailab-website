@@ -17,7 +17,13 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { topic, level, question_count, avg_score, grade, entries } = await req.json()
+    const body = await req.json()
+    const topic = typeof body.topic === 'string' ? body.topic.slice(0, 100) : ''
+    const level = typeof body.level === 'string' ? body.level.slice(0, 50) : ''
+    const question_count = typeof body.question_count === 'number' ? Math.max(0, Math.min(100, Math.round(body.question_count))) : 0
+    const avg_score = typeof body.avg_score === 'number' ? Math.max(0, Math.min(10, body.avg_score)) : 0
+    const grade = typeof body.grade === 'string' ? body.grade.slice(0, 20) : ''
+    const entries = Array.isArray(body.entries) ? body.entries.slice(0, 50) : []
 
     const { error } = await supabase.from('user_interview_sessions').insert({
       user_id: user.id, topic, level, question_count, avg_score, grade, entries,
