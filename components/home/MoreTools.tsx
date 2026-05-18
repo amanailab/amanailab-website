@@ -10,21 +10,21 @@ import {
 } from "lucide-react";
 
 const TOOLS = [
-  { href: "/quiz",               label: "Skill Quiz",          desc: "MCQ on 14 AI/ML topics",        icon: Sparkles,      color: "text-lime-400",    bg: "bg-lime-500/10 border-lime-500/20"       },
-  { href: "/flashcards",         label: "Flashcards",           desc: "5-min daily concept revision",  icon: BookOpen,      color: "text-orange-400",  bg: "bg-orange-500/10 border-orange-500/20"   },
-  { href: "/topics",             label: "Topic Guides",         desc: "Deep-dive prep by topic",       icon: Layers,        color: "text-rose-400",    bg: "bg-rose-500/10 border-rose-500/20"       },
-  { href: "/questions",          label: "Question Bank",        desc: "500+ real interview questions", icon: Library,       color: "text-purple-400",  bg: "bg-purple-500/10 border-purple-500/20"   },
-  { href: "/companies",          label: "Company Prep",         desc: "Google, Meta, OpenAI & more",   icon: Building2,     color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/20"       },
-  { href: "/job-prep",           label: "Job Prep",             desc: "Paste JD → tailored questions", icon: Briefcase,     color: "text-teal-400",    bg: "bg-teal-500/10 border-teal-500/20"       },
-  { href: "/resume",             label: "Resume Analyzer",      desc: "ATS score & AI improvements",   icon: FileText,      color: "text-yellow-400",  bg: "bg-yellow-500/10 border-yellow-500/20"   },
-  { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   desc: "AI-rewritten profile",          icon: BarChart2,     color: "text-sky-400",     bg: "bg-sky-500/10 border-sky-500/20"         },
-  { href: "/cover-letter-review",label: "Cover Letter",         desc: "Score vs JD + full rewrite",    icon: Mail,          color: "text-pink-400",    bg: "bg-pink-500/10 border-pink-500/20"       },
-  { href: "/career",             label: "Career Roadmap",       desc: "Week-by-week AI/ML path",       icon: Map,           color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
-  { href: "/playground",         label: "Code Playground",      desc: "Monaco + AI for ML code",       icon: Code2,         color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20"     },
-  { href: "/prompt",             label: "Prompt Generator",     desc: "Perfect prompts for any AI",    icon: Wand2,         color: "text-cyan-400",    bg: "bg-cyan-500/10 border-cyan-500/20"       },
-  { href: "/paper-explainer",    label: "Paper Explainer",      desc: "Any arXiv paper explained",     icon: ScrollText,    color: "text-indigo-400",  bg: "bg-indigo-500/10 border-indigo-500/20"   },
-  { href: "/linkedin",           label: "LinkedIn Posts",        desc: "Viral AI/ML post generator",   icon: GraduationCap, color: "text-fuchsia-400", bg: "bg-fuchsia-500/10 border-fuchsia-500/20" },
-  { href: "/community",          label: "Community",            desc: "Share interview experiences",   icon: MessageSquare, color: "text-green-400",   bg: "bg-green-500/10 border-green-500/20"     },
+  // Resume Analyzer is featured in FeaturedTools — not duplicated here
+  { href: "/quiz",               label: "Skill Quiz",           desc: "AI-generated MCQ on 14 topics",  icon: Sparkles,      color: "text-lime-400",    bg: "bg-lime-500/10 border-lime-500/20"       },
+  { href: "/flashcards",         label: "Flashcards",           desc: "5-min daily concept revision",   icon: BookOpen,      color: "text-orange-400",  bg: "bg-orange-500/10 border-orange-500/20"   },
+  { href: "/topics",             label: "Topic Guides",         desc: "Deep-dive prep by topic",        icon: Layers,        color: "text-rose-400",    bg: "bg-rose-500/10 border-rose-500/20"       },
+  { href: "/questions",          label: "Question Bank",        desc: "500+ real interview questions",  icon: Library,       color: "text-purple-400",  bg: "bg-purple-500/10 border-purple-500/20"   },
+  { href: "/companies",          label: "Company Prep",         desc: "Google, Meta, OpenAI & more",    icon: Building2,     color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/20"       },
+  { href: "/job-prep",           label: "Job Prep",             desc: "Paste JD → tailored questions",  icon: Briefcase,     color: "text-teal-400",    bg: "bg-teal-500/10 border-teal-500/20"       },
+  { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   desc: "AI-rewritten profile sections",  icon: BarChart2,     color: "text-sky-400",     bg: "bg-sky-500/10 border-sky-500/20"         },
+  { href: "/cover-letter-review",label: "Cover Letter",         desc: "Score vs JD + full AI rewrite",  icon: Mail,          color: "text-pink-400",    bg: "bg-pink-500/10 border-pink-500/20"       },
+  { href: "/career",             label: "Career Roadmap",       desc: "Week-by-week AI/ML path",        icon: Map,           color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { href: "/playground",         label: "Code Playground",      desc: "Monaco editor + AI for ML code", icon: Code2,         color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20"     },
+  { href: "/prompt",             label: "Prompt Generator",     desc: "Perfect prompts for any AI",     icon: Wand2,         color: "text-cyan-400",    bg: "bg-cyan-500/10 border-cyan-500/20"       },
+  { href: "/paper-explainer",    label: "Paper Explainer",      desc: "Any arXiv paper in plain English",icon: ScrollText,    color: "text-indigo-400",  bg: "bg-indigo-500/10 border-indigo-500/20"   },
+  { href: "/linkedin",           label: "LinkedIn Posts",       desc: "Viral AI/ML post generator",     icon: GraduationCap, color: "text-fuchsia-400", bg: "bg-fuchsia-500/10 border-fuchsia-500/20" },
+  { href: "/community",          label: "Community",            desc: "Share real interview experiences",icon: MessageSquare, color: "text-green-400",   bg: "bg-green-500/10 border-green-500/20"     },
 ]
 
 export default function MoreTools() {
@@ -41,10 +41,10 @@ export default function MoreTools() {
         >
           <div>
             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-[0.2em]">More Free Tools</p>
-            <p className="text-sm text-zinc-600 mt-0.5">15 more tools — all free, no sign-up required</p>
+            <p className="text-sm text-zinc-600 mt-0.5">14 more tools — all free, no sign-up required</p>
           </div>
-          <Link href="/skill-gap" className="hidden sm:flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
-            Explore all tools <ArrowRight className="w-3 h-3" />
+          <Link href="/resources" className="hidden sm:flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
+            View resources <ArrowRight className="w-3 h-3" />
           </Link>
         </motion.div>
 

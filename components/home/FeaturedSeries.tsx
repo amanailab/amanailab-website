@@ -7,7 +7,15 @@ import { useState } from "react";
 import { ArrowRight, Play, BookOpen } from "lucide-react";
 import type { Playlist } from "@/lib/types";
 
+const STATIC_SERIES = [
+  { title: 'LLM Mastery — From Basics to Production', tags: ['LLMs', 'GPT', 'Transformers'], episodes: 12, href: '/series' },
+  { title: 'AI Agents & Multi-Agent Systems', tags: ['Agents', 'LangChain', 'Tools'], episodes: 8, href: '/series' },
+  { title: 'RAG Systems — Build & Deploy', tags: ['RAG', 'Embeddings', 'Vector DBs'], episodes: 10, href: '/series' },
+]
+
 export default function FeaturedSeries({ playlists }: { playlists: Playlist[] }) {
+  const hasPlaylists = playlists && playlists.length > 0
+
   return (
     <section className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <motion.div
@@ -34,9 +42,39 @@ export default function FeaturedSeries({ playlists }: { playlists: Playlist[] })
       </motion.div>
 
       <div className="grid md:grid-cols-3 gap-5">
-        {playlists.map((s, i) => (
-          <SeriesCard key={s.id} s={s} i={i} />
-        ))}
+        {hasPlaylists
+          ? playlists.map((s, i) => <SeriesCard key={s.id} s={s} i={i} />)
+          : STATIC_SERIES.map((s, i) => (
+              <motion.div
+                key={s.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-2xl overflow-hidden flex flex-col group"
+              >
+                <div className="h-44 flex items-center justify-center relative bg-gradient-to-br from-orange-500/10 to-zinc-900">
+                  <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300">
+                    <Play className="w-5 h-5 text-white ml-0.5" />
+                  </div>
+                </div>
+                <div className="p-5 flex flex-col flex-1">
+                  <h3 className="text-base font-bold mb-2 group-hover:text-orange-400 transition-colors">{s.title}</h3>
+                  <div className="flex flex-wrap gap-1.5 mb-4 mt-auto">
+                    {s.tags.map(tag => (
+                      <span key={tag} className="text-xs bg-zinc-800 text-zinc-400 px-2.5 py-1 rounded-full">{tag}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between pt-4 border-t border-zinc-800 text-zinc-500 text-xs">
+                    <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" />{s.episodes} episodes</span>
+                    <Link href={s.href} className="text-orange-500 hover:text-orange-400 font-semibold flex items-center gap-1 text-xs transition-colors">
+                      Watch <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            ))
+        }
       </div>
       <div className="text-center mt-8 md:hidden">
         <Link href="/series" className="inline-flex items-center gap-1.5 text-zinc-400 hover:text-orange-400 transition-colors text-sm font-medium">

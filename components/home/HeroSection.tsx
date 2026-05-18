@@ -128,7 +128,7 @@ export default function HeroSection() {
           {techPills.map((tech) => (
             <span
               key={tech}
-              className="bg-zinc-900/80 border border-zinc-800 text-zinc-500 text-xs px-3 py-1.5 rounded-full backdrop-blur-sm"
+              className="bg-zinc-800/70 border border-zinc-700/60 text-zinc-300 text-xs px-3 py-1.5 rounded-full"
             >
               {tech}
             </span>
