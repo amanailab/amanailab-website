@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
   Check, BookOpen, Code2, Layers, HelpCircle, MessageCircle,
   ChevronDown, ChevronRight, Filter, Trophy, RotateCcw,
   CheckSquare, Search, X, Clock, ChevronUp, Sparkles, PenLine,
+  Cloud, CloudOff, LogIn,
 } from 'lucide-react'
 import {
   SHEET_TRACKS, getTotalItems, TOPIC_TO_QUIZ,
@@ -255,21 +256,84 @@ export default function SheetClient() {
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
   const [searchQuery, setSearchQuery]   = useState('')
   const [mounted, setMounted]           = useState(false)
+  const [isLoggedIn, setIsLoggedIn]     = useState<boolean | null>(null)
+  const [synced, setSynced]             = useState(false)
+  const syncDebounce                    = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Load local progress, then merge with Supabase if logged in
   useEffect(() => {
     setMounted(true)
+
+    // 1 — load localStorage immediately (no flicker)
+    let localProgress: Record<string, boolean> = {}
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) setProgress(JSON.parse(saved))
+      if (saved) localProgress = JSON.parse(saved)
+      setProgress(localProgress)
     } catch {}
+
+    // 2 — check auth & fetch Supabase progress
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const sb = createClient()
+      sb.auth.getUser().then(({ data: { user } }) => {
+        if (!user) { setIsLoggedIn(false); return }
+        setIsLoggedIn(true)
+
+        fetch('/api/sheet/progress')
+          .then(r => r.json())
+          .then(({ items }) => {
+            if (!Array.isArray(items)) return
+
+            // Build remote map
+            const remote: Record<string, boolean> = {}
+            items.forEach(({ item_id }: { item_id: string }) => { remote[item_id] = true })
+
+            // Merge: union of local + remote (remote wins on conflict)
+            const merged = { ...localProgress, ...remote }
+            setProgress(merged)
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(merged)) } catch {}
+            setSynced(true)
+
+            // Sync any local-only items to Supabase
+            const localOnlyIds = Object.keys(localProgress).filter(
+              id => localProgress[id] && !remote[id]
+            )
+            if (localOnlyIds.length > 0) {
+              fetch('/api/sheet/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ item_ids: localOnlyIds }),
+              }).catch(() => {})
+            }
+          })
+          .catch(() => {})
+      })
+    })
   }, [])
+
+  // Sync a single item to Supabase (debounced, fire-and-forget)
+  const syncItemToSupabase = useCallback((id: string, completed: boolean) => {
+    if (!isLoggedIn) return
+    if (syncDebounce.current) clearTimeout(syncDebounce.current)
+    syncDebounce.current = setTimeout(() => {
+      fetch('/api/sheet/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: id, completed }),
+      }).catch(() => {})
+    }, 300)
+  }, [isLoggedIn])
 
   const save = useCallback((next: Record<string, boolean>) => {
     setProgress(next)
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
   }, [])
 
-  const toggleItem    = useCallback((id: string) => save({ ...progress, [id]: !progress[id] }), [progress, save])
+  const toggleItem    = useCallback((id: string) => {
+    const next = { ...progress, [id]: !progress[id] }
+    save(next)
+    syncItemToSupabase(id, !!next[id])
+  }, [progress, save, syncItemToSupabase])
   const toggleSection = useCallback((id: string) => setOpenSections(p => ({ ...p, [id]: !p[id] })), [])
   const toggleExpand  = useCallback((id: string) => setExpandedItem(p => p === id ? null : id), [])
 
@@ -371,6 +435,21 @@ export default function SheetClient() {
               <span className={`text-lg font-extrabold ${pct === 100 ? 'text-emerald-400' : 'text-orange-400'}`}>
                 {mounted ? pct : 0}%
               </span>
+              {/* Sync status indicator */}
+              {isLoggedIn === true && (
+                <span title={synced ? 'Progress synced to your account' : 'Syncing…'}
+                  className={`flex items-center gap-1 text-[10px] transition-colors ${synced ? 'text-emerald-500' : 'text-zinc-600'}`}>
+                  <Cloud size={11} />
+                  <span className="hidden sm:inline">{synced ? 'Synced' : 'Syncing…'}</span>
+                </span>
+              )}
+              {isLoggedIn === false && (
+                <Link href="/login" title="Sign in to sync progress across devices"
+                  className="flex items-center gap-1 text-[10px] text-zinc-600 hover:text-orange-400 transition-colors">
+                  <LogIn size={11} />
+                  <span className="hidden sm:inline">Sign in to sync</span>
+                </Link>
+              )}
               <button
                 onClick={() => { if (confirm('Reset all progress?')) save({}) }}
                 title="Reset all progress"
