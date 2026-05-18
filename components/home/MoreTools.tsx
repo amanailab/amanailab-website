@@ -29,7 +29,7 @@ const TOOLS = [
 
 export default function MoreTools() {
   return (
-    <section className="pb-20 px-4 sm:px-6">
+    <section className="pt-2 pb-20 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
 
         <motion.div
@@ -48,7 +48,7 @@ export default function MoreTools() {
           </Link>
         </motion.div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
           {TOOLS.map((tool, i) => {
             const Icon = tool.icon
             return (
@@ -61,7 +61,8 @@ export default function MoreTools() {
               >
                 <Link
                   href={tool.href}
-                  className="group flex flex-col gap-2.5 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200 h-full"
+                  aria-label={`${tool.label} — ${tool.desc}`}
+                  className="group flex flex-col gap-2.5 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 hover:-translate-y-0.5 transition-all duration-200 h-full focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:ring-offset-2 focus:ring-offset-zinc-950"
                 >
                   <div className={`w-8 h-8 rounded-lg border flex items-center justify-center ${tool.bg} flex-shrink-0`}>
                     <Icon className={`w-4 h-4 ${tool.color}`} />
@@ -70,7 +71,7 @@ export default function MoreTools() {
                     <p className="text-xs font-semibold text-zinc-300 group-hover:text-zinc-100 transition-colors leading-tight mb-0.5">
                       {tool.label}
                     </p>
-                    <p className="text-[10px] text-zinc-600 leading-snug group-hover:text-zinc-500 transition-colors">
+                    <p className="text-[11px] text-zinc-500 leading-snug group-hover:text-zinc-400 transition-colors">
                       {tool.desc}
                     </p>
                   </div>

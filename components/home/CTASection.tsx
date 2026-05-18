@@ -7,7 +7,7 @@ import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 const FREE_FEATURES = [
   "19+ AI-powered tools — completely free, no credit card needed",
   "AI interview simulator with voice + instant scoring (0–10)",
-  "A-to-Z Interview Sheet — 230+ topics across 7 tracks",
+  "A-to-Z Interview Sheet — 231 topics across 7 tracks",
   "AI/ML Code Lab — 45 problems to implement from scratch, earn XP",
   "AI Resume Analyzer — ATS score, JD match & cover letter generator",
   "System Design Workspace — 15 problems with AI review",
