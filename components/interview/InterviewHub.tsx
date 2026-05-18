@@ -652,7 +652,7 @@ export default function InterviewHub() {
             </div>
             <div className="ml-auto hidden sm:flex items-center gap-2">
               <div className="inline-flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
-                <Sparkles className="w-3 h-3" /> Free · 14 Topics
+                <Sparkles className="w-3 h-3" /> Free · 13 Topics
               </div>
             </div>
           </div>

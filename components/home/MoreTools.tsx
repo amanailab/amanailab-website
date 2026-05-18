@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   BookOpen, Layers, Library, Building2, Briefcase,
-  FileText, BarChart2, Mail, Map, Code2,
+  BarChart2, Mail, Map, Code2,
   Wand2, ScrollText, GraduationCap, MessageSquare, Sparkles,
   ArrowRight,
 } from "lucide-react";

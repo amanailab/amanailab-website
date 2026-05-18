@@ -9,10 +9,10 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AI Interview Prep Sheet 2026 — Theory · Code · Flashcards · Interview',
     description:
-      '218+ curated topics: Transformers, RAG, LoRA, LangGraph, MCP, MLOps and more. Complete this sheet and land your dream AI/ML job.',
+      '230++ curated topics: Transformers, RAG, LoRA, LangGraph, MCP, MLOps and more. Complete this sheet and land your dream AI/ML job.',
     images: [
       {
-        url: '/api/og/tool?name=AI+A2Z+Sheet&tagline=218%2B+topics+%E2%80%94+Interview+Ready&emoji=%E2%9C%A8&tool=sheet',
+        url: '/api/og/tool?name=AI+A2Z+Sheet&tagline=230+%2B+topics+%E2%80%94+Interview+Ready&emoji=%E2%9C%A8&tool=sheet',
         width: 1200,
         height: 630,
       },
@@ -38,7 +38,7 @@ const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
-    { '@type': 'Question', name: 'What is the AI Interview Prep Sheet?', acceptedAnswer: { '@type': 'Answer', text: 'A structured roadmap of 218 topics across 6 tracks (Generative AI, Agentic AI, Deep Learning, ML, MLOps, System Design) with inline theory, linked code problems, flashcards, quizzes, and a system design practice workspace. Inspired by Striver\'s A2Z DSA Sheet but built for 2026 AI/ML interviews.' } },
+    { '@type': 'Question', name: 'What is the AI Interview Prep Sheet?', acceptedAnswer: { '@type': 'Answer', text: 'A structured roadmap of 230+ topics across 7 tracks (Generative AI, Agentic AI, Deep Learning, ML, MLOps, System Design, 2026 Frontier) with inline theory, linked code problems, flashcards, quizzes, and a system design practice workspace. Inspired by Striver\'s A2Z DSA Sheet but built for 2026 AI/ML interviews.' } },
     { '@type': 'Question', name: 'Is the AI Interview Prep Sheet free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes, completely free. Your progress is saved automatically to your browser — no account required to start.' } },
     { '@type': 'Question', name: 'What tracks does the sheet cover?', acceptedAnswer: { '@type': 'Answer', text: '6 complete tracks: Generative AI (60 topics), Agentic AI (34 topics), Deep Learning (40 topics), Machine Learning (36 topics), MLOps (28 topics), and System Design (20 topics).' } },
     { '@type': 'Question', name: 'Does the sheet link to practice resources?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Each item links to: inline theory explanation, Code Lab problems (specific algorithm to implement), topic flashcard decks, AI-generated quizzes, mock interview, and a System Design Workspace for design problems.' } },
