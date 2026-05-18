@@ -23,7 +23,7 @@ export default function SheetProgressCard() {
 
     // Fetch from Supabase if logged in (more accurate — includes other devices)
     fetch('/api/sheet/progress')
-      .then(r => r.json())
+      .then(r => r.ok ? r.json() : { items: [] })
       .then(({ items }) => {
         if (!Array.isArray(items) || items.length === 0) return
         const remote: Record<string, boolean> = {}

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AI/ML Flashcards | AmanAI Lab',
     description: 'Free AI/ML flashcards to master LLM, RAG, Agents, MLOps and more. 5 minutes a day.',
-    images: [{ url: '/logo.jpg', width: 1200, height: 630 }],
+    images: [{ url: '/api/og/tool?name=AI%2FML+Flashcards&tagline=Master+key+concepts+in+5+minutes+a+day&emoji=%F0%9F%8E%B4&tool=flashcards', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
