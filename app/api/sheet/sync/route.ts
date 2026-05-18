@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
     const { error } = await admin
       .from('sheet_progress')
-      .upsert(rows, { onConflict: 'user_id,item_id', ignoreDuplicates: true })
+      .upsert(rows, { onConflict: 'user_id,item_id' })
 
     if (error) throw error
     return NextResponse.json({ ok: true, synced: rows.length })

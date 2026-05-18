@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AI Mock Interview Simulator — LLM, RAG, Agents, MLOps',
     description: 'Voice-enabled AI interview practice. 13 AI/ML topics, instant 0-10 scoring, model answers. Free for all engineers.',
-    images: [{ url: '/og-interview.png', width: 1200, height: 630 }],
+    images: [{ url: '/api/og/tool?name=AI+Mock+Interview&tagline=Voice-enabled+scoring+on+13+topics&emoji=%F0%9F%A7%A0&tool=interview', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',

@@ -46,7 +46,7 @@ export default function SheetPromo() {
           </h2>
           <p className="text-zinc-400 text-base max-w-2xl mx-auto">
             Inspired by Striver&apos;s A2Z DSA Sheet — built for 2026 AI/ML interviews.
-            230+ topics across 7 tracks with theory, code, flashcards, and system design all linked.
+            231 topics across 7 tracks with theory, code, flashcards, and system design all linked.
           </p>
         </motion.div>
 
