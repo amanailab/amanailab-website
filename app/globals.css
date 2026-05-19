@@ -220,3 +220,29 @@ body {
   text-underline-offset: 2px;
 }
 .blog-content strong { color: #fafafa; font-weight: 600; }
+.blog-content em { color: #e4e4e7; font-style: italic; }
+.blog-content hr { border: none; border-top: 1px solid #27272a; margin: 2rem 0; }
+
+/* Tables — used in posts like the 2026 compensation table */
+.blog-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+  overflow-x: auto;
+  display: block;
+}
+.blog-content thead { background: #18181b; }
+.blog-content th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #fafafa;
+  border-bottom: 1px solid #27272a;
+}
+.blog-content td {
+  padding: 0.65rem 1rem;
+  color: #d4d4d8;
+  border-bottom: 1px solid #27272a;
+}
+.blog-content tbody tr:hover { background: #18181b; }

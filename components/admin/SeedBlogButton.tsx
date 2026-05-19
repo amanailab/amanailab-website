@@ -19,14 +19,17 @@ export default function SeedBlogButton() {
       const data = await res.json()
       if (!res.ok) { setMsg(data.error ?? 'Failed'); setMsgType('error'); return }
       const seeded  = data.seeded  ?? 0
+      const updated = data.updated ?? 0
       const skipped = data.skipped ?? 0
-      if (seeded > 0) {
-        setMsg(`${seeded} new post${seeded === 1 ? '' : 's'} published${skipped ? ` (${skipped} already existed)` : ''}. Refresh to see them.`)
+      if (seeded > 0 || updated > 0) {
+        const parts: string[] = []
+        if (seeded > 0)  parts.push(`${seeded} new post${seeded === 1 ? '' : 's'} published`)
+        if (updated > 0) parts.push(`${updated} existing post${updated === 1 ? '' : 's'} reformatted`)
+        setMsg(`${parts.join(' · ')}. Refresh to see them.`)
         setMsgType('success')
-        // Refresh the server component listing after a moment so the new posts appear
         setTimeout(() => window.location.reload(), 1500)
       } else if (skipped > 0) {
-        setMsg(`All ${skipped} starter posts already exist.`)
+        setMsg(`All ${skipped} starter posts already exist with proper formatting.`)
         setMsgType('success')
       } else {
         setMsg('No posts returned.')

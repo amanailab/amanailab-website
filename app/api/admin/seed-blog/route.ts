@@ -4,6 +4,127 @@ import { getAdminSupabase } from '@/lib/admin'
 
 export const runtime = 'nodejs'
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
+
+// ─── Minimal markdown → HTML ────────────────────────────────────────────────
+// Targets only what the blog renderer's sanitize-html whitelist supports
+// (h1-h4, p, ul, ol, li, pre, code, strong, em, a, table-related tags).
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function renderInline(s: string): string {
+  // Escape first, then re-introduce safe tags. Order matters: code before bold/italic.
+  let out = escapeHtml(s)
+  out = out.replace(/`([^`]+)`/g, '<code>$1</code>')
+  out = out.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+  out = out.replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+  // Links [text](url) — only http(s) urls
+  out = out.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" rel="noopener noreferrer" target="_blank">$1</a>')
+  return out
+}
+
+function mdToHtml(md: string): string {
+  const lines = md.replace(/\r\n/g, '\n').split('\n')
+  const out: string[] = []
+  let i = 0
+
+  while (i < lines.length) {
+    const line = lines[i]
+
+    // Blank line — skip
+    if (line.trim() === '') { i++; continue }
+
+    // Fenced code block
+    if (line.trim().startsWith('```')) {
+      const lang = line.trim().slice(3).trim()
+      const buf: string[] = []
+      i++
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        buf.push(lines[i])
+        i++
+      }
+      i++ // skip closing fence
+      const langClass = lang ? ` class="language-${escapeHtml(lang)}"` : ''
+      out.push(`<pre><code${langClass}>${escapeHtml(buf.join('\n'))}</code></pre>`)
+      continue
+    }
+
+    // Headings
+    const h4 = line.match(/^####\s+(.+)/)
+    if (h4) { out.push(`<h4>${renderInline(h4[1])}</h4>`); i++; continue }
+    const h3 = line.match(/^###\s+(.+)/)
+    if (h3) { out.push(`<h3>${renderInline(h3[1])}</h3>`); i++; continue }
+    const h2 = line.match(/^##\s+(.+)/)
+    if (h2) { out.push(`<h2>${renderInline(h2[1])}</h2>`); i++; continue }
+    const h1 = line.match(/^#\s+(.+)/)
+    if (h1) { out.push(`<h1>${renderInline(h1[1])}</h1>`); i++; continue }
+
+    // Horizontal rule
+    if (/^---+$/.test(line.trim())) { out.push('<hr />'); i++; continue }
+
+    // Pipe table — first row + separator row + data rows
+    if (/^\s*\|.+\|\s*$/.test(line) && i + 1 < lines.length && /^\s*\|[\s\-:|]+\|\s*$/.test(lines[i + 1])) {
+      const head = line.trim().slice(1, -1).split('|').map(c => c.trim())
+      i += 2
+      const rows: string[][] = []
+      while (i < lines.length && /^\s*\|.+\|\s*$/.test(lines[i])) {
+        rows.push(lines[i].trim().slice(1, -1).split('|').map(c => c.trim()))
+        i++
+      }
+      const thead = `<thead><tr>${head.map(c => `<th>${renderInline(c)}</th>`).join('')}</tr></thead>`
+      const tbody = `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${renderInline(c)}</td>`).join('')}</tr>`).join('')}</tbody>`
+      out.push(`<table>${thead}${tbody}</table>`)
+      continue
+    }
+
+    // Bullet list
+    if (/^\s*[-*]\s+/.test(line)) {
+      const items: string[] = []
+      while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) {
+        items.push(`<li>${renderInline(lines[i].replace(/^\s*[-*]\s+/, ''))}</li>`)
+        i++
+      }
+      out.push(`<ul>${items.join('')}</ul>`)
+      continue
+    }
+
+    // Numbered list
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items: string[] = []
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        items.push(`<li>${renderInline(lines[i].replace(/^\s*\d+\.\s+/, ''))}</li>`)
+        i++
+      }
+      out.push(`<ol>${items.join('')}</ol>`)
+      continue
+    }
+
+    // Paragraph — gather consecutive non-blank, non-special lines
+    const para: string[] = [line]
+    i++
+    while (i < lines.length && lines[i].trim() !== ''
+      && !/^#{1,6}\s/.test(lines[i])
+      && !/^\s*[-*]\s+/.test(lines[i])
+      && !/^\s*\d+\.\s+/.test(lines[i])
+      && !lines[i].trim().startsWith('```')
+      && !/^\s*\|.+\|\s*$/.test(lines[i])
+      && !/^---+$/.test(lines[i].trim())) {
+      para.push(lines[i])
+      i++
+    }
+    out.push(`<p>${renderInline(para.join(' '))}</p>`)
+  }
+
+  return out.join('\n')
+}
+
+// Build a cover image URL from the existing OG endpoint so every post has visual.
+function coverFor(p: { title: string; category: string; read_time: string }): string {
+  const rt = parseInt((p.read_time || '5').toString()) || 5
+  return `${SITE_URL}/api/og/blog?title=${encodeURIComponent(p.title)}&category=${encodeURIComponent(p.category)}&rt=${rt}`
+}
+
 // Five starter blog posts. Inserted as PUBLISHED so they appear on /blog immediately.
 // Re-running is safe — slugs that already exist are skipped.
 const POSTS = [
@@ -301,30 +422,82 @@ export async function POST(req: Request) {
 
   const supabase = getAdminSupabase()
 
-  // Skip slugs that already exist so re-running the seeder is safe.
-  const slugs = POSTS.map(p => p.slug)
+  // Convert markdown source to sanitize-html-friendly HTML upfront.
+  // Also build cover URLs so every post has an image.
+  const prepared = POSTS.map(p => ({
+    ...p,
+    htmlContent: mdToHtml(p.content),
+    cover:       coverFor(p),
+  }))
+
+  // Fetch existing rows for these slugs — we may need to UPDATE posts whose
+  // content was previously inserted as raw markdown (no HTML tags) so they
+  // re-render properly.
+  const slugs = prepared.map(p => p.slug)
   const { data: existing } = await supabase
     .from('blog_posts')
-    .select('slug')
+    .select('id, slug, content, cover_image')
     .in('slug', slugs)
-  const existingSet = new Set((existing ?? []).map(r => r.slug as string))
+  const existingBySlug = new Map((existing ?? []).map(r => [r.slug as string, r as { id: string; slug: string; content: string; cover_image: string | null }]))
 
-  const toInsert = POSTS
-    .filter(p => !existingSet.has(p.slug))
+  // INSERT for new slugs
+  const toInsert = prepared
+    .filter(p => !existingBySlug.has(p.slug))
     .map(p => ({
       title:       p.title,
       slug:        p.slug,
       description: p.description,
-      content:     p.content,
+      content:     p.htmlContent,
       category:    p.category,
       tags:        p.tags,
-      cover_image: null,
+      cover_image: p.cover,
       read_time:   p.read_time,
-      published:   true, // live on /blog immediately, per user preference
+      published:   true,
     }))
 
+  // UPDATE for existing slugs whose content still looks like raw markdown
+  // (no html tags) — fix formatting without overwriting user-edited posts.
+  const looksLikeMarkdown = (c: string | null | undefined) => {
+    if (!c) return true
+    const s = c.trim()
+    // Heuristic: starts with ##, contains \n## , or has no html tags at all.
+    if (/<\/?(p|h[1-6]|ul|ol|li|pre|code|table|blockquote|div|span)\b/i.test(s)) return false
+    return true
+  }
+  const toUpdate = prepared.filter(p => {
+    const row = existingBySlug.get(p.slug)
+    if (!row) return false
+    return looksLikeMarkdown(row.content) || !row.cover_image
+  })
+
+  let updated = 0
+  for (const p of toUpdate) {
+    const row = existingBySlug.get(p.slug)!
+    const patch: Record<string, unknown> = {}
+    if (looksLikeMarkdown(row.content)) patch.content = p.htmlContent
+    if (!row.cover_image) patch.cover_image = p.cover
+    if (Object.keys(patch).length === 0) continue
+    patch.updated_at = new Date().toISOString()
+    const { error: upErr } = await supabase.from('blog_posts').update(patch).eq('id', row.id)
+    if (!upErr) updated++
+  }
+
+  if (toInsert.length === 0 && updated === 0) {
+    return NextResponse.json({
+      seeded: 0,
+      updated: 0,
+      skipped: prepared.length,
+      message: 'All starter posts already exist with proper HTML content.',
+    })
+  }
+
   if (toInsert.length === 0) {
-    return NextResponse.json({ seeded: 0, skipped: POSTS.length, message: 'All starter posts already exist.' })
+    return NextResponse.json({
+      seeded: 0,
+      updated,
+      skipped: prepared.length - updated,
+      message: `Reformatted ${updated} existing post${updated === 1 ? '' : 's'} (converted markdown to HTML, added cover image).`,
+    })
   }
 
   const { error, data } = await supabase
@@ -337,7 +510,8 @@ export async function POST(req: Request) {
   }
   return NextResponse.json({
     seeded:  data?.length ?? toInsert.length,
-    skipped: POSTS.length - toInsert.length,
-    message: 'Posts inserted as published. They are live on /blog now.',
+    updated,
+    skipped: prepared.length - toInsert.length - updated,
+    message: `Inserted ${data?.length ?? toInsert.length} new post(s)${updated ? ` and reformatted ${updated} existing post(s)` : ''}. Live on /blog now.`,
   })
 }
