@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { revalidatePath } from 'next/cache'
 import { getAdminSupabase } from '@/lib/admin'
 
 export const runtime = 'nodejs'
@@ -409,13 +410,15 @@ The rest is table stakes.`,
 ]
 
 export async function POST(req: Request) {
-  // Two-factor: admin password from body OR admin_session cookie
+  // Parse body once (handles both auth password and force flag).
+  const body = (await req.json().catch(() => ({}))) as { password?: string; force?: boolean }
+  const force = body.force === true
+
   const cookieStore = await cookies()
   const hasSession = cookieStore.get('admin_session')?.value === 'true'
 
   if (!hasSession) {
-    const { password } = await req.json().catch(() => ({}))
-    if (!process.env.ADMIN_PASSWORD || password !== process.env.ADMIN_PASSWORD) {
+    if (!process.env.ADMIN_PASSWORD || body.password !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
   }
@@ -457,6 +460,7 @@ export async function POST(req: Request) {
 
   // UPDATE for existing slugs whose content still looks like raw markdown
   // (no html tags) — fix formatting without overwriting user-edited posts.
+  // When force=true, overwrite EVERY existing post regardless of state.
   const looksLikeMarkdown = (c: string | null | undefined) => {
     if (!c) return true
     const s = c.trim()
@@ -467,19 +471,31 @@ export async function POST(req: Request) {
   const toUpdate = prepared.filter(p => {
     const row = existingBySlug.get(p.slug)
     if (!row) return false
+    if (force) return true
     return looksLikeMarkdown(row.content) || !row.cover_image
   })
 
   let updated = 0
+  const updateErrors: string[] = []
   for (const p of toUpdate) {
     const row = existingBySlug.get(p.slug)!
     const patch: Record<string, unknown> = {}
-    if (looksLikeMarkdown(row.content)) patch.content = p.htmlContent
-    if (!row.cover_image) patch.cover_image = p.cover
+    if (force || looksLikeMarkdown(row.content)) patch.content = p.htmlContent
+    if (force || !row.cover_image) patch.cover_image = p.cover
     if (Object.keys(patch).length === 0) continue
     patch.updated_at = new Date().toISOString()
     const { error: upErr } = await supabase.from('blog_posts').update(patch).eq('id', row.id)
-    if (!upErr) updated++
+    if (upErr) {
+      updateErrors.push(`${p.slug}: ${upErr.message}`)
+    } else {
+      updated++
+      // Bust the cached blog post page so the new HTML/cover shows immediately
+      try { revalidatePath(`/blog/${p.slug}`) } catch {}
+    }
+  }
+  // Bust the blog list cache once if anything changed
+  if (updated > 0 || toInsert.length > 0) {
+    try { revalidatePath('/blog') } catch {}
   }
 
   if (toInsert.length === 0 && updated === 0) {
@@ -487,7 +503,12 @@ export async function POST(req: Request) {
       seeded: 0,
       updated: 0,
       skipped: prepared.length,
-      message: 'All starter posts already exist with proper HTML content.',
+      updateErrors,
+      message: updateErrors.length
+        ? `No updates applied. Errors: ${updateErrors.join('; ')}`
+        : (force
+          ? 'Force re-seed ran but no posts matched (table may be empty).'
+          : 'All starter posts already exist with proper HTML content. Re-run with force:true to overwrite.'),
     })
   }
 
@@ -496,6 +517,7 @@ export async function POST(req: Request) {
       seeded: 0,
       updated,
       skipped: prepared.length - updated,
+      updateErrors,
       message: `Reformatted ${updated} existing post${updated === 1 ? '' : 's'} (converted markdown to HTML, added cover image).`,
     })
   }
@@ -512,6 +534,7 @@ export async function POST(req: Request) {
     seeded:  data?.length ?? toInsert.length,
     updated,
     skipped: prepared.length - toInsert.length - updated,
+    updateErrors,
     message: `Inserted ${data?.length ?? toInsert.length} new post(s)${updated ? ` and reformatted ${updated} existing post(s)` : ''}. Live on /blog now.`,
   })
 }
