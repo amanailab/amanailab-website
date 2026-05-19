@@ -7,7 +7,7 @@ import {
   AlertCircle, Trophy, Loader2, Eye, PenLine, Timer,
   Play, Pause, RotateCcw, Building2, BookOpen, Code2,
   Layers, HelpCircle, MessageCircle, ListChecks, Cpu,
-  Bold, Heading2, Heading3, List, Minus,
+  Bold, Heading2, Heading3, List, Minus, Cloud,
 } from 'lucide-react'
 import type { SDProblem } from '@/lib/system-design-problems'
 import { DESIGN_TEMPLATE } from '@/lib/system-design-problems'
@@ -159,12 +159,15 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [timerSec, setTimerSec]       = useState(45 * 60)
   const [timerOn, setTimerOn]         = useState(false)
   const [timerStarted, setTimerStarted] = useState(false)
+  const [isLoggedIn, setIsLoggedIn]   = useState<boolean | null>(null)
+  const [cloudSaved, setCloudSaved]   = useState(false)
   const saveTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cloudSaveTimer                = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timerInterval                 = useRef<ReturnType<typeof setInterval> | null>(null)
   const textareaRef                   = useRef<HTMLTextAreaElement>(null)
   const storageKey                    = STORAGE_PREFIX + problem.slug
 
-  // Load saved state
+  // Load saved state (localStorage first for instant paint, then merge cloud if logged in)
   useEffect(() => {
     try {
       const saved = localStorage.getItem(storageKey)
@@ -177,7 +180,36 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         setDesign(DESIGN_TEMPLATE)
       }
     } catch { setDesign(DESIGN_TEMPLATE) }
-  }, [storageKey])
+
+    // Check login and fetch cloud copy
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const sb = createClient()
+      sb.auth.getUser().then(({ data: { user } }) => {
+        if (!user) { setIsLoggedIn(false); return }
+        setIsLoggedIn(true)
+        sb.from('system_design_submissions')
+          .select('design, checklist, updated_at, review_json')
+          .eq('user_id', user.id)
+          .eq('problem_slug', problem.slug)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (!data) { setCloudSaved(true); return }
+            // Cloud copy wins if it's newer than local copy
+            const localTs = (() => { try { return new Date(JSON.parse(localStorage.getItem(storageKey) ?? '{}').savedAt ?? 0).getTime() } catch { return 0 } })()
+            const cloudTs = new Date(data.updated_at).getTime()
+            if (cloudTs > localTs) {
+              setDesign(data.design || DESIGN_TEMPLATE)
+              setChecklist((data.checklist as Record<string, boolean>) ?? {})
+              setSavedAt(new Date(data.updated_at))
+              try { localStorage.setItem(storageKey, JSON.stringify({ design: data.design, savedAt: data.updated_at, checklist: data.checklist ?? {} })) } catch {}
+            }
+            if (data.review_json) setReview(data.review_json as ReviewResult)
+            setCloudSaved(true)
+          })
+      })
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey, problem.slug])
 
   // Timer
   useEffect(() => {
@@ -201,6 +233,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current)
+      if (cloudSaveTimer.current) clearTimeout(cloudSaveTimer.current)
       if (timerInterval.current) clearInterval(timerInterval.current)
     }
   }, [])
@@ -218,7 +251,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     URL.revokeObjectURL(url)
   }
 
-  // Auto-save
+  // Auto-save (local immediately, cloud after 2.5s of idle when logged in)
   const saveDesign = useCallback((text: string, cl: Record<string, boolean>) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
@@ -227,7 +260,28 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         setSavedAt(new Date())
       } catch {}
     }, 700)
-  }, [storageKey])
+
+    if (isLoggedIn) {
+      setCloudSaved(false)
+      if (cloudSaveTimer.current) clearTimeout(cloudSaveTimer.current)
+      cloudSaveTimer.current = setTimeout(() => {
+        const wc = text.split(/\s+/).filter(Boolean).length
+        fetch('/api/system-design/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            problem_slug:  problem.slug,
+            problem_title: problem.title,
+            design:        text,
+            checklist:     cl,
+            word_count:    wc,
+          }),
+        })
+          .then(r => { if (r.ok) setCloudSaved(true) })
+          .catch(() => { /* offline — local copy still safe */ })
+      }, 2500)
+    }
+  }, [storageKey, isLoggedIn, problem.slug, problem.title])
 
   const handleChange = (val: string) => { setDesign(val); saveDesign(val, checklist) }
 
@@ -282,6 +336,23 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       if (!res.ok) throw new Error(data.error ?? 'Review failed')
       setReview(data.review)
       setShowReview(true)
+
+      // Persist review for logged-in users so it appears on dashboard later
+      if (isLoggedIn) {
+        const wc = design.split(/\s+/).filter(Boolean).length
+        fetch('/api/system-design/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            problem_slug:  problem.slug,
+            problem_title: problem.title,
+            design,
+            checklist,
+            word_count: wc,
+            review: data.review,
+          }),
+        }).then(r => { if (r.ok) setCloudSaved(true) }).catch(() => {})
+      }
     } catch (e: unknown) {
       setReviewError((e instanceof Error ? e.message : '') || 'Review failed. Try again.')
     } finally { setReviewing(false) }
@@ -347,6 +418,22 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
             <span className="hidden md:flex items-center gap-1 text-[10px] text-zinc-600 flex-shrink-0">
               <Save size={9} /> {savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
+          )}
+
+          {/* Sync status */}
+          {isLoggedIn === true && (
+            <span title={cloudSaved ? 'Saved to your account' : 'Syncing…'}
+              className={`hidden md:flex items-center gap-1 text-[10px] flex-shrink-0 transition-colors ${cloudSaved ? 'text-emerald-500' : 'text-zinc-600'}`}>
+              {cloudSaved ? <Cloud size={10} /> : <Loader2 size={10} className="animate-spin" />}
+              <span>{cloudSaved ? 'Synced' : 'Syncing…'}</span>
+            </span>
+          )}
+          {isLoggedIn === false && (
+            <Link href="/login"
+              title="Sign in to save designs to your account across devices"
+              className="hidden md:flex items-center gap-1 text-[10px] text-zinc-500 hover:text-orange-400 flex-shrink-0 transition-colors">
+              <Cloud size={10} /> Sign in to sync
+            </Link>
           )}
           {/* Download */}
           <button onClick={downloadDesign} title="Download as Markdown"

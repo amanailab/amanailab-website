@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Map, CalendarDays, Calendar, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail, RotateCcw, ExternalLink, ArrowRight } from 'lucide-react'
 import { isCaptured, saveEmail, markCaptured } from '@/lib/email-capture'
+import SaveArtifactButton from './SaveArtifactButton'
 
 // ─── Topic → slug mapping for phase chips ────────────────────────────────────
 const TOPIC_SLUG_MAP: Record<string, string> = {
@@ -503,6 +504,11 @@ function RoadmapTab({ onSwitchToStudyPlan }: { onSwitchToStudyPlan: (role: strin
                 >
                   <Download className="w-3.5 h-3.5" /> Download PDF
                 </button>
+                <SaveArtifactButton
+                  kind="roadmap"
+                  title={`${targetRole} roadmap`}
+                  payload={{ targetRole, ...result }}
+                />
                 <button
                   onClick={() => onSwitchToStudyPlan(targetRole)}
                   className="flex items-center gap-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl transition-colors"

@@ -1,0 +1,297 @@
+import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import { getAdminSupabase } from '@/lib/admin'
+
+export const runtime = 'nodejs'
+
+// Five starter blog posts (set as drafts; admin can edit + publish from /admin/blog).
+const POSTS = [
+  {
+    title: 'How to Crack the RAG System Design Interview',
+    slug:  'rag-system-design-interview',
+    description: 'A 7-step framework for designing a production-grade RAG system in 45 minutes — covers chunking, retrieval, reranking, hallucination defenses, and scaling.',
+    category: 'Interviews',
+    tags: ['RAG', 'System Design', 'Interviews'],
+    read_time: '8 min read',
+    content: `## Why this question matters
+
+RAG system design is the most common ML system design question in 2026. Every team building an AI product hits the same wall: how do you make an LLM cite real data without hallucinating? Interviewers want to see whether you can navigate the trade-offs.
+
+## The 7-step framework
+
+### 1. Clarify scope (2-3 min)
+- How many documents? Static or growing?
+- Query patterns: short questions or long context dumps?
+- Latency budget? (Usually <500ms P95.)
+- Do answers need source attribution?
+
+### 2. Pipeline diagram
+Index → Retrieve → Rerank → Generate. Talk about each stage explicitly.
+
+### 3. Chunking strategy
+Don't say "I'll use 512 tokens with 50 overlap" without justifying. Discuss: sentence-aware splitting, semantic chunking, recursive splitter, header-based for technical docs.
+
+### 4. Retrieval
+Hybrid search (BM25 + vector) beats either alone. Mention HNSW for ANN, talk about embedding model choice (bge-m3, e5-large, OpenAI text-embedding-3).
+
+### 5. Reranking
+Cross-encoder reranker on top-K (Cohere Rerank, bge-reranker-v2). Adds ~50ms but huge precision boost.
+
+### 6. Generation
+Prompt template with explicit "cite sources" instruction. Stream tokens. Guard against context-window blowup with token counting.
+
+### 7. Evaluation & hallucinations
+RAGAS (faithfulness, answer relevancy, context precision/recall). Add a faithfulness verifier as a second LLM call.
+
+## Common pitfalls
+
+- Forgetting to discuss data freshness (incremental indexing)
+- Skipping the eval loop
+- No mention of "lost in the middle" — show you know to rerank top-K so most relevant is at start
+
+## Final tip
+
+Always end with "here's how I'd measure success." Interviewers love candidates who think in metrics.`,
+  },
+  {
+    title: 'LoRA vs QLoRA vs DPO: Which Fine-Tuning Method Should You Use?',
+    slug:  'lora-qlora-dpo-comparison',
+    description: 'A practical guide to choosing between LoRA, QLoRA, and DPO for your fine-tuning project — with VRAM math and dataset size guidelines.',
+    category: 'Fine-Tuning',
+    tags: ['LoRA', 'QLoRA', 'DPO', 'Fine-Tuning'],
+    read_time: '6 min read',
+    content: `## TL;DR
+- **LoRA**: best when you have a 24GB+ GPU and clean instruction data.
+- **QLoRA**: only option for 7B+ models on consumer GPUs (RTX 3090, 4090).
+- **DPO**: when you have preference pairs (chosen vs rejected). Comes AFTER LoRA SFT.
+
+## LoRA: the baseline
+
+Inject low-rank matrices into attention projections. Only ~0.1% of params train. Rule of thumb: r=8, alpha=16, target q_proj, v_proj.
+
+VRAM math for Llama-3.1-8B:
+- Base model (bf16): 16 GB
+- LoRA adapters: ~0.2 GB
+- Optimizer states (AdamW): ~0.5 GB
+- Activations + KV: ~3-5 GB
+- **Total: ~22 GB** → fits on RTX 3090.
+
+## QLoRA: the consumer-GPU unlock
+
+Same as LoRA but the base model is loaded in 4-bit NF4. Same Llama-3.1-8B drops from 16 GB → 4 GB for the base. Fine-tuning fits on 12 GB.
+
+When to use: 13B+ models on a single GPU.
+When NOT to use: when you can afford the VRAM — LoRA in bf16 trains slightly faster.
+
+## DPO: preference alignment without RLHF
+
+DPO is NOT a replacement for SFT. The right order:
+1. SFT (LoRA or full): teach the model the format/domain.
+2. DPO: align preferences.
+
+Dataset format: (prompt, chosen, rejected) triples. Min size: 5K pairs.
+
+## Decision tree
+
+- Have instruction data only? → LoRA SFT.
+- 7B+ model on <24 GB GPU? → QLoRA.
+- Have preference data? → DPO after SFT.
+- Need state-of-the-art reasoning on math/code? → GRPO (the DeepSeek-R1 approach).`,
+  },
+  {
+    title: 'What It’s Actually Like to Interview at Anthropic',
+    slug:  'anthropic-interview-experience',
+    description: 'A look at the Anthropic interview loop for ML/AI engineers: phone screen, take-home, on-site rounds, and what they actually evaluate.',
+    category: 'Companies',
+    tags: ['Anthropic', 'Interviews'],
+    read_time: '5 min read',
+    content: `## The loop
+
+1. **Recruiter screen** (30 min) — culture fit, motivation, salary expectations.
+2. **Technical phone screen** (60 min) — ML fundamentals + one coding problem.
+3. **Take-home or live coding** (~3 hours) — usually a small RL or RAG project.
+4. **On-site / virtual onsite** (4-5 rounds):
+   - ML system design
+   - Coding (Python, no leetcode-style; more practical)
+   - Research discussion
+   - Behavioral / culture
+
+## What they actually evaluate
+
+- **Rigor**: do you reason from first principles, or repeat blog-post talking points?
+- **Safety mindset**: do you proactively think about misuse, failure modes, evaluation?
+- **Communication**: can you explain technical decisions to a non-expert?
+
+## Tips that work
+
+- Read the Anthropic blog before your interview. Their RSP, Constitutional AI, and interpretability papers come up indirectly.
+- Have an opinion on alignment, but hold it loosely — they value updating on evidence.
+- For system design: always discuss eval before scaling. "How would I know this is working?" is the right reflex.
+
+## Compensation (2026 estimates)
+
+ML Engineer L4: $310K - $410K base + equity. SWE roles similar.
+
+(Numbers from Levels.fyi composites; verify with your recruiter.)`,
+  },
+  {
+    title: '10 LLM Interview Questions That Catch People Off Guard',
+    slug:  '10-llm-interview-questions-that-catch-people-off-guard',
+    description: 'Surface-level LLM knowledge gets exposed fast. These 10 questions separate candidates who read papers from those who only watched YouTube.',
+    category: 'Interviews',
+    tags: ['LLM', 'Interviews', 'Question Bank'],
+    read_time: '7 min read',
+    content: `## 1. Why does temperature=0 still sometimes give non-deterministic output?
+
+Floating-point non-associativity on GPU. Same prompt → different ordering of partial sums → different logits at the last decimal → different argmax in rare ties.
+
+## 2. What’s the actual VRAM cost of a 70B model at inference?
+
+Base weights at bf16: 140 GB. KV-cache for one 8K-context request: ~5 GB. Total per replica: ~150 GB. You need either 2x A100 80G or 1x H100 80G with INT8 quantization.
+
+## 3. Why is GQA used instead of MHA in modern models?
+
+Multi-Head Attention duplicates K and V for every head — dominates KV-cache memory at inference. GQA shares K/V across groups (e.g., 32 query heads share 8 KV heads). Memory drops 4x, quality drops <1%.
+
+## 4. What does \`rope_theta\` control in Llama 3?
+
+The base frequency for rotary embeddings. Llama 3.1 sets it to 500,000 (vs 10,000 in Llama 2) to extend context to 128K without retraining position embeddings from scratch.
+
+## 5. When does Flash Attention NOT help?
+
+Sequence length under ~512. The kernel launch overhead dominates and you don’t hit the memory wall the technique was designed to break.
+
+## 6. Why is BPE language-dependent in practice?
+
+The vocab is learned from frequencies in the training corpus. English-trained tokenizers split Hindi/Tamil/Chinese into many more tokens, making non-English inference more expensive and slower.
+
+## 7. Why does the FFN have 4x expansion?
+
+Empirically optimal trade-off between capacity and compute. Smaller expansion underfits; larger has diminishing returns. Some models (PaLM) use 8x with adjustments.
+
+## 8. What’s the difference between top-k and top-p sampling?
+
+top-k: keep highest-k tokens, sample from those. top-p (nucleus): keep smallest set whose probabilities sum to p, sample from those. top-p adapts to confidence — when the model is confident, the set is small.
+
+## 9. Why does \`use_cache=True\` break gradient checkpointing?
+
+Gradient checkpointing recomputes activations during backward pass. KV-cache assumes activations exist. They’re mutually exclusive — pick one.
+
+## 10. What’s the role of the [BOS] token?
+
+Marks sequence start; gives the model a stable starting state. In decoder-only models, omitting it can degrade quality because the model was trained to condition on it. Always include it (most tokenizers do automatically).`,
+  },
+  {
+    title: 'Building Your First AI Agent: A Realistic Step-by-Step Guide',
+    slug:  'building-your-first-ai-agent',
+    description: 'Skip the LangChain hello-world. This is what actually breaks when you build a working agent — and what to do about each one.',
+    category: 'Agents',
+    tags: ['Agents', 'LangGraph', 'Tool Use', 'Tutorial'],
+    read_time: '9 min read',
+    content: `## What “agent” actually means
+
+A loop where an LLM picks a tool, runs it, reads the output, and decides what to do next. That’s it. The complexity comes from making that loop reliable.
+
+## Step 1: Define the tools first, prompt second
+
+Mistake everyone makes: prompt-engineer first, add tools later. Do the opposite. Pick 2-4 tools that cover your domain. For a research agent: \`web_search\`, \`fetch_url\`, \`final_answer\`.
+
+## Step 2: Write tools as plain functions with type hints
+
+\`\`\`python
+def web_search(query: str, num_results: int = 5) -> list[dict]:
+    """Search the web for current information."""
+    ...
+\`\`\`
+
+Frameworks (OpenAI tool use, Anthropic tool use) convert these to JSON schemas automatically.
+
+## Step 3: Build the loop, not a chain
+
+A chain is N → N+1. An agent is "while not done: pick tool". Use a state machine:
+
+\`\`\`python
+state = {"messages": [...], "iterations": 0}
+while state["iterations"] < 15:
+    response = llm.call(state["messages"])
+    if response.tool_calls:
+        result = run_tool(response.tool_calls[0])
+        state["messages"].append(response)
+        state["messages"].append(result)
+        state["iterations"] += 1
+    else:
+        return response.content
+\`\`\`
+
+## Step 4: The 5 things that will break first
+
+1. **Infinite loops** — agent calls the same tool 20 times. Add max iterations + repeated-call detection.
+2. **Tool argument hallucinations** — agent passes \`country="USA"\` to a search tool that wants \`country="us"\`. Strict JSON schemas help.
+3. **Lost context** — long conversations push relevant info out of the window. Summarize older messages.
+4. **Silent tool failures** — tool errors but agent thinks it succeeded. Return errors as observations, not exceptions.
+5. **Cost explosions** — one bad query → 50 tool calls → $30 spent. Add a hard token budget.
+
+## Step 5: When to graduate to LangGraph
+
+If your agent has branches (route to specialist), cycles (retry until valid), or human approval steps — LangGraph’s state-machine model pays off. Otherwise plain Python is fine.
+
+## Step 6: Eval before scaling
+
+Build a 30-task eval set BEFORE you ship. Track: task completion rate, average tool calls per task, cost per task. You can’t improve what you don’t measure.`,
+  },
+]
+
+export async function POST(req: Request) {
+  // Two-factor: admin password from body OR admin_session cookie
+  const cookieStore = await cookies()
+  const hasSession = cookieStore.get('admin_session')?.value === 'true'
+
+  if (!hasSession) {
+    const { password } = await req.json().catch(() => ({}))
+    if (!process.env.ADMIN_PASSWORD || password !== process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
+
+  const supabase = getAdminSupabase()
+
+  // Skip slugs that already exist so re-running the seeder is safe.
+  const slugs = POSTS.map(p => p.slug)
+  const { data: existing } = await supabase
+    .from('blog_posts')
+    .select('slug')
+    .in('slug', slugs)
+  const existingSet = new Set((existing ?? []).map(r => r.slug as string))
+
+  const toInsert = POSTS
+    .filter(p => !existingSet.has(p.slug))
+    .map(p => ({
+      title:       p.title,
+      slug:        p.slug,
+      description: p.description,
+      content:     p.content,
+      category:    p.category,
+      tags:        p.tags,
+      cover_image: null,
+      read_time:   p.read_time,
+      published:   false, // start as drafts so the admin reviews before publishing
+    }))
+
+  if (toInsert.length === 0) {
+    return NextResponse.json({ seeded: 0, skipped: POSTS.length, message: 'All starter posts already exist.' })
+  }
+
+  const { error, data } = await supabase
+    .from('blog_posts')
+    .insert(toInsert)
+    .select('id, slug')
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  return NextResponse.json({
+    seeded:  data?.length ?? toInsert.length,
+    skipped: POSTS.length - toInsert.length,
+    message: 'Posts inserted as drafts. Open /admin/blog to review and publish.',
+  })
+}
