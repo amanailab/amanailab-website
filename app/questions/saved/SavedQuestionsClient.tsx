@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { BookmarkCheck, ChevronDown, ChevronUp, Lightbulb, ArrowLeft, Library } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
+import AnswerMarkdown from '@/components/questions/AnswerMarkdown'
 
 interface Question {
   id: string; question: string; model_answer: string; topic: string; level: string
@@ -43,9 +44,9 @@ function QuestionCard({ q, onRemove }: { q: Question; onRemove: (id: string) => 
         <div className="px-4 pb-4 border-t border-zinc-800">
           <div className="flex items-start gap-2 mt-3">
             <Lightbulb className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1.5">Model Answer</p>
-              <p className="text-sm text-zinc-300 leading-relaxed">{q.model_answer}</p>
+              <AnswerMarkdown text={q.model_answer} />
             </div>
           </div>
         </div>

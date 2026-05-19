@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Search, ChevronDown, ChevronUp, Lightbulb, Library, Bookmark, BookmarkCheck } from 'lucide-react'
 import Link from 'next/link'
+import AnswerMarkdown from './AnswerMarkdown'
 
 const BOOKMARKS_KEY = 'bookmarked_questions'
 
@@ -85,9 +86,9 @@ function QuestionCard({ q, bookmarked, onBookmark }: { q: Question; bookmarked: 
         <div className="px-4 pb-4 border-t border-zinc-800">
           <div className="flex items-start gap-2 mt-3">
             <Lightbulb className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1.5">Model Answer</p>
-              <p className="text-sm text-zinc-300 leading-relaxed">{q.model_answer}</p>
+              <AnswerMarkdown text={q.model_answer} />
             </div>
           </div>
         </div>
