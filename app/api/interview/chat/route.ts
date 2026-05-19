@@ -60,18 +60,35 @@ Do NOT generate JSON unless it is the final turn wrap-up.`
       max_tokens: 600,
     })).trim()
 
-    let finalFeedback = null
+    let finalFeedback: { score: number; strengths: string[]; improvements: string[] } | null = null
     let replyText = content
     let feedbackParseError = false
 
     if (content.includes('---FINAL_FEEDBACK---')) {
       const parts = content.split('---FINAL_FEEDBACK---')
       replyText = parts[0].trim()
+      const rawTail = parts[1] ?? ''
       try {
-        const raw = parts[1].trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
-        finalFeedback = JSON.parse(raw)
+        // Strip code fences AND extract the first {...} block — handles models that
+        // wrap JSON in extra prose despite instructions.
+        const stripped = rawTail.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+        const jsonMatch = stripped.match(/\{[\s\S]*\}/)
+        const raw = jsonMatch ? jsonMatch[0] : stripped
+        const parsed = JSON.parse(raw)
+        finalFeedback = {
+          score: Math.max(0, Math.min(10, Number(parsed.score) || 0)),
+          strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5).map(String) : [],
+          improvements: Array.isArray(parsed.improvements) ? parsed.improvements.slice(0, 5).map(String) : [],
+        }
       } catch {
-        console.error('[Interview Chat] Failed to parse final feedback JSON')
+        // Build a graceful fallback so the user still sees a result instead of an error
+        const scoreMatch = rawTail.match(/(\d+(?:\.\d+)?)\s*\/\s*10/) ?? rawTail.match(/score["\s:]+(\d+(?:\.\d+)?)/i)
+        const fallbackScore = scoreMatch ? Math.max(0, Math.min(10, Number(scoreMatch[1]))) : 6
+        finalFeedback = {
+          score: fallbackScore,
+          strengths: ['Completed the full interview'],
+          improvements: ['Detailed feedback unavailable — try another session for more specific guidance'],
+        }
         feedbackParseError = true
       }
     }

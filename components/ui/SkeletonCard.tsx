@@ -1,7 +1,17 @@
 // Reusable shimmer skeleton components for loading states
 
 export function SkeletonLine({ className = '' }: { className?: string }) {
-  return <div className={`bg-zinc-800 rounded animate-pulse ${className}`} />
+  return (
+    <div
+      className={`relative overflow-hidden bg-zinc-800/80 rounded ${className}`}
+      style={{
+        backgroundImage:
+          'linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.06) 50%, transparent 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'skeleton-shimmer 1.6s ease-in-out infinite',
+      }}
+    />
+  )
 }
 
 export function BlogCardSkeleton() {

@@ -188,7 +188,7 @@ export default function Navbar() {
                 alt="AmanAI Lab"
                 width={36}
                 height={36}
-                className="rounded-xl object-cover ring-1 ring-zinc-700 group-hover:ring-orange-500/50 transition-all duration-200"
+                className="rounded-xl object-cover ring-1 ring-zinc-700 group-hover:ring-orange-500/50 group-hover:scale-105 transition-all duration-200"
                 priority
               />
             </div>
@@ -405,7 +405,7 @@ export default function Navbar() {
               href="https://youtube.com/@AmanAI_lab"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden lg:flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-3.5 py-2 rounded-lg transition-all hover:shadow-lg hover:shadow-orange-500/25 whitespace-nowrap"
+              className="hidden lg:flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white text-sm font-semibold px-3.5 py-2 rounded-lg transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/30 whitespace-nowrap"
             >
               <YoutubeIcon className="w-4 h-4" />
               Subscribe

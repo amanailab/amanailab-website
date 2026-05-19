@@ -1,4 +1,4 @@
-export const revalidate = 3600
+export const revalidate = 600
 
 import type { Metadata } from 'next'
 import { createClient } from '@supabase/supabase-js'

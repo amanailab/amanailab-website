@@ -22,16 +22,33 @@ export default function HeroSection() {
         }}
       />
 
-      {/* Orange radial glow */}
+      {/* Orange radial glow + accent halo */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div
-          className="w-[700px] h-[500px] rounded-full opacity-20"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85 }}
+          animate={{ opacity: 0.4, scale: 1 }}
+          transition={{ duration: 1.6, ease: "easeOut" }}
+          className="w-[760px] h-[540px] rounded-full"
           style={{
             background: "radial-gradient(ellipse, #f97316 0%, transparent 70%)",
             filter: "blur(60px)",
           }}
         />
       </div>
+      <motion.div
+        aria-hidden
+        animate={{ y: [0, -14, 0] }}
+        transition={{ repeat: Infinity, duration: 9, ease: "easeInOut" }}
+        className="absolute top-24 left-[12%] w-40 h-40 rounded-full opacity-30 pointer-events-none"
+        style={{ background: "radial-gradient(circle, #c026d3 0%, transparent 60%)", filter: "blur(50px)" }}
+      />
+      <motion.div
+        aria-hidden
+        animate={{ y: [0, 14, 0] }}
+        transition={{ repeat: Infinity, duration: 11, ease: "easeInOut" }}
+        className="absolute bottom-32 right-[10%] w-48 h-48 rounded-full opacity-25 pointer-events-none"
+        style={{ background: "radial-gradient(circle, #38bdf8 0%, transparent 60%)", filter: "blur(60px)" }}
+      />
 
       {/* Top fade */}
       <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-zinc-950 to-transparent" />
@@ -55,7 +72,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1] mb-6"
+          className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.15] mb-6"
         >
           Land Your Dream{" "}
           <span
@@ -128,7 +145,7 @@ export default function HeroSection() {
           {techPills.map((tech) => (
             <span
               key={tech}
-              className="bg-zinc-800/70 border border-zinc-700/60 text-zinc-300 text-xs px-3 py-1.5 rounded-full"
+              className="bg-zinc-800/70 border border-zinc-700/60 text-zinc-300 text-xs px-3 py-1.5 rounded-full hover:border-orange-400/60 hover:bg-orange-500/5 hover:text-orange-200 transition-all cursor-default"
             >
               {tech}
             </span>

@@ -24,7 +24,7 @@ const ALLOWED_ATTRS: sanitizeHtml.IOptions['allowedAttributes'] = {
   'img': ['src','alt','width','height','loading'],
 }
 
-export const revalidate = 60
+export const revalidate = 3600
 
 interface Props {
   params: Promise<{ slug: string }>

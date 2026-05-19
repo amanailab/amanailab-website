@@ -115,19 +115,19 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-2.5">
               <a href="https://youtube.com/@AmanAI_lab" target="_blank" rel="noopener noreferrer" aria-label="YouTube"
-                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
+                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/50 rounded-lg flex items-center justify-center text-zinc-400 hover:text-orange-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-orange-500/20 transition-all">
                 <YoutubeIcon className="w-4 h-4" />
               </a>
               <a href="https://github.com/amanailab" target="_blank" rel="noopener noreferrer" aria-label="GitHub"
-                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
+                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/50 rounded-lg flex items-center justify-center text-zinc-400 hover:text-orange-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-orange-500/20 transition-all">
                 <GithubIcon className="w-4 h-4" />
               </a>
               <a href="https://x.com/AmanAI_lab" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)"
-                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
+                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/50 rounded-lg flex items-center justify-center text-zinc-400 hover:text-orange-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-orange-500/20 transition-all">
                 <TwitterIcon className="w-4 h-4" />
               </a>
               <a href="mailto:aman.chauhan.ai71@gmail.com" aria-label="Email"
-                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/40 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 transition-all">
+                className="w-9 h-9 bg-zinc-800 hover:bg-orange-500/20 border border-zinc-700 hover:border-orange-500/50 rounded-lg flex items-center justify-center text-zinc-400 hover:text-orange-300 hover:-translate-y-0.5 hover:shadow-md hover:shadow-orange-500/20 transition-all">
                 <Mail className="w-4 h-4" />
               </a>
             </div>
@@ -144,7 +144,7 @@ export default function Footer() {
                 {links.map((link, i) => (
                   <li key={i}>
                     <Link href={link.href}
-                      className="text-sm text-zinc-500 hover:text-orange-400 transition-colors">
+                      className="text-sm text-zinc-500 hover:text-orange-400 hover:translate-x-0.5 transition-all inline-block">
                       {link.label}
                     </Link>
                   </li>

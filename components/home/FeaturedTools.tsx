@@ -104,14 +104,16 @@ export default function FeaturedTools() {
               >
                 <Link
                   href={tool.href}
-                  className={`group relative flex flex-col h-full bg-zinc-900 border ${tool.borderBase} ${tool.borderHover} rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30`}
+                  className={`group relative flex flex-col h-full bg-zinc-900/70 backdrop-blur-sm border ${tool.borderBase} ${tool.borderHover} rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40`}
                 >
                   {/* Hover gradient */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${tool.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
+                  {/* Top accent line — appears on hover */}
+                  <div className={`absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-0 group-hover:opacity-60 ${tool.iconColor} transition-opacity duration-300 pointer-events-none`} />
 
                   <div className="relative z-10 flex flex-col h-full">
                     <div className="flex items-start justify-between mb-4">
-                      <div className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 ${tool.iconBg}`}>
+                      <div className={`w-12 h-12 rounded-xl border flex items-center justify-center flex-shrink-0 ${tool.iconBg} group-hover:scale-105 transition-transform duration-300`}>
                         <Icon className={`w-5 h-5 ${tool.iconColor}`} />
                       </div>
                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${tool.badgeColor}`}>

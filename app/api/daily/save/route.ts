@@ -57,19 +57,23 @@ export async function POST(req: NextRequest) {
 
     let xpAwarded = 0
     if (!existing?.xp_awarded) {
-      // Mark XP as awarded first to minimise race window
-      const { error: markErr } = await sb.from('daily_completions')
+      // Atomically flip xp_awarded false → true. The .select() returns only rows
+      // actually updated, so concurrent requests racing on the same day will see
+      // an empty array on the loser and skip awarding XP.
+      const { data: claimed, error: markErr } = await sb.from('daily_completions')
         .update({ xp_awarded: true })
         .eq('user_id', user.id)
         .eq('date', date)
-        .eq('xp_awarded', false) // Only update if still false (optimistic lock)
+        .eq('xp_awarded', false)
+        .select('user_id')
 
-      if (!markErr) {
+      if (!markErr && claimed && claimed.length > 0) {
         // Flat XP — not based on client-supplied score to prevent manipulation
         xpAwarded = 15
 
         const { data: xpRow } = await sb.from('user_xp').select('xp').eq('user_id', user.id).single()
-        const newXp = (xpRow?.xp ?? 0) + xpAwarded
+        const MAX_XP = 10_000_000
+        const newXp = Math.min((xpRow?.xp ?? 0) + xpAwarded, MAX_XP)
         await sb.from('user_xp').upsert({ user_id: user.id, xp: newXp, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
       }
     }

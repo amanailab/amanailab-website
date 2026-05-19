@@ -164,10 +164,17 @@ export async function POST(req: Request) {
     })
 
     if (resendErr) {
-      console.error('[subscribe] Resend error:', resendErr)
-      // IMPORTANT: Set RESEND_FROM_EMAIL to a verified sender address (e.g. "AmanAI Lab <newsletter@amanailab.com>")
-      // in your environment. onboarding@resend.dev only delivers to your own Resend-registered email.
-      // Without a verified domain, verification emails won't reach external users.
+      // Roll back token so the user can retry cleanly. Don't lie about success —
+      // if the verification email failed to send, the user would wait forever.
+      // NOTE: Set RESEND_FROM_EMAIL to a verified sender (e.g. "AmanAI Lab <newsletter@amanailab.com>").
+      // onboarding@resend.dev only delivers to your own Resend-registered email.
+      await supabase
+        .from('newsletter_subscribers')
+        .update({ verification_token: null, token_expires_at: null })
+        .eq('email', email)
+      return NextResponse.json({
+        error: "We couldn't send the verification email. Please try again in a moment.",
+      }, { status: 502 })
     }
 
     return NextResponse.json({ success: true, alreadyVerified: false })

@@ -37,6 +37,9 @@ export async function POST(request: Request) {
     }
 
     const { data } = supabase.storage.from('pdfs').getPublicUrl(path)
+    if (!data?.publicUrl) {
+      return NextResponse.json({ error: 'Failed to generate public URL' }, { status: 500 })
+    }
     return NextResponse.json({
       url: data.publicUrl,
       path,
