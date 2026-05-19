@@ -104,16 +104,30 @@ function SeedQuestionsPanel({ onSeeded }: { onSeeded: (count: number) => void })
   const [msg, setMsg]           = useState('')
 
   async function seed() {
-    if (!password) { setMsg('Enter admin password'); return }
+    // Password is optional now — admin_session cookie also authorizes
     setLoading(true); setMsg('')
     try {
       const res = await fetch('/api/admin/seed-questions', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(password ? { password } : {}),
       })
       const data = await res.json()
-      if (data.seeded) { onSeeded(data.seeded as number); setMsg(`✓ ${data.seeded} questions seeded!`) }
-      else setMsg((data.error as string) ?? 'Failed')
+      if (!res.ok) {
+        setMsg(res.status === 401
+          ? 'Unauthorized. Enter the admin password (or re-log into /admin).'
+          : ((data.error as string) ?? 'Failed'))
+        return
+      }
+      const seeded  = (data.seeded  as number | undefined) ?? 0
+      const skipped = (data.skipped as number | undefined) ?? 0
+      if (seeded > 0) {
+        onSeeded(seeded)
+        setMsg(`✓ ${seeded} new question${seeded === 1 ? '' : 's'} added${skipped ? ` (${skipped} already existed)` : ''}.`)
+      } else if (skipped > 0) {
+        setMsg(`✓ All ${skipped} questions already seeded — nothing to add.`)
+      } else {
+        setMsg((data.error as string) ?? 'No questions returned. Check server logs.')
+      }
     } catch { setMsg('Network error') }
     finally { setLoading(false) }
   }
@@ -124,11 +138,11 @@ function SeedQuestionsPanel({ onSeeded }: { onSeeded: (count: number) => void })
         <HelpCircle className="w-4 h-4 text-blue-400" />
         <h2 className="text-base font-bold text-zinc-100">Seed 50 Curated AI/ML Questions</h2>
       </div>
-      <p className="text-xs text-zinc-500">Load a curated set of 50 real AI/ML interview questions covering LLM, RAG, Agents, Fine-Tuning, MLOps, Transformers, Python & more.</p>
+      <p className="text-xs text-zinc-500">Load a curated set of 65+ real AI/ML interview questions covering LLM, RAG, Agents, Fine-Tuning, MLOps, Transformers, Python &amp; more. Idempotent — safe to re-run; existing questions are skipped.</p>
       <div className="flex gap-2 flex-wrap">
         <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-          placeholder="Admin password"
-          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-blue-500/50 transition-colors w-40" />
+          placeholder="Admin password (optional if logged in)"
+          className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none focus:border-blue-500/50 transition-colors w-56" />
         <button onClick={seed} disabled={loading}
           className="flex items-center gap-1.5 text-sm font-semibold bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}

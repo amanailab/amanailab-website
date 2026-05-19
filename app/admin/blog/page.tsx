@@ -2,6 +2,7 @@ import Link from 'next/link'
 import AdminNav from '@/components/admin/AdminNav'
 import { getAdminSupabase, type BlogPost } from '@/lib/admin'
 import AdminBlogTable from '@/components/admin/AdminBlogTable'
+import SeedBlogButton from '@/components/admin/SeedBlogButton'
 import { PenSquare } from 'lucide-react'
 
 async function getAllPosts(): Promise<BlogPost[]> {
@@ -26,13 +27,16 @@ export default async function AdminBlogPage() {
               <h1 className="text-2xl font-bold text-zinc-100">All Articles</h1>
               <p className="text-zinc-500 text-sm mt-1">{posts.length} article{posts.length !== 1 ? 's' : ''} total</p>
             </div>
-            <Link
-              href="/admin/blog/new"
-              className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-sm transition-colors"
-            >
-              <PenSquare className="w-4 h-4" />
-              New Article
-            </Link>
+            <div className="flex items-start gap-2">
+              <SeedBlogButton />
+              <Link
+                href="/admin/blog/new"
+                className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-sm transition-colors"
+              >
+                <PenSquare className="w-4 h-4" />
+                New Article
+              </Link>
+            </div>
           </div>
 
           {posts.length === 0 ? (

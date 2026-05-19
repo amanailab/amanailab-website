@@ -1,5 +1,6 @@
 import AdminNav from '@/components/admin/AdminNav'
 import CompanyQuestionsManager from '@/components/admin/CompanyQuestionsManager'
+import SeedCompanyQuestionsButton from '@/components/admin/SeedCompanyQuestionsButton'
 import { getAdminSupabase } from '@/lib/admin'
 
 async function getData() {
@@ -18,9 +19,12 @@ export default async function CompanyQuestionsPage() {
       <AdminNav />
       <main className="flex-1 overflow-auto p-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-zinc-100">Company Questions</h1>
-            <p className="text-zinc-500 text-sm mt-1">{questions.length} questions across {companies.length} companies</p>
+          <div className="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-zinc-100">Company Questions</h1>
+              <p className="text-zinc-500 text-sm mt-1">{questions.length} questions across {companies.length} companies</p>
+            </div>
+            <SeedCompanyQuestionsButton />
           </div>
           <CompanyQuestionsManager initialQuestions={questions} companies={companies} />
         </div>
