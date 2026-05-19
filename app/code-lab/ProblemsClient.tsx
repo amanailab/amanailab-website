@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Code2, Flame, CheckCircle2, Lock, Minus, Zap } from 'lucide-react'
+import { Search, Code2, Flame, CheckCircle2, Lock, Minus, Zap, Building2 } from 'lucide-react'
 
 const LEVELS = [
   { min: 0,    max: 299,  label: 'ML Beginner',     color: 'text-zinc-400',   bg: 'bg-zinc-800/60',         bar: 'bg-zinc-500',    emoji: '🌱', xpLabel: '0 XP'    },
@@ -30,6 +30,7 @@ const DIFFS  = ['All', 'Easy', 'Medium', 'Hard']
 export default function ProblemsClient({ problems }: { problems: Problem[] }) {
   const [topic, setTopic]   = useState('All')
   const [diff,  setDiff]    = useState('All')
+  const [company, setCompany] = useState('All')
   const [search, setSearch] = useState('')
   const [solvedIds, setSolvedIds]       = useState<Set<string>>(new Set())
   const [attemptedIds, setAttemptedIds] = useState<Set<string>>(new Set())
@@ -61,12 +62,20 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
 
   const currentLevel = LEVELS.slice().reverse().find(l => xp >= l.min) ?? LEVELS[0]
 
+  // Build a sorted unique company list from the data, dropping empties
+  const companies = useMemo(() => {
+    const set = new Set<string>()
+    problems.forEach(p => (p.companies ?? []).forEach(c => c && set.add(c)))
+    return ['All', ...Array.from(set).sort()]
+  }, [problems])
+
   const filtered = problems.filter(p => {
-    const matchTopic  = topic === 'All'  || p.topic === topic
-    const matchDiff   = diff  === 'All'  || p.difficulty === diff
-    const matchSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
+    const matchTopic   = topic === 'All'   || p.topic === topic
+    const matchDiff    = diff  === 'All'   || p.difficulty === diff
+    const matchCompany = company === 'All' || (p.companies ?? []).includes(company)
+    const matchSearch  = !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
       p.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
-    return matchTopic && matchDiff && matchSearch
+    return matchTopic && matchDiff && matchCompany && matchSearch
   })
 
   const easy        = problems.filter(p => p.difficulty === 'Easy').length
@@ -239,6 +248,25 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
               </button>
             ))}
           </div>
+
+          {/* Company filter */}
+          {companies.length > 1 && (
+            <div className="relative">
+              <Building2 className="w-3.5 h-3.5 text-zinc-600 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={company}
+                onChange={e => setCompany(e.target.value)}
+                aria-label="Filter by company"
+                className={`appearance-none bg-zinc-900 border rounded-lg pl-8 pr-7 py-2 text-xs font-semibold cursor-pointer outline-none transition-colors ${
+                  company === 'All' ? 'border-zinc-800 text-zinc-400 hover:text-zinc-200' : 'border-orange-500/40 text-orange-300'
+                }`}
+              >
+                {companies.map(c => (
+                  <option key={c} value={c} className="bg-zinc-900">{c === 'All' ? 'All Companies' : c}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {/* Topic filter — horizontal scroll on mobile */}
@@ -293,7 +321,7 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
               <div className="py-14 text-center flex flex-col items-center gap-2">
                 <Code2 className="w-8 h-8 text-zinc-700 mb-1" />
                 <p className="text-zinc-400 font-semibold text-sm">No problems match your filters</p>
-                <button onClick={() => { setTopic('All'); setDiff('All'); setSearch('') }} className="text-xs text-orange-400 hover:text-orange-300 transition-colors">
+                <button onClick={() => { setTopic('All'); setDiff('All'); setCompany('All'); setSearch('') }} className="text-xs text-orange-400 hover:text-orange-300 transition-colors">
                   Clear filters
                 </button>
               </div>

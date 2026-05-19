@@ -517,11 +517,12 @@ export default function ProblemClient({
 
         {/* Right */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <div className="hidden sm:flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-800 border border-zinc-700">
+          <div className="hidden sm:flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-800 border border-zinc-700" title={pyStatus === 'loading' ? 'Downloading Python runtime (~10 MB) — Run will start automatically when ready' : pyStatus === 'ready' ? 'Python ready' : pyStatus === 'error' ? 'Python failed to load — refresh page' : ''}>
             <Cpu className="w-3 h-3 text-zinc-500" />
-            {pyStatus === 'loading' && <><div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" /><span className="text-zinc-500">Loading…</span></>}
-            {pyStatus === 'ready'   && <><div className="w-1.5 h-1.5 rounded-full bg-green-500" /><span className="text-zinc-500">Ready</span></>}
-            {pyStatus === 'error'   && <span className="text-red-400">Error</span>}
+            {pyStatus === 'idle'    && <><div className="w-1.5 h-1.5 rounded-full bg-zinc-500" /><span className="text-zinc-500">Python idle</span></>}
+            {pyStatus === 'loading' && <><div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" /><span className="text-yellow-400">Loading Python…</span></>}
+            {pyStatus === 'ready'   && <><div className="w-1.5 h-1.5 rounded-full bg-green-500" /><span className="text-zinc-500">Python ready</span></>}
+            {pyStatus === 'error'   && <span className="text-red-400">Python error — reload</span>}
           </div>
 
           <button onClick={() => setIsFullEditor(v => !v)} title="Toggle full editor"
@@ -529,10 +530,11 @@ export default function ProblemClient({
             {isFullEditor ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
 
-          <button onClick={handleRun} disabled={running||submitting||pyStatus==='error'} title="Run (⌘↵)"
+          <button onClick={handleRun} disabled={running||submitting||pyStatus==='error'}
+            title={pyStatus === 'loading' ? 'Waiting for Python to finish loading…' : 'Run (⌘↵)'}
             className="flex items-center gap-1 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">
-            {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5 text-green-400" />}
-            Run <kbd className="hidden md:block text-[8px] text-zinc-600 font-mono">⌘↵</kbd>
+            {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : pyStatus === 'loading' ? <Loader2 className="w-3.5 h-3.5 animate-spin text-yellow-400" /> : <Play className="w-3.5 h-3.5 text-green-400" />}
+            {pyStatus === 'loading' && !running ? 'Loading…' : 'Run'} <kbd className="hidden md:block text-[8px] text-zinc-600 font-mono">⌘↵</kbd>
           </button>
 
           <button onClick={handleSubmit} disabled={running||submitting||pyStatus==='error'} title={user===null?"Sign in to submit":"Submit (⌘⇧↵)"}

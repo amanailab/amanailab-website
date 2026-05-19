@@ -252,6 +252,7 @@ export default function SheetClient() {
   const [activeTrack, setActiveTrack]   = useState(SHEET_TRACKS[0].id)
   const [filterType, setFilterType]     = useState<ItemType | 'all'>('all')
   const [filterDiff, setFilterDiff]     = useState<Difficulty | 'all'>('all')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'incomplete' | 'new2026'>('all')
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({ [SHEET_TRACKS[0].sections[0].id]: true })
   const [expandedItem, setExpandedItem] = useState<string | null>(null)
   const [searchQuery, setSearchQuery]   = useState('')
@@ -366,6 +367,7 @@ export default function SheetClient() {
     setActiveTrack(id)
     setFilterType('all')
     setFilterDiff('all')
+    setFilterStatus('all')
     setSearchQuery('')
     const t = SHEET_TRACKS.find(t => t.id === id)
     if (t?.sections[0]) setOpenSections({ [t.sections[0].id]: true })
@@ -415,12 +417,26 @@ export default function SheetClient() {
         items: sec.items.filter(it => {
           if (filterType !== 'all' && it.type !== filterType) return false
           if (filterDiff !== 'all' && it.difficulty !== filterDiff) return false
+          if (filterStatus === 'incomplete' && progress[it.id]) return false
+          if (filterStatus === 'new2026' && !it.isNew2026) return false
           return true
         }),
       }))
       .filter(sec => sec.items.length > 0),
-    [track, filterType, filterDiff]
+    [track, filterType, filterDiff, filterStatus, progress]
   )
+
+  // ── Difficulty breakdown for active track ─────────────────────────────────
+  const trackDiffBreakdown = useMemo(() => {
+    const easy = trackItems.filter(i => i.difficulty === 'easy')
+    const med = trackItems.filter(i => i.difficulty === 'medium')
+    const hard = trackItems.filter(i => i.difficulty === 'hard')
+    return {
+      easy: { total: easy.length, done: easy.filter(i => progress[i.id]).length },
+      medium: { total: med.length, done: med.filter(i => progress[i.id]).length },
+      hard: { total: hard.length, done: hard.filter(i => progress[i.id]).length },
+    }
+  }, [trackItems, progress])
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -555,8 +571,9 @@ export default function SheetClient() {
           </div>
         ) : (
           <>
-            {/* ── Track tabs ────────────────────────────────────────── */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-thin scrollbar-thumb-zinc-800">
+            {/* ── Track tabs (sticky on scroll) ─────────────────────── */}
+            <div className="sticky top-16 z-30 -mx-4 px-4 py-2 bg-zinc-950/85 backdrop-blur-md mb-4 border-b border-zinc-900/60">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-zinc-800">
               {SHEET_TRACKS.map(t => {
                 const items = t.sections.flatMap(s => s.items)
                 const done  = items.filter(i => progress[i.id]).length
@@ -576,6 +593,7 @@ export default function SheetClient() {
                 )
               })}
             </div>
+            </div>
 
             {/* ── Active track header ───────────────────────────────── */}
             <div className={`${track.bg} border rounded-2xl px-4 sm:px-5 py-4 mb-4`}>
@@ -593,6 +611,32 @@ export default function SheetClient() {
                 <div className={`h-full ${track.bar} rounded-full transition-all duration-500`}
                   style={{ width: `${mounted ? trackPct : 0}%` }} />
               </div>
+              {/* Difficulty breakdown */}
+              {mounted && trackItems.length > 0 && (
+                <div className="flex items-center gap-3 mt-3 text-[11px]">
+                  {trackDiffBreakdown.easy.total > 0 && (
+                    <span className="flex items-center gap-1 text-zinc-500">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="text-emerald-400 font-semibold">{trackDiffBreakdown.easy.done}</span>
+                      <span>/{trackDiffBreakdown.easy.total} Easy</span>
+                    </span>
+                  )}
+                  {trackDiffBreakdown.medium.total > 0 && (
+                    <span className="flex items-center gap-1 text-zinc-500">
+                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />
+                      <span className="text-yellow-400 font-semibold">{trackDiffBreakdown.medium.done}</span>
+                      <span>/{trackDiffBreakdown.medium.total} Med</span>
+                    </span>
+                  )}
+                  {trackDiffBreakdown.hard.total > 0 && (
+                    <span className="flex items-center gap-1 text-zinc-500">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                      <span className="text-red-400 font-semibold">{trackDiffBreakdown.hard.done}</span>
+                      <span>/{trackDiffBreakdown.hard.total} Hard</span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* ── Next item hint ────────────────────────────────────── */}
@@ -624,6 +668,19 @@ export default function SheetClient() {
                   {d === 'all' ? 'All Levels' : d.charAt(0).toUpperCase() + d.slice(1)}
                 </button>
               ))}
+              <div className="w-px h-3 bg-zinc-800 mx-0.5" />
+              <button onClick={() => setFilterStatus(filterStatus === 'incomplete' ? 'all' : 'incomplete')}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-all ${
+                  filterStatus === 'incomplete' ? 'bg-orange-500/10 border-orange-500/40 text-orange-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                }`}>
+                Incomplete only
+              </button>
+              <button onClick={() => setFilterStatus(filterStatus === 'new2026' ? 'all' : 'new2026')}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-all flex items-center gap-1 ${
+                  filterStatus === 'new2026' ? 'bg-orange-500/10 border-orange-500/40 text-orange-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                }`}>
+                <Sparkles size={10} /> New 2026
+              </button>
             </div>
 
             {/* ── Legend ───────────────────────────────────────────── */}
@@ -646,7 +703,7 @@ export default function SheetClient() {
             {filteredSections.length === 0 ? (
               <div className="text-center py-14 text-zinc-600 text-sm">
                 No items match.{' '}
-                <button onClick={() => { setFilterType('all'); setFilterDiff('all') }} className="text-orange-400 hover:text-orange-300">Clear filters</button>
+                <button onClick={() => { setFilterType('all'); setFilterDiff('all'); setFilterStatus('all') }} className="text-orange-400 hover:text-orange-300">Clear filters</button>
               </div>
             ) : (
               <div className="space-y-3">

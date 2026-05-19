@@ -418,12 +418,27 @@ export default async function DashboardPage() {
   ])
 
   const dataTimedOut  = sessions === null
-  const s             = (sessions ?? []) as Session[]
+  // Filter rows with valid numeric avg_score so Math.max/Math.min never get NaN/null.
+  const s             = ((sessions ?? []) as Session[]).filter(r => typeof r.avg_score === 'number' && Number.isFinite(r.avg_score))
   const totalSessions = s.length
   const overallAvg    = totalSessions ? s.reduce((a, b) => a + b.avg_score, 0) / totalSessions : 0
   const bestScore     = totalSessions ? Math.max(...s.map(x => x.avg_score)) : 0
   const streak        = calcStreak(s)
   const readiness     = calcReadiness(s)
+
+  // ── This Week summary ────────────────────────────────────────────────────
+  const now = Date.now()
+  const weekAgoMs = now - 7 * 86400000
+  const twoWeeksAgoMs = now - 14 * 86400000
+  const thisWeek = s.filter(x => new Date(x.created_at).getTime() >= weekAgoMs)
+  const lastWeek = s.filter(x => {
+    const t = new Date(x.created_at).getTime()
+    return t >= twoWeeksAgoMs && t < weekAgoMs
+  })
+  const daysThisWeek = new Set(thisWeek.map(x => x.created_at.split('T')[0])).size
+  const thisWeekAvg = thisWeek.length ? thisWeek.reduce((a, b) => a + b.avg_score, 0) / thisWeek.length : 0
+  const lastWeekAvg = lastWeek.length ? lastWeek.reduce((a, b) => a + b.avg_score, 0) / lastWeek.length : 0
+  const weekDelta = thisWeek.length && lastWeek.length ? thisWeekAvg - lastWeekAvg : 0
   // Prefer the display name set in profile; fall back to email prefix
   const emailPrefix   = (user.user_metadata?.display_name as string | undefined)?.trim()
                      || user.email?.split('@')[0]
@@ -594,6 +609,46 @@ export default async function DashboardPage() {
 
                 {/* Daily challenge strip */}
                 <DailyChallengeStrip />
+
+                {/* This Week summary */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Flame className="w-3.5 h-3.5 text-orange-400" />
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Days Practiced</p>
+                    </div>
+                    <p className="text-xl font-extrabold text-zinc-100">{daysThisWeek}<span className="text-sm text-zinc-600 font-bold">/7</span></p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5">this week</p>
+                  </div>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <BrainCircuit className="w-3.5 h-3.5 text-violet-400" />
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Sessions</p>
+                    </div>
+                    <p className="text-xl font-extrabold text-zinc-100">{thisWeek.length}</p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5">this week</p>
+                  </div>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Target className="w-3.5 h-3.5 text-blue-400" />
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Week Avg</p>
+                    </div>
+                    <p className={`text-xl font-extrabold ${thisWeek.length ? scoreBarColor(thisWeekAvg).replace('bg-', 'text-').replace('-500', '-400') : 'text-zinc-100'}`}>
+                      {thisWeek.length ? thisWeekAvg.toFixed(1) : '—'}
+                    </p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5">out of 10</p>
+                  </div>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">vs Last Week</p>
+                    </div>
+                    <p className={`text-xl font-extrabold ${weekDelta > 0 ? 'text-emerald-400' : weekDelta < 0 ? 'text-red-400' : 'text-zinc-100'}`}>
+                      {weekDelta === 0 ? '—' : `${weekDelta > 0 ? '+' : ''}${weekDelta.toFixed(1)}`}
+                    </p>
+                    <p className="text-[10px] text-zinc-600 mt-0.5">{weekDelta === 0 ? 'no data' : 'score delta'}</p>
+                  </div>
+                </div>
 
                 {/* Score trend */}
                 {chartPoints.length >= 2 && (

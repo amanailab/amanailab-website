@@ -1,12 +1,13 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   BookOpen, Layers, Library, Building2, Briefcase,
   BarChart2, Mail, Map, Code2,
   Wand2, ScrollText, GraduationCap, MessageSquare, Sparkles,
-  ArrowRight,
+  ArrowRight, Search, X,
 } from "lucide-react";
 
 const TOOLS = [
@@ -28,6 +29,13 @@ const TOOLS = [
 ]
 
 export default function MoreTools() {
+  const [query, setQuery] = useState("")
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return TOOLS
+    return TOOLS.filter(t => t.label.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q))
+  }, [query])
+
   return (
     <section className="pt-2 pb-20 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
@@ -37,19 +45,42 @@ export default function MoreTools() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4 }}
-          className="flex items-center justify-between mb-6"
+          className="flex items-center justify-between mb-4 gap-4 flex-wrap"
         >
           <div>
             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-[0.2em]">More Free Tools</p>
-            <p className="text-sm text-zinc-600 mt-0.5">14 more tools — all free, no sign-up required</p>
+            <p className="text-sm text-zinc-600 mt-0.5">{TOOLS.length} more tools — all free, no sign-up required</p>
           </div>
           <Link href="/resources" className="hidden sm:flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
             View resources <ArrowRight className="w-3 h-3" />
           </Link>
         </motion.div>
 
+        {/* Tool search */}
+        <div className="relative mb-5 max-w-md">
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search tools…"
+            aria-label="Search tools"
+            className="w-full pl-10 pr-9 py-2.5 bg-zinc-900 border border-zinc-800 focus:border-orange-500/60 rounded-xl text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-colors"
+          />
+          {query && (
+            <button onClick={() => setQuery('')} aria-label="Clear search" className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="text-center py-10 text-zinc-600 text-sm">
+            No tools match &ldquo;{query}&rdquo;.{' '}
+            <button onClick={() => setQuery('')} className="text-orange-400 hover:text-orange-300">Clear</button>
+          </div>
+        ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
-          {TOOLS.map((tool, i) => {
+          {filtered.map((tool, i) => {
             const Icon = tool.icon
             return (
               <motion.div
@@ -80,6 +111,7 @@ export default function MoreTools() {
             )
           })}
         </div>
+        )}
       </div>
     </section>
   )
