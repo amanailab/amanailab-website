@@ -133,19 +133,8 @@ export default function ProblemClient({
   const containerRef   = useRef<HTMLDivElement>(null)
   const [leftWidth, setLeftWidth]       = useState(42)
   const [isFullEditor, setIsFullEditor] = useState(false)
-  const [mobileView, setMobileView]     = useState<'problem' | 'editor'>('problem')
-  const [isDesktop, setIsDesktop]       = useState(true)
   const dragging   = useRef(false)
   const dragStart  = useRef({ x: 0, w: 42 })
-
-  // Track lg breakpoint to know when to apply horizontal split width
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)')
-    const update = () => setIsDesktop(mq.matches)
-    update()
-    mq.addEventListener('change', update)
-    return () => mq.removeEventListener('change', update)
-  }, [])
 
   // Code
   const [code, setCode]       = useState(problem.starter_code)
@@ -556,28 +545,13 @@ export default function ProblemClient({
         </div>
       </div>
 
-      {/* Mobile tab switcher (below lg breakpoint only) */}
-      <div className="lg:hidden flex border-b border-zinc-800 bg-zinc-900/80 shrink-0">
-        <button onClick={() => setMobileView('problem')}
-          className={`flex-1 px-4 py-2.5 text-xs font-semibold transition-colors border-b-2 ${mobileView === 'problem' ? 'border-orange-500 text-orange-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}>
-          Problem
-        </button>
-        <button onClick={() => setMobileView('editor')}
-          className={`flex-1 px-4 py-2.5 text-xs font-semibold transition-colors border-b-2 ${mobileView === 'editor' ? 'border-orange-500 text-orange-400' : 'border-transparent text-zinc-500 hover:text-zinc-300'}`}>
-          Code & Tests
-        </button>
-      </div>
-
       {/* ── SPLIT PANE ── */}
       {/* userSelect none prevents selection during drag; editor area overrides it back */}
-      <div ref={containerRef} className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden" style={{ userSelect: 'none' }}>
+      <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden" style={{ userSelect: 'none' }}>
 
         {/* Left panel */}
         {!isFullEditor && (
-          <div
-            data-pane="problem"
-            style={isDesktop ? { width: `${leftWidth}%` } : undefined}
-            className={`flex-1 flex-col border-r border-zinc-800 overflow-hidden min-w-0 ${mobileView === 'problem' ? 'flex' : 'hidden'} lg:!flex lg:flex-none lg:shrink-0`}>
+          <div style={{ width: `${leftWidth}%` }} className="flex flex-col border-r border-zinc-800 overflow-hidden shrink-0 min-w-0">
             <div className="flex border-b border-zinc-800 bg-zinc-900 shrink-0">
               {(['description','hints'] as const).map(t => (
                 <button key={t} onClick={() => setTab(t)}
@@ -681,15 +655,15 @@ export default function ProblemClient({
           </div>
         )}
 
-        {/* Drag handle — desktop only */}
+        {/* Drag handle */}
         {!isFullEditor && (
           <div onMouseDown={onDragStart}
-            className="hidden lg:block w-1 bg-zinc-800 hover:bg-orange-500/60 active:bg-orange-500 cursor-col-resize shrink-0 transition-colors"
+            className="w-1 bg-zinc-800 hover:bg-orange-500/60 active:bg-orange-500 cursor-col-resize shrink-0 transition-colors"
             title="Drag to resize" />
         )}
 
         {/* Right panel */}
-        <div className={`flex-1 flex-col min-w-0 min-h-0 ${mobileView === 'editor' ? 'flex' : 'hidden'} lg:!flex`}>
+        <div className="flex-1 flex flex-col min-w-0 min-h-0">
 
           {/* Code action bar */}
           <div className="flex items-center justify-between px-3 py-1 bg-zinc-900/50 border-b border-zinc-800/50 shrink-0">
