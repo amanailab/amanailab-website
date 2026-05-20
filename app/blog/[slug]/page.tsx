@@ -63,7 +63,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const post = await getPost(slug)
   if (!post) return { robots: { index: false } }
-  const ogImage = post.cover_image ?? `${SITE_URL}/api/og/blog?title=${encodeURIComponent(post.title)}&category=${encodeURIComponent(post.category ?? '')}&rt=${post.read_time ?? 5}`
+  // cover_image may be stored as a relative path (e.g. /api/og/blog?...) so
+  // we can use it as a same-origin <Image>. Social meta tags need absolute URLs.
+  const rawCover = post.cover_image ?? `/api/og/blog?title=${encodeURIComponent(post.title)}&category=${encodeURIComponent(post.category ?? '')}&rt=${post.read_time ?? 5}`
+  const ogImage = rawCover.startsWith('http') ? rawCover : `${SITE_URL}${rawCover}`
   return {
     title: `${post.title}`,
     description: post.description ?? undefined,
@@ -131,7 +134,9 @@ export default async function BlogPostPage({ params }: Props) {
       name: 'AmanAI Lab',
       logo: { '@type': 'ImageObject', url: 'https://amanailab.com/logo.jpg' },
     },
-    image: post.cover_image ? [post.cover_image] : ['https://amanailab.com/logo.jpg'],
+    image: post.cover_image
+      ? [post.cover_image.startsWith('http') ? post.cover_image : `${SITE_URL}${post.cover_image}`]
+      : ['https://amanailab.com/logo.jpg'],
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE_URL}/blog/${slug}` },
   }
 

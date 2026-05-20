@@ -121,9 +121,12 @@ function mdToHtml(md: string): string {
 }
 
 // Build a cover image URL from the existing OG endpoint so every post has visual.
+// Use a RELATIVE path — Next.js Image treats relative URLs as same-origin and
+// renders them without needing the hostname in remotePatterns. The blog page
+// metadata code prepends SITE_URL when generating absolute URLs for social meta.
 function coverFor(p: { title: string; category: string; read_time: string }): string {
   const rt = parseInt((p.read_time || '5').toString()) || 5
-  return `${SITE_URL}/api/og/blog?title=${encodeURIComponent(p.title)}&category=${encodeURIComponent(p.category)}&rt=${rt}`
+  return `/api/og/blog?title=${encodeURIComponent(p.title)}&category=${encodeURIComponent(p.category)}&rt=${rt}`
 }
 
 // Five starter blog posts. Inserted as PUBLISHED so they appear on /blog immediately.
@@ -468,11 +471,19 @@ export async function POST(req: Request) {
     if (/<\/?(p|h[1-6]|ul|ol|li|pre|code|table|blockquote|div|span)\b/i.test(s)) return false
     return true
   }
+  // An old cover_image counts as "needs update" if it's missing OR is an
+  // absolute URL pointing at /api/og/blog (previous seeder format) which
+  // Next.js Image rejects because the hostname isn't in remotePatterns.
+  const coverNeedsUpdate = (cover: string | null | undefined) => {
+    if (!cover) return true
+    if (/^https?:\/\/[^/]+\/api\/og\/blog/.test(cover)) return true
+    return false
+  }
   const toUpdate = prepared.filter(p => {
     const row = existingBySlug.get(p.slug)
     if (!row) return false
     if (force) return true
-    return looksLikeMarkdown(row.content) || !row.cover_image
+    return looksLikeMarkdown(row.content) || coverNeedsUpdate(row.cover_image)
   })
 
   let updated = 0
@@ -481,7 +492,7 @@ export async function POST(req: Request) {
     const row = existingBySlug.get(p.slug)!
     const patch: Record<string, unknown> = {}
     if (force || looksLikeMarkdown(row.content)) patch.content = p.htmlContent
-    if (force || !row.cover_image) patch.cover_image = p.cover
+    if (force || coverNeedsUpdate(row.cover_image)) patch.cover_image = p.cover
     if (Object.keys(patch).length === 0) continue
     patch.updated_at = new Date().toISOString()
     const { error: upErr } = await supabase.from('blog_posts').update(patch).eq('id', row.id)
