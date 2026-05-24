@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Space_Grotesk, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,17 +13,9 @@ import MicrosoftClarity from "@/components/analytics/MicrosoftClarity";
 import { headers } from 'next/headers'
 import Script from 'next/script'
 
-const interSans = Inter({
+const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  display: "swap",
 });
 
 const geistMono = Geist_Mono({
@@ -111,9 +103,9 @@ export default async function RootLayout({
   const isAdmin = headersList.get('x-is-admin') === '1'
 
   return (
-    <html lang="en" className={`${interSans.variable} ${spaceGrotesk.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <head>
-        <meta name="theme-color" content="#0a0a12" />
+        <meta name="theme-color" content="#09090b" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

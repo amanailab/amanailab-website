@@ -3,20 +3,6 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-space-grotesk);
-}
-
-/* Brand palette — Indigo–Violet "Neural" identity.
-   Remaps Tailwind's orange-* scale so every existing accent class shifts in one
-   place, and darkens the base to a blue-black. Change here to re-theme the site. */
-@theme {
-  --color-orange-200: #c7d2fe;
-  --color-orange-300: #a5b4fc;
-  --color-orange-400: #818cf8;
-  --color-orange-500: #6366f1;
-  --color-orange-600: #a855f7;
-  --color-orange-700: #7e22ce;
-  --color-zinc-950: #0a0a12;
 }
 
 html {
@@ -65,14 +51,8 @@ html {
 }
 
 body {
-  background-color: #0a0a12;
+  background-color: #09090b;
   color: #fafafa;
-}
-
-/* Display font on headings — distinctive Space Grotesk instead of the default body face */
-h1, h2, h3, h4 {
-  font-family: var(--font-space-grotesk), var(--font-geist-sans), system-ui, sans-serif;
-  letter-spacing: -0.02em;
 }
 
 ::-webkit-scrollbar {
@@ -84,12 +64,12 @@ h1, h2, h3, h4 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #6366f1;
+  background: #f97316;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #818cf8;
+  background: #fb923c;
 }
 
 /* TipTap editor content */
@@ -97,7 +77,7 @@ h1, h2, h3, h4 {
 .tiptap-editor h2,
 .tiptap-editor h3,
 .tiptap-editor h4 {
-  color: #6366f1;
+  color: #f97316;
   font-weight: 700;
   line-height: 1.3;
   margin-top: 1.5rem;
@@ -121,7 +101,7 @@ h1, h2, h3, h4 {
 .tiptap-editor ol { list-style-type: decimal; }
 .tiptap-editor li { margin-bottom: 0.375rem; line-height: 1.7; }
 .tiptap-editor blockquote {
-  border-left: 3px solid #6366f1;
+  border-left: 3px solid #f97316;
   padding-left: 1rem;
   margin: 1.25rem 0;
   color: #a1a1aa;
@@ -129,7 +109,7 @@ h1, h2, h3, h4 {
 }
 .tiptap-editor code {
   background: #27272a;
-  color: #818cf8;
+  color: #fb923c;
   padding: 0.15rem 0.4rem;
   border-radius: 4px;
   font-size: 0.875em;
@@ -156,7 +136,7 @@ h1, h2, h3, h4 {
   margin: 1.25rem 0;
 }
 .tiptap-editor a {
-  color: #6366f1;
+  color: #f97316;
   text-decoration: underline;
 }
 .tiptap-editor p.is-editor-empty:first-child::before {
@@ -172,7 +152,7 @@ h1, h2, h3, h4 {
 .blog-content h2,
 .blog-content h3,
 .blog-content h4 {
-  color: #6366f1;
+  color: #f97316;
   font-weight: 700;
   line-height: 1.3;
   margin-top: 2rem;
@@ -199,7 +179,7 @@ h1, h2, h3, h4 {
 .blog-content ol { list-style-type: decimal; }
 .blog-content li { margin-bottom: 0.5rem; }
 .blog-content blockquote {
-  border-left: 3px solid #6366f1;
+  border-left: 3px solid #f97316;
   padding-left: 1.25rem;
   margin: 1.5rem 0;
   color: #a1a1aa;
@@ -208,7 +188,7 @@ h1, h2, h3, h4 {
 }
 .blog-content code {
   background: #27272a;
-  color: #818cf8;
+  color: #fb923c;
   padding: 0.2rem 0.45rem;
   border-radius: 4px;
   font-size: 0.9em;
@@ -235,7 +215,7 @@ h1, h2, h3, h4 {
   margin: 1.5rem 0;
 }
 .blog-content a {
-  color: #6366f1;
+  color: #f97316;
   text-decoration: underline;
   text-underline-offset: 2px;
 }

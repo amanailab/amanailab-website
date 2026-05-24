@@ -44,13 +44,13 @@ function inferTags(title: string, desc: string): string[] {
 }
 
 const GRADIENTS = [
-  { from: "#6366f1", to: "#a855f7" },
+  { from: "#f97316", to: "#dc2626" },
   { from: "#3b82f6", to: "#7c3aed" },
   { from: "#10b981", to: "#0891b2" },
-  { from: "#818cf8", to: "#6366f1" },
+  { from: "#f59e0b", to: "#f97316" },
   { from: "#8b5cf6", to: "#ec4899" },
   { from: "#06b6d4", to: "#3b82f6" },
-  { from: "#6366f1", to: "#8b5cf6" },
+  { from: "#f97316", to: "#8b5cf6" },
   { from: "#10b981", to: "#6366f1" },
 ];
 
@@ -95,8 +95,8 @@ const FALLBACK_PLAYLISTS: Playlist[] = [
     category: "llm",
     level: "Beginner",
     tags: ["GPT", "Transformers", "APIs"],
-    gradientFrom: "#6366f1",
-    gradientTo: "#a855f7",
+    gradientFrom: "#f97316",
+    gradientTo: "#dc2626",
     isNew: false,
   },
   {

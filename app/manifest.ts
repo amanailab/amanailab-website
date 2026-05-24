@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Free AI/ML interview prep: mock interviews, Code Lab, Interview Sheet, flashcards, and 18 AI tools.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#0a0a12',
-    theme_color: '#6366f1',
+    background_color: '#09090b',
+    theme_color: '#f97316',
     orientation: 'portrait-primary',
     categories: ['education', 'productivity'],
     icons: [

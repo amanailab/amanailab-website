@@ -30,7 +30,7 @@ export default function HeroSection() {
           transition={{ duration: 1.6, ease: "easeOut" }}
           className="w-[760px] h-[540px] rounded-full"
           style={{
-            background: "radial-gradient(ellipse, #6366f1 0%, transparent 70%)",
+            background: "radial-gradient(ellipse, #f97316 0%, transparent 70%)",
             filter: "blur(60px)",
           }}
         />
@@ -77,12 +77,12 @@ export default function HeroSection() {
           Land Your Dream{" "}
           <span
             style={{
-              backgroundImage: "linear-gradient(135deg, #818cf8 0%, #6366f1 50%, #a855f7 100%)",
+              backgroundImage: "linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
               // Fallback for browsers that don't support background-clip:text
-              color: "#6366f1",
+              color: "#f97316",
             }}
           >
             AI/ML Job
