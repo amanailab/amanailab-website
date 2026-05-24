@@ -71,6 +71,14 @@ const nextConfig: NextConfig = {
 
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Local images: allow our dynamic OG routes (which carry query strings like
+    // ?title=...) to be optimized, plus all other same-origin images (no query).
+    // Next 16 blocks query-string local images unless listed here.
+    localPatterns: [
+      { pathname: '/api/og/**' },
+      { pathname: '/api/share/**' },
+      { pathname: '/**', search: '' },
+    ],
     remotePatterns: [
       { protocol: "https", hostname: "i.ytimg.com",                    pathname: "/**" },
       { protocol: "https", hostname: "i3.ytimg.com",                   pathname: "/**" },

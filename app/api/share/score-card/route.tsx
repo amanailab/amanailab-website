@@ -85,17 +85,20 @@ export async function GET(request: Request) {
               }}>
                 <div style={{ width: '20px', height: '20px', background: '#f97316', borderRadius: '50%', display: 'flex' }} />
               </div>
-              <span style={{ fontSize: '22px', fontWeight: '700', color: '#f4f4f5' }}>
-                Aman<span style={{ color: '#f97316' }}>AI</span>
-                <span style={{ color: '#71717a', fontWeight: '400' }}> Lab</span>
-              </span>
+              <div style={{ display: 'flex', fontSize: '22px', fontWeight: '700', color: '#f4f4f5' }}>
+                <span>Aman</span>
+                <span style={{ color: '#f97316' }}>AI</span>
+                <span style={{ color: '#71717a', fontWeight: '400', marginLeft: '6px' }}>Lab</span>
+              </div>
             </div>
 
             {/* Title */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <p style={{ fontSize: '18px', color: '#71717a', margin: 0 }}>AI/ML Interview Score Card</p>
-              <h1 style={{ fontSize: '52px', fontWeight: '800', color: '#f4f4f5', margin: 0, lineHeight: 1.1 }}>
-                I scored <span style={{ color: gColor }}>{grade}</span> on
+              <h1 style={{ display: 'flex', alignItems: 'baseline', gap: '12px', fontSize: '52px', fontWeight: '800', color: '#f4f4f5', margin: 0, lineHeight: 1.1 }}>
+                <span>I scored</span>
+                <span style={{ color: gColor }}>{grade}</span>
+                <span>on</span>
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '4px' }}>
                 <div style={{

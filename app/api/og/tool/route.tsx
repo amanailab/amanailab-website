@@ -62,9 +62,10 @@ export async function GET(req: NextRequest) {
         }}>
           {/* Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ fontSize: '22px', color: '#e4e4e7', fontWeight: 700 }}>
-              Aman<span style={{ color: accent }}>AI</span>
-              <span style={{ color: '#71717a', fontWeight: 400 }}> Lab</span>
+            <div style={{ display: 'flex', fontSize: '22px', color: '#e4e4e7', fontWeight: 700 }}>
+              <span>Aman</span>
+              <span style={{ color: accent }}>AI</span>
+              <span style={{ color: '#71717a', fontWeight: 400, marginLeft: '6px' }}>Lab</span>
             </div>
             <div style={{
               fontSize: '12px', fontWeight: 600, color: accent,

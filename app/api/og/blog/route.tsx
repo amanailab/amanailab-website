@@ -77,9 +77,10 @@ export async function GET(req: NextRequest) {
             }}>
               <div style={{ fontSize: '22px' }}>🧠</div>
             </div>
-            <div style={{ fontSize: '22px', color: '#e4e4e7', fontWeight: 700 }}>
-              Aman<span style={{ color: accent }}>AI</span>
-              <span style={{ color: '#71717a', fontWeight: 400 }}> Lab</span>
+            <div style={{ display: 'flex', fontSize: '22px', color: '#e4e4e7', fontWeight: 700 }}>
+              <span>Aman</span>
+              <span style={{ color: accent }}>AI</span>
+              <span style={{ color: '#71717a', fontWeight: 400, marginLeft: '6px' }}>Lab</span>
             </div>
           </div>
 
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
                 {category}
               </div>
               <div style={{ fontSize: '14px', color: '#71717a' }}>
-                {readTime} min read
+                {`${readTime} min read`}
               </div>
             </div>
 
