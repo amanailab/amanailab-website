@@ -77,15 +77,19 @@ export default function ArticleForm({ post }: ArticleFormProps) {
 
   const handleCoverUpload = async (file: File) => {
     setUploading(true)
+    setError('')
     const formData = new FormData()
     formData.append('file', file)
     try {
       const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.url) setCoverImage(data.url)
-      else setError('Cover upload failed')
-    } catch {
-      setError('Cover upload failed')
+      const data = await res.json().catch(() => ({}))
+      if (res.ok && data.url) {
+        setCoverImage(data.url)
+      } else {
+        setError(data.error || `Cover upload failed (HTTP ${res.status})`)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? `Cover upload failed: ${err.message}` : 'Cover upload failed')
     } finally {
       setUploading(false)
     }

@@ -97,12 +97,14 @@ export default function AdminEditor({ content, onChange }: AdminEditorProps) {
       formData.append('file', file)
       try {
         const res = await fetch('/api/admin/upload', { method: 'POST', body: formData })
-        const data = await res.json()
-        if (data.url) {
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data.url) {
           editor.chain().focus().setImage({ src: data.url }).run()
+        } else {
+          alert(data.error || `Image upload failed (HTTP ${res.status})`)
         }
-      } catch {
-        alert('Image upload failed')
+      } catch (err) {
+        alert(err instanceof Error ? `Image upload failed: ${err.message}` : 'Image upload failed')
       }
     }
     input.click()
