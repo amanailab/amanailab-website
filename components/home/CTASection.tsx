@@ -27,7 +27,7 @@ export default function CTASection() {
       >
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
         <div className="absolute inset-0 opacity-5"
-          style={{ background: "radial-gradient(ellipse at 50% 0%, #f97316 0%, transparent 60%)" }} />
+          style={{ background: "radial-gradient(ellipse at 50% 0%, #6366f1 0%, transparent 60%)" }} />
 
         <div className="relative z-10 grid md:grid-cols-2 gap-10 px-8 sm:px-12 py-14 items-center">
 
@@ -39,7 +39,7 @@ export default function CTASection() {
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight text-zinc-100">
               Start your{" "}
-              <span style={{ backgroundImage: "linear-gradient(135deg, #fb923c, #f97316)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              <span style={{ backgroundImage: "linear-gradient(135deg, #818cf8, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                 AI/ML career
               </span>{" "}
               journey today
