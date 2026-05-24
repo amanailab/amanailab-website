@@ -992,7 +992,7 @@ export default function ProblemClient({
                 ) : (
                   <div className="py-2 flex flex-col gap-1.5">
                     <p className="text-[10px] text-zinc-600 mb-1">Use the AI action buttons above ↑</p>
-                    <p className="text-[10px] text-zinc-600"><span className="text-red-400 font-semibold">🐛 Debug</span> — finds what's wrong (run first to see failing tests)</p>
+                    <p className="text-[10px] text-zinc-600"><span className="text-red-400 font-semibold">🐛 Debug</span> — finds what&apos;s wrong (run first to see failing tests)</p>
                     <p className="text-[10px] text-zinc-600"><span className="text-purple-400 font-semibold">📊 Complexity</span> — Big-O time & space analysis of your code</p>
                     <p className="text-[10px] text-zinc-600"><span className="text-yellow-400 font-semibold">💡 Hint</span> — Socratic guidance without giving the answer</p>
                     <p className="text-[10px] text-zinc-600"><span className="text-purple-400 font-semibold">⭐ Review</span> — after Accepted, get professional code review</p>

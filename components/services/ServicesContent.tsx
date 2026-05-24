@@ -382,7 +382,7 @@ const WEBSITE_COMPARE: CompareTable = {
     { label: "Custom pages",                vals: ["1", "5–8", "10+"] },
     { label: "AI-powered tools",            vals: ["1–2", "3–5", "10+"] },
     { label: "User auth & dashboard",       vals: ["—", "✓", "✓"] },
-    { label: "Admin panel",                 vals: ["—", "—", "✓"] },
+    { label: "Admin / CMS panel",           vals: ["—", "Blog CMS", "Full admin"] },
     { label: "Payments integration",        vals: ["—", "—", "✓"] },
     { label: "Blog / CMS",                  vals: ["—", "✓", "✓"] },
     { label: "SEO + analytics",             vals: ["Basic", "Full", "Full"] },

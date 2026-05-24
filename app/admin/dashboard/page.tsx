@@ -57,7 +57,7 @@ async function getTotalUsers(): Promise<number> {
     const { data, error } = await supabase.auth.admin.listUsers({ perPage: 1 })
     if (error) return 0
     // The API returns total in the pagination object
-    return (data as any)?.total ?? (data?.users?.length ?? 0)
+    return (data as { total?: number } | null)?.total ?? (data?.users?.length ?? 0)
   } catch {
     return 0
   }

@@ -139,7 +139,7 @@ export default function CommandPalette() {
         {/* Results */}
         <div className="max-h-[60vh] overflow-y-auto py-2">
           {flatFiltered.length === 0 && (
-            <p className="text-xs text-zinc-600 text-center py-8">No results for "{query}"</p>
+            <p className="text-xs text-zinc-600 text-center py-8">No results for &quot;{query}&quot;</p>
           )}
 
           {Object.entries(grouped).map(([group, items]) => (
