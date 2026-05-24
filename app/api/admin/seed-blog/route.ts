@@ -136,7 +136,7 @@ const POSTS = [
     title: 'How to Crack the RAG System Design Interview',
     slug:  'rag-system-design-interview',
     description: 'A 7-step framework for designing a production-grade RAG system in 45 minutes — covers chunking, retrieval, reranking, hallucination defenses, and scaling.',
-    category: 'Interviews',
+    category: 'Interview Prep',
     tags: ['RAG', 'System Design', 'Interviews'],
     read_time: '8 min read',
     content: `## Why this question matters
@@ -264,7 +264,7 @@ ML Engineer L4: $310K - $410K base + equity. SWE roles similar.
     title: '10 LLM Interview Questions That Catch People Off Guard',
     slug:  '10-llm-interview-questions-that-catch-people-off-guard',
     description: 'Surface-level LLM knowledge gets exposed fast. These 10 questions separate candidates who read papers from those who only watched YouTube.',
-    category: 'Interviews',
+    category: 'Interview Prep',
     tags: ['LLM', 'Interviews', 'Question Bank'],
     read_time: '7 min read',
     content: `## 1. Why does temperature=0 still sometimes give non-deterministic output?
@@ -493,6 +493,10 @@ export async function POST(req: Request) {
     const patch: Record<string, unknown> = {}
     if (force || looksLikeMarkdown(row.content)) patch.content = p.htmlContent
     if (force || coverNeedsUpdate(row.cover_image)) patch.cover_image = p.cover
+    if (force) {
+      patch.category = p.category
+      patch.tags = p.tags
+    }
     if (Object.keys(patch).length === 0) continue
     patch.updated_at = new Date().toISOString()
     const { error: upErr } = await supabase.from('blog_posts').update(patch).eq('id', row.id)

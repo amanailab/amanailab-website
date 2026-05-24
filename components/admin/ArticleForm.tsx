@@ -7,19 +7,7 @@ import AdminEditor from './AdminEditor'
 import { createPostAction, updatePostAction } from '@/lib/blog-actions'
 import type { BlogPost } from '@/lib/admin'
 import { X, Upload, Loader2 } from 'lucide-react'
-
-const CATEGORIES = [
-  'Tutorials',
-  'Interview Prep',
-  'Tools',
-  'Career',
-  'RAG',
-  'Agents',
-  'Fine-Tuning',
-  'MLOps',
-  'System Design',
-  'General',
-]
+import { BLOG_CATEGORIES as CATEGORIES } from '@/lib/blog-categories'
 
 // Pick a deterministic gradient per category so placeholders feel distinct.
 const CATEGORY_GRADIENTS: Record<string, string> = {

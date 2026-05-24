@@ -5,7 +5,8 @@ export const runtime = 'edge'
 
 const CATEGORY_COLOR: Record<string, string> = {
   'Tutorials':       '#f97316',
-  'Interview Prep':  '#3b82f6',
+  'Interview Prep':  '#a855f7',
+  'Companies':       '#0ea5e9',
   'Tools':           '#8b5cf6',
   'Career':          '#22c55e',
   'RAG':             '#8b5cf6',

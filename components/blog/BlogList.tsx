@@ -6,24 +6,7 @@ import Image from 'next/image'
 import { useRef, useState } from 'react'
 import { Clock, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { BlogPost } from '@/lib/admin'
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Tutorials: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  'Interview Prep': 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  Tools: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-  Career: 'bg-green-500/10 text-green-400 border-green-500/20',
-  RAG: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-  Agents: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
-  'Fine-Tuning': 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  MLOps: 'bg-red-500/10 text-red-400 border-red-500/20',
-  'System Design': 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
-}
-
-const CATEGORIES = Object.keys(CATEGORY_COLORS)
-
-function getCategoryStyle(cat: string) {
-  return CATEGORY_COLORS[cat] ?? 'bg-zinc-700 text-zinc-400 border-zinc-600'
-}
+import { BLOG_CATEGORIES, blogCategoryStyle } from '@/lib/blog-categories'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -116,13 +99,13 @@ export default function BlogList({ posts, total, page, perPage, search, category
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
+          {BLOG_CATEGORIES.map((cat) => (
             <button
               key={cat}
               onClick={() => handleCategory(cat)}
               className={`text-xs font-medium px-3 py-1 rounded-full border transition-colors ${
                 category === cat
-                  ? getCategoryStyle(cat)
+                  ? blogCategoryStyle(cat)
                   : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-600 hover:text-zinc-300'
               }`}
             >
@@ -176,7 +159,7 @@ export default function BlogList({ posts, total, page, perPage, search, category
                 </div>
                 <div className="flex-1 p-6 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-3">
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${getCategoryStyle(posts[0].category)}`}>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${blogCategoryStyle(posts[0].category)}`}>
                       {posts[0].category}
                     </span>
                     <span className="text-xs text-zinc-500">{formatDate(posts[0].created_at)}</span>
@@ -220,7 +203,7 @@ export default function BlogList({ posts, total, page, perPage, search, category
 
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${getCategoryStyle(post.category)}`}>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${blogCategoryStyle(post.category)}`}>
                     {post.category}
                   </span>
                   <span className="text-xs text-zinc-500">{formatDate(post.created_at)}</span>
