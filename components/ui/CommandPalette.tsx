@@ -8,6 +8,7 @@ import {
   Layers, MessageSquare, Map, Newspaper, LayoutDashboard, X, ArrowRight,
   Target, Users,
 } from 'lucide-react'
+import { SITE_STATS } from '@/lib/site-stats'
 
 interface Command {
   id: string; label: string; desc?: string
@@ -31,7 +32,7 @@ const COMMANDS: Command[] = [
   { id: 'paper',         label: 'Paper Explainer',      desc: 'Any arXiv paper explained',         icon: <BookOpen className="w-4 h-4" />,      href: '/paper-explainer',       group: 'Tools' },
   { id: 'linkedin-posts',label: 'LinkedIn Post Writer', desc: 'Viral post generator',              icon: <Users className="w-4 h-4" />,         href: '/linkedin',              group: 'Tools' },
   // Interview
-  { id: 'questions',  label: 'Question Bank',           desc: '500+ AI/ML questions',              icon: <Library className="w-4 h-4" />,       href: '/questions',             group: 'Interview' },
+  { id: 'questions',  label: 'Question Bank',           desc: `${SITE_STATS.questions} AI/ML questions`,              icon: <Library className="w-4 h-4" />,       href: '/questions',             group: 'Interview' },
   { id: 'companies',  label: 'Company Prep',            desc: 'Google, Meta, OpenAI & more',       icon: <Building2 className="w-4 h-4" />,     href: '/companies',             group: 'Interview' },
   { id: 'flashcards', label: 'Flashcards',              desc: '5-min daily practice',              icon: <BookOpen className="w-4 h-4" />,      href: '/flashcards',            group: 'Interview' },
   { id: 'topics',     label: 'Topic Guides',            desc: 'Deep-dive AI/ML guides',            icon: <Layers className="w-4 h-4" />,        href: '/topics',                group: 'Interview' },

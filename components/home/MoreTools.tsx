@@ -9,13 +9,14 @@ import {
   Wand2, ScrollText, GraduationCap, MessageSquare, Sparkles,
   ArrowRight, Search, X,
 } from "lucide-react";
+import { SITE_STATS } from "@/lib/site-stats";
 
 const TOOLS = [
   // Resume Analyzer is featured in FeaturedTools — not duplicated here
   { href: "/quiz",               label: "Skill Quiz",           desc: "AI-generated MCQ on 14 topics",  icon: Sparkles,      color: "text-lime-400",    bg: "bg-lime-500/10 border-lime-500/20"       },
   { href: "/flashcards",         label: "Flashcards",           desc: "5-min daily concept revision",   icon: BookOpen,      color: "text-orange-400",  bg: "bg-orange-500/10 border-orange-500/20"   },
   { href: "/topics",             label: "Topic Guides",         desc: "Deep-dive prep by topic",        icon: Layers,        color: "text-rose-400",    bg: "bg-rose-500/10 border-rose-500/20"       },
-  { href: "/questions",          label: "Question Bank",        desc: "500+ real interview questions",  icon: Library,       color: "text-purple-400",  bg: "bg-purple-500/10 border-purple-500/20"   },
+  { href: "/questions",          label: "Question Bank",        desc: `${SITE_STATS.questions} real interview questions`,  icon: Library,       color: "text-purple-400",  bg: "bg-purple-500/10 border-purple-500/20"   },
   { href: "/companies",          label: "Company Prep",         desc: "Google, Meta, OpenAI & more",    icon: Building2,     color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/20"       },
   { href: "/job-prep",           label: "Job Prep",             desc: "Paste JD → tailored questions",  icon: Briefcase,     color: "text-teal-400",    bg: "bg-teal-500/10 border-teal-500/20"       },
   { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   desc: "AI-rewritten profile sections",  icon: BarChart2,     color: "text-sky-400",     bg: "bg-sky-500/10 border-sky-500/20"         },

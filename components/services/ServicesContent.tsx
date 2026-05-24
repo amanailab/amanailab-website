@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { SITE_STATS } from "@/lib/site-stats"
 import {
   CheckCircle2, Code2, Zap, Crown, Globe, Layers, Cpu,
   BrainCircuit, FileText, MessageSquare, ArrowRight,
@@ -357,6 +358,45 @@ const WEBSITE_STEPS = [
   { n: "04", icon: Globe,      title: "Launch & hand-off",       desc: "Site goes live. Full code on your GitHub. Docs included." },
 ]
 
+// ─── Comparison tables (derived from the package data above) ────────────────────
+interface CompareTable { cols: string[]; popularIndex: number; rows: { label: string; vals: string[] }[] }
+const CAREER_COMPARE: CompareTable = {
+  cols: ["Blueprint", "Launchpad", "Placement"],
+  popularIndex: 1,
+  rows: [
+    { label: "Custom AI project",          vals: ["Idea + plan", "Full build", "2 full builds"] },
+    { label: "Production-ready code",       vals: ["—", "✓", "✓"] },
+    { label: "Video walkthrough by Aman",   vals: ["—", "✓", "✓ (both)"] },
+    { label: "Live mock interviews",        vals: ["—", "1 session", "3 sessions"] },
+    { label: "Project Q&As with answers",   vals: ["—", "20", "40+"] },
+    { label: "Resume help",                 vals: ["3 bullets", "Full review", "Full rewrite"] },
+    { label: "LinkedIn profile overhaul",   vals: ["—", "—", "✓"] },
+    { label: "1-on-1 mentor calls",         vals: ["—", "—", "4 weekly"] },
+    { label: "Support",                     vals: ["48 hours", "7 days", "Until placed"] },
+  ],
+}
+const WEBSITE_COMPARE: CompareTable = {
+  cols: ["AI Landing Page", "AI Platform", "Custom AI SaaS"],
+  popularIndex: 1,
+  rows: [
+    { label: "Custom pages",                vals: ["1", "5–8", "10+"] },
+    { label: "AI-powered tools",            vals: ["1–2", "3–5", "10+"] },
+    { label: "User auth & dashboard",       vals: ["—", "✓", "✓"] },
+    { label: "Admin panel",                 vals: ["—", "—", "✓"] },
+    { label: "Payments integration",        vals: ["—", "—", "✓"] },
+    { label: "Blog / CMS",                  vals: ["—", "✓", "✓"] },
+    { label: "SEO + analytics",             vals: ["Basic", "Full", "Full"] },
+    { label: "Source code ownership",       vals: ["✓", "✓", "✓"] },
+    { label: "Support",                     vals: ["7 days", "14 days", "30 days"] },
+  ],
+}
+
+function CompareCell({ value, accent }: { value: string; accent: boolean }) {
+  if (value === "—") return <span className="text-zinc-700">—</span>
+  if (value === "✓") return <CheckCircle2 className={`w-4 h-4 mx-auto ${accent ? "text-orange-400" : "text-zinc-400"}`} />
+  return <span className={`text-xs font-medium ${accent ? "text-orange-300" : "text-zinc-300"}`}>{value}</span>
+}
+
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 const FAQS = [
   { q: "Do I need coding experience for the career packages?", a: "No. We explain every line of code step by step. By the end you'll understand your own project — that's how you ace the interview." },
@@ -475,6 +515,7 @@ export default function ServicesContent() {
 
   const packages = tab === "career" ? CAREER : WEBSITE
   const steps    = tab === "career" ? CAREER_STEPS : WEBSITE_STEPS
+  const compare  = tab === "career" ? CAREER_COMPARE : WEBSITE_COMPARE
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
@@ -558,6 +599,95 @@ export default function ServicesContent() {
         </div>
       </section>
 
+      {/* ── Compare tiers ── */}
+      <section className="max-w-5xl mx-auto px-4 mt-16 mb-4">
+        <div className="text-center mb-8">
+          <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">Compare</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-100">What&apos;s included in each tier</h2>
+        </div>
+        <div className="overflow-x-auto -mx-4 px-4">
+          <table className="w-full min-w-[560px] border-separate border-spacing-0">
+            <thead>
+              <tr>
+                <th className="text-left text-[11px] font-bold text-zinc-500 uppercase tracking-wider pb-3 pr-3 align-bottom">Feature</th>
+                {compare.cols.map((col, ci) => (
+                  <th key={col} className={`text-center text-xs font-extrabold pb-3 px-3 align-bottom ${ci === compare.popularIndex ? "text-orange-400" : "text-zinc-200"}`}>
+                    {col}
+                    {ci === compare.popularIndex && (
+                      <span className="block text-[9px] font-bold text-orange-400/80 uppercase tracking-wider mt-0.5">Most Popular</span>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {compare.rows.map((row, ri) => (
+                <tr key={row.label}>
+                  <td className={`text-xs text-zinc-300 py-2.5 pr-3 ${ri !== 0 ? "border-t border-zinc-800" : ""}`}>{row.label}</td>
+                  {row.vals.map((val, ci) => (
+                    <td key={ci} className={`text-center py-2.5 px-3 ${ri !== 0 ? "border-t border-zinc-800" : ""} ${ci === compare.popularIndex ? "bg-orange-500/[0.04]" : ""}`}>
+                      <CompareCell value={val} accent={ci === compare.popularIndex} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ── Why work with me ── */}
+      <section className="max-w-5xl mx-auto px-4 mt-16 mb-16">
+        <div className="text-center mb-10">
+          <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">Why work with me</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-100">You&apos;re already looking at my work</h2>
+          <p className="text-sm text-zinc-400 max-w-xl mx-auto mt-3 leading-relaxed">
+            This entire platform — every tool, the Code Lab, the interview sheet, the AI mock interviews —
+            was designed and built by Aman, solo. That&apos;s real proof of skill, not just a promise.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            {
+              icon: Code2,
+              title: "Proof you can verify now",
+              desc: `Browse this site: the Code Lab (${SITE_STATS.codeProblems}+ problems), the ${SITE_STATS.sheetTopics}-topic interview sheet, and ${SITE_STATS.tools} AI tools — all built on the exact stack I'll use for your project.`,
+            },
+            {
+              icon: Star,
+              title: "Work directly with Aman",
+              desc: "No agency, no juniors, no hand-offs. You message Aman and Aman builds it — with daily updates so you always know exactly where things stand.",
+            },
+            {
+              icon: Shield,
+              title: "Risk-free payment",
+              desc: "50% upfront, 50% only once you're happy with delivery. Career clients: support continues until you land the offer — no time limit.",
+            },
+          ].map((c, i) => (
+            <motion.div key={c.title}
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }} transition={{ duration: 0.35, delay: i * 0.08 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center mb-4">
+                <c.icon className="w-5 h-5 text-orange-400" />
+              </div>
+              <p className="text-sm font-bold text-zinc-100 mb-2">{c.title}</p>
+              <p className="text-xs text-zinc-400 leading-relaxed">{c.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Guarantee banner */}
+        <div className="mt-5 flex items-start gap-3 bg-gradient-to-br from-orange-500/8 via-zinc-900 to-zinc-900 border border-orange-500/20 rounded-2xl p-5">
+          <CheckCircle2 className="w-5 h-5 text-orange-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-zinc-300 leading-relaxed">
+            <span className="font-bold text-zinc-100">My promise:</span> scope and price are agreed in writing before you pay a rupee.
+            If something isn&apos;t right, I keep working until it is — and you own 100% of the code, forever.
+          </p>
+        </div>
+      </section>
+
       {/* ── Process ── */}
       <section className="max-w-4xl mx-auto px-4 mt-16 mb-16">
         <div className="text-center mb-10">
@@ -601,8 +731,8 @@ export default function ServicesContent() {
       <section className="max-w-4xl mx-auto px-4 mb-16">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
           {[
-            { value: "17+",   label: "Free AI Tools Built",       sub: "On AmanAI Lab" },
-            { value: "500+",  label: "Interview Questions",       sub: "Curated & tested" },
+            { value: SITE_STATS.tools, label: "Free AI Tools Built", sub: "On AmanAI Lab" },
+            { value: SITE_STATS.questions,  label: "Interview Questions",       sub: "Curated & tested" },
             { value: "100%",  label: "Code Ownership",            sub: "No lock-in, ever" },
             { value: "1-on-1", label: "Direct Access to Aman",   sub: "No juniors, no agency" },
           ].map(s => (

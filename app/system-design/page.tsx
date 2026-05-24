@@ -1,14 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
+import { SITE_STATS } from '@/lib/site-stats'
 import { ArrowRight, PenLine, Building2, Clock } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'System Design Practice — 15 Real ML & LLM Problems | AmanAI Lab',
-  description: 'Practice 15 real ML and LLM system design interview problems with a structured editor, must-cover checklist, FAANG interview framework, architecture component snippets, and AI review of your written answer. Free.',
+  title: `System Design Practice — ${SITE_STATS.systemDesignProblems} Real ML & LLM Problems | AmanAI Lab`,
+  description: `Practice ${SITE_STATS.systemDesignProblems} real ML and LLM system design interview problems with a structured editor, must-cover checklist, FAANG interview framework, architecture component snippets, and AI review of your written answer. Free.`,
   alternates: { canonical: 'https://amanailab.com/system-design' },
   openGraph: {
-    title: 'System Design Practice — 15 ML & LLM Problems',
+    title: `System Design Practice — ${SITE_STATS.systemDesignProblems} ML & LLM Problems`,
     description: 'Practice real system design questions: LLM Serving, RAG Systems, YouTube Recommendation, Fraud Detection. Structured editor + AI review.',
     url: 'https://amanailab.com/system-design',
   },
@@ -46,7 +47,7 @@ export default function SystemDesignPage() {
             System Design Practice
           </h1>
           <p className="text-zinc-400 text-base max-w-2xl mx-auto">
-            15 real ML &amp; LLM system design problems — each with a structured editor, FAANG interview framework, architecture component snippets, 45-minute timer, and AI review of your answer.
+            {SITE_STATS.systemDesignProblems} real ML &amp; LLM system design problems — each with a structured editor, FAANG interview framework, architecture component snippets, 45-minute timer, and AI review of your answer.
           </p>
         </div>
 

@@ -3,16 +3,17 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { SITE_STATS } from "@/lib/site-stats";
 
 const FREE_FEATURES = [
-  "19+ AI-powered tools — completely free, no credit card needed",
+  `${SITE_STATS.tools} AI-powered tools — completely free, no credit card needed`,
   "AI interview simulator with voice + instant scoring (0–10)",
-  "A-to-Z Interview Sheet — 231 topics across 7 tracks",
-  "AI/ML Code Lab — 45 problems to implement from scratch, earn XP",
+  `A-to-Z Interview Sheet — ${SITE_STATS.sheetTopics} topics across 7 tracks`,
+  `AI/ML Code Lab — ${SITE_STATS.codeProblems} problems to implement from scratch, earn XP`,
   "AI Resume Analyzer — ATS score, JD match & cover letter generator",
-  "System Design Workspace — 15 problems with AI review",
+  `System Design Workspace — ${SITE_STATS.systemDesignProblems} problems with AI review`,
   "🔥 Daily Challenge — one question every day to build your streak",
-  "500+ real questions from Google, Meta, OpenAI & more",
+  `${SITE_STATS.questions} real questions from Google, Meta, OpenAI & more`,
 ]
 
 export default function CTASection() {

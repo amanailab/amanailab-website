@@ -21,6 +21,7 @@ import InterviewCountdown from '@/components/dashboard/InterviewCountdown'
 import AchievementAlert from '@/components/dashboard/AchievementAlert'
 import AchievementsPanel from '@/components/dashboard/AchievementsPanel'
 import RefreshButton from '@/components/dashboard/RefreshButton'
+import { SITE_STATS } from '@/lib/site-stats'
 
 export const metadata: Metadata = {
   title: 'My Dashboard | AmanAI Lab',
@@ -352,7 +353,7 @@ const TOOLKIT = [
   { href: '/daily',         icon: FlameIcon,    label: 'Daily Challenge', desc: 'One question every day',           color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
   { href: '/interview?tab=simulator', icon: BrainCircuit, label: 'AI Simulator', desc: 'Timed sessions with AI scoring', color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/20' },
   { href: '/companies',     icon: Building2,    label: 'Company Prep',    desc: 'Google, Meta, OpenAI & more',      color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20'   },
-  { href: '/questions',     icon: Library,      label: 'Question Bank',   desc: 'Browse 500+ questions',            color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20'},
+  { href: '/questions',     icon: Library,      label: 'Question Bank',   desc: `Browse ${SITE_STATS.questions} questions`,            color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20'},
   { href: '/job-prep',      icon: Briefcase,    label: 'Job Prep',        desc: 'Paste JD → tailored questions',    color: 'text-teal-400',   bg: 'bg-teal-500/10 border-teal-500/20'   },
   { href: '/community',     icon: MessageSquare,label: 'Community',       desc: 'Real interview experiences',       color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20' },
   { href: '/career',        icon: Map,          label: 'Career Roadmap',  desc: 'Week-by-week AI/ML path',          color: 'text-pink-400',   bg: 'bg-pink-500/10 border-pink-500/20'   },

@@ -8,23 +8,24 @@ import MoreTools      from "@/components/home/MoreTools";
 import FeaturedSeries from "@/components/home/FeaturedSeries";
 import LatestVideos   from "@/components/home/LatestVideos";
 import CTASection     from "@/components/home/CTASection";
+import { SITE_STATS } from "@/lib/site-stats";
 
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'AmanAI Lab — Free AI/ML Interview Prep Platform | Mock Interviews, Code Lab & More',
-  description: 'The most complete free platform for AI/ML engineers. AI mock interviews, 45+ coding problems, A-to-Z Interview Sheet (231 topics), flashcards, system design practice, and 19 AI-powered tools. Trusted by engineers at Google, Meta, OpenAI.',
+  description: `The most complete free platform for AI/ML engineers. AI mock interviews, ${SITE_STATS.codeProblems}+ coding problems, A-to-Z Interview Sheet (${SITE_STATS.sheetTopics} topics), flashcards, system design practice, and ${SITE_STATS.tools} AI-powered tools. Trusted by engineers at Google, Meta, OpenAI.`,
   alternates: { canonical: 'https://amanailab.com' },
   openGraph: {
     title: 'AmanAI Lab — Free AI/ML Interview Prep Platform',
-    description: 'AI mock interviews, 45+ coding problems, Interview Prep Sheet with 231 topics, and 19 free tools. Everything you need to land an AI/ML job.',
+    description: `AI mock interviews, ${SITE_STATS.codeProblems}+ coding problems, Interview Prep Sheet with ${SITE_STATS.sheetTopics} topics, and ${SITE_STATS.tools} free tools. Everything you need to land an AI/ML job.`,
     url: 'https://amanailab.com',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AmanAI Lab — Free AI/ML Interview Prep',
-    description: 'AI mock interviews, Code Lab, Interview Sheet & 19 free tools. 100% free.',
+    description: `AI mock interviews, Code Lab, Interview Sheet & ${SITE_STATS.tools} free tools. 100% free.`,
   },
   keywords: [
     'AI interview prep', 'ML interview questions', 'LLM interview', 'RAG interview',

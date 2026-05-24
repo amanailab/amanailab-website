@@ -15,6 +15,7 @@ import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
 import { createClient } from "@/lib/supabase/client";
 import { logout } from "@/app/actions/auth";
+import { SITE_STATS } from "@/lib/site-stats";
 
 // ─── Nav structure ────────────────────────────────────────────────────────────
 
@@ -74,9 +75,9 @@ const navItems: NavItem[] = [
     items: [
       { href: "/sheet",          label: "Interview Prep Sheet ✨", description: "A-to-Z AI/ML roadmap — theory, code & design",    icon: <ListChecks className="w-4 h-4" /> },
       { href: "/interview",      label: "AI Simulator",            description: "Timed mock interview with instant AI scoring",     icon: <BrainCircuit className="w-4 h-4" /> },
-      { href: "/system-design",  label: "System Design Practice",  description: "15 real design problems + AI review",              icon: <PenLine className="w-4 h-4" /> },
+      { href: "/system-design",  label: "System Design Practice",  description: `${SITE_STATS.systemDesignProblems} real design problems + AI review`,              icon: <PenLine className="w-4 h-4" /> },
       { href: "/daily",          label: "Daily Challenge",         description: "One question a day — build your streak",           icon: <Flame className="w-4 h-4" /> },
-      { href: "/questions",      label: "Question Bank",           description: "Browse 500+ AI/ML interview questions",            icon: <BookOpen className="w-4 h-4" /> },
+      { href: "/questions",      label: "Question Bank",           description: `Browse ${SITE_STATS.questions} AI/ML interview questions`,            icon: <BookOpen className="w-4 h-4" /> },
       { href: "/topics",         label: "Topic Guides",            description: "Deep-dive prep guides by topic",                   icon: <Layers className="w-4 h-4" /> },
       { href: "/flashcards",     label: "Flashcards",              description: "5-min daily concept revision",                     icon: <Library className="w-4 h-4" /> },
       { href: "/quiz",           label: "Skill Quiz",              description: "AI-generated MCQ on 14 topics",                    icon: <Trophy className="w-4 h-4" /> },

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { BrainCircuit, Code2, ListChecks, FileText, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { SITE_STATS } from "@/lib/site-stats";
 
 const FEATURED = [
   {
@@ -21,7 +22,7 @@ const FEATURED = [
     href: "/interview?tab=simulator",
   },
   {
-    badge: "45 Problems",
+    badge: `${SITE_STATS.codeProblems} Problems`,
     badgeColor: "text-green-400 bg-green-500/10 border-green-500/25",
     icon: Code2,
     iconColor: "text-green-400",
@@ -31,7 +32,7 @@ const FEATURED = [
     borderHover: "hover:border-green-500/40",
     title: "AI/ML Code Lab",
     description: "Implement AI/ML algorithms from scratch in the browser — softmax, attention, backprop, RAG. Earn XP and unlock 6 levels.",
-    features: ["45 hand-crafted problems", "Python runs in your browser", "Earn XP · unlock AI Master"],
+    features: [`${SITE_STATS.codeProblems} hand-crafted problems`, "Python runs in your browser", "Earn XP · unlock AI Master"],
     cta: "Start Coding",
     href: "/code-lab",
   },
@@ -45,8 +46,8 @@ const FEATURED = [
     borderBase: "border-zinc-800",
     borderHover: "hover:border-orange-500/40",
     title: "Interview Prep Sheet",
-    description: "A structured A-to-Z roadmap across 7 tracks — 231 topics with inline theory, code problems, flashcards, and system design workspace.",
-    features: ["231 topics · 7 complete tracks", "Inline theory for every concept", "System Design Workspace + AI review"],
+    description: `A structured A-to-Z roadmap across 7 tracks — ${SITE_STATS.sheetTopics} topics with inline theory, code problems, flashcards, and system design workspace.`,
+    features: [`${SITE_STATS.sheetTopics} topics · 7 complete tracks`, "Inline theory for every concept", "System Design Workspace + AI review"],
     cta: "Start Sheet",
     href: "/sheet",
   },

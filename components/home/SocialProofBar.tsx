@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Users, Wrench, BookOpen, BrainCircuit } from "lucide-react";
+import { Users, Wrench, BookOpen, BrainCircuit, ListChecks, Code2 } from "lucide-react";
+import { SITE_STATS } from "@/lib/site-stats";
 
 interface Props {
   subscriberCount?: string  // real YouTube subs e.g. "52K+"
@@ -9,19 +10,53 @@ interface Props {
 }
 
 export default function SocialProofBar({ subscriberCount, videoCount }: Props) {
+  // Show live YouTube numbers when available; otherwise fall back to real
+  // platform stats so the bar never renders a bare "—" or a made-up count.
+  const subsCard = subscriberCount
+    ? {
+        icon: <Users className="w-5 h-5" />,
+        value: subscriberCount,
+        label: "Subscribers",
+        sub: "on YouTube",
+        color: "text-red-400",
+        bg: "bg-red-500/10 border-red-500/20",
+        glow: "from-red-500/0 via-red-500/10 to-red-500/0",
+      }
+    : {
+        icon: <Code2 className="w-5 h-5" />,
+        value: SITE_STATS.codeProblems + "+",
+        label: "Code Problems",
+        sub: "implement from scratch",
+        color: "text-red-400",
+        bg: "bg-red-500/10 border-red-500/20",
+        glow: "from-red-500/0 via-red-500/10 to-red-500/0",
+      }
+
+  const videosCard = videoCount
+    ? {
+        icon: <BookOpen className="w-5 h-5" />,
+        value: videoCount,
+        label: "Videos Published",
+        sub: "weekly drops",
+        color: "text-blue-400",
+        bg: "bg-blue-500/10 border-blue-500/20",
+        glow: "from-blue-500/0 via-blue-500/10 to-blue-500/0",
+      }
+    : {
+        icon: <ListChecks className="w-5 h-5" />,
+        value: SITE_STATS.sheetTopics,
+        label: "Interview Topics",
+        sub: "A-to-Z prep sheet",
+        color: "text-blue-400",
+        bg: "bg-blue-500/10 border-blue-500/20",
+        glow: "from-blue-500/0 via-blue-500/10 to-blue-500/0",
+      }
+
   const stats = [
-    {
-      icon: <Users className="w-5 h-5" />,
-      value: subscriberCount ?? "—",
-      label: "Subscribers",
-      sub: "on YouTube",
-      color: "text-red-400",
-      bg: "bg-red-500/10 border-red-500/20",
-      glow: "from-red-500/0 via-red-500/10 to-red-500/0",
-    },
+    subsCard,
     {
       icon: <Wrench className="w-5 h-5" />,
-      value: "19+",
+      value: SITE_STATS.tools,
       label: "Free AI Tools",
       sub: "no signup needed",
       color: "text-orange-400",
@@ -30,22 +65,14 @@ export default function SocialProofBar({ subscriberCount, videoCount }: Props) {
     },
     {
       icon: <BrainCircuit className="w-5 h-5" />,
-      value: "500+",
+      value: SITE_STATS.questions,
       label: "Interview Questions",
       sub: "with model answers",
       color: "text-violet-400",
       bg: "bg-violet-500/10 border-violet-500/20",
       glow: "from-violet-500/0 via-violet-500/10 to-violet-500/0",
     },
-    {
-      icon: <BookOpen className="w-5 h-5" />,
-      value: videoCount ?? "—",
-      label: "Videos Published",
-      sub: "weekly drops",
-      color: "text-blue-400",
-      bg: "bg-blue-500/10 border-blue-500/20",
-      glow: "from-blue-500/0 via-blue-500/10 to-blue-500/0",
-    },
+    videosCard,
   ]
 
   return (

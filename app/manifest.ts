@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next'
+import { SITE_STATS } from '@/lib/site-stats'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'AmanAI Lab — AI/ML Interview Prep',
     short_name: 'AmanAI Lab',
-    description: 'Free AI/ML interview prep: mock interviews, Code Lab, Interview Sheet, flashcards, and 18 AI tools.',
+    description: `Free AI/ML interview prep: mock interviews, Code Lab, Interview Sheet, flashcards, and ${SITE_STATS.tools} AI tools.`,
     start_url: '/',
     display: 'standalone',
     background_color: '#09090b',

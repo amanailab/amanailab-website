@@ -6,6 +6,7 @@ import {
   ArrowRight, BookOpen, Code2, Layers, PenLine,
   HelpCircle, MessageCircle, Sparkles,
 } from "lucide-react";
+import { SITE_STATS } from "@/lib/site-stats";
 
 const TRACKS = [
   { icon: "✨", label: "Generative AI",    color: "text-violet-400", bg: "bg-violet-500/10 border-violet-500/20" },
@@ -19,9 +20,9 @@ const TRACKS = [
 
 const FEATURES = [
   { icon: <BookOpen className="w-4 h-4" />,      color: "text-orange-400", label: "Inline theory",         desc: "Click any item to read the explanation — no navigation" },
-  { icon: <Code2 className="w-4 h-4" />,         color: "text-green-400",  label: "Code Lab linked",       desc: "45+ coding problems open directly in the editor" },
+  { icon: <Code2 className="w-4 h-4" />,         color: "text-green-400",  label: "Code Lab linked",       desc: `${SITE_STATS.codeProblems}+ coding problems open directly in the editor` },
   { icon: <Layers className="w-4 h-4" />,        color: "text-blue-400",   label: "Flashcards & Quiz",     desc: "Every topic links to targeted flashcard decks and MCQs" },
-  { icon: <PenLine className="w-4 h-4" />,       color: "text-violet-400", label: "Design Workspace",      desc: "15 system design problems with AI review of your answer" },
+  { icon: <PenLine className="w-4 h-4" />,       color: "text-violet-400", label: "Design Workspace",      desc: `${SITE_STATS.systemDesignProblems} system design problems with AI review of your answer` },
 ]
 
 export default function SheetPromo() {
@@ -46,7 +47,7 @@ export default function SheetPromo() {
           </h2>
           <p className="text-zinc-400 text-base max-w-2xl mx-auto">
             Inspired by Striver&apos;s A2Z DSA Sheet — built for 2026 AI/ML interviews.
-            231 topics across 7 tracks with theory, code, flashcards, and system design all linked.
+            {SITE_STATS.sheetTopics} topics across 7 tracks with theory, code, flashcards, and system design all linked.
           </p>
         </motion.div>
 

@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import { getAdminSupabase } from '@/lib/admin'
 import { STATIC_PROBLEMS } from '@/lib/code-problems-static'
+import { SITE_STATS } from '@/lib/site-stats'
 import ProblemsClient from './ProblemsClient'
 
 export const metadata: Metadata = {
   title: 'Free AI/ML Code Lab — Python Coding Problems with XP Levels',
-  description: 'Implement AI/ML algorithms from scratch: softmax, attention, RAG pipelines, KNN, and more. AI hints, test runner, XP progression system. 45+ coding problems. Free.',
+  description: `Implement AI/ML algorithms from scratch: softmax, attention, RAG pipelines, KNN, and more. AI hints, test runner, XP progression system. ${SITE_STATS.codeProblems}+ coding problems. Free.`,
   alternates: { canonical: 'https://amanailab.com/code-lab' },
   openGraph: {
     title: 'AI/ML Code Lab — Implement Algorithms from Scratch',
@@ -38,7 +39,7 @@ const jsonLd = {
   '@type': 'SoftwareApplication',
   name: 'AI/ML Code Lab',
   applicationCategory: 'EducationalApplication',
-  description: '45+ AI/ML coding problems — implement algorithms from scratch, earn XP levels, unlock AI hints. Free judge for AI engineers.',
+  description: `${SITE_STATS.codeProblems}+ AI/ML coding problems — implement algorithms from scratch, earn XP levels, unlock AI hints. Free judge for AI engineers.`,
   url: 'https://amanailab.com/code-lab',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   operatingSystem: 'Web Browser',

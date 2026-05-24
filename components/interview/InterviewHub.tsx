@@ -7,6 +7,7 @@ import {
   CheckCircle2, XCircle, SkipForward, RotateCcw, ArrowRight,
   Search, X, Dice5, MessageCircle, Library, Sparkles,
 } from "lucide-react";
+import { SITE_STATS } from "@/lib/site-stats";
 import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 import MockInterviewChat from "@/components/interview/MockInterviewChat";
 import AISimulator from "@/components/interview/AISimulator";
@@ -315,7 +316,7 @@ export default function InterviewHub() {
     {
       id: "bank" as const,
       label: "Question Bank",
-      desc: "Browse 500+ real AI/ML questions",
+      desc: `Browse ${SITE_STATS.questions} real AI/ML questions`,
       icon: <Library className="w-4 h-4" />,
       color: "text-blue-400",
       bg: "bg-blue-500/10 border-blue-500/25",

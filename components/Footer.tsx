@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 import { YoutubeIcon, GithubIcon, TwitterIcon } from "@/components/icons/SocialIcons";
+import { SITE_STATS } from "@/lib/site-stats";
 
 function FooterNewsletter() {
   const [email, setEmail]   = useState("")
@@ -111,7 +112,7 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-zinc-400 text-sm max-w-xs leading-relaxed mb-5">
-              The most complete AI/ML career platform. 19+ free tools for interview prep, job search, and learning.
+              The most complete AI/ML career platform. {SITE_STATS.tools} free tools for interview prep, job search, and learning.
             </p>
             <div className="flex items-center gap-2.5">
               <a href="https://youtube.com/@AmanAI_lab" target="_blank" rel="noopener noreferrer" aria-label="YouTube"
