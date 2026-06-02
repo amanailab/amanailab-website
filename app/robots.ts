@@ -8,14 +8,26 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/api/', '/verify-email', '/dashboard', '/profile', '/sessions', '/job-tracker'],
+        // Only hard-block truly private areas and tracking-param duplicate URLs.
+        // Pages we want OUT of the index (dashboard, profile, sessions, search,
+        // signup, verify-email, saved questions) use a `noindex` meta tag instead
+        // — they must stay crawlable so Google can actually see and honor it.
+        // Blocking them here would trigger "Indexed, though blocked by robots.txt".
+        disallow: [
+          '/admin',
+          '/api/',
+          '/*?utm_',
+          '/*?ref=',
+          '/*?fbclid=',
+          '/*?gclid=',
+        ],
       },
       // Allow AI search assistants to index public content
-      { userAgent: 'GPTBot',    allow: '/' },
+      { userAgent: 'GPTBot', allow: '/' },
       { userAgent: 'ClaudeBot', allow: '/' },
       { userAgent: 'Google-Extended', allow: '/' },
     ],
     sitemap: `${BASE}/sitemap.xml`,
-    host: BASE,
+    host: 'amanailab.com',
   }
 }
