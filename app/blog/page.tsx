@@ -80,7 +80,7 @@ export default async function BlogPage({
           </span>
         </h1>
         <p className="text-zinc-400 text-lg max-w-xl mx-auto leading-relaxed">
-          In-depth guides on Generative AI, LLMs, RAG, AI Agents, fine-tuning, and more — written by a practitioner, not a content farm.
+          In-depth, hands-on guides on Generative AI, LLMs, RAG, AI Agents, fine-tuning, and more — written by a practitioner.
         </p>
       </div>
 

@@ -1618,10 +1618,10 @@ export default function ResumeAnalyzer() {
             AI Resume Suite
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">
-            AI Resume Suite
+            Beat the ATS and land more AI/ML interviews
           </h1>
           <p className="text-zinc-400 text-lg max-w-xl mx-auto mb-6">
-            6 powerful AI tools to land your dream AI job. Free. No login needed.
+            Analyze, match to a job description, rewrite, and build — 6 AI tools, free, no login needed.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
             {[
@@ -1658,6 +1658,11 @@ export default function ResumeAnalyzer() {
 
         {/* Feature grid */}
         {!hasResult && (
+          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+            Pick a tool to get started:
+          </p>
+        )}
+        {!hasResult && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
             {FEATURES.map(({ id, title, description, Icon }) => {
               const active = mode === id;
@@ -1665,12 +1670,18 @@ export default function ResumeAnalyzer() {
                 <button
                   key={id}
                   onClick={() => switchMode(id)}
-                  className={`group flex flex-col items-start gap-2 text-left p-4 rounded-2xl border transition-all ${
+                  aria-pressed={active}
+                  className={`group relative flex flex-col items-start gap-2 text-left p-4 rounded-2xl border transition-all ${
                     active
                       ? "bg-orange-500/10 border-orange-500 shadow-lg shadow-orange-500/15"
                       : "bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:shadow-lg hover:shadow-orange-500/5"
                   }`}
                 >
+                  {active && (
+                    <span className="absolute top-2.5 right-2.5 text-orange-400">
+                      <CheckCircle2 className="w-4 h-4" />
+                    </span>
+                  )}
                   <div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
                       active

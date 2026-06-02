@@ -38,7 +38,7 @@ export default function MoreTools() {
   }, [query])
 
   return (
-    <section className="pt-2 pb-20 px-4 sm:px-6">
+    <section className="py-20 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
 
         <motion.div
@@ -49,8 +49,9 @@ export default function MoreTools() {
           className="flex items-center justify-between mb-4 gap-4 flex-wrap"
         >
           <div>
-            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-[0.2em]">More Free Tools</p>
-            <p className="text-sm text-zinc-600 mt-0.5">{TOOLS.length} more tools — all free, no sign-up required</p>
+            <p className="text-xs font-semibold text-orange-400 uppercase tracking-[0.2em] mb-1">More Free Tools</p>
+            <h2 className="text-2xl font-bold text-zinc-100">{TOOLS.length} more tools to explore</h2>
+            <p className="text-sm text-zinc-400 mt-0.5">All free, no sign-up required</p>
           </div>
           <Link href="/resources" className="hidden sm:flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
             View resources <ArrowRight className="w-3 h-3" />

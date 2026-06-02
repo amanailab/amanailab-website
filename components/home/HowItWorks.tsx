@@ -39,7 +39,7 @@ const STEPS = [
 
 export default function HowItWorks() {
   return (
-    <section className="py-20 px-4 sm:px-6 bg-zinc-900/30">
+    <section className="py-20 px-4 sm:px-6">
       <div className="max-w-6xl mx-auto">
 
         <motion.div

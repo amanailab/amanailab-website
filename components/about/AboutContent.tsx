@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Brain, BookOpen, Code2, Cpu, Network, MessageSquare } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { YoutubeIcon, GithubIcon, LinkedinIcon } from "@/components/icons/SocialIcons";
 
 const expertise = [
@@ -97,6 +98,12 @@ export default function AboutContent({ videoCount, subscriberCount, viewCount }:
               <YoutubeIcon className="w-4 h-4" />
               Subscribe
             </a>
+            <Link
+              href="/services"
+              className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-orange-500/40 text-zinc-100 font-semibold px-6 py-3 rounded-xl transition-all hover:-translate-y-0.5 text-sm"
+            >
+              Work with me <ArrowRight className="w-4 h-4 text-orange-400" />
+            </Link>
             {socials.slice(1).map(({ icon: Icon, label, href, color }) => (
               <a
                 key={label}

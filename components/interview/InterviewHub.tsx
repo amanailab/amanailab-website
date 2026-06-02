@@ -196,12 +196,13 @@ function SkeletonCard() {
 export default function InterviewHub() {
   const supabase = useMemo(() => createClient(), [])
 
-  // Default to simulator; read URL param after hydration to avoid mismatch
-  const [activeTab, setActiveTab]     = useState<"bank" | "simulator" | "chat">('simulator')
+  // Default to the browsable Question Bank (lowest-friction first action);
+  // honor an explicit ?tab= (e.g. the homepage hero links to ?tab=simulator).
+  const [activeTab, setActiveTab]     = useState<"bank" | "simulator" | "chat">('bank')
 
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get('tab')
-    if (tab === 'bank' || tab === 'chat') setActiveTab(tab)
+    if (tab === 'bank' || tab === 'simulator' || tab === 'chat') setActiveTab(tab)
   }, []);
   const [questions, setQuestions]     = useState<Question[]>([]);
   const [totalCount, setTotalCount]   = useState(0);

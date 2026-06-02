@@ -8,7 +8,7 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: "About AmanAI Lab — Free AI/ML Interview Prep Platform | Aman Chauhan",
   description:
-    `AmanAI Lab is built by Aman Chauhan to help AI/ML engineers land their dream jobs. Free mock interviews, Code Lab, Interview Prep Sheet, and ${SITE_STATS.tools} AI-powered tools — trusted by engineers at Google, Meta, OpenAI and more.`,
+    `AmanAI Lab is built by Aman Chauhan to help AI/ML engineers land their dream jobs. Free mock interviews, Code Lab, Interview Prep Sheet, and ${SITE_STATS.tools} AI-powered tools to prepare for interviews at Google, Meta, OpenAI and more.`,
   alternates: { canonical: 'https://amanailab.com/about' },
   openGraph: {
     title: 'About AmanAI Lab — Free AI/ML Interview Prep by Aman Chauhan',

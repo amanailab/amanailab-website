@@ -3,6 +3,7 @@ import HeroSection    from "@/components/home/HeroSection";
 import SocialProofBar from "@/components/home/SocialProofBar";
 import FeaturedTools  from "@/components/home/FeaturedTools";
 import SheetPromo     from "@/components/home/SheetPromo";
+import DailyChallengeWidget from "@/components/home/DailyChallengeWidget";
 import HowItWorks     from "@/components/home/HowItWorks";
 import MoreTools      from "@/components/home/MoreTools";
 import FeaturedSeries from "@/components/home/FeaturedSeries";
@@ -66,7 +67,10 @@ export default async function HomePage() {
         videoCount={formattedStats ? `${formattedStats.videos.value}${formattedStats.videos.suffix}` : undefined}
       />
 
-      {/* 3. Core 4 tools — spotlight */}
+      {/* 3. Daily challenge — habit hook (self-hides until loaded) */}
+      <DailyChallengeWidget />
+
+      {/* 4. Core 4 tools — spotlight */}
       <FeaturedTools />
 
       {/* 4. Interview prep sheet — key differentiator */}

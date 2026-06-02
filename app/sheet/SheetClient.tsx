@@ -38,7 +38,7 @@ function ResIcon({
 }) {
   if (!available || !href) {
     return (
-      <span title="Not available" className="flex items-center justify-center w-7 h-7 opacity-[0.15] cursor-not-allowed select-none">
+      <span title="Not available" className="flex items-center justify-center w-7 h-7 opacity-30 cursor-not-allowed select-none">
         {icon}
       </span>
     )
@@ -232,14 +232,15 @@ function ColHeader() {
       <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 text-right self-center">#</span>
       <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 self-center">Topic</span>
       {[
-        { icon: <BookOpen size={11} />, label: 'Theory' },
-        { icon: <Code2 size={11} />, label: 'Code Lab' },
-        { icon: <Layers size={11} />, label: 'Flashcards' },
+        { icon: <BookOpen size={11} />, label: 'Read' },
+        { icon: <Code2 size={11} />, label: 'Code' },
+        { icon: <Layers size={11} />, label: 'Cards' },
         { icon: <HelpCircle size={11} />, label: 'Quiz' },
-        { icon: <MessageCircle size={11} />, label: 'Interview' },
+        { icon: <MessageCircle size={11} />, label: 'Mock' },
       ].map(({ icon, label }) => (
-        <span key={label} title={label} className="flex justify-center items-center text-zinc-700">
+        <span key={label} className="flex flex-col justify-center items-center gap-0.5 text-zinc-500">
           {icon}
+          <span className="text-[7px] font-bold uppercase tracking-wide leading-none">{label}</span>
         </span>
       ))}
     </div>
@@ -259,6 +260,7 @@ export default function SheetClient() {
   const [mounted, setMounted]           = useState(false)
   const [isLoggedIn, setIsLoggedIn]     = useState<boolean | null>(null)
   const [synced, setSynced]             = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   const syncDebounces = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   // Cleanup all debounce timers on unmount
@@ -485,13 +487,32 @@ export default function SheetClient() {
                   <span className="hidden sm:inline">Sign in to sync</span>
                 </Link>
               )}
-              <button
-                onClick={() => { if (confirm('Reset all progress?')) save({}) }}
-                title="Reset all progress"
-                className="text-zinc-700 hover:text-zinc-500 transition-colors"
-              >
-                <RotateCcw size={12} />
-              </button>
+              {confirmReset ? (
+                <span className="flex items-center gap-1.5 text-[10px]">
+                  <span className="text-zinc-400">Reset all?</span>
+                  <button
+                    onClick={() => { save({}); setConfirmReset(false) }}
+                    className="font-semibold text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmReset(false)}
+                    className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                  >
+                    No
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmReset(true)}
+                  title="Reset all progress"
+                  aria-label="Reset all progress"
+                  className="text-zinc-700 hover:text-zinc-500 transition-colors"
+                >
+                  <RotateCcw size={12} />
+                </button>
+              )}
             </div>
           </div>
           <div className="h-2.5 bg-zinc-800 rounded-full overflow-hidden mb-3">
@@ -518,6 +539,7 @@ export default function SheetClient() {
                   <div className="text-lg leading-none">{t.icon}</div>
                   <div className="text-[11px] font-bold mt-1">{mounted ? p : 0}%</div>
                   <div className="text-[9px] opacity-70 truncate mt-0.5">{t.title.split(' ').slice(0, 2).join(' ')}</div>
+                  <div className="text-[9px] opacity-50 tabular-nums">{mounted ? done : 0}/{items.length}</div>
                 </button>
               )
             })}

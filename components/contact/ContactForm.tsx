@@ -45,8 +45,8 @@ const socials = [
 
 const subjects = [
   "General Question",
+  "Work with me (Services / Project)",
   "Collaboration / Sponsorship",
-  "Course Feedback",
   "Bug Report",
   "Other",
 ];
@@ -289,9 +289,17 @@ export default function ContactForm() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
             <h3 className="font-semibold text-zinc-200 mb-1 text-sm">Response Time</h3>
             <p className="text-zinc-500 text-xs leading-relaxed">
-              I typically respond within{" "}
-              <span className="text-zinc-300 font-medium">1–3 business days</span>. For urgent
-              matters, reach out directly on Twitter/X.
+              Email &amp; this form: <span className="text-zinc-300 font-medium">1–3 business days</span>.
+              For anything urgent — or to discuss a project — message me on{" "}
+              <a
+                href="https://wa.me/919997600372"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-orange-400 hover:text-orange-300 font-medium transition-colors"
+              >
+                WhatsApp
+              </a>{" "}
+              for a reply within a few hours.
             </p>
           </div>
         </motion.div>

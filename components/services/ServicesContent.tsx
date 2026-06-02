@@ -6,7 +6,7 @@ import { SITE_STATS } from "@/lib/site-stats"
 import {
   CheckCircle2, Code2, Zap, Crown, Globe, Layers, Cpu,
   BrainCircuit, FileText, MessageSquare, ArrowRight,
-  Clock, Briefcase, Rocket, Shield, Phone, Star,
+  Clock, Briefcase, Rocket, Shield, Phone, Star, ChevronDown,
 } from "lucide-react"
 
 // ─── Replace with your real WhatsApp number (country code + number, no +) ───
@@ -116,7 +116,7 @@ const CAREER: Package[] = [
     price: "₹4,999",
     usd: "~$60",
     tagline: "We don't stop until you're hired",
-    badge: "Best Investment",
+    badge: "Premium",
     topBar:     "from-amber-400 to-yellow-500",
     border:     "border-amber-500/30",
     accentText: "text-amber-400",
@@ -384,7 +384,6 @@ const WEBSITE_COMPARE: CompareTable = {
     { label: "User auth & dashboard",       vals: ["—", "✓", "✓"] },
     { label: "Admin / CMS panel",           vals: ["—", "Blog CMS", "Full admin"] },
     { label: "Payments integration",        vals: ["—", "—", "✓"] },
-    { label: "Blog / CMS",                  vals: ["—", "✓", "✓"] },
     { label: "SEO + analytics",             vals: ["Basic", "Full", "Full"] },
     { label: "Source code ownership",       vals: ["✓", "✓", "✓"] },
     { label: "Support",                     vals: ["7 days", "14 days", "30 days"] },
@@ -475,9 +474,10 @@ function PkgCard({ pkg, i }: { pkg: Package; i: number }) {
         {pkg.groups.length > 2 && (
           <button
             onClick={() => setExpanded(v => !v)}
-            className={`text-xs font-semibold mb-5 text-left transition-colors ${pkg.accentText} hover:opacity-80`}
+            className={`flex items-center gap-1 text-xs font-semibold mb-5 text-left transition-colors ${pkg.accentText} hover:opacity-80`}
           >
-            {expanded ? "▲ Show less" : `▼ Show all features (+${pkg.groups.slice(2).reduce((a, g) => a + g.items.length, 0)} more)`}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            {expanded ? "Show less" : `Show all features (+${pkg.groups.slice(2).reduce((a, g) => a + g.items.length, 0)} more)`}
           </button>
         )}
 
@@ -492,7 +492,9 @@ function PkgCard({ pkg, i }: { pkg: Package; i: number }) {
           </div>
         )}
 
-        <p className="text-[10px] text-zinc-600 italic mb-5">✦ Best for: {pkg.bestFor}</p>
+        <p className={`text-xs mb-5 px-3 py-2 rounded-lg ${pkg.accentBg} ${pkg.accentText}`}>
+          <span className="font-bold">Best for:</span> <span className="text-zinc-300">{pkg.bestFor}</span>
+        </p>
 
         {/* CTA — all orange, all equal */}
         <a
@@ -757,7 +759,7 @@ export default function ServicesContent() {
               <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
                 className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-800/40 transition-colors gap-4">
                 <span className="text-sm font-semibold text-zinc-200">{faq.q}</span>
-                <span className={`text-zinc-500 shrink-0 text-xs transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`}>▾</span>
+                <ChevronDown className={`w-4 h-4 text-zinc-500 shrink-0 transition-transform duration-200 ${openFaq === i ? "rotate-180" : ""}`} />
               </button>
               {openFaq === i && (
                 <div className="px-5 pb-4 pt-3 text-sm text-zinc-400 leading-relaxed border-t border-zinc-800">{faq.a}</div>

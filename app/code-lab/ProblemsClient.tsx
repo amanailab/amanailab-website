@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Code2, Flame, CheckCircle2, Lock, Minus, Zap, Building2 } from 'lucide-react'
+import { Search, Code2, Flame, CheckCircle2, Lock, Minus, Zap, Building2, ChevronDown } from 'lucide-react'
 
 const LEVELS = [
   { min: 0,    max: 299,  label: 'ML Beginner',     color: 'text-zinc-400',   bg: 'bg-zinc-800/60',         bar: 'bg-zinc-500',    emoji: '🌱', xpLabel: '0 XP'    },
@@ -158,41 +158,48 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
             )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-            {LEVELS.map((level, i) => {
-              const unlocked = xp >= level.min
-              const isCurrent = currentLevel.label === level.label
-              return (
-                <div
-                  key={level.label}
-                  className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
-                    isCurrent
-                      ? `${level.bg} border-current/30 ring-1 ring-current/20`
-                      : unlocked
-                        ? `${level.bg} opacity-80`
-                        : 'bg-zinc-900/50 border-zinc-800/50 opacity-40'
-                  }`}
-                >
-                  {isCurrent && (
-                    <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-orange-400 bg-zinc-950 px-1.5 rounded-full border border-orange-500/20">
-                      YOU
+          {/* Full 6-level roadmap — collapsed by default so the problem list stays the hero */}
+          <details className="group">
+            <summary className="flex items-center gap-1 cursor-pointer list-none text-[11px] font-semibold text-zinc-500 hover:text-zinc-300 transition-colors mb-3 select-none">
+              <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
+              See all 6 levels
+            </summary>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+              {LEVELS.map((level) => {
+                const unlocked = xp >= level.min
+                const isCurrent = currentLevel.label === level.label
+                return (
+                  <div
+                    key={level.label}
+                    className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-all ${
+                      isCurrent
+                        ? `${level.bg} border-current/30 ring-1 ring-current/20`
+                        : unlocked
+                          ? `${level.bg} opacity-80`
+                          : 'bg-zinc-900/50 border-zinc-800/50 opacity-40'
+                    }`}
+                  >
+                    {isCurrent && (
+                      <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 text-[9px] font-bold text-orange-400 bg-zinc-950 px-1.5 rounded-full border border-orange-500/20">
+                        YOU
+                      </span>
+                    )}
+                    <span className="text-2xl">{level.emoji}</span>
+                    <span className={`text-[10px] font-bold leading-tight ${unlocked ? level.color : 'text-zinc-600'}`}>
+                      {level.label}
                     </span>
-                  )}
-                  <span className="text-2xl">{level.emoji}</span>
-                  <span className={`text-[10px] font-bold leading-tight ${unlocked ? level.color : 'text-zinc-600'}`}>
-                    {level.label}
-                  </span>
-                  <span className="text-[9px] text-zinc-600">{level.xpLabel}</span>
-                  {!unlocked && (
-                    <Lock className="w-3 h-3 text-zinc-700 absolute bottom-2 right-2" />
-                  )}
-                  {unlocked && !isCurrent && (
-                    <CheckCircle2 className="w-3 h-3 text-green-500 absolute bottom-2 right-2" />
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                    <span className="text-[9px] text-zinc-600">{level.xpLabel}</span>
+                    {!unlocked && (
+                      <Lock className="w-3 h-3 text-zinc-700 absolute bottom-2 right-2" />
+                    )}
+                    {unlocked && !isCurrent && (
+                      <CheckCircle2 className="w-3 h-3 text-green-500 absolute bottom-2 right-2" />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </details>
 
           {/* XP progress bar or login CTA */}
           {isLoggedIn === null ? (
@@ -300,10 +307,10 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
         {problems.length === 0 ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-12 text-center">
             <Code2 className="w-10 h-10 text-zinc-700 mx-auto mb-4" />
-            <p className="text-zinc-400 font-semibold mb-2">No problems loaded yet</p>
-            <p className="text-zinc-600 text-sm mb-6">Run the SQL migration in Supabase, then seed the problems from the admin panel.</p>
-            <Link href="/admin/code-problems" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
-              Go to Admin → Seed Problems
+            <p className="text-zinc-400 font-semibold mb-2">Problems are on the way</p>
+            <p className="text-zinc-600 text-sm mb-6">New AI/ML coding challenges are being added — check back shortly.</p>
+            <Link href="/sheet" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+              Explore the Interview Sheet meanwhile
             </Link>
           </div>
         ) : (

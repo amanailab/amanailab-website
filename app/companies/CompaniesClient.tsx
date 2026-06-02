@@ -40,7 +40,7 @@ export default function CompaniesClient({
         /* Search results — flat list */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {allFiltered.length === 0 ? (
-            <p className="col-span-3 text-center text-zinc-500 py-12">No companies match "{search}"</p>
+            <p className="col-span-full text-center text-zinc-500 py-12">No companies match &quot;{search}&quot;</p>
           ) : allFiltered.map(c => (
             <CompanyCard key={c.id} c={c} count={counts[c.id] ?? 0} featured={c.is_featured} />
           ))}

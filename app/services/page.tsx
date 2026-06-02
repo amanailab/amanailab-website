@@ -11,7 +11,9 @@ export const metadata: Metadata = {
     description:
       "Land an AI/ML job with a custom project + interview prep, or get a full AI website/SaaS built for you. Direct with Aman, fixed prices, full code ownership.",
     url: "https://amanailab.com/services",
+    images: [{ url: '/api/og/tool?name=Work+With+Aman&tagline=AI+career+coaching+%26+custom+AI+development&emoji=%F0%9F%9A%80&tool=services', width: 1200, height: 630 }],
   },
+  twitter: { card: 'summary_large_image' },
 };
 
 export default function ServicesPage() {

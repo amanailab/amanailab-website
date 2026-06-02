@@ -63,26 +63,26 @@ const COURSES: Course[] = [
 const REASONS = [
   {
     Icon: Briefcase,
-    title: "Real Industry Experience",
+    title: "Built From Real Projects",
     description:
-      "Built by someone who created AI systems for Fortune 500 companies. Not just theory.",
+      "Based on real-world AI/ML engineering, not recycled theory or slides.",
   },
   {
     Icon: Code2,
-    title: "Production Ready",
+    title: "Production-Ready Code",
     description:
-      "Every concept taught with production code. Deploy on day one.",
+      "Every concept taught with working production code you can deploy.",
   },
   {
     Icon: Users,
-    title: "Community Support",
+    title: "Direct Support",
     description:
-      "WhatsApp group access with all course purchases. Get help when stuck.",
+      "Founding members get a WhatsApp support channel for questions.",
   },
   {
     Icon: Award,
-    title: "Certificate Included",
-    description: "Get a certificate of completion to add to your LinkedIn.",
+    title: "Founding-Member Pricing",
+    description: "Join the waitlist for early access and the best launch price.",
   },
 ];
 
@@ -159,12 +159,6 @@ export default function CoursesContent() {
               key={course.title}
               className="flex flex-col gap-4 bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5 transition-all"
             >
-              <div>
-                <span className="text-[10px] font-bold tracking-[0.2em] uppercase px-2.5 py-1 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300">
-                  Coming Soon
-                </span>
-              </div>
-
               <h3 className="text-xl font-bold text-zinc-100 leading-snug">
                 {course.title}
               </h3>
@@ -204,15 +198,14 @@ export default function CoursesContent() {
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-2">
             Get notified when courses launch
           </h2>
+          {waitlistCount !== null && waitlistCount > 0 && (
+            <div className="inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-4">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+              {waitlistCount.toLocaleString()} people already on the waitlist
+            </div>
+          )}
           <p className="text-zinc-400 max-w-md mx-auto mb-6">
-            {waitlistCount !== null && waitlistCount > 0 && (
-              <div className="inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-4">
-                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                {waitlistCount.toLocaleString()} people already on the waitlist
-              </div>
-            )}
-            Join the waitlist and get early bird discount of{" "}
-            <span className="text-orange-400 font-semibold">40%</span>.
+            Join the waitlist for <span className="text-orange-400 font-semibold">founding-member pricing</span> and first access when courses launch.
           </p>
 
           {joined ? (

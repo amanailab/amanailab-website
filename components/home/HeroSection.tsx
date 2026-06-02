@@ -12,7 +12,7 @@ const techPills = [
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden">
       {/* Background grid */}
       <div
         className="absolute inset-0 opacity-30"
@@ -99,7 +99,7 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          The only free platform built specifically for AI/ML engineers — from mock interviews and code practice to resume scoring and skill gap analysis. Everything you need, all in one place.
+          The complete free platform built specifically for AI/ML engineers — from mock interviews and code practice to resume scoring and skill gap analysis. Everything you need, all in one place.
         </motion.p>
 
         {/* CTAs */}
@@ -130,10 +130,7 @@ export default function HeroSection() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mt-4 text-xs text-zinc-600"
         >
-          No account required ·{" "}
-          <Link href="/resume" className="hover:text-zinc-400 underline underline-offset-2 transition-colors">Analyze my resume</Link>
-          {" · "}
-          <Link href="/skill-gap" className="hover:text-zinc-400 underline underline-offset-2 transition-colors">Check skill gaps</Link>
+          No account required · 100% free · No credit card
         </motion.p>
 
         {/* Tech pills */}
