@@ -11,6 +11,9 @@ import { SITE_STATS } from "@/lib/site-stats";
 import EmailCaptureCard from "@/components/shared/EmailCaptureCard";
 import MockInterviewChat from "@/components/interview/MockInterviewChat";
 import AISimulator from "@/components/interview/AISimulator";
+import QuestionCard from "@/components/questions/QuestionCard";
+import Pagination from "@/components/ui/Pagination";
+import { useBookmarks } from "@/hooks/useBookmarks";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -60,33 +63,6 @@ const LEVELS_SIM  = ["Fresher", "Mid", "Senior"];
 const DAILY_LIMIT = 3;
 const LS_KEY = "amanai_sim_usage";
 
-const topicColors: Record<string, string> = {
-  llm:             "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  rag:             "bg-violet-500/20 text-violet-300 border-violet-500/30",
-  agents:          "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  "fine-tuning":   "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  mlops:           "bg-green-500/20 text-green-300 border-green-500/30",
-  transformers:    "bg-teal-500/20 text-teal-300 border-teal-500/30",
-  "system design": "bg-red-500/20 text-red-300 border-red-500/30",
-  "system-design": "bg-red-500/20 text-red-300 border-red-500/30",
-  python:          "bg-lime-500/20 text-lime-300 border-lime-500/30",
-  "vector db":     "bg-pink-500/20 text-pink-300 border-pink-500/30",
-  "vector-db":     "bg-pink-500/20 text-pink-300 border-pink-500/30",
-};
-
-const levelColors: Record<string, string> = {
-  fresher: "bg-green-500/20 text-green-300 border-green-500/30",
-  mid:     "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  senior:  "bg-red-500/20 text-red-300 border-red-500/30",
-};
-
-function getTopicColor(topic: string) {
-  return topicColors[topic.toLowerCase()] ?? "bg-zinc-500/20 text-zinc-300 border-zinc-500/30";
-}
-function getLevelColor(level: string) {
-  return levelColors[level.toLowerCase()] ?? "bg-zinc-500/20 text-zinc-300 border-zinc-500/30";
-}
-
 // ─── Rate-limit helpers ───────────────────────────────────────────────────────
 
 function todayKey() {
@@ -111,36 +87,6 @@ function incrementUsage() {
   return count;
 }
 
-// ─── QuestionCard (Question Bank) ─────────────────────────────────────────────
-
-function QuestionCard({ q, defaultOpen = false }: { q: Question; defaultOpen?: boolean }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="flex flex-col bg-zinc-900 border border-zinc-800 rounded-2xl p-6 hover:border-zinc-700 transition-all duration-200">
-      <div className="flex flex-wrap gap-2 mb-4">
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${getTopicColor(q.topic)}`}>{q.topic}</span>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${getLevelColor(q.level)}`}>{q.level}</span>
-      </div>
-      <p className="text-zinc-100 font-medium text-sm leading-relaxed flex-1 mb-5">{q.question}</p>
-      <button
-        onClick={() => setOpen(!open)}
-        className={`flex items-center justify-center gap-2 w-full text-sm font-semibold px-4 py-2.5 rounded-xl border transition-all ${
-          open
-            ? "bg-zinc-800 border-zinc-700 text-zinc-200 hover:bg-zinc-700"
-            : "bg-orange-500 border-transparent text-white hover:bg-orange-400 hover:shadow-lg hover:shadow-orange-500/20"
-        }`}
-      >
-        {open ? <><ChevronUp className="w-4 h-4" /> Hide Answer</> : <><ChevronDown className="w-4 h-4" /> Show Answer</>}
-      </button>
-      {open && (
-        <div className="mt-4 pt-4 border-t border-zinc-800">
-          <p className="text-zinc-400 text-sm leading-relaxed whitespace-pre-line">{q.answer}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Score color ──────────────────────────────────────────────────────────────
 
 function scoreColor(score: number) {
@@ -157,24 +103,6 @@ function scoreBg(score: number) {
 // ─── Question Bank helpers ─────────────────────────────────────────────────────
 
 const PER_PAGE = 10;
-
-function getVisiblePages(current: number, total: number): (number | "...")[] {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-  const result: (number | "...")[] = [1];
-  if (current > 3) result.push("...");
-  for (
-    let i = Math.max(2, current - 1);
-    i <= Math.min(total - 1, current + 1);
-    i++
-  ) {
-    result.push(i);
-  }
-  if (current < total - 2) result.push("...");
-  result.push(total);
-  return result;
-}
 
 function SkeletonCard() {
   return (
@@ -193,8 +121,14 @@ function SkeletonCard() {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
+// Map a Question Bank row to the shared QuestionCard shape.
+function toCardData(q: Question) {
+  return { id: String(q.id), question: q.question, answer: q.answer, topic: q.topic, level: q.level }
+}
+
 export default function InterviewHub() {
   const supabase = useMemo(() => createClient(), [])
+  const { bookmarks, toggle: toggleBookmark } = useBookmarks()
 
   // Default to the browsable Question Bank (lowest-friction first action);
   // honor an explicit ?tab= (e.g. the homepage hero links to ?tab=simulator).
@@ -483,7 +417,7 @@ export default function InterviewHub() {
                     <X className="w-3.5 h-3.5" /> Dismiss
                   </button>
                 </div>
-                <QuestionCard q={randomQuestion} defaultOpen />
+                <QuestionCard q={toCardData(randomQuestion)} defaultOpen />
               </div>
             )}
 
@@ -537,47 +471,25 @@ export default function InterviewHub() {
             )}
             {!loading && !error && questions.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {questions.map((q) => <QuestionCard key={q.id} q={q} />)}
+                {questions.map((q) => (
+                  <QuestionCard
+                    key={q.id}
+                    q={toCardData(q)}
+                    bookmarked={bookmarks.has(String(q.id))}
+                    onBookmark={toggleBookmark}
+                  />
+                ))}
               </div>
             )}
 
             {/* Pagination */}
-            {!loading && !error && totalPages > 1 && (
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  ← Previous
-                </button>
-                {getVisiblePages(currentPage, totalPages).map((p, i) =>
-                  p === "..." ? (
-                    <span key={`gap-${i}`} className="px-2 text-zinc-600 text-xs">
-                      …
-                    </span>
-                  ) : (
-                    <button
-                      key={p}
-                      onClick={() => setCurrentPage(p)}
-                      className={`min-w-9 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
-                        currentPage === p
-                          ? "bg-orange-500 border-orange-500 text-white"
-                          : "bg-zinc-900 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
-                      }`}
-                    >
-                      {p}
-                    </button>
-                  )
-                )}
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg border bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next →
-                </button>
-              </div>
+            {!loading && !error && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                className="mt-8"
+              />
             )}
           </>
         )}

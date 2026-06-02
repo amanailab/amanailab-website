@@ -4,9 +4,10 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRef, useState } from 'react'
-import { Clock, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Clock, Search } from 'lucide-react'
 import type { BlogPost } from '@/lib/admin'
 import { BLOG_CATEGORIES, blogCategoryStyle } from '@/lib/blog-categories'
+import Pagination from '@/components/ui/Pagination'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', {
@@ -23,22 +24,6 @@ function buildUrl(pathname: string, page: number, q: string, category: string) {
   if (page > 1) params.set('page', String(page))
   const qs = params.toString()
   return qs ? `${pathname}?${qs}` : pathname
-}
-
-function getPageNumbers(current: number, total: number): (number | '...')[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
-
-  const delta = 2
-  const rangeStart = Math.max(2, current - delta)
-  const rangeEnd = Math.min(total - 1, current + delta)
-
-  const pages: (number | '...')[] = [1]
-  if (rangeStart > 2) pages.push('...')
-  for (let i = rangeStart; i <= rangeEnd; i++) pages.push(i)
-  if (rangeEnd < total - 1) pages.push('...')
-  pages.push(total)
-
-  return pages
 }
 
 interface BlogListProps {
@@ -80,8 +65,6 @@ export default function BlogList({ posts, total, page, perPage, search, category
     navigate(p, searchValue, category)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-
-  const pageNumbers = getPageNumbers(page, totalPages)
 
   return (
     <>
@@ -229,47 +212,7 @@ export default function BlogList({ posts, total, page, perPage, search, category
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1 mt-10">
-          <button
-            onClick={() => handlePage(page - 1)}
-            disabled={page === 1}
-            aria-label="Previous page"
-            className="p-2 rounded-lg border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {pageNumbers.map((p, i) =>
-            p === '...' ? (
-              <span key={`dots-${i}`} className="w-8 text-center text-sm text-zinc-600">
-                …
-              </span>
-            ) : (
-              <button
-                key={p}
-                onClick={() => handlePage(p)}
-                className={`w-8 h-8 text-sm rounded-lg transition-colors ${
-                  p === page
-                    ? 'bg-orange-500 text-white font-medium'
-                    : 'border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-100'
-                }`}
-              >
-                {p}
-              </button>
-            )
-          )}
-
-          <button
-            onClick={() => handlePage(page + 1)}
-            disabled={page === totalPages}
-            aria-label="Next page"
-            className="p-2 rounded-lg border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+      <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePage} className="mt-10" />
     </>
   )
 }
