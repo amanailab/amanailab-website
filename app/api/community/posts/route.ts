@@ -20,7 +20,10 @@ export async function GET(request: Request) {
   if (type && type !== 'all') query = query.eq('type', type)
 
   const { data, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[community/posts GET]', error)
+    return NextResponse.json({ error: 'Failed to load posts' }, { status: 500 })
+  }
   return NextResponse.json({ posts: data ?? [] })
 }
 
@@ -62,7 +65,10 @@ export async function POST(request: Request) {
       company_slug: company_slug || null,
       approved: false,
     })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[community/posts POST]', error)
+      return NextResponse.json({ error: 'Failed to submit post' }, { status: 500 })
+    }
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })

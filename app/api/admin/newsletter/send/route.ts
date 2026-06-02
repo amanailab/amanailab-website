@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { getAdminSupabase } from '@/lib/admin'
 import { cookies } from 'next/headers'
+import { verifyAdminSession, signEmailToken } from '@/lib/auth-tokens'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -14,8 +15,8 @@ function escHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
-function buildHtml(subject: string, htmlBody: string, previewText: string, email: string): string {
-  const unsubscribeUrl = `${SITE_URL}/api/email/unsubscribe?email=${encodeURIComponent(email)}`
+function buildHtml(subject: string, htmlBody: string, previewText: string, email: string, token: string): string {
+  const unsubscribeUrl = `${SITE_URL}/api/email/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`
   const previewDiv = previewText
     ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0">${previewText}</div>`
     : ''
@@ -48,8 +49,7 @@ ${previewDiv}
 export async function POST(req: Request) {
   try {
     const cookieStore = await cookies()
-    const session = cookieStore.get('admin_session')?.value
-    if (session !== 'true') {
+    if (!(await verifyAdminSession(cookieStore.get('admin_session')?.value))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -87,12 +87,12 @@ export async function POST(req: Request) {
     for (let i = 0; i < emails.length; i += BATCH_SIZE) {
       const batch = emails.slice(i, i + BATCH_SIZE)
       const results = await Promise.allSettled(
-        batch.map((email: string) =>
+        batch.map(async (email: string) =>
           resend.emails.send({
             from: 'AmanAI Lab <newsletter@amanailab.com>',
             to: email,
             subject,
-            html: buildHtml(subject, htmlBody, previewText ?? '', email),
+            html: buildHtml(subject, htmlBody, previewText ?? '', email, await signEmailToken(email)),
           })
         )
       )

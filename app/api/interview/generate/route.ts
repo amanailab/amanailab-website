@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { callAI } from "@/lib/ai-fallback";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, "interview-generate", 15, 60_000);
+  if (limited) return limited;
   try {
     const { topic, level } = await req.json();
 

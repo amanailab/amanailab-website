@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { callAI } from "@/lib/ai-fallback";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 interface RawArticle {
   title: string;
@@ -136,7 +137,11 @@ async function analyzeWithGroq(article: RawArticle): Promise<GroqAnalysis | null
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  // This endpoint loops up to ~55 paid AI calls per hit (it's wired to a public
+  // "refresh" button), so cap it hard per IP to prevent budget/quota drain.
+  const limited = enforceRateLimit(req, "news-fetch", 3, 10 * 60_000);
+  if (limited) return limited;
   try {
     const articles: RawArticle[] = [];
 

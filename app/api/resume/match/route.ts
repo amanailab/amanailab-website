@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createRequire } from "node:module";
 import { callAI, AICallError } from "@/lib/ai-fallback";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const require = createRequire(import.meta.url);
 const pdfParse: (buffer: Buffer) => Promise<{ text: string }> =
@@ -32,6 +33,8 @@ interface MatchResult {
 }
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, "resume-match", 5, 60_000);
+  if (limited) return limited;
   try {
     const form = await req.formData();
     const file = form.get("file");

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mail, X, Loader2, CheckCircle2, Lock, InboxIcon } from 'lucide-react'
+import { Mail, X, Loader2, Lock, InboxIcon } from 'lucide-react'
 import { saveEmail, markCaptured, isCaptured, type EmailSource } from '@/lib/email-capture'
 
 interface Props {
@@ -31,6 +31,14 @@ export default function EmailGateModal({
   const [error, setError] = useState('')
   const [pendingEmail, setPendingEmail] = useState('')
 
+  // Close on Escape (only when the modal is dismissible).
+  useEffect(() => {
+    if (!open || !onClose) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim()) { setError('Please enter your email.'); return }
@@ -57,6 +65,7 @@ export default function EmailGateModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            role="dialog" aria-modal="true" aria-live="polite"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 16 }}
@@ -87,6 +96,7 @@ export default function EmailGateModal({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
           onClick={(e) => { if (e.target === e.currentTarget && onClose) onClose() }}
+          role="dialog" aria-modal="true" aria-labelledby="email-gate-title"
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 16 }}
@@ -102,6 +112,7 @@ export default function EmailGateModal({
               {onClose && (
                 <button
                   onClick={onClose}
+                  aria-label="Close"
                   className="absolute top-4 right-4 p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
                 >
                   <X className="w-4 h-4" />
@@ -113,7 +124,7 @@ export default function EmailGateModal({
                 {emoji}
               </div>
 
-              <h2 className="text-xl font-bold text-zinc-100 mb-2">{title}</h2>
+              <h2 id="email-gate-title" className="text-xl font-bold text-zinc-100 mb-2">{title}</h2>
               <p className="text-sm text-zinc-400 leading-relaxed mb-5">{subtitle}</p>
 
               {/* Benefit pill */}
@@ -128,6 +139,7 @@ export default function EmailGateModal({
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
+                  aria-label="Email address"
                   required
                   autoFocus
                   className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
@@ -234,6 +246,7 @@ export function EmailGateInline({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
+          aria-label="Email address"
           required
           className="flex-1 bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
         />

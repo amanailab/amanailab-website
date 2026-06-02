@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getAdminSupabase } from '@/lib/admin'
 import { STATIC_PROBLEMS_MAP } from '@/lib/code-problems-static'
+import { sanitizeTestCasesForClient } from '@/lib/code-grading'
 import ProblemClient from './ProblemClient'
 
 interface Props { params: Promise<{ slug: string }> }
@@ -53,6 +54,12 @@ export default async function ProblemPage({ params }: Props) {
       .limit(3),
   ])
 
+  // Strip hidden tests' expected outputs before they reach the browser.
+  const problemForClient = {
+    ...problem,
+    test_cases: await sanitizeTestCasesForClient(problem.test_cases),
+  }
+
   const prevProblem    = prevArr?.[0] ?? null
   const nextProblem    = nextArr?.[0] ?? null
   const totalProblems  = allProblems?.length ?? 0
@@ -72,7 +79,7 @@ export default async function ProblemPage({ params }: Props) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <ProblemClient
-        problem={problem}
+        problem={problemForClient}
         prevProblem={prevProblem}
         nextProblem={nextProblem}
         totalProblems={totalProblems}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { verifyAdminSession } from '@/lib/auth-tokens'
 import { revalidatePath } from 'next/cache'
 import { getAdminSupabase } from '@/lib/admin'
 
@@ -418,7 +419,7 @@ export async function POST(req: Request) {
   const force = body.force === true
 
   const cookieStore = await cookies()
-  const hasSession = cookieStore.get('admin_session')?.value === 'true'
+  const hasSession = await verifyAdminSession(cookieStore.get('admin_session')?.value)
 
   if (!hasSession) {
     if (!process.env.ADMIN_PASSWORD || body.password !== process.env.ADMIN_PASSWORD) {

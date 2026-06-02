@@ -15,7 +15,10 @@ export async function GET() {
       .order('created_at', { ascending: false })
       .limit(50)
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[user/sessions]', error)
+      return NextResponse.json({ error: 'Failed to load sessions' }, { status: 500 })
+    }
     return NextResponse.json({ sessions: data })
   } catch {
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })

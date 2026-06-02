@@ -1,6 +1,8 @@
 // Simple in-memory rate limiter — works per serverless instance.
 // For distributed deployments replace with Upstash Redis.
 
+import { NextResponse } from 'next/server'
+
 interface Entry { count: number; resetAt: number }
 const store = new Map<string, Entry>()
 
@@ -41,6 +43,29 @@ export function checkRateLimit(
 
   entry.count++
   return { allowed: true, remaining: limit - entry.count, retryAfterSec: 0 }
+}
+
+/**
+ * Convenience wrapper for route handlers: enforces a per-IP+route limit and
+ * returns a ready-to-send 429 response when exceeded, or `null` when allowed.
+ *
+ *   const limited = enforceRateLimit(req, 'interview-generate', 10, 60_000)
+ *   if (limited) return limited
+ */
+export function enforceRateLimit(
+  req: Request,
+  route: string,
+  limit = 10,
+  windowMs = 60_000,
+): NextResponse | null {
+  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:${route}`, limit, windowMs)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(retryAfterSec) } },
+    )
+  }
+  return null
 }
 
 /** Extract best-effort client IP from Next.js request headers.

@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { verifyAdminSession } from '@/lib/auth-tokens'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -12,7 +13,7 @@ export async function proxy(request: NextRequest) {
     const requiresAuth = isAdminApi || (isAdminPage && pathname !== '/admin')
     if (requiresAuth) {
       const session = request.cookies.get('admin_session')
-      if (!session || session.value !== 'true') {
+      if (!(await verifyAdminSession(session?.value))) {
         if (isAdminApi) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         return NextResponse.redirect(new URL('/admin', request.url))
       }

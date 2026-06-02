@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { callAI, AICallError } from "@/lib/ai-fallback";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -18,6 +19,8 @@ function s(value: unknown): string {
 }
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, "resume-linkedin", 5, 60_000);
+  if (limited) return limited;
   try {
     const body = (await req.json()) as LinkedInRequest;
     const currentRole = s(body.currentRole);

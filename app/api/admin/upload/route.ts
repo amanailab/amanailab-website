@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createClient } from '@supabase/supabase-js'
+import { verifyAdminSession } from '@/lib/auth-tokens'
 
 const BUCKET = 'blog-images'
 const MAX_BYTES = 10 * 1024 * 1024 // 10MB
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies()
-  const session = cookieStore.get('admin_session')
-  if (!session || session.value !== 'true') {
+  if (!(await verifyAdminSession(cookieStore.get('admin_session')?.value))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

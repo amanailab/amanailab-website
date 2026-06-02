@@ -203,6 +203,7 @@ export async function POST(req: NextRequest) {
       errors:   results.errors,
     })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    console.error('[admin/bulk-upload]', e)
+    return NextResponse.json({ error: 'Bulk upload failed' }, { status: 500 })
   }
 }

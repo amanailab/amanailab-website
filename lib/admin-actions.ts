@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getAdminSupabase } from "./admin";
+import { verifyAdminSession } from "./auth-tokens";
 
 async function requireAdmin() {
   const store = await cookies()
-  if (store.get('admin_session')?.value !== 'true') throw new Error('Unauthorized')
+  if (!(await verifyAdminSession(store.get('admin_session')?.value))) throw new Error('Unauthorized')
 }
 
 // ─── Interview Questions ──────────────────────────────────────────────────────

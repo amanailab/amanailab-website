@@ -10,7 +10,7 @@ interface Comment {
   body: string
   created_at: string
   user_name: string
-  user_email: string
+  is_own?: boolean
 }
 
 interface Props { slug: string }
@@ -114,7 +114,7 @@ export default function BlogComments({ slug }: Props) {
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-sm font-semibold text-zinc-200">{c.user_name}</span>
                   <span className="text-xs text-zinc-600">{timeAgo(c.created_at)}</span>
-                  {userEmail === c.user_email && (
+                  {c.is_own && (
                     <button
                       onClick={() => handleDelete(c.id)}
                       disabled={deletingId === c.id}

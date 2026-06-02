@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { callAI } from '@/lib/ai-fallback'
+import { enforceRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -32,6 +33,8 @@ const DEFAULT_AI_TOPICS = [
 ]
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, 'career-interview-plan', 10, 60_000)
+  if (limited) return limited
   try {
     const { company, daysLeft, weakTopics, strongTopics } = await req.json()
     if (!company || !daysLeft) return NextResponse.json({ error: 'company and daysLeft required' }, { status: 400 })

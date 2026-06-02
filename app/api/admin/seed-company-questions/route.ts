@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { verifyAdminSession } from '@/lib/auth-tokens'
 import { getAdminSupabase } from '@/lib/admin'
 
 export const runtime = 'nodejs'
@@ -174,7 +175,7 @@ const COMPANY_QUESTIONS: Record<string, Array<{ question: string; model_answer: 
 
 export async function POST(req: Request) {
   const cookieStore = await cookies()
-  const hasSession = cookieStore.get('admin_session')?.value === 'true'
+  const hasSession = await verifyAdminSession(cookieStore.get('admin_session')?.value)
 
   if (!hasSession) {
     const { password } = await req.json().catch(() => ({}))

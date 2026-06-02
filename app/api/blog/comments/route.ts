@@ -24,15 +24,29 @@ export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get('slug')
   if (!slug) return NextResponse.json({ error: 'slug required' }, { status: 400 })
 
+  // Never expose commenter emails/ids publicly. We read user_id only to compute
+  // an `is_own` flag for the current viewer (so they see a delete button).
   const { data, error } = await getAnonClient()
     .from('blog_comments')
-    .select('id, body, created_at, user_name, user_email')
+    .select('id, body, created_at, user_name, user_id')
     .eq('slug', slug)
     .eq('approved', true)
     .order('created_at', { ascending: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ comments: data ?? [] })
+  if (error) {
+    console.error('[blog/comments GET]', error)
+    return NextResponse.json({ error: 'Failed to load comments' }, { status: 500 })
+  }
+
+  const { data: { user } } = await (await createAuthClient()).auth.getUser()
+  const comments = (data ?? []).map((c) => ({
+    id: c.id,
+    body: c.body,
+    created_at: c.created_at,
+    user_name: c.user_name,
+    is_own: !!user && c.user_id === user.id,
+  }))
+  return NextResponse.json({ comments })
 }
 
 // POST /api/blog/comments
@@ -64,11 +78,15 @@ export async function POST(req: NextRequest) {
       user_name:  name,
       approved:   true,
     })
-    .select('id, body, created_at, user_name, user_email')
+    .select('id, body, created_at, user_name')
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ comment: data })
+  if (error) {
+    console.error('[blog/comments POST]', error)
+    return NextResponse.json({ error: 'Failed to post comment' }, { status: 500 })
+  }
+  // The comment is the poster's own, so flag it for the delete UI.
+  return NextResponse.json({ comment: { ...data, is_own: true } })
 }
 
 // DELETE /api/blog/comments?id=xxx  (own comments only)
@@ -86,6 +104,9 @@ export async function DELETE(req: NextRequest) {
     .eq('id', id)
     .eq('user_id', user.id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[blog/comments DELETE]', error)
+    return NextResponse.json({ error: 'Failed to delete comment' }, { status: 500 })
+  }
   return NextResponse.json({ ok: true })
 }

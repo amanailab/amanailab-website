@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server'
 import { callAI } from '@/lib/ai-fallback'
+import { enforceRateLimit } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(req: Request) {
+  const limited = enforceRateLimit(req, 'job-prep-generate', 10, 60_000)
+  if (limited) return limited
   try {
     const { jd } = await req.json()
     if (!jd || typeof jd !== 'string' || jd.trim().length < 50) {

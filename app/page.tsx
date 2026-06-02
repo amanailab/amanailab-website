@@ -14,7 +14,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'AmanAI Lab — Free AI/ML Interview Prep Platform | Mock Interviews, Code Lab & More',
-  description: `The most complete free platform for AI/ML engineers. AI mock interviews, ${SITE_STATS.codeProblems}+ coding problems, A-to-Z Interview Sheet (${SITE_STATS.sheetTopics} topics), flashcards, system design practice, and ${SITE_STATS.tools} AI-powered tools. Trusted by engineers at Google, Meta, OpenAI.`,
+  description: `The most complete free platform for AI/ML engineers. AI mock interviews, ${SITE_STATS.codeProblems}+ coding problems, A-to-Z Interview Sheet (${SITE_STATS.sheetTopics} topics), flashcards, system design practice, and ${SITE_STATS.tools} AI-powered tools. Prepare for interviews at Google, Meta, OpenAI and more.`,
   alternates: { canonical: 'https://amanailab.com' },
   openGraph: {
     title: 'AmanAI Lab — Free AI/ML Interview Prep Platform',

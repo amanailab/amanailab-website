@@ -16,6 +16,7 @@ import {
 import { useUser } from '@/hooks/useUser'
 import LoginPromptModal from '@/components/ui/LoginPromptModal'
 import { useToast } from '@/components/ui/Toast'
+import { hashOutput } from '@/lib/code-grading'
 
 const MonacoEditor = dynamic(
   () => import('@monaco-editor/react').then(m => m.default),
@@ -24,7 +25,7 @@ const MonacoEditor = dynamic(
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface TestCase { id: number; function_call: string; expected_output: string; is_hidden: boolean; description: string }
+interface TestCase { id: number; function_call: string; expected_output?: string; expected_hash?: string; is_hidden: boolean; description: string }
 interface Problem { id: string; title: string; slug: string; difficulty: string; topic: string; tags: string[]; description: string; starter_code: string; hints: string[]; companies: string[]; test_cases: TestCase[]; order_index: number }
 interface AdjacentProblem { slug: string; title: string; difficulty: string }
 interface TestResult { id: number; description: string; passed: boolean; input: string; expected: string; got: string; runtime_ms: number; is_hidden?: boolean }
@@ -302,8 +303,14 @@ export default function ProblemClient({
     for (const tc of tests) {
       const t0 = Date.now()
       const { stdout, stderr } = await runWithPyodide(buildTestCode(code, tc.function_call))
-      const passed = !stderr && match(stdout, tc.expected_output)
-      results.push({ id: tc.id, description: tc.description, passed, input: tc.function_call, expected: tc.expected_output, got: stderr ? `Error: ${stderr}` : stdout, runtime_ms: Date.now() - t0, is_hidden: tc.is_hidden })
+      // Hidden tests ship only a hash of their expected output (no plaintext
+      // answer), so compare by hashing our own normalized output.
+      const passed = !stderr && (
+        tc.is_hidden && tc.expected_hash
+          ? (await hashOutput(stdout)) === tc.expected_hash
+          : match(stdout, tc.expected_output ?? '')
+      )
+      results.push({ id: tc.id, description: tc.description, passed, input: tc.function_call, expected: tc.is_hidden ? '(hidden)' : (tc.expected_output ?? ''), got: stderr ? `Error: ${stderr}` : stdout, runtime_ms: Date.now() - t0, is_hidden: tc.is_hidden })
     }
     return results
   }, [code])

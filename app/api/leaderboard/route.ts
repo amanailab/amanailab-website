@@ -90,6 +90,7 @@ export async function GET() {
 
     return NextResponse.json({ leaderboard, weekly })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    console.error('[leaderboard]', e)
+    return NextResponse.json({ error: 'Failed to load leaderboard' }, { status: 500 })
   }
 }

@@ -37,10 +37,17 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    // Cap the per-call award. The largest legitimate single solve is 250
+    // (Hard: 100 base + 50 speed bonus + 100 first-solve bonus), so anything
+    // above 300 is forged. This blocks `{delta: 999999999}` leaderboard fraud.
+    // (XP is still client-initiated; a fuller fix would recompute it server-side
+    // from a verified solve, but capping removes the abusive blast radius.)
+    const MAX_DELTA = 300
     const { delta } = await req.json()
-    if (!delta || typeof delta !== 'number' || delta <= 0) {
+    if (typeof delta !== 'number' || !Number.isFinite(delta) || delta <= 0) {
       return NextResponse.json({ error: 'Invalid delta' }, { status: 400 })
     }
+    const safeDelta = Math.min(Math.floor(delta), MAX_DELTA)
 
     const sb = admin()
 
@@ -51,7 +58,7 @@ export async function POST(req: NextRequest) {
       .eq('user_id', user.id)
       .single()
 
-    const newXp = (existing?.xp ?? 0) + delta
+    const newXp = (existing?.xp ?? 0) + safeDelta
 
     await sb.from('user_xp').upsert({
       user_id: user.id,
@@ -61,6 +68,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ xp: newXp })
   } catch (e) {
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    console.error('[code-lab/xp]', e)
+    return NextResponse.json({ error: 'Failed to update XP' }, { status: 500 })
   }
 }

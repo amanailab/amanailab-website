@@ -6,10 +6,11 @@ import { revalidatePath } from 'next/cache'
 import { getAdminSupabase, type BlogPostInput } from './admin'
 import { checkRateLimit, getClientIp } from './rate-limit'
 import { headers } from 'next/headers'
+import { createAdminSession, verifyAdminSession } from './auth-tokens'
 
 async function requireAdmin() {
   const store = await cookies()
-  if (store.get('admin_session')?.value !== 'true') throw new Error('Unauthorized')
+  if (!(await verifyAdminSession(store.get('admin_session')?.value))) throw new Error('Unauthorized')
 }
 
 export async function loginAction(prevState: { error: string } | null, formData: FormData) {
@@ -22,7 +23,7 @@ export async function loginAction(prevState: { error: string } | null, formData:
 
   if (password === process.env.ADMIN_PASSWORD) {
     const cookieStore = await cookies()
-    cookieStore.set('admin_session', 'true', {
+    cookieStore.set('admin_session', await createAdminSession(), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
