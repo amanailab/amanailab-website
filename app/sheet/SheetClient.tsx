@@ -9,7 +9,7 @@ import {
   Cloud, CloudOff, LogIn,
 } from 'lucide-react'
 import {
-  SHEET_TRACKS, getTotalItems, TOPIC_TO_QUIZ,
+  SHEET_TRACKS, SHEET_PHASES, getTotalItems, TOPIC_TO_QUIZ,
   type SheetItem, type ItemType, type Difficulty,
 } from '@/lib/sheet-data'
 import { SHEET_THEORY } from '@/lib/sheet-theory'
@@ -525,22 +525,42 @@ export default function SheetClient() {
             <p className="text-emerald-400 text-xs font-semibold text-center mb-3">🎉 Sheet Complete — You&apos;re Interview Ready!</p>
           )}
 
-          {/* Per-track grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {SHEET_TRACKS.map(t => {
-              const items = t.sections.flatMap(s => s.items)
-              const done  = items.filter(i => progress[i.id]).length
-              const p     = items.length > 0 ? Math.round(done / items.length * 100) : 0
+          {/* Recommended path hint */}
+          <p className="text-[11px] text-zinc-500 mb-3 text-center">
+            📚 <span className="text-zinc-400 font-medium">Follow the phases in order</span> — finish all four and you&apos;re interview-ready.
+          </p>
+
+          {/* Per-phase track grid (foundations → edge) */}
+          <div className="space-y-3">
+            {SHEET_PHASES.map(phase => {
+              const phaseTracks = SHEET_TRACKS.filter(t => phase.trackIds.includes(t.id))
+              if (phaseTracks.length === 0) return null
               return (
-                <button key={t.id} onClick={() => switchTrack(t.id)}
-                  className={`text-center p-2 rounded-xl border transition-all ${
-                    activeTrack === t.id ? `${t.bg} ${t.color}` : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300 bg-zinc-900/50'
-                  }`}>
-                  <div className="text-lg leading-none">{t.icon}</div>
-                  <div className="text-[11px] font-bold mt-1">{mounted ? p : 0}%</div>
-                  <div className="text-[9px] opacity-70 truncate mt-0.5">{t.title.split(' ').slice(0, 2).join(' ')}</div>
-                  <div className="text-[9px] opacity-50 tabular-nums">{mounted ? done : 0}/{items.length}</div>
-                </button>
+                <div key={phase.num}>
+                  <div className="flex items-baseline gap-2 mb-1.5">
+                    <span className="text-[10px] font-extrabold text-orange-400 tracking-wide">PHASE {phase.num}</span>
+                    <span className="text-[11px] font-semibold text-zinc-200">{phase.title}</span>
+                    <span className="hidden sm:inline text-[10px] text-zinc-600">· {phase.subtitle}</span>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {phaseTracks.map(t => {
+                      const items = t.sections.flatMap(s => s.items)
+                      const done  = items.filter(i => progress[i.id]).length
+                      const p     = items.length > 0 ? Math.round(done / items.length * 100) : 0
+                      return (
+                        <button key={t.id} onClick={() => switchTrack(t.id)}
+                          className={`text-center p-2 rounded-xl border transition-all ${
+                            activeTrack === t.id ? `${t.bg} ${t.color}` : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300 bg-zinc-900/50'
+                          }`}>
+                          <div className="text-lg leading-none">{t.icon}</div>
+                          <div className="text-[11px] font-bold mt-1">{mounted ? p : 0}%</div>
+                          <div className="text-[9px] opacity-70 truncate mt-0.5">{t.title.split(' ').slice(0, 2).join(' ')}</div>
+                          <div className="text-[9px] opacity-50 tabular-nums">{mounted ? done : 0}/{items.length}</div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               )
             })}
           </div>

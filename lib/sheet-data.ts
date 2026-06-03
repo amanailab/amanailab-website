@@ -52,7 +52,9 @@ function item(
   return { id, title, type, difficulty, ...opts }
 }
 
-export const SHEET_TRACKS: SheetTrack[] = [
+// Tracks are authored here in any order; the exported SHEET_TRACKS below is
+// re-ordered into a foundations-first learning path (see PHASE_TRACK_ORDER).
+const TRACKS_RAW: SheetTrack[] = [
 
   // ─── TRACK 1: GENERATIVE AI ──────────────────────────────────────────────────
   {
@@ -1295,6 +1297,37 @@ export const SHEET_TRACKS: SheetTrack[] = [
       },
     ],
   },
+]
+
+// ─── Learning-path phases ────────────────────────────────────────────────────
+// The sheet is meant to be completed top-to-bottom: foundations first, then
+// modern AI, then production, then the cutting edge. Finish all four → ready.
+export interface SheetPhase {
+  num: number
+  title: string
+  subtitle: string
+  trackIds: string[]
+}
+
+export const SHEET_PHASES: SheetPhase[] = [
+  { num: 1, title: 'Foundations',  subtitle: 'The ground everything builds on',   trackIds: ['ml', 'deeplearning'] },
+  { num: 2, title: 'Modern AI',    subtitle: 'LLMs, generative AI & agents',       trackIds: ['genai', 'agentic'] },
+  { num: 3, title: 'Production',   subtitle: 'Ship & scale real AI systems',       trackIds: ['mlops', 'sysdesign'] },
+  { num: 4, title: 'The Edge',     subtitle: 'Stay ahead of the curve',            trackIds: ['frontier2026'] },
+]
+
+// Flat track order derived from the phases (foundations-first).
+const PHASE_TRACK_ORDER: string[] = SHEET_PHASES.flatMap(p => p.trackIds)
+
+// track id → phase number, for grouping in the UI.
+export const TRACK_PHASE: Record<string, number> = Object.fromEntries(
+  SHEET_PHASES.flatMap(p => p.trackIds.map(id => [id, p.num])),
+)
+
+// Public, ordered tracks. Any track missing from PHASE_TRACK_ORDER is appended.
+export const SHEET_TRACKS: SheetTrack[] = [
+  ...PHASE_TRACK_ORDER.map(id => TRACKS_RAW.find(t => t.id === id)).filter((t): t is SheetTrack => Boolean(t)),
+  ...TRACKS_RAW.filter(t => !PHASE_TRACK_ORDER.includes(t.id)),
 ]
 
 export function getTotalItems(): number {

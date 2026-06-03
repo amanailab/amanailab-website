@@ -76,7 +76,7 @@ export default async function HomePage() {
       {/* 4. Interview prep sheet — key differentiator */}
       <SheetPromo />
 
-      {/* 5. How it works — 3-step journey */}
+      {/* 5. Start Here — 4-step guided path */}
       <HowItWorks />
 
       {/* 6. All remaining tools — compact grid */}

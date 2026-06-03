@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, ChevronDown, Search,
   BookOpen, Newspaper, FileText,
-  BarChart2, Mail, Wand2,
+  BarChart2, Wand2,
   BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
   User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2, ListChecks, PenLine,
 } from "lucide-react";
@@ -59,10 +59,8 @@ const navItems: NavItem[] = [
     items: [
       { href: "/code-lab",    label: "Code Lab ✨",       description: "Code AI/ML algorithms, earn XP levels",  icon: <Code2 className="w-4 h-4" /> },
       { href: "/playground", label: "Code Playground ✨", description: "Monaco editor + AI for ML code",    icon: <Code2 className="w-4 h-4" /> },
-      { href: "/resume",             label: "Resume Analyzer",      description: "ATS score & improvements",          icon: <FileText className="w-4 h-4" /> },
+      { href: "/resume",             label: "Resume Analyzer",      description: "ATS score, JD match & cover letter", icon: <FileText className="w-4 h-4" /> },
       { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   description: "AI-rewritten profile",              icon: <BarChart2 className="w-4 h-4" /> },
-      { href: "/cover-letter-review",label: "Cover Letter Review",  description: "Score & rewrite your cover letter", icon: <Mail className="w-4 h-4" /> },
-      { href: "/linkedin",           label: "LinkedIn Posts",       description: "Viral post generator",              icon: <BarChart2 className="w-4 h-4" /> },
       { href: "/prompt",             label: "Prompt Generator",     description: "Perfect prompts for any AI",        icon: <Wand2 className="w-4 h-4" /> },
       { href: "/paper-explainer",    label: "Paper Explainer",      description: "Understand any AI research paper",   icon: <BookOpen className="w-4 h-4" /> },
     ],

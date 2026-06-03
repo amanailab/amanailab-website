@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Target, TrendingUp, Trophy, ArrowRight } from "lucide-react";
+import { Target, ListChecks, Dumbbell, Trophy, ArrowRight } from "lucide-react";
 
 const STEPS = [
   {
@@ -10,30 +10,40 @@ const STEPS = [
     icon: Target,
     color: "text-orange-400",
     bg: "bg-orange-500/10 border-orange-500/20",
-    title: "Assess where you stand",
-    description: "Complete a mock interview to get your AI readiness score (0–100). See exactly which topics need work — LLM, RAG, MLOps, or System Design.",
-    href: "/interview?tab=simulator",
-    cta: "Take Mock Interview",
-  },
-  {
-    number: "02",
-    icon: TrendingUp,
-    color: "text-blue-400",
-    bg: "bg-blue-500/10 border-blue-500/20",
-    title: "Target your weak spots",
-    description: "Use the Skill Gap Analyzer to paste any job description and see exactly what's missing. Practice with flashcards, Code Lab problems, and topic deep-dives.",
+    title: "Find your gaps",
+    description: "Paste a job description into the Skill Gap Analyzer to see exactly what you're missing — no guesswork about where to start.",
     href: "/skill-gap",
     cta: "Analyze My Gaps",
   },
   {
+    number: "02",
+    icon: ListChecks,
+    color: "text-violet-400",
+    bg: "bg-violet-500/10 border-violet-500/20",
+    title: "Follow the path",
+    description: "Work through the A-to-Z Interview Sheet — foundations first, then modern AI, production & system design. Finish it and you're interview-ready.",
+    href: "/sheet",
+    cta: "Open the Sheet",
+  },
+  {
     number: "03",
+    icon: Dumbbell,
+    color: "text-blue-400",
+    bg: "bg-blue-500/10 border-blue-500/20",
+    title: "Practice for real",
+    description: "Run timed mock interviews with instant AI scoring and solve real coding problems in the Code Lab until it's second nature.",
+    href: "/interview?tab=simulator",
+    cta: "Start Practicing",
+  },
+  {
+    number: "04",
     icon: Trophy,
     color: "text-green-400",
     bg: "bg-green-500/10 border-green-500/20",
-    title: "Get interview-ready",
-    description: "Practice company-specific questions for Google, Meta, OpenAI. Track your readiness score climb from 40% → 80%+ and walk into interviews with confidence.",
+    title: "Target the job",
+    description: "Prep company-specific questions for Google, Meta & OpenAI, then sharpen your resume against the JD — and walk in confident.",
     href: "/companies",
-    cta: "Practice by Company",
+    cta: "Prep by Company",
   },
 ]
 
@@ -50,17 +60,17 @@ export default function HowItWorks() {
           className="text-center mb-14"
         >
           <p className="text-orange-400 text-xs font-semibold uppercase tracking-[0.2em] mb-3">
-            How It Works
+            Start Here
           </p>
           <h2 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-3">
-            From preparation to confidence in 3 steps
+            Not sure where to begin? Follow these 4 steps.
           </h2>
           <p className="text-zinc-400 text-base max-w-xl mx-auto">
-            A structured path for every AI/ML candidate — whether you&apos;re starting from scratch or preparing for a FAANG interview.
+            One clear path from &ldquo;I don&apos;t know what to study&rdquo; to interview-ready — do them in order.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {STEPS.map((step, i) => {
             const Icon = step.icon
             return (
