@@ -4,9 +4,9 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Search, BrainCircuit, Flame, FileText, Code2, BarChart2,
-  Mail, Briefcase, Wand2, Sparkles, BookOpen, Library, Building2,
+  Briefcase, Wand2, Sparkles, BookOpen, Library, Building2,
   Layers, MessageSquare, Map, Newspaper, LayoutDashboard, X, ArrowRight,
-  Target, Users,
+  Target,
 } from 'lucide-react'
 import { SITE_STATS } from '@/lib/site-stats'
 
@@ -25,12 +25,10 @@ const COMMANDS: Command[] = [
   { id: 'code-lab',      label: 'Code Lab',             desc: 'Code AI/ML algorithms, earn XP',    icon: <Code2 className="w-4 h-4" />,         href: '/code-lab',              group: 'Tools', tag: 'New' },
   { id: 'playground',    label: 'Code Playground',      desc: 'Monaco editor + AI assistant',      icon: <Code2 className="w-4 h-4" />,         href: '/playground',            group: 'Tools', tag: 'New' },
   { id: 'linkedin-opt',  label: 'LinkedIn Optimizer',   desc: 'AI-rewritten profile',              icon: <BarChart2 className="w-4 h-4" />,     href: '/linkedin-optimizer',    group: 'Tools' },
-  { id: 'cover-letter',  label: 'Cover Letter Review',  desc: 'Score + rewrite',                   icon: <Mail className="w-4 h-4" />,          href: '/cover-letter-review',   group: 'Tools' },
   { id: 'job-prep',      label: 'Job Prep',             desc: 'Paste JD → tailored questions',     icon: <Briefcase className="w-4 h-4" />,     href: '/job-prep',              group: 'Tools' },
   { id: 'prompt-gen',    label: 'Prompt Generator',     desc: 'Perfect prompts for any AI',        icon: <Wand2 className="w-4 h-4" />,         href: '/prompt',                group: 'Tools' },
   { id: 'quiz',          label: 'Skill Quiz',           desc: 'AI-generated MCQ assessment',       icon: <Sparkles className="w-4 h-4" />,      href: '/quiz',                  group: 'Tools' },
   { id: 'paper',         label: 'Paper Explainer',      desc: 'Any arXiv paper explained',         icon: <BookOpen className="w-4 h-4" />,      href: '/paper-explainer',       group: 'Tools' },
-  { id: 'linkedin-posts',label: 'LinkedIn Post Writer', desc: 'Viral post generator',              icon: <Users className="w-4 h-4" />,         href: '/linkedin',              group: 'Tools' },
   // Interview
   { id: 'questions',  label: 'Question Bank',           desc: `${SITE_STATS.questions} AI/ML questions`,              icon: <Library className="w-4 h-4" />,       href: '/questions',             group: 'Interview' },
   { id: 'companies',  label: 'Company Prep',            desc: 'Google, Meta, OpenAI & more',       icon: <Building2 className="w-4 h-4" />,     href: '/companies',             group: 'Interview' },

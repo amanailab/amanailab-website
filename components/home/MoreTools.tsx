@@ -124,7 +124,7 @@ export default function MoreTools() {
               <button onClick={() => setQuery('')} className="text-orange-400 hover:text-orange-300">Clear</button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
               {filtered.map((tool, i) => <ToolCard key={tool.label} tool={tool} i={i} />)}
             </div>
           )
@@ -140,7 +140,7 @@ export default function MoreTools() {
                     <h3 className="text-sm font-bold text-zinc-200">{cat.label}</h3>
                     <span className="text-[11px] text-zinc-600">{cat.hint}</span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
                     {tools.map((tool, i) => <ToolCard key={tool.label} tool={tool} i={i} />)}
                   </div>
                 </div>

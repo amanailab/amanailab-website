@@ -3,8 +3,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
-  ArrowRight, BookOpen, Code2, Layers, PenLine,
-  HelpCircle, MessageCircle, Sparkles,
+  ArrowRight, BookOpen, Code2, Layers, PenLine, Sparkles,
 } from "lucide-react";
 import { SITE_STATS } from "@/lib/site-stats";
 
@@ -88,31 +87,17 @@ export default function SheetPromo() {
           ))}
         </div>
 
-        {/* CTA + Resource icons */}
+        {/* CTA */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.4, delay: 0.4 }}
-          className="flex flex-col sm:flex-row items-center justify-between gap-4"
+          className="flex justify-center"
         >
-          <div className="flex items-center gap-4 text-[11px] text-zinc-600 flex-wrap justify-center">
-            <span className="font-medium text-zinc-500">Each item links to:</span>
-            {[
-              { icon: <BookOpen size={11} />, label: "Theory"    },
-              { icon: <Code2 size={11} />,    label: "Code Lab"  },
-              { icon: <Layers size={11} />,   label: "Flashcards"},
-              { icon: <HelpCircle size={11}/>, label: "Quiz"     },
-              { icon: <MessageCircle size={11}/>, label: "Interview"},
-              { icon: <PenLine size={11} />,  label: "Design"   },
-            ].map(({ icon, label }) => (
-              <span key={label} className="flex items-center gap-1 text-zinc-500">{icon} {label}</span>
-            ))}
-          </div>
-
           <Link
             href="/sheet"
-            className="flex-shrink-0 inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-6 py-3 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/20 text-sm whitespace-nowrap"
+            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-7 py-3 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-orange-500/20 text-sm whitespace-nowrap"
           >
             Start the Sheet
             <ArrowRight className="w-4 h-4" />

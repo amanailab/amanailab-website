@@ -99,7 +99,7 @@ export default function HeroSection() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
-          The complete free platform built specifically for AI/ML engineers — from mock interviews and code practice to resume scoring and skill gap analysis. Everything you need, all in one place.
+          The complete free platform for AI/ML engineers — mock interviews, code practice, resume scoring, skill-gap analysis and more, all in one place.
         </motion.p>
 
         {/* CTAs */}
@@ -143,7 +143,7 @@ export default function HeroSection() {
           {techPills.map((tech) => (
             <span
               key={tech}
-              className="bg-zinc-800/70 border border-zinc-700/60 text-zinc-300 text-xs px-3 py-1.5 rounded-full hover:border-orange-400/60 hover:bg-orange-500/5 hover:text-orange-200 transition-all cursor-default"
+              className="bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 text-xs px-3 py-1.5 rounded-full select-none cursor-default"
             >
               {tech}
             </span>

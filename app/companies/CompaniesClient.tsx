@@ -79,14 +79,18 @@ export default function CompaniesClient({
 function CompanyCard({ c, count, featured }: { c: Company; count: number; featured: boolean }) {
   return (
     <Link href={`/companies/${c.slug}`}
-      className={`group flex flex-col gap-3 bg-zinc-900 border rounded-2xl p-5 hover:border-zinc-600 transition-all hover:-translate-y-0.5 ${featured ? 'border-zinc-700' : 'border-zinc-800'}`}>
+      className={`group flex flex-col gap-3 bg-zinc-900 border rounded-2xl p-5 transition-all hover:-translate-y-0.5 ${featured ? 'border-orange-500/30 ring-1 ring-orange-500/10 hover:border-orange-500/50' : 'border-zinc-800 hover:border-zinc-600'}`}>
       <div className="flex items-start justify-between">
         <span className="text-3xl">{c.logo_emoji}</span>
-        {count > 0 && (
+        {count > 0 ? (
           <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full">
             {count} Q&amp;As
           </span>
-        )}
+        ) : featured ? (
+          <span className="text-[10px] font-bold text-orange-400/80 bg-orange-500/5 border border-orange-500/20 px-2 py-0.5 rounded-full">
+            Top
+          </span>
+        ) : null}
       </div>
       <div>
         <p className="text-sm font-bold text-zinc-100 group-hover:text-white transition-colors">{c.name}</p>

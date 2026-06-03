@@ -283,7 +283,7 @@ export default function InterviewHub() {
           {/* Title row */}
           <div className="flex items-center gap-3 mb-5">
             <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center flex-shrink-0">
-              <BrainCircuit className="w-4.5 h-4.5 text-orange-400" />
+              <BrainCircuit className="w-5 h-5 text-orange-400" />
             </div>
             <div>
               <h1 className="text-xl font-extrabold text-zinc-100 leading-tight">AI Interview Prep Hub</h1>
@@ -291,7 +291,7 @@ export default function InterviewHub() {
             </div>
             <div className="ml-auto hidden sm:flex items-center gap-2">
               <div className="inline-flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">
-                <Sparkles className="w-3 h-3" /> Free · 13 Topics
+                <Sparkles className="w-3 h-3" /> Free · 14 Topics
               </div>
             </div>
           </div>

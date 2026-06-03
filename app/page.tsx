@@ -70,16 +70,16 @@ export default async function HomePage() {
       {/* 3. Daily challenge — habit hook (self-hides until loaded) */}
       <DailyChallengeWidget />
 
-      {/* 4. Core 4 tools — spotlight */}
-      <FeaturedTools />
-
-      {/* 4. Interview prep sheet — key differentiator */}
-      <SheetPromo />
-
-      {/* 5. Start Here — 4-step guided path */}
+      {/* 4. Start Here — 4-step guided path (orient before the tool firehose) */}
       <HowItWorks />
 
-      {/* 6. All remaining tools — compact grid */}
+      {/* 5. Core 4 tools — spotlight */}
+      <FeaturedTools />
+
+      {/* 6. Interview prep sheet — key differentiator */}
+      <SheetPromo />
+
+      {/* 7. All remaining tools — grouped grid */}
       <MoreTools />
 
       {/* 7. YouTube playlists (with static fallback) */}

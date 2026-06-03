@@ -61,8 +61,8 @@ const footerLinks = {
   Tools: [
     { href: "/resume",              label: "Resume Analyzer"       },
     { href: "/interview",           label: "AI Interview Simulator" },
+    { href: "/code-lab",            label: "Code Lab"              },
     { href: "/linkedin-optimizer",  label: "LinkedIn Optimizer"    },
-    { href: "/cover-letter-review", label: "Cover Letter Reviewer" },
     { href: "/paper-explainer",     label: "Paper Explainer"       },
     { href: "/quiz",                label: "Skill Quiz"            },
     { href: "/prompt",              label: "Prompt Generator"      },

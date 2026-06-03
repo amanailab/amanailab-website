@@ -4,9 +4,9 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import {
   Check, BookOpen, Code2, Layers, HelpCircle, MessageCircle,
-  ChevronDown, ChevronRight, Filter, Trophy, RotateCcw,
+  ChevronDown, ChevronRight, ChevronLeft, Filter, Trophy, RotateCcw,
   CheckSquare, Search, X, Clock, ChevronUp, Sparkles, PenLine,
-  Cloud, CloudOff, LogIn,
+  Cloud, LogIn,
 } from 'lucide-react'
 import {
   SHEET_TRACKS, SHEET_PHASES, getTotalItems, TOPIC_TO_QUIZ,
@@ -30,34 +30,6 @@ function withTheory(item: SheetItem): SheetItem {
   return t ? { ...item, theory: t } : item
 }
 
-// ─── Resource icon ─────────────────────────────────────────────────────────────
-function ResIcon({
-  href, title, icon, available, highlight,
-}: {
-  href?: string; title: string; icon: React.ReactNode; available: boolean; highlight?: boolean
-}) {
-  if (!available || !href) {
-    return (
-      <span title="Not available" className="flex items-center justify-center w-7 h-7 opacity-30 cursor-not-allowed select-none">
-        {icon}
-      </span>
-    )
-  }
-  return (
-    <Link
-      href={href}
-      title={title}
-      className={`flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:scale-110 ${
-        highlight
-          ? 'text-green-400 hover:text-green-300 bg-green-500/10 hover:bg-green-500/20'
-          : 'text-zinc-400 hover:text-orange-300 hover:bg-zinc-700/60'
-      }`}
-    >
-      {icon}
-    </Link>
-  )
-}
-
 // ─── Sheet row ──────────────────────────────────────────────────────────────────
 function SheetRow({
   item, index, done, onToggle, expanded, onExpand,
@@ -70,107 +42,64 @@ function SheetRow({
   const designSlug = SHEET_TO_DESIGN[item.id]
   const hasExpand = !!(it.theory || it.preview || designSlug)
 
-  // Compute available resource links for mobile strip
-  const mobileLinks = [
-    it.theory && { label: 'Theory', icon: <BookOpen size={10} />, action: onExpand, className: 'text-orange-400 hover:text-orange-300' },
-    it.codeSlug ? { label: 'Code', icon: <Code2 size={10} />, href: `/code-lab/${it.codeSlug}`, className: 'text-green-400 hover:text-green-300' }
-      : it.hasCode ? { label: 'Code Lab', icon: <Code2 size={10} />, href: '/code-lab', className: 'text-zinc-400 hover:text-zinc-200' } : null,
-    it.hasFlashcard && it.topic ? { label: 'Flashcards', icon: <Layers size={10} />, href: `/flashcards/${it.topic}`, className: 'text-yellow-400 hover:text-yellow-300' } : null,
-    it.hasQuiz && quizName ? { label: 'Quiz', icon: <HelpCircle size={10} />, href: `/quiz?topic=${encodeURIComponent(quizName)}`, className: 'text-violet-400 hover:text-violet-300' } : null,
-    it.hasInterview ? { label: 'Interview', icon: <MessageCircle size={10} />, href: '/interview', className: 'text-zinc-400 hover:text-zinc-200' } : null,
-    designSlug ? { label: 'Design', icon: <PenLine size={10} />, href: `/system-design/${designSlug}`, className: 'text-violet-400 hover:text-violet-300' } : null,
-  ].filter(Boolean) as { label: string; icon: React.ReactNode; href?: string; action?: () => void; className: string }[]
+  // Only the resources that actually exist for this item — shown as labeled chips.
+  const chips = [
+    it.theory ? { label: 'Theory', icon: <BookOpen size={12} />, action: onExpand, color: 'text-orange-300 border-orange-500/30 hover:bg-orange-500/10' } : null,
+    it.codeSlug ? { label: 'Code', icon: <Code2 size={12} />, href: `/code-lab/${it.codeSlug}`, color: 'text-green-300 border-green-500/30 hover:bg-green-500/10' }
+      : it.hasCode ? { label: 'Code Lab', icon: <Code2 size={12} />, href: '/code-lab', color: 'text-green-300 border-green-500/30 hover:bg-green-500/10' } : null,
+    (it.hasFlashcard && it.topic) ? { label: 'Flashcards', icon: <Layers size={12} />, href: `/flashcards/${it.topic}`, color: 'text-yellow-300 border-yellow-500/30 hover:bg-yellow-500/10' } : null,
+    (it.hasQuiz && quizName) ? { label: 'Quiz', icon: <HelpCircle size={12} />, href: `/quiz?topic=${encodeURIComponent(quizName)}`, color: 'text-violet-300 border-violet-500/30 hover:bg-violet-500/10' } : null,
+    it.hasInterview ? { label: 'Mock', icon: <MessageCircle size={12} />, href: '/interview', color: 'text-blue-300 border-blue-500/30 hover:bg-blue-500/10' } : null,
+    designSlug ? { label: 'Design', icon: <PenLine size={12} />, href: `/system-design/${designSlug}`, color: 'text-fuchsia-300 border-fuchsia-500/30 hover:bg-fuchsia-500/10' } : null,
+  ].filter(Boolean) as { label: string; icon: React.ReactNode; href?: string; action?: () => void; color: string }[]
 
   return (
     <>
-      {/* ── Desktop row ── */}
-      <div className={`hidden sm:grid grid-cols-[28px_32px_1fr_28px_28px_28px_28px_28px] items-center gap-x-1 px-4 py-2.5 border-b border-zinc-800/50 transition-colors ${
-        done ? 'bg-emerald-950/20' : 'hover:bg-zinc-800/20'
-      }`}>
+      <div className={`flex items-start gap-3 px-3 sm:px-4 py-3 border-b border-zinc-800/50 transition-colors ${done ? 'bg-emerald-950/20' : 'hover:bg-zinc-900/50'}`}>
         <button onClick={onToggle} aria-label={done ? 'Mark incomplete' : 'Mark complete'}
-          className={`w-[18px] h-[18px] mx-auto rounded border transition-all flex items-center justify-center ${
-            done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 hover:border-zinc-400 bg-transparent'
-          }`}>
-          {done && <Check size={10} strokeWidth={3} className="text-white" />}
-        </button>
-
-        <span className="text-[10px] text-zinc-700 text-right font-mono">{index}</span>
-
-        <div className="min-w-0">
-          <button onClick={hasExpand ? onExpand : undefined}
-            className={`text-sm font-medium leading-snug text-left transition-colors ${done ? 'line-through text-zinc-500' : 'text-zinc-200'} ${hasExpand ? 'hover:text-orange-300 cursor-pointer' : ''}`}>
-            {it.title}
-            {it.isNew2026 && (
-              <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wide align-middle">2026</span>
-            )}
-            {designSlug && (
-              <span className="inline-flex items-center gap-0.5 ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30 uppercase tracking-wide align-middle">
-                <PenLine size={8} /> Design
-              </span>
-            )}
-          </button>
-        </div>
-
-        <ResIcon href={it.theory ? undefined : it.hasFlashcard && it.topic ? `/flashcards/${it.topic}` : undefined}
-          title={it.theory ? 'Click title to read theory' : 'Flashcard Revision'}
-          icon={<BookOpen size={13} />} available={!!(it.theory || (it.hasFlashcard && it.topic))} />
-        <ResIcon href={it.codeSlug ? `/code-lab/${it.codeSlug}` : it.hasCode ? '/code-lab' : undefined}
-          title={it.codeSlug ? `Solve: ${it.codeSlug}` : 'Browse Code Lab'}
-          icon={<Code2 size={13} />} available={!!it.hasCode} highlight={!!it.codeSlug} />
-        <ResIcon href={it.hasFlashcard && it.topic ? `/flashcards/${it.topic}` : undefined}
-          title="Flashcard Revision" icon={<Layers size={13} />} available={!!(it.hasFlashcard && it.topic)} />
-        <ResIcon href={it.hasQuiz && quizName ? `/quiz?topic=${encodeURIComponent(quizName)}` : undefined}
-          title="Take Quiz" icon={<HelpCircle size={13} />} available={!!(it.hasQuiz && quizName)} />
-        <ResIcon href={it.hasInterview ? '/interview' : undefined}
-          title="Mock Interview" icon={<MessageCircle size={13} />} available={!!it.hasInterview} />
-      </div>
-
-      {/* ── Mobile row ── */}
-      <div className={`sm:hidden flex items-start gap-3 px-3 py-3 border-b border-zinc-800/50 transition-colors ${done ? 'bg-emerald-950/20' : ''}`}>
-        <button onClick={onToggle}
-          className={`mt-0.5 w-[18px] h-[18px] rounded border flex-shrink-0 flex items-center justify-center transition-all ${
+          className={`mt-0.5 w-5 h-5 rounded-md border flex-shrink-0 flex items-center justify-center transition-all ${
             done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 hover:border-zinc-400'
           }`}>
-          {done && <Check size={10} strokeWidth={3} className="text-white" />}
+          {done && <Check size={12} strokeWidth={3} className="text-white" />}
         </button>
 
         <div className="flex-1 min-w-0">
-          {/* Title + expand toggle */}
-          <div className="flex items-start gap-2">
+          <div className="flex items-start justify-between gap-3">
             <button onClick={hasExpand ? onExpand : undefined}
-              className={`text-sm font-medium leading-snug text-left flex-1 min-w-0 transition-colors ${done ? 'line-through text-zinc-500' : 'text-zinc-200'}`}>
+              className={`text-sm font-medium leading-snug text-left transition-colors ${done ? 'line-through text-zinc-500' : 'text-zinc-100'} ${hasExpand ? 'hover:text-orange-300 cursor-pointer' : 'cursor-default'}`}>
+              <span className="text-zinc-600 text-xs font-mono mr-2">{index}</span>
               {it.title}
               {it.isNew2026 && (
-                <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wide align-middle">2026</span>
+                <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wide align-middle">2026</span>
+              )}
+              {designSlug && (
+                <span className="inline-flex items-center gap-0.5 ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 uppercase tracking-wide align-middle">
+                  <PenLine size={9} /> Design
+                </span>
               )}
             </button>
-            <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-              <span className={`text-[10px] font-bold ${DIFF_COLOR[it.difficulty]}`}>
+            <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+              <span className={`text-[11px] font-semibold ${DIFF_COLOR[it.difficulty]}`}>
                 {it.difficulty.charAt(0).toUpperCase() + it.difficulty.slice(1)}
               </span>
               {hasExpand && (
-                <button onClick={onExpand} className="text-zinc-600 hover:text-zinc-400 transition-colors">
-                  {expanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                </button>
+                <span className="text-zinc-600">{expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}</span>
               )}
             </div>
           </div>
 
-          {/* Mobile resource strip — only available links */}
-          {mobileLinks.length > 0 && (
-            <div className="flex items-center gap-3 mt-2 flex-wrap">
-              {mobileLinks.map(link => (
-                link.href ? (
-                  <Link key={link.label} href={link.href}
-                    className={`flex items-center gap-1 text-[11px] font-medium transition-colors ${link.className}`}>
-                    {link.icon} {link.label}
-                  </Link>
-                ) : (
-                  <button key={link.label} onClick={link.action}
-                    className={`flex items-center gap-1 text-[11px] font-medium transition-colors ${link.className}`}>
-                    {link.icon} {link.label}
-                  </button>
-                )
+          {chips.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {chips.map(c => c.href ? (
+                <Link key={c.label} href={c.href}
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md border bg-zinc-900/60 transition-colors ${c.color}`}>
+                  {c.icon} {c.label}
+                </Link>
+              ) : (
+                <button key={c.label} onClick={c.action}
+                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md border bg-zinc-900/60 transition-colors ${c.color}`}>
+                  {c.icon} {c.label}
+                </button>
               ))}
             </div>
           )}
@@ -181,36 +110,36 @@ function SheetRow({
       {expanded && hasExpand && (
         <div className="border-b border-zinc-800/50 bg-zinc-900/30">
           {it.theory && (
-            <div className="px-4 sm:px-[76px] py-3 border-b border-zinc-800/40">
-              <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider mb-1.5">Theory</p>
+            <div className="px-4 sm:px-12 py-3 border-b border-zinc-800/40">
+              <p className="text-[11px] font-bold text-orange-400 uppercase tracking-wider mb-1.5">Theory</p>
               <p className="text-sm text-zinc-300 leading-relaxed">{it.theory}</p>
               <div className="flex items-center gap-4 mt-2">
                 {it.hasFlashcard && it.topic && (
                   <Link href={`/flashcards/${it.topic}`} className="text-[11px] text-zinc-500 hover:text-yellow-400 flex items-center gap-1 transition-colors">
-                    <Layers size={10} /> Flashcards
+                    <Layers size={11} /> Flashcards
                   </Link>
                 )}
                 {it.hasQuiz && quizName && (
                   <Link href={`/quiz?topic=${encodeURIComponent(quizName)}`} className="text-[11px] text-zinc-500 hover:text-violet-400 flex items-center gap-1 transition-colors">
-                    <HelpCircle size={10} /> Take quiz
+                    <HelpCircle size={11} /> Take quiz
                   </Link>
                 )}
               </div>
             </div>
           )}
           {it.preview && (
-            <div className={`px-4 sm:px-[76px] py-3 ${designSlug ? 'border-b border-zinc-800/40' : ''}`}>
-              <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-1.5">Interview Q&A</p>
+            <div className={`px-4 sm:px-12 py-3 ${designSlug ? 'border-b border-zinc-800/40' : ''}`}>
+              <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1.5">Interview Q&amp;A</p>
               <p className="text-sm text-zinc-200 font-medium leading-snug mb-2">{it.preview.q}</p>
               <p className="text-xs text-zinc-400 leading-relaxed">{it.preview.a}</p>
             </div>
           )}
           {designSlug && (
-            <div className="px-4 sm:px-[76px] py-3">
-              <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider mb-2">Practice Workspace</p>
+            <div className="px-4 sm:px-12 py-3">
+              <p className="text-[11px] font-bold text-fuchsia-300 uppercase tracking-wider mb-2">Practice Workspace</p>
               <Link
                 href={`/system-design/${designSlug}`}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-300 hover:bg-violet-500/20 hover:text-violet-200 transition-all text-sm font-semibold"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 hover:bg-fuchsia-500/20 hover:text-fuchsia-200 transition-all text-sm font-semibold"
               >
                 <PenLine size={14} />
                 Open Design Workspace
@@ -221,29 +150,6 @@ function SheetRow({
         </div>
       )}
     </>
-  )
-}
-
-// ─── Column header ─────────────────────────────────────────────────────────────
-function ColHeader() {
-  return (
-    <div className="hidden sm:grid grid-cols-[28px_32px_1fr_28px_28px_28px_28px_28px] gap-x-1 px-4 py-2 border-b border-zinc-800 bg-zinc-950/60">
-      <span />
-      <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 text-right self-center">#</span>
-      <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 self-center">Topic</span>
-      {[
-        { icon: <BookOpen size={11} />, label: 'Read' },
-        { icon: <Code2 size={11} />, label: 'Code' },
-        { icon: <Layers size={11} />, label: 'Cards' },
-        { icon: <HelpCircle size={11} />, label: 'Quiz' },
-        { icon: <MessageCircle size={11} />, label: 'Mock' },
-      ].map(({ icon, label }) => (
-        <span key={label} className="flex flex-col justify-center items-center gap-0.5 text-zinc-500">
-          {icon}
-          <span className="text-[7px] font-bold uppercase tracking-wide leading-none">{label}</span>
-        </span>
-      ))}
-    </div>
   )
 }
 
@@ -549,13 +455,13 @@ export default function SheetClient() {
                       const p     = items.length > 0 ? Math.round(done / items.length * 100) : 0
                       return (
                         <button key={t.id} onClick={() => switchTrack(t.id)}
-                          className={`text-center p-2 rounded-xl border transition-all ${
+                          className={`text-center p-2.5 rounded-xl border transition-all ${
                             activeTrack === t.id ? `${t.bg} ${t.color}` : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300 bg-zinc-900/50'
                           }`}>
-                          <div className="text-lg leading-none">{t.icon}</div>
-                          <div className="text-[11px] font-bold mt-1">{mounted ? p : 0}%</div>
-                          <div className="text-[9px] opacity-70 truncate mt-0.5">{t.title.split(' ').slice(0, 2).join(' ')}</div>
-                          <div className="text-[9px] opacity-50 tabular-nums">{mounted ? done : 0}/{items.length}</div>
+                          <div className="text-xl leading-none">{t.icon}</div>
+                          <div className="text-sm font-bold mt-1.5">{mounted ? p : 0}%</div>
+                          <div className="text-[11px] opacity-80 truncate mt-0.5">{t.title.split(' ').slice(0, 2).join(' ')}</div>
+                          <div className="text-[10px] opacity-50 tabular-nums mt-0.5">{mounted ? done : 0}/{items.length}</div>
                         </button>
                       )
                     })}
@@ -592,7 +498,6 @@ export default function SheetClient() {
               <div className="text-center py-10 text-zinc-600 text-sm">No topics found.</div>
             ) : (
               <>
-                <ColHeader />
                 {searchResults.map(({ item, track: t, section }, idx) => (
                   <div key={item.id}>
                     {(idx === 0 || searchResults[idx - 1].track.id !== t.id || searchResults[idx - 1].section.id !== section.id) && (
@@ -613,29 +518,31 @@ export default function SheetClient() {
           </div>
         ) : (
           <>
-            {/* ── Track tabs (sticky on scroll) ─────────────────────── */}
-            <div className="sticky top-16 z-30 -mx-4 px-4 py-2 bg-zinc-950/85 backdrop-blur-md mb-4 border-b border-zinc-900/60">
-            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-zinc-800">
-              {SHEET_TRACKS.map(t => {
-                const items = t.sections.flatMap(s => s.items)
-                const done  = items.filter(i => progress[i.id]).length
-                const isActive = activeTrack === t.id
-                return (
-                  <button key={t.id} onClick={() => switchTrack(t.id)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex-shrink-0 ${
-                      isActive ? `${t.bg} ${t.color}` : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                    }`}>
-                    <span>{t.icon}</span>
-                    <span className="hidden sm:inline">{t.title}</span>
-                    <span className="sm:hidden">{t.title.split(' ').slice(0, 2).join(' ')}</span>
-                    <span className={`text-[10px] px-1 py-0.5 rounded font-bold ${isActive ? 'bg-black/20' : 'bg-zinc-800 text-zinc-500'}`}>
-                      {mounted ? done : 0}/{items.length}
+            {/* ── Sticky track nav: current track + prev/next (the sheet is a sequence) ── */}
+            {(() => {
+              const idx  = SHEET_TRACKS.findIndex(t => t.id === activeTrack)
+              const prev = idx > 0 ? SHEET_TRACKS[idx - 1] : null
+              const next = idx < SHEET_TRACKS.length - 1 ? SHEET_TRACKS[idx + 1] : null
+              return (
+                <div className="sticky top-16 z-30 -mx-4 px-4 py-2 bg-zinc-950/85 backdrop-blur-md mb-4 border-b border-zinc-900/60">
+                  <div className="flex items-center justify-between gap-2">
+                    <button disabled={!prev} onClick={() => prev && switchTrack(prev.id)}
+                      className="flex items-center gap-1 text-xs font-medium text-zinc-400 hover:text-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors max-w-[40%] truncate">
+                      <ChevronLeft size={14} className="flex-shrink-0" />
+                      <span className="truncate">{prev ? `${prev.icon} ${prev.title}` : 'Start'}</span>
+                    </button>
+                    <span className={`text-xs font-bold whitespace-nowrap ${track.color}`}>
+                      {track.icon} <span className="hidden sm:inline">{track.title} · </span>{idx + 1}/{SHEET_TRACKS.length}
                     </span>
-                  </button>
-                )
-              })}
-            </div>
-            </div>
+                    <button disabled={!next} onClick={() => next && switchTrack(next.id)}
+                      className="flex items-center gap-1 text-xs font-medium text-zinc-400 hover:text-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors max-w-[40%] truncate justify-end">
+                      <span className="truncate">{next ? `${next.icon} ${next.title}` : 'End'}</span>
+                      <ChevronRight size={14} className="flex-shrink-0" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* ── Active track header ───────────────────────────────── */}
             <div className={`${track.bg} border rounded-2xl px-4 sm:px-5 py-4 mb-4`}>
@@ -725,22 +632,6 @@ export default function SheetClient() {
               </button>
             </div>
 
-            {/* ── Legend ───────────────────────────────────────────── */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-5 text-[10px] text-zinc-600">
-              <span className="font-semibold text-zinc-500">Icons:</span>
-              {[
-                { icon: '📖', label: 'Theory / Flashcards' },
-                { icon: '💻', label: 'Code Lab' },
-                { icon: '🎴', label: 'Flashcards' },
-                { icon: '❓', label: 'Quiz' },
-                { icon: '🎯', label: 'Mock Interview' },
-              ].map(({ icon, label }) => (
-                <span key={label}>{icon} {label}</span>
-              ))}
-              <span className="text-green-400">Bright 💻 = opens specific problem</span>
-              <span className="opacity-30">Dim = not available</span>
-            </div>
-
             {/* ── Sections ──────────────────────────────────────────── */}
             {filteredSections.length === 0 ? (
               <div className="text-center py-14 text-zinc-600 text-sm">
@@ -800,7 +691,6 @@ export default function SheetClient() {
                       {/* Rows */}
                       {isOpen && (
                         <>
-                          <ColHeader />
                           {section.items.map((item, idx) => (
                             <SheetRow
                               key={item.id} item={item} index={idx + 1}
