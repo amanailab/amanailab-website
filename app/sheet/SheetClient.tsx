@@ -436,32 +436,36 @@ export default function SheetClient() {
             📚 <span className="text-zinc-400 font-medium">Follow the phases in order</span> — finish all four and you&apos;re interview-ready.
           </p>
 
-          {/* Per-phase track grid (foundations → edge) */}
-          <div className="space-y-3">
+          {/* Per-phase track list (foundations → edge) — each track is a full-width row */}
+          <div className="space-y-4">
             {SHEET_PHASES.map(phase => {
               const phaseTracks = SHEET_TRACKS.filter(t => phase.trackIds.includes(t.id))
               if (phaseTracks.length === 0) return null
               return (
                 <div key={phase.num}>
-                  <div className="flex items-baseline gap-2 mb-1.5">
-                    <span className="text-[10px] font-extrabold text-orange-400 tracking-wide">PHASE {phase.num}</span>
-                    <span className="text-[11px] font-semibold text-zinc-200">{phase.title}</span>
-                    <span className="hidden sm:inline text-[10px] text-zinc-600">· {phase.subtitle}</span>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-[10px] font-extrabold text-orange-400 tracking-widest">PHASE {phase.num}</span>
+                    <span className="text-sm font-bold text-zinc-200">{phase.title}</span>
+                    <span className="hidden sm:inline text-[11px] text-zinc-600">· {phase.subtitle}</span>
                   </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  <div className="flex flex-col gap-1.5">
                     {phaseTracks.map(t => {
                       const items = t.sections.flatMap(s => s.items)
                       const done  = items.filter(i => progress[i.id]).length
                       const p     = items.length > 0 ? Math.round(done / items.length * 100) : 0
+                      const isActive = activeTrack === t.id
                       return (
                         <button key={t.id} onClick={() => switchTrack(t.id)}
-                          className={`text-center p-2.5 rounded-xl border transition-all ${
-                            activeTrack === t.id ? `${t.bg} ${t.color}` : 'border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300 bg-zinc-900/50'
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${
+                            isActive ? `${t.bg} border-current/30` : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900'
                           }`}>
-                          <div className="text-xl leading-none">{t.icon}</div>
-                          <div className="text-sm font-bold mt-1.5">{mounted ? p : 0}%</div>
-                          <div className="text-[11px] opacity-80 truncate mt-0.5">{t.title.split(' ').slice(0, 2).join(' ')}</div>
-                          <div className="text-[10px] opacity-50 tabular-nums mt-0.5">{mounted ? done : 0}/{items.length}</div>
+                          <span className="text-xl leading-none flex-shrink-0">{t.icon}</span>
+                          <span className={`text-sm font-semibold flex-1 min-w-0 truncate ${isActive ? t.color : 'text-zinc-200'}`}>{t.title}</span>
+                          <div className="hidden sm:block w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden flex-shrink-0">
+                            <div className={`h-full ${t.bar} rounded-full transition-all duration-500`} style={{ width: `${mounted ? p : 0}%` }} />
+                          </div>
+                          <span className={`text-sm font-bold tabular-nums w-10 text-right flex-shrink-0 ${isActive ? t.color : 'text-zinc-300'}`}>{mounted ? p : 0}%</span>
+                          <span className="text-[11px] text-zinc-500 tabular-nums w-12 text-right flex-shrink-0">{mounted ? done : 0}/{items.length}</span>
                         </button>
                       )
                     })}
