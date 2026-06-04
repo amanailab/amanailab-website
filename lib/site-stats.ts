@@ -6,5 +6,5 @@ export const SITE_STATS = {
   questions: '500+',
   sheetTopics: '230',
   codeProblems: '45',
-  systemDesignProblems: '15',
+  systemDesignProblems: '18',
 } as const

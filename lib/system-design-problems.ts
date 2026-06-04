@@ -737,6 +737,196 @@ Multi-objective ranking, candidate generation from followed accounts vs recommen
       'Cascade ranking: first rank all followed-account content, then interleave recommended content at fixed positions.',
     ],
   },
+  {
+    slug: 'ai-agent-platform',
+    linkedSheetItemId: 'sd-ai-agent-platform',
+    title: 'Design an AI Agent Platform',
+    difficulty: 'Hard',
+    category: 'LLM Infrastructure',
+    companies: ['OpenAI','Anthropic','Google','Microsoft'],
+    problem: `## Problem
+
+Design a platform that runs **autonomous AI agents** which plan multi-step tasks, call tools, and act on a user's behalf (e.g. "research X and draft a report", or "monitor my inbox and reply to routine emails").
+
+The platform should support:
+- A planning/reasoning loop (the agent decides the next action each step)
+- A tool registry (web search, code execution, API calls, file I/O)
+- Short-term (working) and long-term (persistent) memory
+- Long-running tasks lasting minutes to hours, with human-approval checkpoints
+- Thousands of agents running concurrently
+
+### What you'll be assessed on
+The agent execution loop, tool orchestration & safety, state/memory management, handling long-running and failing tasks, and cost/loop control.`,
+    constraints: [
+      '100K concurrent agent runs at peak',
+      'A single task may span 5–50 reasoning steps over minutes to hours',
+      'Each step is an LLM call (P95 ≤ 3s) plus 0–N tool calls',
+      'Agents must be pausable/resumable and survive a worker crash',
+      'Hard caps per run: max steps, max tokens, max wall-clock, max $ spend',
+      'Tool calls that mutate external state require an audit trail',
+    ],
+    keyAreas: [
+      'Agent execution loop (plan → act → observe → repeat)',
+      'Durable run state so a task resumes after a worker crash',
+      'Tool registry, schemas, and sandboxed tool execution',
+      'Short-term vs long-term memory (scratchpad vs vector store)',
+      'Concurrency model: queue + workers vs serverless functions',
+      'Loop control: step / token / cost / time budgets and termination',
+      'Human-in-the-loop approval for risky actions',
+      'Failure handling: retries, partial progress, dead-letter queue',
+      'Safety: permission scoping, rate limits, prompt-injection defence',
+      'Observability: per-step traces, cost, and replay for debugging',
+      'Multi-tenant isolation of credentials and data',
+    ],
+    hints: [
+      'Model a run as a durable state machine (Temporal, or a steps table in Postgres) so any step can resume after failure.',
+      'Decouple the reasoning loop from tool execution with a queue — tools run on isolated workers.',
+      'Keep the full step history; long context is summarised, but the durable log is the source of truth for replay.',
+      'Always enforce hard budgets (steps, tokens, $, time) — runaway agent loops are the #1 cost risk.',
+      'Treat every tool the agent can call as an attack surface: scope permissions and validate arguments.',
+    ],
+  },
+  {
+    slug: 'vector-search-engine',
+    linkedSheetItemId: 'sd-vector-search-engine',
+    title: 'Design a Vector Search Engine',
+    difficulty: 'Hard',
+    category: 'LLM Infrastructure',
+    companies: ['Pinecone','Google','Meta','Microsoft'],
+    problem: `## Problem
+
+Design a **vector search engine** that stores **1 billion embeddings** and serves approximate-nearest-neighbour (ANN) queries for semantic search and RAG retrieval.
+
+Requirements:
+- Insert, update, and delete vectors (with metadata) in near real time
+- k-NN search with metadata filtering (e.g. "top 10 similar docs where tenant = X")
+- Tunable trade-off between recall and latency
+- Multi-tenant: thousands of isolated indexes
+
+### What you'll be assessed on
+ANN index choice, sharding billions of vectors, the recall/latency/cost trade-off, filtered search, and real-time updates.`,
+    constraints: [
+      '1B vectors, 768–1536 dimensions each (~3–6 KB per vector)',
+      '50K queries/sec at peak, P99 search latency ≤ 50ms',
+      'Recall@10 ≥ 0.95 target',
+      'Inserts/updates visible within seconds (near real time)',
+      'Metadata filters applied alongside vector similarity',
+      'Thousands of tenants with isolated namespaces',
+    ],
+    keyAreas: [
+      'ANN index choice (HNSW vs IVF-PQ) and the recall/latency/memory trade-off',
+      'Sharding 1B vectors across nodes + scatter-gather query',
+      'Quantisation / compression (PQ) to fit the memory budget',
+      'Filtered search: pre-filter vs post-filter vs hybrid',
+      'Real-time inserts/deletes against a mostly-immutable index',
+      'Replication for availability and read throughput',
+      'Memory vs disk: keeping hot vectors in RAM',
+      'Tenant isolation and per-namespace indexes',
+      'Index build/rebuild and segment compaction',
+      'Recall measurement and tuning (efSearch / nprobe)',
+    ],
+    hints: [
+      'HNSW gives great recall/latency but is memory-hungry; IVF-PQ trades some recall for far lower memory at billion scale.',
+      'Shard by vector (hash) and scatter-gather: query all shards, merge top-k. Replicate shards for throughput.',
+      'Product Quantisation compresses vectors ~10–30× so a billion of them fit in RAM across the cluster.',
+      'Metadata filtering is the hard part — naive pre-filtering can starve the ANN graph; many engines use filtered graph traversal.',
+      'Handle updates with an in-memory write buffer + periodic background re-index/compaction; deletes use tombstones.',
+    ],
+  },
+  {
+    slug: 'code-assistant',
+    linkedSheetItemId: 'sd-code-assistant',
+    title: 'Design an AI Coding Assistant (Copilot)',
+    difficulty: 'Hard',
+    category: 'LLM Infrastructure',
+    companies: ['GitHub','Microsoft','Google','Anthropic'],
+    problem: `## Problem
+
+Design an **AI coding assistant** (like GitHub Copilot) that gives **inline code completions** inside the editor for **5 million developers**.
+
+The product should:
+- Suggest completions as the developer types, with very low latency
+- Use surrounding code + relevant files from the repo as context
+- Support multi-line "ghost text" suggestions and a chat sidebar
+- Never leak secrets and respect code-licensing concerns
+
+### What you'll be assessed on
+Latency at the keystroke level, repo-aware context retrieval, model serving & caching, acceptance feedback loops, and privacy/security.`,
+    constraints: [
+      '5M DAU, completions triggered on a debounce as the user types',
+      'P95 time-to-suggestion ≤ 300ms (must feel instant)',
+      'Context: current file + a few relevant repo files, within the model window',
+      'Stream multi-line suggestions; cancel if the user keeps typing',
+      'Never surface secrets/keys; respect code-licensing filters',
+      'Very high request volume, but most suggestions are discarded',
+    ],
+    keyAreas: [
+      'Latency budget: debounce, speculative requests, cancellation',
+      'Context construction: current file + repo retrieval (embeddings / recent files)',
+      'Fill-in-the-middle prompting vs left-to-right completion',
+      'Model serving: small fast model inline, larger model for chat',
+      'Caching: prefix/KV-cache reuse and identical-context dedup',
+      'Request cancellation when the user keeps typing',
+      'Acceptance telemetry feeding ranking/model improvement',
+      'Secret and license filtering on the output path',
+      'Cost control given most completions are never accepted',
+      'Privacy: proprietary code, opt-out, and on-prem options',
+    ],
+    hints: [
+      'The whole budget is ~300ms: debounce keystrokes, cancel in-flight requests, and keep the inline model small/quantised.',
+      'Fill-in-the-middle (prefix + suffix) is the right formulation for inline completion, not plain left-to-right.',
+      'Build context from the current file plus a handful of relevant files (recently opened, imports, or embedding retrieval over the repo).',
+      'KV/prefix caching matters: the same file prefix is re-sent as the user types — reuse it.',
+      'Run a fast secret/license filter on the output; never block the happy path on heavy moderation.',
+    ],
+  },
+  {
+    slug: 'image-generation-service',
+    linkedSheetItemId: 'sd-image-generation-service',
+    title: 'Design an AI Image Generation Service',
+    difficulty: 'Hard',
+    category: 'LLM Infrastructure',
+    companies: ['OpenAI','Google','Meta','Stability AI'],
+    problem: `## Problem
+
+Design a text-to-image generation service (like Midjourney / DALL·E) serving **2 million users** who submit prompts and receive generated images.
+
+The service should:
+- Accept a prompt (+ optional params: size, style, seed) and return images
+- Handle generations that take seconds to tens of seconds on GPUs
+- Show progress / queue position and deliver results when ready
+- Enforce safety (NSFW / disallowed content) on both prompt and output
+
+### What you'll be assessed on
+GPU-bound async job processing, queueing & autoscaling, result delivery, cost under expensive hardware, and content safety.`,
+    constraints: [
+      '2M users, 5M image generations/day, bursty traffic',
+      'Each generation: 5–30s on a GPU (diffusion steps)',
+      'GPUs are expensive and capacity-limited — keep utilisation high',
+      'Users tolerate async (a queue) but want progress + fast P50',
+      'Safety filter on the input prompt and the output image',
+      'Store generated images durably; serve via CDN',
+    ],
+    keyAreas: [
+      'Async job architecture: submit → queue → GPU worker → result',
+      'GPU worker pool, batching, and autoscaling to demand',
+      'Queue design, priority tiers (free vs paid), and fairness',
+      'Progress updates / result delivery (polling, SSE, webhooks)',
+      'Cost control: batching, spot/preemptible GPUs, model size',
+      'Content safety: prompt filtering + output image classification',
+      'Caching identical prompts (same prompt + params + seed)',
+      'Object storage for images + CDN delivery',
+      'Backpressure and graceful degradation under GPU starvation',
+      'Idempotency and retries for failed generations',
+    ],
+    hints: [
+      'This is an async, GPU-bound job system: the API enqueues, GPU workers pull from a queue, results land in object storage + CDN.',
+      'Batch multiple generations per GPU forward pass where possible to lift utilisation and cut cost.',
+      'Use priority queues (paid users first) and autoscale workers on queue depth; spot GPUs cut cost with checkpoint/retry.',
+      'Deliver results via polling or webhooks/SSE with a job id — never hold an HTTP request open for 30 seconds.',
+      'Run NSFW/safety classifiers on both the prompt and the final image; cache by (prompt, params, seed) for identical requests.',
+    ],
+  },
 ]
 
 // Map from sheet item ID to design slug
