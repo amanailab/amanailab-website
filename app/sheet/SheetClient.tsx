@@ -365,114 +365,128 @@ export default function SheetClient() {
           </p>
         </div>
 
-        {/* ── Progress ──────────────────────────────────────────────── */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 mb-5">
-          <div className="flex items-center justify-between mb-2.5">
-            <div>
-              <span className="text-sm font-semibold text-zinc-300">Your Progress</span>
-              {mounted && doneItems > 0 && (
-                <span className="ml-2 text-xs text-zinc-500">— Keep going, you got this!</span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <span className={`text-lg font-extrabold ${pct === 100 ? 'text-emerald-400' : 'text-orange-400'}`}>
-                {mounted ? pct : 0}%
-              </span>
-              {/* Sync status indicator */}
-              {isLoggedIn === true && (
-                <span title={synced ? 'Progress synced to your account' : 'Syncing…'}
-                  className={`flex items-center gap-1 text-[10px] transition-colors ${synced ? 'text-emerald-500' : 'text-zinc-600'}`}>
-                  <Cloud size={11} />
-                  <span className="hidden sm:inline">{synced ? 'Synced' : 'Syncing…'}</span>
-                </span>
-              )}
-              {isLoggedIn === false && (
-                <Link href="/login" title="Sign in to sync progress across devices"
-                  className="flex items-center gap-1 text-[10px] text-zinc-600 hover:text-orange-400 transition-colors">
-                  <LogIn size={11} />
-                  <span className="hidden sm:inline">Sign in to sync</span>
-                </Link>
-              )}
-              {confirmReset ? (
-                <span className="flex items-center gap-1.5 text-[10px]">
-                  <span className="text-zinc-400">Reset all?</span>
-                  <button
-                    onClick={() => { save({}); setConfirmReset(false) }}
-                    className="font-semibold text-red-400 hover:text-red-300 transition-colors"
-                  >
-                    Yes
-                  </button>
-                  <button
-                    onClick={() => setConfirmReset(false)}
-                    className="text-zinc-500 hover:text-zinc-300 transition-colors"
-                  >
-                    No
-                  </button>
-                </span>
-              ) : (
-                <button
-                  onClick={() => setConfirmReset(true)}
-                  title="Reset all progress"
-                  aria-label="Reset all progress"
-                  className="text-zinc-700 hover:text-zinc-500 transition-colors"
-                >
-                  <RotateCcw size={12} />
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="h-2.5 bg-zinc-800 rounded-full overflow-hidden mb-3">
-            <div
-              className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-700"
-              style={{ width: `${mounted ? pct : 0}%` }}
-            />
-          </div>
-          {mounted && pct === 100 && (
-            <p className="text-emerald-400 text-xs font-semibold text-center mb-3">🎉 Sheet Complete — You&apos;re Interview Ready!</p>
-          )}
+        {/* ── Progress + Roadmap ───────────────────────────────────── */}
+        <div className="bg-gradient-to-b from-zinc-900 to-zinc-900/40 border border-zinc-800 rounded-2xl p-5 sm:p-6 mb-6">
 
-          {/* Recommended path hint */}
-          <p className="text-[11px] text-zinc-500 mb-3 text-center">
-            📚 <span className="text-zinc-400 font-medium">Follow the phases in order</span> — finish all four and you&apos;re interview-ready.
-          </p>
+          {/* Progress hero: circular ring + stats */}
+          <div className="flex items-center gap-4 sm:gap-5">
+            <div className="relative flex-shrink-0">
+              <svg width="84" height="84" viewBox="0 0 84 84" className="-rotate-90">
+                <circle cx="42" cy="42" r="36" fill="none" stroke="#27272a" strokeWidth="8" />
+                <circle
+                  cx="42" cy="42" r="36" fill="none" strokeWidth="8" strokeLinecap="round"
+                  stroke={pct === 100 ? '#34d399' : 'url(#sheetProg)'}
+                  strokeDasharray={2 * Math.PI * 36}
+                  strokeDashoffset={2 * Math.PI * 36 * (1 - (mounted ? pct : 0) / 100)}
+                  className="transition-all duration-700"
+                />
+                <defs>
+                  <linearGradient id="sheetProg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#fb923c" />
+                    <stop offset="100%" stopColor="#f59e0b" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className={`text-lg font-extrabold ${pct === 100 ? 'text-emerald-400' : 'text-orange-400'}`}>{mounted ? pct : 0}%</span>
+              </div>
+            </div>
 
-          {/* Per-phase track list (foundations → edge) — each track is a full-width row */}
-          <div className="space-y-4">
-            {SHEET_PHASES.map(phase => {
-              const phaseTracks = SHEET_TRACKS.filter(t => phase.trackIds.includes(t.id))
-              if (phaseTracks.length === 0) return null
-              return (
-                <div key={phase.num}>
-                  <div className="flex items-baseline gap-2 mb-2">
-                    <span className="text-[10px] font-extrabold text-orange-400 tracking-widest">PHASE {phase.num}</span>
-                    <span className="text-sm font-bold text-zinc-200">{phase.title}</span>
-                    <span className="hidden sm:inline text-[11px] text-zinc-600">· {phase.subtitle}</span>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {phaseTracks.map(t => {
-                      const items = t.sections.flatMap(s => s.items)
-                      const done  = items.filter(i => progress[i.id]).length
-                      const p     = items.length > 0 ? Math.round(done / items.length * 100) : 0
-                      const isActive = activeTrack === t.id
-                      return (
-                        <button key={t.id} onClick={() => switchTrack(t.id)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${
-                            isActive ? `${t.bg} border-current/30` : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900'
-                          }`}>
-                          <span className="text-xl leading-none flex-shrink-0">{t.icon}</span>
-                          <span className={`text-sm font-semibold flex-1 min-w-0 truncate ${isActive ? t.color : 'text-zinc-200'}`}>{t.title}</span>
-                          <div className="hidden sm:block w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden flex-shrink-0">
-                            <div className={`h-full ${t.bar} rounded-full transition-all duration-500`} style={{ width: `${mounted ? p : 0}%` }} />
-                          </div>
-                          <span className={`text-sm font-bold tabular-nums w-10 text-right flex-shrink-0 ${isActive ? t.color : 'text-zinc-300'}`}>{mounted ? p : 0}%</span>
-                          <span className="text-[11px] text-zinc-500 tabular-nums w-12 text-right flex-shrink-0">{mounted ? done : 0}/{items.length}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-zinc-100">Your Progress</h2>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {isLoggedIn === true && (
+                    <span title={synced ? 'Progress synced to your account' : 'Syncing…'}
+                      className={`flex items-center gap-1 text-[10px] transition-colors ${synced ? 'text-emerald-500' : 'text-zinc-600'}`}>
+                      <Cloud size={11} />
+                      <span className="hidden sm:inline">{synced ? 'Synced' : 'Syncing…'}</span>
+                    </span>
+                  )}
+                  {isLoggedIn === false && (
+                    <Link href="/login" title="Sign in to sync progress across devices"
+                      className="flex items-center gap-1 text-[10px] text-zinc-600 hover:text-orange-400 transition-colors">
+                      <LogIn size={11} />
+                      <span className="hidden sm:inline">Sign in to sync</span>
+                    </Link>
+                  )}
+                  {confirmReset ? (
+                    <span className="flex items-center gap-1.5 text-[10px]">
+                      <span className="text-zinc-400">Reset?</span>
+                      <button onClick={() => { save({}); setConfirmReset(false) }} className="font-semibold text-red-400 hover:text-red-300 transition-colors">Yes</button>
+                      <button onClick={() => setConfirmReset(false)} className="text-zinc-500 hover:text-zinc-300 transition-colors">No</button>
+                    </span>
+                  ) : (
+                    <button onClick={() => setConfirmReset(true)} title="Reset all progress" aria-label="Reset all progress" className="text-zinc-700 hover:text-zinc-500 transition-colors">
+                      <RotateCcw size={12} />
+                    </button>
+                  )}
                 </div>
-              )
-            })}
+              </div>
+              <p className="text-sm text-zinc-400 mt-1">
+                <span className="font-bold text-zinc-100">{mounted ? doneItems : 0}</span> of {totalItems} topics done
+              </p>
+              <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mt-3">
+                <div className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-700" style={{ width: `${mounted ? pct : 0}%` }} />
+              </div>
+              {mounted && pct === 100 ? (
+                <p className="text-emerald-400 text-xs font-semibold mt-2">🎉 Sheet complete — you&apos;re interview ready!</p>
+              ) : (
+                <p className="text-[11px] text-zinc-500 mt-2">📚 Follow the phases in order — finish all four to be interview-ready.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="h-px bg-zinc-800/80 my-6" />
+
+          {/* Roadmap — vertical timeline: phases → tracks */}
+          <div className="relative">
+            <div className="absolute left-[11px] top-3 bottom-3 w-px bg-zinc-800" aria-hidden />
+            <div className="space-y-6">
+              {SHEET_PHASES.map(phase => {
+                const phaseTracks = SHEET_TRACKS.filter(t => phase.trackIds.includes(t.id))
+                if (phaseTracks.length === 0) return null
+                const pItems = phaseTracks.flatMap(t => t.sections.flatMap(s => s.items))
+                const pDone  = pItems.filter(i => progress[i.id]).length
+                const pComplete = mounted && pItems.length > 0 && pDone === pItems.length
+                return (
+                  <div key={phase.num} className="relative pl-9">
+                    {/* Phase node on the timeline */}
+                    <div className={`absolute left-0 top-0 w-[23px] h-[23px] rounded-full border-2 flex items-center justify-center text-[11px] font-extrabold transition-colors ${
+                      pComplete ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-zinc-950 border-zinc-700 text-orange-400'
+                    }`}>
+                      {pComplete ? <Check size={12} strokeWidth={3} /> : phase.num}
+                    </div>
+                    <div className="flex items-baseline gap-2 mb-2 min-h-[23px]">
+                      <span className="text-sm font-bold text-zinc-100">{phase.title}</span>
+                      <span className="hidden sm:inline text-[11px] text-zinc-600">{phase.subtitle}</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {phaseTracks.map(t => {
+                        const items = t.sections.flatMap(s => s.items)
+                        const done  = items.filter(i => progress[i.id]).length
+                        const p     = items.length > 0 ? Math.round(done / items.length * 100) : 0
+                        const isActive = activeTrack === t.id
+                        return (
+                          <button key={t.id} onClick={() => switchTrack(t.id)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all text-left ${
+                              isActive ? `${t.bg} border-current/30` : 'border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900'
+                            }`}>
+                            <span className="text-xl leading-none flex-shrink-0">{t.icon}</span>
+                            <span className={`text-sm font-semibold flex-1 min-w-0 truncate ${isActive ? t.color : 'text-zinc-200'}`}>{t.title}</span>
+                            <div className="hidden sm:block w-24 h-1.5 bg-zinc-800 rounded-full overflow-hidden flex-shrink-0">
+                              <div className={`h-full ${t.bar} rounded-full transition-all duration-500`} style={{ width: `${mounted ? p : 0}%` }} />
+                            </div>
+                            <span className={`text-sm font-bold tabular-nums w-10 text-right flex-shrink-0 ${isActive ? t.color : 'text-zinc-300'}`}>{mounted ? p : 0}%</span>
+                            <span className="text-[11px] text-zinc-500 tabular-nums w-12 text-right flex-shrink-0">{mounted ? done : 0}/{items.length}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
 
