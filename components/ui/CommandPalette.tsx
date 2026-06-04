@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Search, BrainCircuit, Flame, FileText, Code2, BarChart2,
   Briefcase, Wand2, Sparkles, BookOpen, Library, Building2,
-  Layers, MessageSquare, Map, Newspaper, LayoutDashboard, X, ArrowRight,
+  Layers, Map, Newspaper, LayoutDashboard, X, ArrowRight,
   Target,
 } from 'lucide-react'
 import { SITE_STATS } from '@/lib/site-stats'
@@ -34,7 +34,6 @@ const COMMANDS: Command[] = [
   { id: 'companies',  label: 'Company Prep',            desc: 'Google, Meta, OpenAI & more',       icon: <Building2 className="w-4 h-4" />,     href: '/companies',             group: 'Interview' },
   { id: 'flashcards', label: 'Flashcards',              desc: '5-min daily practice',              icon: <BookOpen className="w-4 h-4" />,      href: '/flashcards',            group: 'Interview' },
   { id: 'topics',     label: 'Topic Guides',            desc: 'Deep-dive AI/ML guides',            icon: <Layers className="w-4 h-4" />,        href: '/topics',                group: 'Interview' },
-  { id: 'community',  label: 'Community',               desc: 'Real interview experiences',        icon: <MessageSquare className="w-4 h-4" />, href: '/community',             group: 'Interview' },
   // Learn
   { id: 'blog',       label: 'Blog',                    desc: 'In-depth AI/ML articles',           icon: <FileText className="w-4 h-4" />,      href: '/blog',                  group: 'Learn' },
   { id: 'news',       label: 'AI News Feed',            desc: 'Daily curated AI news',             icon: <Newspaper className="w-4 h-4" />,     href: '/news',                  group: 'Learn' },

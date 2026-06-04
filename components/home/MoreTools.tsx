@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   BookOpen, Layers, Library, Building2, Briefcase,
   BarChart2, Map, Code2,
-  Wand2, ScrollText, MessageSquare, Sparkles,
+  Wand2, ScrollText, Sparkles,
   ArrowRight, Search, X,
 } from "lucide-react";
 import { SITE_STATS } from "@/lib/site-stats";
@@ -29,7 +29,6 @@ const TOOLS: { href: string; cat: Cat; label: string; desc: string; icon: typeof
   // ── Practice ──
   { href: "/quiz",               cat: "practice", label: "Skill Quiz",         desc: "AI-generated MCQ on 14 topics",       icon: Sparkles,    color: "text-lime-400",    bg: "bg-lime-500/10 border-lime-500/20"       },
   { href: "/questions",          cat: "practice", label: "Question Bank",      desc: `${SITE_STATS.questions} real interview questions`, icon: Library, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
-  { href: "/community",          cat: "practice", label: "Community",          desc: "Real interview experiences",          icon: MessageSquare, color: "text-green-400", bg: "bg-green-500/10 border-green-500/20"    },
   // ── Land the job ──
   { href: "/companies",          cat: "job",      label: "Company Prep",       desc: "Google, Meta, OpenAI & more",         icon: Building2,   color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/20"       },
   { href: "/job-prep",           cat: "job",      label: "Job Prep",           desc: "Paste a JD → tailored questions",     icon: Briefcase,   color: "text-teal-400",    bg: "bg-teal-500/10 border-teal-500/20"       },

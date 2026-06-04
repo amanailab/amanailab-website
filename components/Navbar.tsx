@@ -7,9 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, ChevronDown, Search,
   BookOpen, Newspaper, FileText,
-  BarChart2, Wand2,
+  BarChart2,
   BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
-  User, LogOut, LayoutDashboard, Briefcase, MessageSquare, Layers, Library, Flame, Code2, ListChecks, PenLine,
+  User, LogOut, LayoutDashboard, Briefcase, Layers, Library, Flame, Code2, ListChecks, PenLine,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -24,6 +24,7 @@ interface DropdownItem {
   label: string
   description: string
   icon: React.ReactNode
+  group?: string
 }
 
 interface NavDropdown {
@@ -55,14 +56,11 @@ const navItems: NavItem[] = [
   {
     kind: "dropdown",
     label: "Tools",
-    columns: 2,
+    columns: 1,
     items: [
-      { href: "/code-lab",    label: "Code Lab ✨",       description: "Code AI/ML algorithms, earn XP levels",  icon: <Code2 className="w-4 h-4" /> },
-      { href: "/playground", label: "Code Playground ✨", description: "Monaco editor + AI for ML code",    icon: <Code2 className="w-4 h-4" /> },
-      { href: "/resume",             label: "Resume Analyzer",      description: "ATS score, JD match & cover letter", icon: <FileText className="w-4 h-4" /> },
-      { href: "/linkedin-optimizer", label: "LinkedIn Optimizer",   description: "AI-rewritten profile",              icon: <BarChart2 className="w-4 h-4" /> },
-      { href: "/prompt",             label: "Prompt Generator",     description: "Perfect prompts for any AI",        icon: <Wand2 className="w-4 h-4" /> },
-      { href: "/paper-explainer",    label: "Paper Explainer",      description: "Understand any AI research paper",   icon: <BookOpen className="w-4 h-4" /> },
+      { href: "/code-lab",           label: "Code Lab ✨",        description: "Code AI/ML algorithms, earn XP levels", icon: <Code2 className="w-4 h-4" /> },
+      { href: "/resume",             label: "Resume Analyzer",    description: "ATS score, JD match & cover letter",    icon: <FileText className="w-4 h-4" /> },
+      { href: "/linkedin-optimizer", label: "LinkedIn Optimizer", description: "AI-rewritten profile",                 icon: <BarChart2 className="w-4 h-4" /> },
     ],
   },
   { kind: "link", href: "/courses", label: "Courses" },
@@ -71,18 +69,16 @@ const navItems: NavItem[] = [
     label: "Interview",
     columns: 2,
     items: [
-      { href: "/sheet",          label: "Interview Prep Sheet ✨", description: "A-to-Z AI/ML roadmap — theory, code & design",    icon: <ListChecks className="w-4 h-4" /> },
-      { href: "/interview",      label: "AI Simulator",            description: "Timed mock interview with instant AI scoring",     icon: <BrainCircuit className="w-4 h-4" /> },
-      { href: "/system-design",  label: "System Design Practice",  description: `${SITE_STATS.systemDesignProblems} real design problems + AI review`,              icon: <PenLine className="w-4 h-4" /> },
-      { href: "/daily",          label: "Daily Challenge",         description: "One question a day — build your streak",           icon: <Flame className="w-4 h-4" /> },
-      { href: "/questions",      label: "Question Bank",           description: `Browse ${SITE_STATS.questions} AI/ML interview questions`,            icon: <BookOpen className="w-4 h-4" /> },
-      { href: "/topics",         label: "Topic Guides",            description: "Deep-dive prep guides by topic",                   icon: <Layers className="w-4 h-4" /> },
-      { href: "/flashcards",     label: "Flashcards",              description: "5-min daily concept revision",                     icon: <Library className="w-4 h-4" /> },
-      { href: "/quiz",           label: "Skill Quiz",              description: "AI-generated MCQ on 14 topics",                    icon: <Trophy className="w-4 h-4" /> },
-      { href: "/companies",      label: "Companies",               description: "Google, Meta, OpenAI & 6 more",                    icon: <Building2 className="w-4 h-4" /> },
-      { href: "/job-prep",       label: "Job Prep",                description: "Paste a JD → get tailored questions",              icon: <Briefcase className="w-4 h-4" /> },
-      { href: "/community",      label: "Community",               description: "Share real interview experiences",                  icon: <MessageSquare className="w-4 h-4" /> },
-      { href: "/leaderboard",    label: "Leaderboard",             description: "Top performers ranked by score",                    icon: <Trophy className="w-4 h-4" /> },
+      { group: "Practice", href: "/sheet",          label: "Interview Prep Sheet ✨", description: "A-to-Z AI/ML roadmap — theory, code & design",        icon: <ListChecks className="w-4 h-4" /> },
+      { group: "Practice", href: "/interview",      label: "AI Simulator",            description: "Timed mock interview with instant AI scoring",        icon: <BrainCircuit className="w-4 h-4" /> },
+      { group: "Practice", href: "/system-design",  label: "System Design Practice",  description: `${SITE_STATS.systemDesignProblems} real design problems + AI review`, icon: <PenLine className="w-4 h-4" /> },
+      { group: "Practice", href: "/daily",          label: "Daily Challenge",         description: "One question a day — build your streak",              icon: <Flame className="w-4 h-4" /> },
+      { group: "Browse & prep", href: "/questions", label: "Question Bank",           description: `Browse ${SITE_STATS.questions} AI/ML interview questions`, icon: <BookOpen className="w-4 h-4" /> },
+      { group: "Browse & prep", href: "/companies", label: "Companies",               description: "Google, Meta, OpenAI & 6 more",                       icon: <Building2 className="w-4 h-4" /> },
+      { group: "Browse & prep", href: "/topics",    label: "Topic Guides",            description: "Deep-dive prep guides by topic",                      icon: <Layers className="w-4 h-4" /> },
+      { group: "Browse & prep", href: "/flashcards",label: "Flashcards",              description: "5-min daily concept revision",                        icon: <Library className="w-4 h-4" /> },
+      { group: "Browse & prep", href: "/quiz",      label: "Skill Quiz",              description: "AI-generated MCQ on 14 topics",                       icon: <Trophy className="w-4 h-4" /> },
+      { group: "Browse & prep", href: "/job-prep",  label: "Job Prep",                description: "Paste a JD → get tailored questions",                 icon: <Briefcase className="w-4 h-4" /> },
     ],
   },
   {
@@ -110,6 +106,28 @@ function isActive(pathname: string, items: { href: string }[]) {
     const base = i.href.split('?')[0]
     return pathname === base || (base.length > 1 && pathname.startsWith(base))
   })
+}
+
+function DropdownLink({ sub, active, onClose }: { sub: DropdownItem; active: boolean; onClose: () => void }) {
+  return (
+    <Link
+      href={sub.href}
+      role="menuitem"
+      aria-current={active ? "page" : undefined}
+      onClick={onClose}
+      className={`flex items-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
+        active ? "bg-orange-500/10 text-orange-400" : "text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100"
+      }`}
+    >
+      <div className={`mt-0.5 shrink-0 transition-colors ${active ? "text-orange-400" : "text-zinc-500 group-hover:text-orange-400"}`}>
+        {sub.icon}
+      </div>
+      <div>
+        <p className="text-sm font-semibold leading-tight">{sub.label}</p>
+        <p className="text-xs text-zinc-500 mt-0.5 leading-tight group-hover:text-zinc-400 transition-colors">{sub.description}</p>
+      </div>
+    </Link>
+  )
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -272,35 +290,26 @@ export default function Navbar() {
                         <div className="bg-zinc-900/95 backdrop-blur-sm border border-zinc-800 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden">
                           {/* Dropdown header accent */}
                           <div className="h-0.5 w-full bg-gradient-to-r from-orange-500/0 via-orange-500 to-orange-500/0" />
-                          <div role="menu" className={`p-2 ${cols === 2 ? "grid grid-cols-2 gap-0.5" : "flex flex-col gap-0.5"}`}>
-                            {item.items.map((sub) => {
-                              const subActive = pathname === sub.href;
-                              return (
-                                <Link
-                                  key={`${sub.href}-${sub.label}`}
-                                  href={sub.href}
-                                  role="menuitem"
-                                  aria-current={subActive ? "page" : undefined}
-                                  onClick={() => setOpenDropdown(null)}
-                                  className={`flex items-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group ${
-                                    subActive
-                                      ? "bg-orange-500/10 text-orange-400"
-                                      : "text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100"
-                                  }`}
-                                >
-                                  <div className={`mt-0.5 shrink-0 transition-colors ${subActive ? "text-orange-400" : "text-zinc-500 group-hover:text-orange-400"}`}>
-                                    {sub.icon}
+                          {item.items.some((s) => s.group) ? (
+                            <div role="menu" className="p-2 flex flex-col gap-1">
+                              {Array.from(new Set(item.items.map((s) => s.group))).map((g) => (
+                                <div key={g}>
+                                  <p className="px-3 pt-1.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-zinc-600">{g}</p>
+                                  <div className={cols === 2 ? "grid grid-cols-2 gap-0.5" : "flex flex-col gap-0.5"}>
+                                    {item.items.filter((s) => s.group === g).map((sub) => (
+                                      <DropdownLink key={`${sub.href}-${sub.label}`} sub={sub} active={pathname === sub.href} onClose={() => setOpenDropdown(null)} />
+                                    ))}
                                   </div>
-                                  <div>
-                                    <p className="text-sm font-semibold leading-tight">{sub.label}</p>
-                                    <p className="text-xs text-zinc-500 mt-0.5 leading-tight group-hover:text-zinc-400 transition-colors">
-                                      {sub.description}
-                                    </p>
-                                  </div>
-                                </Link>
-                              );
-                            })}
-                          </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div role="menu" className={`p-2 ${cols === 2 ? "grid grid-cols-2 gap-0.5" : "flex flex-col gap-0.5"}`}>
+                              {item.items.map((sub) => (
+                                <DropdownLink key={`${sub.href}-${sub.label}`} sub={sub} active={pathname === sub.href} onClose={() => setOpenDropdown(null)} />
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     )}
