@@ -45,7 +45,7 @@ export default async function CompaniesPage() {
             <Building2 className="w-3.5 h-3.5 text-orange-400" />
             <span className="text-xs font-semibold text-orange-400 uppercase tracking-wide">Company Prep</span>
           </div>
-          <h1 className="text-4xl font-extrabold text-zinc-100 mb-3">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-zinc-100 mb-3">
             Prepare for your target company
           </h1>
           <p className="text-zinc-400 text-base max-w-xl mx-auto">

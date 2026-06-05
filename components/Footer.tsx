@@ -58,14 +58,21 @@ function FooterNewsletter() {
 }
 
 const footerLinks = {
+  Interview: [
+    { href: "/sheet",         label: "Interview Sheet"  },
+    { href: "/interview",     label: "AI Simulator"     },
+    { href: "/questions",     label: "Question Bank"    },
+    { href: "/companies",     label: "Companies"        },
+    { href: "/system-design", label: "System Design"    },
+    { href: "/daily",         label: "Daily Challenge"  },
+  ],
   Tools: [
-    { href: "/resume",              label: "Resume Analyzer"       },
-    { href: "/interview",           label: "AI Interview Simulator" },
-    { href: "/code-lab",            label: "Code Lab"              },
-    { href: "/linkedin-optimizer",  label: "LinkedIn Optimizer"    },
-    { href: "/paper-explainer",     label: "Paper Explainer"       },
-    { href: "/quiz",                label: "Skill Quiz"            },
-    { href: "/prompt",              label: "Prompt Generator"      },
+    { href: "/resume",              label: "Resume Analyzer"    },
+    { href: "/code-lab",            label: "Code Lab"           },
+    { href: "/linkedin-optimizer",  label: "LinkedIn Optimizer" },
+    { href: "/paper-explainer",     label: "Paper Explainer"    },
+    { href: "/quiz",                label: "Skill Quiz"         },
+    { href: "/prompt",              label: "Prompt Generator"   },
   ],
   Career: [
     { href: "/career?tab=roadmap",    label: "Career Roadmap"    },
@@ -95,7 +102,7 @@ export default function Footer() {
   return (
     <footer className="bg-zinc-900/60 border-t border-zinc-800 mt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-x-8 gap-y-10">
 
           {/* Brand */}
           <div className="col-span-2">

@@ -96,7 +96,7 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
               <Code2 className="w-5 h-5 text-orange-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-zinc-100">AI/ML Code Lab</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-100">AI/ML Code Lab</h1>
               <p className="text-xs text-zinc-500">Implement AI/ML algorithms from scratch — earn XP, unlock levels, master real interview problems</p>
             </div>
           </div>

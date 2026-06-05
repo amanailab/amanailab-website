@@ -286,7 +286,7 @@ export default function InterviewHub() {
               <BrainCircuit className="w-5 h-5 text-orange-400" />
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-zinc-100 leading-tight">AI Interview Prep Hub</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-100 leading-tight">AI Interview Prep Hub</h1>
               <p className="text-xs text-zinc-500">Practice real AI/ML questions · Free · No login needed</p>
             </div>
             <div className="ml-auto hidden sm:flex items-center gap-2">

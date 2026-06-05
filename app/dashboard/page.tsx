@@ -513,7 +513,7 @@ export default async function DashboardPage() {
         <div className="flex items-start justify-between mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-extrabold text-zinc-100">Hi, {emailPrefix}!</h1>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-100">Hi, {emailPrefix}!</h1>
               {streak >= 3 && (
                 <span className="flex items-center gap-1 text-xs font-semibold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-full">
                   <Flame className="w-3 h-3" /> {streak}-day streak

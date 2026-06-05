@@ -356,7 +356,7 @@ export default function SheetClient() {
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold mb-4">
             <Sparkles size={11} /> 2026 Edition
           </span>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-zinc-100 mb-3 tracking-tight">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-zinc-100 mb-3 tracking-tight">
             AI Interview Prep Sheet
           </h1>
           <p className="text-zinc-400 max-w-xl mx-auto text-sm sm:text-base">
