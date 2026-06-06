@@ -12,7 +12,7 @@ const techPills = [
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-[88vh] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[82vh] flex items-center justify-center overflow-hidden">
       {/* Background grid */}
       <div
         className="absolute inset-0 opacity-30"

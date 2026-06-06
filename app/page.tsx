@@ -82,13 +82,13 @@ export default async function HomePage() {
       {/* 7. All remaining tools — grouped grid */}
       <MoreTools />
 
-      {/* 7. YouTube playlists (with static fallback) */}
+      {/* 8. YouTube playlists (with static fallback) */}
       <FeaturedSeries playlists={featured as Parameters<typeof FeaturedSeries>[0]['playlists']} />
 
-      {/* 8. Latest videos (Shorts filtered, conditional) */}
+      {/* 9. Latest videos (Shorts filtered, conditional) */}
       {latestVideos.length > 0 && <LatestVideos videos={latestVideos} />}
 
-      {/* 9. Final CTA */}
+      {/* 10. Final CTA */}
       <CTASection />
     </>
   );

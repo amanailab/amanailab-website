@@ -6,14 +6,10 @@ import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { SITE_STATS } from "@/lib/site-stats";
 
 const FREE_FEATURES = [
-  `${SITE_STATS.tools} AI-powered tools — completely free, no credit card needed`,
-  "AI interview simulator with voice + instant scoring (0–10)",
-  `A-to-Z Interview Sheet — ${SITE_STATS.sheetTopics} topics across 7 tracks`,
-  `AI/ML Code Lab — ${SITE_STATS.codeProblems} problems to implement from scratch, earn XP`,
-  "AI Resume Analyzer — ATS score, JD match & cover letter generator",
-  `System Design Workspace — ${SITE_STATS.systemDesignProblems} problems with AI review`,
-  "🔥 Daily Challenge — one question every day to build your streak",
-  `${SITE_STATS.questions} real questions from Google, Meta, OpenAI & more`,
+  "AI mock interviews with voice + instant 0–10 scoring",
+  `The A-to-Z Interview Sheet — ${SITE_STATS.sheetTopics} topics, foundations to interview-ready`,
+  `Code Lab + System Design — ${SITE_STATS.codeProblems}+ problems with AI review`,
+  `${SITE_STATS.tools} free tools in total — no credit card, no catch`,
 ]
 
 export default function CTASection() {
@@ -69,7 +65,7 @@ export default function CTASection() {
                 <p className="text-sm text-zinc-300 leading-relaxed">{f}</p>
               </div>
             ))}
-            <p className="text-xs text-zinc-600 mt-1 pl-7">No sign-up required to start. Create a free account to track progress.</p>
+            <p className="text-xs text-zinc-600 mt-1 pl-7">No account required to start — create a free account to track your progress.</p>
           </div>
         </div>
       </motion.div>

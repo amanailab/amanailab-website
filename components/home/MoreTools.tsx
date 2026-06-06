@@ -93,7 +93,7 @@ export default function MoreTools() {
             <h2 className="text-2xl font-bold text-zinc-100">Explore by what you need</h2>
             <p className="text-sm text-zinc-400 mt-0.5">All free, no sign-up required</p>
           </div>
-          <Link href="/resources" className="hidden sm:flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
+          <Link href="/resources" className="flex items-center gap-1 text-xs text-zinc-500 hover:text-orange-400 transition-colors font-medium">
             View resources <ArrowRight className="w-3 h-3" />
           </Link>
         </motion.div>
