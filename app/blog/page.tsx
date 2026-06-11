@@ -9,6 +9,17 @@ export const metadata: Metadata = {
   title: 'Blog | AmanAI Lab',
   description: 'In-depth articles on Generative AI, LLMs, RAG, AI Agents, and more.',
   alternates: { canonical: 'https://amanailab.com/blog' },
+  openGraph: {
+    title: 'AmanAI Lab Blog — Generative AI, LLMs, RAG & Agents',
+    description: 'In-depth articles on Generative AI, LLMs, RAG, AI Agents, and more.',
+    url: 'https://amanailab.com/blog',
+    images: [{ url: '/api/og/tool?name=AmanAI+Lab+Blog&tagline=In-depth+articles+on+GenAI%2C+LLMs%2C+RAG+%26+Agents&emoji=%E2%9C%8D%EF%B8%8F&tool=blog', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AmanAI Lab Blog',
+    description: 'In-depth articles on Generative AI, LLMs, RAG, AI Agents, and more.',
+  },
 }
 
 const PER_PAGE = 12

@@ -4,6 +4,7 @@ import { TOPICS } from '@/lib/topic-data'
 import { getPlaylists } from '@/lib/youtube'
 import { SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
 import { STATIC_PROBLEMS } from '@/lib/code-problems-static'
+import { buildQuestionSlug } from '@/lib/question-slug'
 
 const BASE = 'https://amanailab.com'
 
@@ -19,7 +20,6 @@ const staticPages: MetadataRoute.Sitemap = [
   { url: `${BASE}/interview`,              priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/companies`,              priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/questions`,              priority: 0.9, changeFrequency: 'weekly'  },
-  { url: `${BASE}/job-prep`,              priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/topics`,               priority: 0.9, changeFrequency: 'weekly'  },
   { url: `${BASE}/flashcards`,           priority: 0.8, changeFrequency: 'monthly' },
   { url: `${BASE}/resume`,                priority: 0.9, changeFrequency: 'monthly' },
@@ -30,7 +30,6 @@ const staticPages: MetadataRoute.Sitemap = [
   { url: `${BASE}/linkedin-optimizer`,    priority: 0.8, changeFrequency: 'monthly' },
   { url: `${BASE}/cover-letter-review`,   priority: 0.8, changeFrequency: 'monthly' },
   { url: `${BASE}/quiz`,                  priority: 0.8, changeFrequency: 'monthly' },
-  { url: `${BASE}/prompt`,                priority: 0.7, changeFrequency: 'monthly' },
   { url: `${BASE}/news`,                  priority: 0.7, changeFrequency: 'daily'   },
   { url: `${BASE}/resources`,             priority: 0.7, changeFrequency: 'weekly'  },
   { url: `${BASE}/services`,              priority: 0.6, changeFrequency: 'monthly' },
@@ -48,10 +47,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { data: posts },
       { data: companies },
       { data: codeProblems },
+      { data: generalQuestions },
+      { data: companyQuestions },
     ] = await Promise.all([
       supabase.from('blog_posts').select('slug, updated_at, created_at').eq('published', true),
       supabase.from('companies').select('slug, created_at'),
       supabase.from('code_problems').select('slug, created_at').order('order_index', { ascending: true }),
+      supabase.from('interview_questions').select('id, question'),
+      supabase.from('company_questions').select('id, question'),
     ])
 
     const blogPages: MetadataRoute.Sitemap = (posts ?? []).map(p => ({
@@ -98,6 +101,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }))
     } catch { /* YouTube API failure — skip series pages */ }
 
+    // Individual question pages — the long-tail SEO surface
+    const questionPages: MetadataRoute.Sitemap = [
+      ...(generalQuestions ?? []).map(q => ({
+        url: `${BASE}/questions/${buildQuestionSlug('general', q.id, q.question)}`,
+        priority: 0.7,
+        changeFrequency: 'monthly' as const,
+      })),
+      ...(companyQuestions ?? []).map(q => ({
+        url: `${BASE}/questions/${buildQuestionSlug('company', q.id, q.question)}`,
+        priority: 0.7,
+        changeFrequency: 'monthly' as const,
+      })),
+    ]
+
     // System design problem pages
     const systemDesignPages: MetadataRoute.Sitemap = SYSTEM_DESIGN_PROBLEMS.map(p => ({
       url: `${BASE}/system-design/${p.slug}`,
@@ -114,7 +131,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'monthly' as const,
       }))
 
-    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages, ...codeLabPages, ...staticCodeLabPages, ...systemDesignPages, ...seriesPages]
+    return [...staticPages, ...companyPages, ...topicPages, ...flashcardPages, ...blogPages, ...codeLabPages, ...staticCodeLabPages, ...systemDesignPages, ...seriesPages, ...questionPages]
   } catch {
     const topicPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/topics/${t.slug}`, priority: 0.9, changeFrequency: 'monthly' as const }))
     const flashcardPages: MetadataRoute.Sitemap = TOPICS.map(t => ({ url: `${BASE}/flashcards/${t.slug}`, priority: 0.7, changeFrequency: 'monthly' as const }))

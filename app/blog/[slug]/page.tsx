@@ -30,6 +30,20 @@ interface Props {
   params: Promise<{ slug: string }>
 }
 
+// Pre-render all published posts at build time; new posts still render on demand via ISR
+export async function generateStaticParams() {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data } = await supabase.from('blog_posts').select('slug').eq('published', true)
+    return (data ?? []).map(p => ({ slug: p.slug }))
+  } catch {
+    return []
+  }
+}
+
 async function getPost(slug: string): Promise<BlogPost | null> {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

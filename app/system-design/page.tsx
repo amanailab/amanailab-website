@@ -13,6 +13,12 @@ export const metadata: Metadata = {
     title: `System Design Practice — ${SITE_STATS.systemDesignProblems} ML & LLM Problems`,
     description: 'Practice real system design questions: LLM Serving, RAG Systems, YouTube Recommendation, Fraud Detection. Structured editor + AI review.',
     url: 'https://amanailab.com/system-design',
+    images: [{ url: '/api/og/tool?name=System+Design+Practice&tagline=Real+ML+%26+LLM+design+problems+%2B+AI+review&emoji=%F0%9F%93%90&tool=system-design', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'System Design Practice — Real ML & LLM Problems',
+    description: 'Structured editor, must-cover checklist, and AI review of your written answer. Free.',
   },
 }
 

@@ -10,6 +10,17 @@ export const metadata: Metadata = {
   title: 'AI/ML Interview Topics — Complete Preparation Guides',
   description: 'Topic-by-topic AI/ML interview preparation guides. LLM, RAG, Agents, Fine-Tuning, MLOps, System Design and more — with real questions and model answers.',
   alternates: { canonical: 'https://amanailab.com/topics' },
+  openGraph: {
+    title: 'AI/ML Interview Topics — Complete Preparation Guides',
+    description: 'LLM, RAG, Agents, Fine-Tuning, MLOps, System Design and more — with real questions and model answers.',
+    url: 'https://amanailab.com/topics',
+    images: [{ url: '/api/og/tool?name=Topic+Guides&tagline=Deep-dive+AI%2FML+interview+prep+by+topic&emoji=%F0%9F%93%96&tool=topics', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI/ML Interview Topic Guides',
+    description: 'Deep-dive prep guides for every AI/ML interview topic. Free.',
+  },
 }
 
 const TOPIC_DB_MAP: Record<string, string> = {

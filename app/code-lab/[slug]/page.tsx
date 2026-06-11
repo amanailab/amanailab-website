@@ -7,6 +7,21 @@ import ProblemClient from './ProblemClient'
 
 interface Props { params: Promise<{ slug: string }> }
 
+export const revalidate = 3600
+
+// Pre-render every problem at build time; DB slugs win, static problems fill gaps
+export async function generateStaticParams() {
+  const staticSlugs = Object.keys(STATIC_PROBLEMS_MAP)
+  try {
+    const sb = getAdminSupabase()
+    const { data } = await sb.from('code_problems').select('slug')
+    const slugs = new Set([...(data ?? []).map(p => p.slug), ...staticSlugs])
+    return [...slugs].map(slug => ({ slug }))
+  } catch {
+    return staticSlugs.map(slug => ({ slug }))
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const sb = getAdminSupabase()

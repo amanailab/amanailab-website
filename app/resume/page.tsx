@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     title: 'Free AI Resume Analyzer for AI/ML Roles',
     description: 'ATS score, keyword gap analysis, JD match score, and AI-powered resume rewriting. Free for AI/ML engineers.',
     url: 'https://amanailab.com/resume',
+    images: [{ url: '/api/og/tool?name=AI+Resume+Analyzer&tagline=ATS+score%2C+JD+match+%26+AI+rewrite&emoji=%F0%9F%93%84&tool=resume', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',

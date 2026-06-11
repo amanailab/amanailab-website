@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronDown, ChevronUp, Lightbulb, Bookmark, BookmarkCheck } from 'lucide-react'
+import { ChevronDown, ChevronUp, Lightbulb, Bookmark, BookmarkCheck, ArrowRight } from 'lucide-react'
 import AnswerMarkdown from './AnswerMarkdown'
+import { buildQuestionSlug } from '@/lib/question-slug'
 
 export const TOPIC_COLORS: Record<string, string> = {
   LLM: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
@@ -42,6 +43,11 @@ interface Props {
 
 export default function QuestionCard({ q, bookmarked, onBookmark, defaultOpen = false }: Props) {
   const [open, setOpen] = useState(defaultOpen)
+  // Card ids look like `g-123` (general) or `c-45` (company)
+  const idMatch = q.id.match(/^([gc])-(\d+)$/)
+  const permalink = idMatch
+    ? `/questions/${buildQuestionSlug(idMatch[1] === 'g' ? 'general' : 'company', idMatch[2], q.question)}`
+    : null
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-700 transition-colors">
       <button onClick={() => setOpen(!open)} className="w-full flex items-start gap-3 p-4 text-left">
@@ -78,6 +84,12 @@ export default function QuestionCard({ q, bookmarked, onBookmark, defaultOpen = 
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-1.5">Model Answer</p>
               <AnswerMarkdown text={q.answer} />
+              {permalink && (
+                <Link href={permalink}
+                  className="inline-flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300 mt-3 transition-colors">
+                  View full page &amp; related questions <ArrowRight className="w-3 h-3" />
+                </Link>
+              )}
             </div>
           </div>
         </div>

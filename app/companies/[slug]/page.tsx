@@ -7,6 +7,19 @@ import CompanyQuestions from '@/components/companies/CompanyQuestions'
 
 interface Props { params: Promise<{ slug: string }> }
 
+export const revalidate = 3600
+
+// Pre-render all company pages at build time
+export async function generateStaticParams() {
+  try {
+    const supabase = getAdminSupabase()
+    const { data } = await supabase.from('companies').select('slug')
+    return (data ?? []).map(c => ({ slug: c.slug }))
+  } catch {
+    return []
+  }
+}
+
 interface Company {
   id: number; name: string; slug: string; logo_emoji: string
   tagline: string; description: string; hq: string; size: string

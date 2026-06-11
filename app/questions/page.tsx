@@ -15,6 +15,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: `${SITE_STATS.questions} Free AI/ML Interview Questions with Answers`,
     description: 'Filter by topic, level, and company. LLM, RAG, Agents, Transformers, MLOps, System Design and more. Model answers included.',
+    url: 'https://amanailab.com/questions',
+    images: [{ url: '/api/og/tool?name=AI%2FML+Question+Bank&tagline=Real+interview+questions+with+model+answers&emoji=%F0%9F%93%9A&tool=questions', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Free AI/ML Interview Questions with Model Answers',
+    description: 'Filter by topic, level, and company. Model answers included. Free.',
   },
 }
 

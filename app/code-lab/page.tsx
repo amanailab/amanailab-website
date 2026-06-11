@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'AI/ML Code Lab — Implement Algorithms from Scratch',
     description: 'Coding judge for AI/ML engineers. Implement attention, RAG, KNN, LoRA and more. AI hints, XP levels, company tags.',
+    url: 'https://amanailab.com/code-lab',
+    images: [{ url: '/api/og/tool?name=AI%2FML+Code+Lab&tagline=Implement+algorithms+from+scratch%2C+earn+XP&emoji=%F0%9F%A7%AA&tool=code-lab', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI/ML Code Lab — Implement Algorithms from Scratch',
+    description: 'In-browser Python, AI hints, test runner, and XP levels. Free.',
   },
 }
 

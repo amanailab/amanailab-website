@@ -9,6 +9,17 @@ export const metadata: Metadata = {
   title: 'AI/ML Interview Prep by Company',
   description: 'Company-specific AI/ML interview preparation. Google, Meta, OpenAI, Anthropic, Microsoft and more — real questions, interview formats, and insider tips.',
   alternates: { canonical: 'https://amanailab.com/companies' },
+  openGraph: {
+    title: 'AI/ML Interview Prep by Company',
+    description: 'Google, Meta, OpenAI, Anthropic, Microsoft and more — real questions, interview formats, and insider tips.',
+    url: 'https://amanailab.com/companies',
+    images: [{ url: '/api/og/tool?name=Company+Interview+Prep&tagline=Google%2C+Meta%2C+OpenAI%2C+Anthropic+%26+more&emoji=%F0%9F%8F%A2&tool=companies', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI/ML Interview Prep by Company',
+    description: 'Real questions, interview formats, and insider tips for top AI companies.',
+  },
 }
 
 interface Company {
