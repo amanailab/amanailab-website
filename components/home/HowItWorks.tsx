@@ -95,7 +95,7 @@ export default function HowItWorks() {
                   <p className="text-zinc-500 text-sm leading-relaxed">{step.description}</p>
                 </div>
                 <Link href={step.href}
-                  className={`flex items-center gap-1.5 text-xs font-semibold mt-auto ${step.color} hover:underline group-hover:gap-2 transition-all`}>
+                  className={`flex items-center gap-1.5 text-xs font-semibold mt-auto ${step.color} hover:underline group-hover:gap-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 rounded-sm`}>
                   {step.cta} <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </motion.div>

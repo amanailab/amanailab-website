@@ -105,7 +105,7 @@ export default function FeaturedTools() {
               >
                 <Link
                   href={tool.href}
-                  className={`group relative flex flex-col h-full bg-zinc-900/70 backdrop-blur-sm border ${tool.borderBase} ${tool.borderHover} rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40`}
+                  className={`group relative flex flex-col h-full bg-zinc-900/70 backdrop-blur-sm border ${tool.borderBase} ${tool.borderHover} rounded-2xl p-6 overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950`}
                 >
                   {/* Hover gradient */}
                   <div className={`absolute inset-0 bg-gradient-to-br ${tool.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`} />
