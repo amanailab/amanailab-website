@@ -42,6 +42,14 @@ const nextConfig: NextConfig = {
   compress: true,
   serverExternalPackages: ["pdf-parse"],
 
+  // Old tool URLs that may be indexed or bookmarked
+  async redirects() {
+    return [
+      { source: '/job-prep', destination: '/career?tab=job-questions', permanent: true },
+      { source: '/prompt',   destination: '/',                         permanent: true },
+    ]
+  },
+
   async headers() {
     return [
       {

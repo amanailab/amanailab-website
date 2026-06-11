@@ -9,11 +9,12 @@ import { SITE_STATS } from "@/lib/site-stats";
 
 function FooterNewsletter() {
   const [email, setEmail]   = useState("")
-  const [status, setStatus] = useState<"idle"|"loading"|"done"|"error">("idle")
+  const [status, setStatus] = useState<"idle"|"loading"|"done"|"error"|"invalid">("idle")
 
   async function subscribe(e: React.FormEvent) {
     e.preventDefault()
     if (!email.trim() || status === "loading" || status === "done") return
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) { setStatus("invalid"); return }
     setStatus("loading")
     try {
       const res = await fetch("/api/email/subscribe", {
@@ -41,7 +42,7 @@ function FooterNewsletter() {
             id="footer-email"
             type="email"
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={e => { setEmail(e.target.value); if (status === "invalid") setStatus("idle") }}
             placeholder="you@example.com"
             required
             className="flex-1 bg-zinc-800 border border-zinc-700 focus:border-orange-500/60 rounded-lg px-3 py-2 text-xs text-zinc-300 placeholder:text-zinc-500 outline-none transition-colors min-w-0"
@@ -53,6 +54,7 @@ function FooterNewsletter() {
         </form>
       )}
       {status === "error" && <p className="text-[10px] text-red-400 mt-1">Something went wrong. Try again.</p>}
+      {status === "invalid" && <p className="text-[10px] text-red-400 mt-1">Please enter a valid email address.</p>}
     </div>
   )
 }
@@ -67,18 +69,19 @@ const footerLinks = {
     { href: "/daily",         label: "Daily Challenge"  },
   ],
   Tools: [
-    { href: "/resume",              label: "Resume Analyzer"    },
-    { href: "/code-lab",            label: "Code Lab"           },
-    { href: "/linkedin-optimizer",  label: "LinkedIn Optimizer" },
-    { href: "/paper-explainer",     label: "Paper Explainer"    },
-    { href: "/quiz",                label: "Skill Quiz"         },
-    { href: "/prompt",              label: "Prompt Generator"   },
+    { href: "/resume",              label: "Resume Analyzer"     },
+    { href: "/cover-letter-review", label: "Cover Letter Review" },
+    { href: "/code-lab",            label: "Code Lab"            },
+    { href: "/linkedin-optimizer",  label: "LinkedIn Optimizer"  },
+    { href: "/paper-explainer",     label: "Paper Explainer"     },
+    { href: "/playground",          label: "AI Playground"       },
   ],
   Career: [
     { href: "/career?tab=roadmap",    label: "Career Roadmap"    },
     { href: "/career?tab=study-plan", label: "Study Plan"         },
     { href: "/career?tab=offer",      label: "Offer Analyzer"     },
     { href: "/career?tab=company",    label: "Company Research"   },
+    { href: "/career?tab=job-questions", label: "JD → Questions"  },
     { href: "/skill-gap",             label: "Skill Gap Analyzer" },
   ],
   Learn: [

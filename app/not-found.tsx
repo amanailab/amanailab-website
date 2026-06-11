@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BrainCircuit, ArrowRight, Building2, Library, MessageSquare, Search } from 'lucide-react'
+import { BrainCircuit, ArrowRight, Building2, Library, Flame, Search } from 'lucide-react'
 
 export default function NotFound() {
   const [query, setQuery] = useState('')
@@ -55,7 +55,7 @@ export default function NotFound() {
             { href: '/interview?tab=simulator', label: 'AI Simulator',  icon: BrainCircuit },
             { href: '/companies',               label: 'Company Prep',  icon: Building2    },
             { href: '/questions',               label: 'Question Bank', icon: Library      },
-            { href: '/community',               label: 'Community',     icon: MessageSquare},
+            { href: '/daily',                   label: 'Daily Challenge', icon: Flame      },
           ].map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href}
               className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-xl px-4 py-3 text-sm text-zinc-300 hover:text-zinc-100 transition-all">

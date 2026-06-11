@@ -31,12 +31,12 @@ const TOOLS: { href: string; cat: Cat; label: string; desc: string; icon: typeof
   { href: "/questions",          cat: "practice", label: "Question Bank",      desc: `${SITE_STATS.questions} real interview questions`, icon: Library, color: "text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
   // ── Land the job ──
   { href: "/companies",          cat: "job",      label: "Company Prep",       desc: "Google, Meta, OpenAI & more",         icon: Building2,   color: "text-blue-400",    bg: "bg-blue-500/10 border-blue-500/20"       },
-  { href: "/job-prep",           cat: "job",      label: "Job Prep",           desc: "Paste a JD → tailored questions",     icon: Briefcase,   color: "text-teal-400",    bg: "bg-teal-500/10 border-teal-500/20"       },
+  { href: "/career?tab=job-questions", cat: "job", label: "JD → Questions",    desc: "Paste a JD → tailored questions",     icon: Briefcase,   color: "text-teal-400",    bg: "bg-teal-500/10 border-teal-500/20"       },
   { href: "/linkedin-optimizer", cat: "job",      label: "LinkedIn Optimizer", desc: "AI-rewritten profile sections",       icon: BarChart2,   color: "text-sky-400",     bg: "bg-sky-500/10 border-sky-500/20"         },
   { href: "/career",             cat: "job",      label: "Career Roadmap",     desc: "Week-by-week AI/ML path",             icon: Map,         color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
   // ── Bonus ──
   { href: "/playground",         cat: "bonus",    label: "Code Playground",    desc: "Monaco editor + AI for ML code",      icon: Code2,       color: "text-amber-400",   bg: "bg-amber-500/10 border-amber-500/20"     },
-  { href: "/prompt",             cat: "bonus",    label: "Prompt Generator",   desc: "Perfect prompts for any AI",          icon: Wand2,       color: "text-cyan-400",    bg: "bg-cyan-500/10 border-cyan-500/20"       },
+  { href: "/cover-letter-review",cat: "bonus",    label: "Cover Letter Review",desc: "Score, keywords & AI rewrite",        icon: Wand2,       color: "text-cyan-400",    bg: "bg-cyan-500/10 border-cyan-500/20"       },
 ];
 
 function ToolCard({ tool, i }: { tool: (typeof TOOLS)[number]; i: number }) {

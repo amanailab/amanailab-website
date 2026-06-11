@@ -10,6 +10,7 @@ import {
   BarChart2,
   BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
   User, LogOut, LayoutDashboard, Briefcase, Layers, Library, Flame, Code2, ListChecks, PenLine,
+  Terminal, ScrollText, Crown,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -58,9 +59,12 @@ const navItems: NavItem[] = [
     label: "Tools",
     columns: 1,
     items: [
-      { href: "/code-lab",           label: "Code Lab ✨",        description: "Code AI/ML algorithms, earn XP levels", icon: <Code2 className="w-4 h-4" /> },
-      { href: "/resume",             label: "Resume Analyzer",    description: "ATS score, JD match & cover letter",    icon: <FileText className="w-4 h-4" /> },
-      { href: "/linkedin-optimizer", label: "LinkedIn Optimizer", description: "AI-rewritten profile",                 icon: <BarChart2 className="w-4 h-4" /> },
+      { href: "/code-lab",            label: "Code Lab ✨",          description: "Code AI/ML algorithms, earn XP levels", icon: <Code2 className="w-4 h-4" /> },
+      { href: "/resume",              label: "Resume Analyzer",      description: "ATS score, JD match & cover letter",    icon: <FileText className="w-4 h-4" /> },
+      { href: "/cover-letter-review", label: "Cover Letter Review",  description: "Score, keywords & AI rewrite",          icon: <PenLine className="w-4 h-4" /> },
+      { href: "/linkedin-optimizer",  label: "LinkedIn Optimizer",   description: "AI-rewritten profile",                  icon: <BarChart2 className="w-4 h-4" /> },
+      { href: "/playground",          label: "AI Playground",        description: "Python editor with AI/ML templates",    icon: <Terminal className="w-4 h-4" /> },
+      { href: "/paper-explainer",     label: "Paper Explainer",      description: "Any AI paper, explained at 3 levels",   icon: <ScrollText className="w-4 h-4" /> },
     ],
   },
   { kind: "link", href: "/courses", label: "Courses" },
@@ -77,8 +81,8 @@ const navItems: NavItem[] = [
       { group: "Browse & prep", href: "/companies", label: "Companies",               description: "Google, Meta, OpenAI & 6 more",                       icon: <Building2 className="w-4 h-4" /> },
       { group: "Browse & prep", href: "/topics",    label: "Topic Guides",            description: "Deep-dive prep guides by topic",                      icon: <Layers className="w-4 h-4" /> },
       { group: "Browse & prep", href: "/flashcards",label: "Flashcards",              description: "5-min daily concept revision",                        icon: <Library className="w-4 h-4" /> },
-      { group: "Browse & prep", href: "/quiz",      label: "Skill Quiz",              description: "AI-generated MCQ on 14 topics",                       icon: <Trophy className="w-4 h-4" /> },
-      { group: "Browse & prep", href: "/job-prep",  label: "Job Prep",                description: "Paste a JD → get tailored questions",                 icon: <Briefcase className="w-4 h-4" /> },
+      { group: "Browse & prep", href: "/quiz",        label: "Skill Quiz",            description: "AI-generated MCQ on 14 topics",                       icon: <Trophy className="w-4 h-4" /> },
+      { group: "Browse & prep", href: "/leaderboard", label: "Leaderboard",           description: "See how you rank against other candidates",           icon: <Crown className="w-4 h-4" /> },
     ],
   },
   {
@@ -92,6 +96,7 @@ const navItems: NavItem[] = [
       { href: "/career?tab=study-plan", label: "Study Plan",        description: "Day-by-day interview prep",        icon: <CalendarDays className="w-4 h-4" /> },
       { href: "/career?tab=offer",      label: "Offer Analyzer",    description: "Salary & negotiation insights",    icon: <FileText className="w-4 h-4" /> },
       { href: "/career?tab=company",    label: "Company Research",  description: "Interview intel on any company",   icon: <Building2 className="w-4 h-4" /> },
+      { href: "/career?tab=job-questions", label: "JD → Questions", description: "Paste a JD → get tailored questions", icon: <Briefcase className="w-4 h-4" /> },
     ],
   },
   { kind: "link", href: "/blog",     label: "Blog"     },

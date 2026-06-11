@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(req: Request) {
-  const limited = enforceRateLimit(req, 'job-prep-generate', 10, 60_000)
+  const limited = enforceRateLimit(req, 'career-job-questions', 10, 60_000)
   if (limited) return limited
   try {
     const { jd } = await req.json()
@@ -66,7 +66,7 @@ Requirements:
 
     return NextResponse.json(parsed)
   } catch (err) {
-    console.error('[Job Prep]', err)
+    console.error('[Job Questions]', err)
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })
   }
 }

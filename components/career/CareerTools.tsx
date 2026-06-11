@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Map, CalendarDays, Calendar, FileText, Building2, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail, RotateCcw, ExternalLink, ArrowRight } from 'lucide-react'
+import { Map, CalendarDays, Calendar, FileText, Building2, Briefcase, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail, RotateCcw, ExternalLink, ArrowRight } from 'lucide-react'
+import JobQuestionsTab from './JobQuestionsTab'
 import { isCaptured, saveEmail, markCaptured } from '@/lib/email-capture'
 
 // ─── Topic → slug mapping for phase chips ────────────────────────────────────
@@ -14,7 +15,7 @@ const TOPIC_SLUG_MAP: Record<string, string> = {
   'Embeddings': 'vector-db', 'Computer Vision': 'llm',
 }
 
-type Tab = 'roadmap' | 'study-plan' | 'offer' | 'company'
+type Tab = 'roadmap' | 'study-plan' | 'offer' | 'company' | 'job-questions'
 
 // ─── Copy Button ──────────────────────────────────────────────────────────────
 function CopyButton({ text }: { text: string }) {
@@ -1424,6 +1425,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode; description: string
   { id: 'study-plan', label: 'Study Plan', icon: <CalendarDays className="w-4 h-4" />, description: 'Day-by-day interview prep schedule' },
   { id: 'offer', label: 'Offer Analyzer', icon: <FileText className="w-4 h-4" />, description: 'Analyze offers + negotiation scripts' },
   { id: 'company', label: 'Company Research', icon: <Building2 className="w-4 h-4" />, description: 'Interview intel on any company' },
+  { id: 'job-questions', label: 'JD → Questions', icon: <Briefcase className="w-4 h-4" />, description: 'Paste a JD, get tailored questions' },
 ]
 
 export default function CareerTools() {
@@ -1434,7 +1436,7 @@ export default function CareerTools() {
   useEffect(() => {
     if (typeof window === 'undefined') return
     const tab = new URLSearchParams(window.location.search).get('tab') as Tab
-    if (tab && ['roadmap','study-plan','offer','company'].includes(tab)) setActiveTab(tab)
+    if (tab && ['roadmap','study-plan','offer','company','job-questions'].includes(tab)) setActiveTab(tab)
   }, [])
 
   return (
@@ -1457,7 +1459,7 @@ export default function CareerTools() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-24">
         {/* Tab selector */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-8">
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex flex-col items-start gap-1.5 p-4 rounded-2xl border transition-all text-left ${
@@ -1482,6 +1484,7 @@ export default function CareerTools() {
         {activeTab === 'study-plan' && <StudyPlanTab prefill={studyPlanPrefill} />}
         {activeTab === 'offer' && <OfferTab />}
         {activeTab === 'company' && <CompanyTab />}
+        {activeTab === 'job-questions' && <JobQuestionsTab />}
       </div>
     </section>
   )
