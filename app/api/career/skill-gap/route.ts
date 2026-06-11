@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { enforceDailyAllowance } from '@/lib/daily-allowance'
 import { callAI } from '@/lib/ai-fallback'
 
 export const runtime = 'nodejs'
@@ -10,6 +11,10 @@ const AI_ML_TOPICS = ['LLM', 'RAG', 'Agents', 'Fine-Tuning', 'MLOps', 'Transform
 export async function POST(req: Request) {
   const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:skill-gap`, 5, 60_000)
   if (!allowed) return NextResponse.json({ error: `Too many requests. Wait ${retryAfterSec}s.` }, { status: 429 })
+
+  // Daily allowance: 3/day anonymous (per IP), 20/day signed-in
+  const exhausted = await enforceDailyAllowance(req, 'skill-gap')
+  if (exhausted) return exhausted
 
   try {
     const { jobDescription, userPerformance } = await req.json()

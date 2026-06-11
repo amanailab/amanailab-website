@@ -51,6 +51,11 @@ export async function POST(req: Request) {
     )
   }
 
+  // Daily allowance: 3/day anonymous (per IP), 20/day signed-in
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const exhausted = await enforceDailyAllowance(req, 'resume')
+  if (exhausted) return exhausted
+
   try {
     const form = await req.formData();
     const file = form.get("file");

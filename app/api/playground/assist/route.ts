@@ -72,6 +72,11 @@ export async function POST(req: Request) {
     )
   }
 
+  // Daily allowance: 3/day anonymous (per IP), 20/day signed-in
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const exhausted = await enforceDailyAllowance(req, 'playground-assist')
+  if (exhausted) return exhausted
+
   try {
     const { code, action, description } = await req.json()
 

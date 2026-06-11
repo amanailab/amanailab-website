@@ -344,6 +344,12 @@ export default function ProblemClient({
       const passed = results.filter(r => r.passed).length; const total = results.length
       const status = passed === total ? 'Accepted' : 'Wrong Answer'
       const runtime = Date.now() - t0
+      // Persisted AFTER the XP request settles on accepted solves — the XP route
+      // denies awards once an Accepted submission exists, so order matters.
+      const persistSubmission = () => {
+        fetch('/api/code-lab/save-submission', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ problem_id: data.id, code, status, passed_tests: passed, total_tests: total, runtime_ms: runtime }) })
+      }
       if (status === 'Accepted') {
         // Stop the timer on a successful solve
         setTimerStopped(true)
@@ -374,7 +380,7 @@ export default function ProblemClient({
         fetch('/api/code-lab/xp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ delta: xp }),
+          body: JSON.stringify({ delta: xp, problem_id: data.id }),
         }).then(r => r.json()).then(d => {
           // Sync localStorage with server truth
           if (d.xp) {
@@ -391,14 +397,15 @@ export default function ProblemClient({
             })
           }
         }).catch(() => { /* ignore — localStorage already updated */ })
+          .finally(persistSubmission)
 
         if (xp > 0) toast(`+${xp} XP earned! 🎉 First solve!`, 'success')
+      } else {
+        persistSubmission()
       }
       setSubmitResult({ status, passed_tests: passed, total_tests: total, runtime_ms: runtime,
         results: results.map(r => ({ ...r, expected: r.is_hidden&&r.passed ? '(hidden)' : r.expected, got: r.is_hidden&&r.passed ? '(hidden)' : r.got })) })
       setSubmissions([])
-      fetch('/api/code-lab/save-submission', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem_id: data.id, code, status, passed_tests: passed, total_tests: total, runtime_ms: runtime }) })
     } catch { setSubmitResult(null) } finally { setSubmitting(false) }
   }, [user, submitting, pyStatus, runTests, problem.slug, code, submissions])
 
