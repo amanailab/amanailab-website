@@ -6,13 +6,14 @@ import {
   Check, BookOpen, Code2, Layers, HelpCircle, MessageCircle,
   ChevronDown, ChevronRight, ChevronLeft, Filter, Trophy, RotateCcw,
   CheckSquare, Search, X, Clock, ChevronUp, Sparkles, PenLine,
-  Cloud, LogIn,
+  Cloud, LogIn, ArrowRight,
 } from 'lucide-react'
 import {
-  SHEET_TRACKS, SHEET_PHASES, getTotalItems, TOPIC_TO_QUIZ,
+  SHEET_TRACKS, SHEET_PHASES, getTotalItems, TOPIC_TO_QUIZ, COMPANY_CONFIG,
   type SheetItem, type ItemType, type Difficulty,
 } from '@/lib/sheet-data'
 import { SHEET_THEORY } from '@/lib/sheet-theory'
+import { SHEET_PREVIEWS } from '@/lib/sheet-previews'
 import { SHEET_TO_DESIGN } from '@/lib/system-design-problems'
 
 const STORAGE_KEY = 'ai_sheet_progress_v1'
@@ -23,11 +24,19 @@ const DIFF_COLOR: Record<Difficulty, string> = {
   hard:   'text-red-400',
 }
 
-// Merge inline theory with the theory map
+// Merge inline theory/preview with the lookup maps (inline values win)
 function withTheory(item: SheetItem): SheetItem {
-  if (item.theory) return item
-  const t = SHEET_THEORY[item.id]
-  return t ? { ...item, theory: t } : item
+  const theory  = item.theory  ?? SHEET_THEORY[item.id]
+  const preview = item.preview ?? SHEET_PREVIEWS[item.id]
+  if (theory === item.theory && preview === item.preview) return item
+  return { ...item, theory, preview }
+}
+
+// "~3h" / "~1.5h" / "~45min" → hours
+function sectionHours(s?: string): number {
+  const m = s?.match(/([\d.]+)\s*(h|min)/)
+  if (!m) return 0
+  return m[2] === 'h' ? parseFloat(m[1]) : parseFloat(m[1]) / 60
 }
 
 // ─── Sheet row ──────────────────────────────────────────────────────────────────
@@ -39,7 +48,7 @@ function SheetRow({
 }) {
   const it = withTheory(item)
   const quizName = it.quizTopic ?? (it.topic ? TOPIC_TO_QUIZ[it.topic] : undefined)
-  const designSlug = SHEET_TO_DESIGN[item.id]
+  const designSlug = it.designSlug ?? SHEET_TO_DESIGN[item.id]
   const hasExpand = !!(it.theory || it.preview || designSlug)
 
   // Only the resources that actually exist for this item — shown as labeled chips.
@@ -49,13 +58,13 @@ function SheetRow({
       : it.hasCode ? { label: 'Code Lab', icon: <Code2 size={12} />, href: '/code-lab', color: 'text-green-300 border-green-500/30 hover:bg-green-500/10' } : null,
     (it.hasFlashcard && it.topic) ? { label: 'Flashcards', icon: <Layers size={12} />, href: `/flashcards/${it.topic}`, color: 'text-yellow-300 border-yellow-500/30 hover:bg-yellow-500/10' } : null,
     (it.hasQuiz && quizName) ? { label: 'Quiz', icon: <HelpCircle size={12} />, href: `/quiz?topic=${encodeURIComponent(quizName)}`, color: 'text-violet-300 border-violet-500/30 hover:bg-violet-500/10' } : null,
-    it.hasInterview ? { label: 'Mock', icon: <MessageCircle size={12} />, href: '/interview', color: 'text-blue-300 border-blue-500/30 hover:bg-blue-500/10' } : null,
+    it.hasInterview ? { label: 'Mock', icon: <MessageCircle size={12} />, href: quizName ? `/interview?topic=${encodeURIComponent(quizName)}` : '/interview', color: 'text-blue-300 border-blue-500/30 hover:bg-blue-500/10' } : null,
     designSlug ? { label: 'Design', icon: <PenLine size={12} />, href: `/system-design/${designSlug}`, color: 'text-fuchsia-300 border-fuchsia-500/30 hover:bg-fuchsia-500/10' } : null,
   ].filter(Boolean) as { label: string; icon: React.ReactNode; href?: string; action?: () => void; color: string }[]
 
   return (
     <>
-      <div className={`flex items-start gap-3 px-3 sm:px-4 py-3 border-b border-zinc-800/50 transition-colors ${done ? 'bg-emerald-950/20' : 'hover:bg-zinc-900/50'}`}>
+      <div id={`sheet-item-${item.id}`} className={`flex items-start gap-3 px-3 sm:px-4 py-3 border-b border-zinc-800/50 transition-colors scroll-mt-32 ${done ? 'bg-emerald-950/20' : 'hover:bg-zinc-900/50'}`}>
         <button onClick={onToggle} aria-label={done ? 'Mark incomplete' : 'Mark complete'}
           className={`mt-0.5 w-5 h-5 rounded-md border flex-shrink-0 flex items-center justify-center transition-all ${
             done ? 'bg-emerald-500 border-emerald-500' : 'border-zinc-600 hover:border-zinc-400'
@@ -87,6 +96,16 @@ function SheetRow({
               )}
             </div>
           </div>
+
+          {it.companies && it.companies.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 mt-1.5">
+              <span className="text-[9px] text-zinc-600 uppercase tracking-wide">Asked at</span>
+              {it.companies.slice(0, 5).map(c => (
+                <span key={c} className={`text-[9px] font-semibold px-1.5 py-px rounded border ${COMPANY_CONFIG[c]?.color ?? 'text-zinc-400 border-zinc-700 bg-zinc-800'}`}>{c}</span>
+              ))}
+              {it.companies.length > 5 && <span className="text-[9px] text-zinc-600">+{it.companies.length - 5}</span>}
+            </div>
+          )}
 
           {chips.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
@@ -245,11 +264,35 @@ export default function SheetClient() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)) } catch {}
   }, [])
 
+  const fireConfetti = useCallback((big: boolean) => {
+    import('canvas-confetti').then(({ default: c }) => {
+      const colors = ['#fb923c', '#f59e0b', '#34d399', '#60a5fa']
+      c({ particleCount: big ? 200 : 90, spread: big ? 110 : 70, origin: { y: 0.6 }, colors })
+      if (big) setTimeout(() => c({ particleCount: 120, angle: 60, spread: 60, origin: { x: 0, y: 0.7 }, colors }), 250)
+    }).catch(() => {})
+  }, [])
+
+  // Celebrate crossing 25/50/75/100% overall, or finishing a track
+  const celebrateIfMilestone = useCallback((prev: Record<string, boolean>, next: Record<string, boolean>) => {
+    const all = SHEET_TRACKS.flatMap(t => t.sections.flatMap(s => s.items))
+    const total = all.length
+    if (total === 0) return
+    const oldPct = (all.filter(i => prev[i.id]).length / total) * 100
+    const newPct = (all.filter(i => next[i.id]).length / total) * 100
+    if (newPct <= oldPct) return
+    if ([25, 50, 75, 100].some(t => oldPct < t && newPct >= t)) { fireConfetti(newPct >= 100); return }
+    for (const t of SHEET_TRACKS) {
+      const items = t.sections.flatMap(s => s.items)
+      if (items.length > 0 && items.every(i => next[i.id]) && !items.every(i => prev[i.id])) { fireConfetti(false); return }
+    }
+  }, [fireConfetti])
+
   const toggleItem    = useCallback((id: string) => {
     const next = { ...progress, [id]: !progress[id] }
     save(next)
+    celebrateIfMilestone(progress, next)
     syncItemToSupabase(id, !!next[id])
-  }, [progress, save, syncItemToSupabase])
+  }, [progress, save, syncItemToSupabase, celebrateIfMilestone])
   const toggleSection = useCallback((id: string) => setOpenSections(p => ({ ...p, [id]: !p[id] })), [])
   const toggleExpand  = useCallback((id: string) => setExpandedItem(p => p === id ? null : id), [])
 
@@ -299,9 +342,29 @@ export default function SheetClient() {
   const nextItem = useMemo(() => {
     for (const sec of track.sections) {
       const found = sec.items.find(i => !progress[i.id])
-      if (found) return found
+      if (found) return { item: found, sectionId: sec.id }
     }
     return null
+  }, [track, progress])
+
+  // Jump to the next unfinished item: open its section, expand it, scroll there
+  const goToNext = useCallback(() => {
+    if (!nextItem) return
+    setOpenSections(p => ({ ...p, [nextItem.sectionId]: true }))
+    setExpandedItem(nextItem.item.id)
+    setTimeout(() => {
+      document.getElementById(`sheet-item-${nextItem.item.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 120)
+  }, [nextItem])
+
+  // ── Hours remaining in the active track ───────────────────────────────────
+  const trackHoursLeft = useMemo(() => {
+    const h = track.sections.reduce((sum, sec) => {
+      if (sec.items.length === 0) return sum
+      const incomplete = sec.items.filter(i => !progress[i.id]).length
+      return sum + sectionHours(sec.estimatedTime) * (incomplete / sec.items.length)
+    }, 0)
+    return Math.round(h * 2) / 2 // nearest half hour
   }, [track, progress])
 
   // ── Search ────────────────────────────────────────────────────────────────
@@ -360,8 +423,8 @@ export default function SheetClient() {
             AI Interview Prep Sheet
           </h1>
           <p className="text-zinc-400 max-w-xl mx-auto text-sm sm:text-base">
-            The complete AI/ML roadmap — Generative AI, Agentic AI, Deep Learning, ML, MLOps &amp; System Design.
-            Theory · Code · Flashcards · Mock Interviews. All in one place.
+            Not just a topic list — a complete system. Learn each topic, then <span className="text-amber-400 font-semibold">prove it at the 🏁 checkpoints</span> with
+            quizzes, mock interviews &amp; design reviews. Finish all four phases and you&apos;re genuinely interview-ready.
           </p>
         </div>
 
@@ -453,9 +516,9 @@ export default function SheetClient() {
                   <div key={phase.num} className="relative pl-9">
                     {/* Phase node on the timeline */}
                     <div className={`absolute left-0 top-0 w-[23px] h-[23px] rounded-full border-2 flex items-center justify-center text-[11px] font-extrabold transition-colors ${
-                      pComplete ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-zinc-950 border-zinc-700 text-orange-400'
+                      pComplete ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30' : 'bg-zinc-950 border-zinc-700 text-orange-400'
                     }`}>
-                      {pComplete ? <Check size={12} strokeWidth={3} /> : phase.num}
+                      {pComplete ? <Trophy size={11} strokeWidth={2.5} /> : phase.num}
                     </div>
                     <div className="flex items-baseline gap-2 mb-2 min-h-[23px]">
                       <span className="text-sm font-bold text-zinc-100">{phase.title}</span>
@@ -572,6 +635,11 @@ export default function SheetClient() {
                 <div className={`text-right flex-shrink-0 ${track.color}`}>
                   <div className="text-2xl font-extrabold">{mounted ? trackPct : 0}%</div>
                   <div className="text-[10px] text-zinc-500">{mounted ? trackDone : 0}/{trackItems.length} done</div>
+                  {mounted && trackHoursLeft > 0 && trackPct < 100 && (
+                    <div className="text-[10px] text-zinc-500 flex items-center gap-0.5 justify-end mt-0.5">
+                      <Clock size={9} /> ~{trackHoursLeft}h left
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="h-1.5 bg-black/20 rounded-full mt-3 overflow-hidden">
@@ -606,13 +674,15 @@ export default function SheetClient() {
               )}
             </div>
 
-            {/* ── Next item hint ────────────────────────────────────── */}
+            {/* ── Continue button — jumps to the next unfinished item ── */}
             {mounted && nextItem && trackDone > 0 && trackDone < trackItems.length && (
-              <div className="flex items-center gap-2 px-4 py-2.5 mb-4 bg-zinc-900 border border-orange-500/20 rounded-xl">
+              <button onClick={goToNext}
+                className="group w-full flex items-center gap-2 px-4 py-2.5 mb-4 bg-zinc-900 border border-orange-500/20 hover:border-orange-500/50 hover:bg-zinc-900/80 rounded-xl transition-all text-left">
                 <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0 animate-pulse" />
-                <span className="text-xs text-zinc-500 flex-shrink-0">Continue →</span>
-                <span className="text-xs font-medium text-zinc-300 truncate">{nextItem.title}</span>
-              </div>
+                <span className="text-xs text-zinc-500 flex-shrink-0">Continue</span>
+                <span className="text-xs font-medium text-zinc-300 truncate flex-1">{nextItem.item.title}</span>
+                <ArrowRight size={13} className="text-orange-400 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </button>
             )}
 
             {/* ── Filters ──────────────────────────────────────────── */}
@@ -663,10 +733,11 @@ export default function SheetClient() {
                   const secPct  = section.items.length > 0 ? Math.round(secDone / section.items.length * 100) : 0
                   const isComplete = mounted && secDone === section.items.length && section.items.length > 0
                   const isOpen = openSections[section.id] ?? false
+                  const isCheckpoint = section.id.endsWith('-checkpoint')
 
                   return (
                     <div key={section.id}
-                      className={`bg-zinc-900 border rounded-2xl overflow-hidden ${isComplete ? 'border-emerald-500/30' : 'border-zinc-800'}`}>
+                      className={`bg-zinc-900 border rounded-2xl overflow-hidden ${isComplete ? 'border-emerald-500/30' : isCheckpoint ? 'border-amber-500/40 shadow-lg shadow-amber-500/5' : 'border-zinc-800'}`}>
                       {/* Section header */}
                       <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/60">
                         <button onClick={() => toggleSection(section.id)} className="flex items-center gap-2.5 flex-1 text-left min-w-0">
