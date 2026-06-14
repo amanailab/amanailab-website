@@ -44,9 +44,9 @@ export default function SocialProofBar({ subscriberCount, videoCount }: Props) {
       }
     : {
         icon: <ListChecks className="w-5 h-5" />,
-        value: SITE_STATS.sheetTopics,
-        label: "Interview Topics",
-        sub: "A-to-Z prep sheet",
+        value: SITE_STATS.systemDesignProblems,
+        label: "System Design Problems",
+        sub: "with AI review",
         color: "text-blue-400",
         bg: "bg-blue-500/10 border-blue-500/20",
         glow: "from-blue-500/0 via-blue-500/10 to-blue-500/0",

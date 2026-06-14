@@ -61,7 +61,6 @@ function FooterNewsletter() {
 
 const footerLinks = {
   Interview: [
-    { href: "/sheet",         label: "Interview Sheet"  },
     { href: "/interview",     label: "AI Simulator"     },
     { href: "/questions",     label: "Question Bank"    },
     { href: "/companies",     label: "Companies"        },

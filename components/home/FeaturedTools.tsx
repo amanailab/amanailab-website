@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { BrainCircuit, Code2, ListChecks, FileText, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { BrainCircuit, Code2, Target, FileText, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { SITE_STATS } from "@/lib/site-stats";
 
 const FEATURED = [
@@ -37,19 +37,19 @@ const FEATURED = [
     href: "/code-lab",
   },
   {
-    badge: "2026 Edition",
+    badge: "JD Matched",
     badgeColor: "text-orange-400 bg-orange-500/10 border-orange-500/25",
-    icon: ListChecks,
+    icon: Target,
     iconColor: "text-orange-400",
     iconBg: "bg-orange-500/10 border-orange-500/25",
     accent: "from-orange-500/8 to-transparent",
     borderBase: "border-zinc-800",
     borderHover: "hover:border-orange-500/40",
-    title: "Interview Prep Sheet",
-    description: `A structured A-to-Z roadmap across 7 tracks — ${SITE_STATS.sheetTopics} topics with inline theory, code problems, flashcards, and system design workspace.`,
-    features: [`${SITE_STATS.sheetTopics} topics · 7 complete tracks`, "Inline theory for every concept", "System Design Workspace + AI review"],
-    cta: "Start Sheet",
-    href: "/sheet",
+    title: "Skill Gap Analyzer",
+    description: "Paste any job description and see exactly which skills you're missing — mapped against your interview scores so you know precisely what to study next.",
+    features: ["Paste a JD → instant gap report", "Mapped to your practice scores", "A focused study list, not guesswork"],
+    cta: "Analyze My Gaps",
+    href: "/skill-gap",
   },
   {
     badge: "ATS Optimized",

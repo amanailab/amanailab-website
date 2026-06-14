@@ -7,7 +7,7 @@ import { SITE_STATS } from "@/lib/site-stats";
 
 const FREE_FEATURES = [
   "AI mock interviews with voice + instant 0–10 scoring",
-  `The A-to-Z Interview Sheet — ${SITE_STATS.sheetTopics} topics, foundations to interview-ready`,
+  `${SITE_STATS.questions} interview questions with model answers — plus flashcards & quizzes`,
   `Code Lab + System Design — ${SITE_STATS.codeProblems}+ problems with AI review`,
   `${SITE_STATS.tools} free tools in total — no credit card, no catch`,
 ]

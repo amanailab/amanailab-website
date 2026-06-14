@@ -8,11 +8,11 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: "About AmanAI Lab — Free AI/ML Interview Prep Platform | Aman Chauhan",
   description:
-    `AmanAI Lab is built by Aman Chauhan to help AI/ML engineers land their dream jobs. Free mock interviews, Code Lab, Interview Prep Sheet, and ${SITE_STATS.tools} AI-powered tools to prepare for interviews at Google, Meta, OpenAI and more.`,
+    `AmanAI Lab is built by Aman Chauhan to help AI/ML engineers land their dream jobs. Free mock interviews, Code Lab, system design practice, and ${SITE_STATS.tools} AI-powered tools to prepare for interviews at Google, Meta, OpenAI and more.`,
   alternates: { canonical: 'https://amanailab.com/about' },
   openGraph: {
     title: 'About AmanAI Lab — Free AI/ML Interview Prep by Aman Chauhan',
-    description: `The most complete free platform for AI/ML engineers. Mock interviews, Code Lab, Interview Sheet, and ${SITE_STATS.tools} tools. Built by Aman Chauhan.`,
+    description: `The most complete free platform for AI/ML engineers. Mock interviews, Code Lab, system design practice, and ${SITE_STATS.tools} tools. Built by Aman Chauhan.`,
     images: [{ url: '/api/og/tool?name=About+AmanAI+Lab&tagline=Free+AI%2FML+interview+prep+platform&emoji=%F0%9F%A7%A0&tool=about', width: 1200, height: 630 }],
   },
   twitter: { card: 'summary_large_image' },

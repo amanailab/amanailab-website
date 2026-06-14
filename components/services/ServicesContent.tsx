@@ -644,7 +644,7 @@ export default function ServicesContent() {
           <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">Why work with me</p>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-100">You&apos;re already looking at my work</h2>
           <p className="text-sm text-zinc-400 max-w-xl mx-auto mt-3 leading-relaxed">
-            This entire platform — every tool, the Code Lab, the interview sheet, the AI mock interviews —
+            This entire platform — every tool, the Code Lab, the system design workspace, the AI mock interviews —
             was designed and built by Aman, solo. That&apos;s real proof of skill, not just a promise.
           </p>
         </div>
@@ -654,7 +654,7 @@ export default function ServicesContent() {
             {
               icon: Code2,
               title: "Proof you can verify now",
-              desc: `Browse this site: the Code Lab (${SITE_STATS.codeProblems}+ problems), the ${SITE_STATS.sheetTopics}-topic interview sheet, and ${SITE_STATS.tools} AI tools — all built on the exact stack I'll use for your project.`,
+              desc: `Browse this site: the Code Lab (${SITE_STATS.codeProblems}+ problems), ${SITE_STATS.systemDesignProblems} system design problems with AI review, and ${SITE_STATS.tools} AI tools — all built on the exact stack I'll use for your project.`,
             },
             {
               icon: Star,

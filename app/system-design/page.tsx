@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
 import { SITE_STATS } from '@/lib/site-stats'
 import { PenLine, Clock, Building2, Sparkles, ListChecks, Cpu } from 'lucide-react'
@@ -76,9 +75,7 @@ export default function SystemDesignPage() {
         {/* ── CTA ───────────────────────────────────────────────────── */}
         <div className="mt-12 text-center bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-8">
           <p className="text-zinc-400 text-sm mb-4">
-            These problems are also linked from the{' '}
-            <Link href="/sheet" className="text-orange-400 hover:text-orange-300 font-medium">Interview Prep Sheet</Link>
-            {' '}— expand any System Design item to open its workspace.
+            Expand any System Design problem above to open its dedicated workspace — structured editor, must-cover checklist, 45-minute timer and AI review of your answer.
           </p>
           <div className="flex items-center justify-center gap-3 flex-wrap text-xs text-zinc-600">
             <span className="flex items-center gap-1"><Clock size={11} /> 45-min interview timer</span>

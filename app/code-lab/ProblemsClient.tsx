@@ -309,8 +309,8 @@ export default function ProblemsClient({ problems }: { problems: Problem[] }) {
             <Code2 className="w-10 h-10 text-zinc-700 mx-auto mb-4" />
             <p className="text-zinc-400 font-semibold mb-2">Problems are on the way</p>
             <p className="text-zinc-600 text-sm mb-6">New AI/ML coding challenges are being added — check back shortly.</p>
-            <Link href="/sheet" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
-              Explore the Interview Sheet meanwhile
+            <Link href="/questions" className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors">
+              Browse the Question Bank meanwhile
             </Link>
           </div>
         ) : (

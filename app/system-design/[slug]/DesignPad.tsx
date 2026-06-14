@@ -298,8 +298,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       <div className="sticky top-0 z-20 bg-zinc-950/98 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
         <div className="max-w-[1400px] mx-auto px-4 h-12 flex items-center gap-3">
           {/* Back */}
-          <Link href="/sheet" className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-xs transition-colors flex-shrink-0">
-            <ArrowLeft size={13} /> Sheet
+          <Link href="/system-design" className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-xs transition-colors flex-shrink-0">
+            <ArrowLeft size={13} /> Problems
           </Link>
           <span className="text-zinc-700">›</span>
 
@@ -658,8 +658,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
           {/* Bottom links */}
           <div className="flex items-center justify-between text-xs text-zinc-600 pb-4">
-            <Link href="/sheet" className="flex items-center gap-1 hover:text-zinc-400 transition-colors">
-              <ArrowLeft size={11} /> Back to sheet
+            <Link href="/system-design" className="flex items-center gap-1 hover:text-zinc-400 transition-colors">
+              <ArrowLeft size={11} /> Back to problems
             </Link>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">

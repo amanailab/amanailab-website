@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Target, ListChecks, Dumbbell, Trophy, ArrowRight } from "lucide-react";
+import { Target, Map, Dumbbell, Trophy, ArrowRight } from "lucide-react";
 
 const STEPS = [
   {
@@ -17,13 +17,13 @@ const STEPS = [
   },
   {
     number: "02",
-    icon: ListChecks,
+    icon: Map,
     color: "text-violet-400",
     bg: "bg-violet-500/10 border-violet-500/20",
     title: "Follow the path",
-    description: "Work through the A-to-Z Interview Sheet — foundations first, then modern AI, production & system design. Finish it and you're interview-ready.",
-    href: "/sheet",
-    cta: "Open the Sheet",
+    description: "Work through the Career Roadmap — a week-by-week AI/ML learning path from foundations to modern AI, production & system design. Finish it and you're interview-ready.",
+    href: "/career?tab=roadmap",
+    cta: "Open the Roadmap",
   },
   {
     number: "03",

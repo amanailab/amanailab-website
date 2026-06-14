@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Sparkles, ListChecks } from "lucide-react";
+import { ArrowRight, Sparkles, Code2 } from "lucide-react";
 import { SITE_STATS } from "@/lib/site-stats";
 
 const techPills = [
@@ -65,7 +65,7 @@ export default function HeroSection() {
           className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-sm font-medium px-4 py-2 rounded-full mb-8"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          {SITE_STATS.tools} free AI tools · {SITE_STATS.questions} questions · A‑to‑Z Interview Sheet
+          {SITE_STATS.tools} free AI tools · {SITE_STATS.questions} questions · {SITE_STATS.codeProblems}+ coding problems
         </motion.div>
 
         {/* Headline */}
@@ -117,11 +117,11 @@ export default function HeroSection() {
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
-            href="/sheet"
+            href="/code-lab"
             className="inline-flex items-center gap-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-orange-500/40 text-zinc-100 font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           >
-            <ListChecks className="w-4 h-4 text-orange-400" />
-            A‑to‑Z Interview Sheet
+            <Code2 className="w-4 h-4 text-orange-400" />
+            Try the AI Code Lab
           </Link>
         </motion.div>
         <motion.p

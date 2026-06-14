@@ -9,7 +9,7 @@ import {
   BookOpen, Newspaper, FileText,
   BarChart2,
   BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
-  User, LogOut, LayoutDashboard, Briefcase, Layers, Library, Flame, Code2, ListChecks, PenLine,
+  User, LogOut, LayoutDashboard, Briefcase, Layers, Library, Flame, Code2, PenLine,
   Terminal, ScrollText, Crown,
 } from "lucide-react";
 import Image from "next/image";
@@ -73,7 +73,6 @@ const navItems: NavItem[] = [
     label: "Interview",
     columns: 2,
     items: [
-      { group: "Practice", href: "/sheet",          label: "Interview Prep Sheet ✨", description: "A-to-Z AI/ML roadmap — theory, code & design",        icon: <ListChecks className="w-4 h-4" /> },
       { group: "Practice", href: "/interview",      label: "AI Simulator",            description: "Timed mock interview with instant AI scoring",        icon: <BrainCircuit className="w-4 h-4" /> },
       { group: "Practice", href: "/system-design",  label: "System Design Practice",  description: `${SITE_STATS.systemDesignProblems} real design problems + AI review`, icon: <PenLine className="w-4 h-4" /> },
       { group: "Practice", href: "/daily",          label: "Daily Challenge",         description: "One question a day — build your streak",              icon: <Flame className="w-4 h-4" /> },

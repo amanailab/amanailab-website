@@ -11,7 +11,6 @@ const BASE = 'https://amanailab.com'
 const staticPages: MetadataRoute.Sitemap = [
   { url: BASE,                             priority: 1.0, changeFrequency: 'daily'   },
   { url: `${BASE}/code-lab`,               priority: 0.95, changeFrequency: 'weekly' },
-  { url: `${BASE}/sheet`,                  priority: 0.95, changeFrequency: 'weekly' },
   { url: `${BASE}/system-design`,          priority: 0.85, changeFrequency: 'monthly'},
   { url: `${BASE}/daily`,                  priority: 0.85, changeFrequency: 'daily'  },
   { url: `${BASE}/skill-gap`,              priority: 0.85, changeFrequency: 'monthly'},

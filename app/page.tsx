@@ -2,7 +2,6 @@ import { getChannelStats, getLatestVideos, getPlaylists, formatStats } from "@/l
 import HeroSection    from "@/components/home/HeroSection";
 import SocialProofBar from "@/components/home/SocialProofBar";
 import FeaturedTools  from "@/components/home/FeaturedTools";
-import SheetPromo     from "@/components/home/SheetPromo";
 import DailyChallengeWidget from "@/components/home/DailyChallengeWidget";
 import HowItWorks     from "@/components/home/HowItWorks";
 import MoreTools      from "@/components/home/MoreTools";
@@ -15,23 +14,23 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'AmanAI Lab — Free AI/ML Interview Prep Platform | Mock Interviews, Code Lab & More',
-  description: `The most complete free platform for AI/ML engineers. AI mock interviews, ${SITE_STATS.codeProblems}+ coding problems, A-to-Z Interview Sheet (${SITE_STATS.sheetTopics} topics), flashcards, system design practice, and ${SITE_STATS.tools} AI-powered tools. Prepare for interviews at Google, Meta, OpenAI and more.`,
+  description: `The most complete free platform for AI/ML engineers. AI mock interviews, ${SITE_STATS.codeProblems}+ coding problems, flashcards, system design practice, and ${SITE_STATS.tools} AI-powered tools. Prepare for interviews at Google, Meta, OpenAI and more.`,
   alternates: { canonical: 'https://amanailab.com' },
   openGraph: {
     title: 'AmanAI Lab — Free AI/ML Interview Prep Platform',
-    description: `AI mock interviews, ${SITE_STATS.codeProblems}+ coding problems, Interview Prep Sheet with ${SITE_STATS.sheetTopics} topics, and ${SITE_STATS.tools} free tools. Everything you need to land an AI/ML job.`,
+    description: `AI mock interviews, ${SITE_STATS.codeProblems}+ coding problems, system design practice, and ${SITE_STATS.tools} free tools. Everything you need to land an AI/ML job.`,
     url: 'https://amanailab.com',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'AmanAI Lab — Free AI/ML Interview Prep',
-    description: `AI mock interviews, Code Lab, Interview Sheet & ${SITE_STATS.tools} free tools. 100% free.`,
+    description: `AI mock interviews, Code Lab & ${SITE_STATS.tools} free tools. 100% free.`,
   },
   keywords: [
     'AI interview prep', 'ML interview questions', 'LLM interview', 'RAG interview',
     'machine learning interview', 'deep learning interview', 'MLOps interview',
-    'AI mock interview', 'code lab', 'system design AI', 'interview prep sheet',
+    'AI mock interview', 'code lab', 'system design AI',
   ],
 }
 
@@ -76,10 +75,7 @@ export default async function HomePage() {
       {/* 5. Core 4 tools — spotlight */}
       <FeaturedTools />
 
-      {/* 6. Interview prep sheet — key differentiator */}
-      <SheetPromo />
-
-      {/* 7. All remaining tools — grouped grid */}
+      {/* 6. All remaining tools — grouped grid */}
       <MoreTools />
 
       {/* 8. YouTube playlists (with static fallback) */}

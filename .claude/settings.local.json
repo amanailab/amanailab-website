@@ -118,7 +118,21 @@
       "Bash(ls public/og*)",
       "Bash(grep -rn \"NEXT_PUBLIC_CLARITY_ID\" .env*)",
       "Bash(ls .env*)",
-      "PowerShell(cd \"E:\\\\amanailab-website\\\\amanailab-website\" ; Get-ChildItem -Recurse -File | Where-Object { $_.FullName -match \"code-problems.new|admin.users|code-problems.create|unsubscribe|CompaniesManager|NewProblemForm\" } | Select-Object FullName)"
+      "PowerShell(cd \"E:\\\\amanailab-website\\\\amanailab-website\" ; Get-ChildItem -Recurse -File | Where-Object { $_.FullName -match \"code-problems.new|admin.users|code-problems.create|unsubscribe|CompaniesManager|NewProblemForm\" } | Select-Object FullName)",
+      "Bash(Select-Object Name, FullName)",
+      "Bash(sed 's/.*process.env\\\\.//')",
+      "Bash(grep -v \"^api$\\\\|^\\\\.\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(grep -rhoE \"\\\\\\\\.from\\\\\\\\\\(['\\\\\"][a-z_]+['\\\\\"]\" app lib --include=\"*.ts\" --include=\"*.tsx\")",
+      "Bash(break)",
+      "Bash(echo \"LINT EXIT: $?\")",
+      "Bash(echo \"TSC EXIT: $?\")",
+      "Bash([ -s \"$f\" ])",
+      "Bash(grep -n 'next/headers\\\\|cookies' app/api/admin/__TRACKED_VAR__/route.ts)",
+      "Bash(echo \"PUSH_EXIT: $?\")",
+      "Bash(claude update *)",
+      "Bash(ls app/sheet components/sheet)",
+      "Bash(wc -l lib/sheet-data.ts lib/sheet-theory.ts app/sheet/*.tsx components/sheet/*.tsx)"
     ]
   }
 }

@@ -14,7 +14,6 @@ import type { Metadata } from 'next'
 import ScoreLineChart from '@/components/dashboard/ScoreLineChart'
 import DailyChallengeStrip from '@/components/dashboard/DailyChallengeStrip'
 import XPCard from '@/components/dashboard/XPCard'
-import SheetProgressCard from '@/components/dashboard/SheetProgressCard'
 import ActivityHeatmap from '@/components/dashboard/ActivityHeatmap'
 import CompanyReadiness from '@/components/dashboard/CompanyReadiness'
 import InterviewCountdown from '@/components/dashboard/InterviewCountdown'
@@ -840,9 +839,6 @@ export default async function DashboardPage() {
                   </div>
                 </div>
               )}
-
-              {/* Sheet Progress — syncs with localStorage + Supabase */}
-              <SheetProgressCard />
 
               <CodeLabCard stats={codeStats} />
               <XPCard />
