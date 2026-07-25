@@ -7,6 +7,7 @@ import {
   CheckCircle2, Code2, Zap, Crown, Globe, Layers, Cpu,
   BrainCircuit, FileText, MessageSquare, ArrowRight,
   Clock, Briefcase, Rocket, Shield, Phone, Star, ChevronDown,
+  GraduationCap, Users,
 } from "lucide-react"
 
 // ─── Replace with your real WhatsApp number (country code + number, no +) ───
@@ -21,7 +22,7 @@ interface FeatureGroup { heading: string; items: string[] }
 interface Package {
   id: string; name: string; emoji: string; price: string; usd: string
   tagline: string; badge: string | null; topBar: string; border: string
-  accentText: string; accentBg: string; deliveryDays: string
+  accentText: string; accentBg: string; deliveryDays: string; deliveryLabel?: string
   groups: FeatureGroup[]; bestFor: string; tech?: string[]
 }
 
@@ -362,6 +363,81 @@ const WEBSITE: Package[] = [
   },
 ]
 
+// ─── 1:1 Coaching Package ─────────────────────────────────────────────────────
+const COACHING: Package[] = [
+  {
+    id: "coaching-1on1",
+    name: "1:1 Mastery Program",
+    emoji: "🎓",
+    price: "₹1,05,000",
+    usd: "~$1,260",
+    tagline: "2.5–3 months. Everything AI. Strictly 1:1 with Aman.",
+    badge: "Signature",
+    topBar:     "from-emerald-400 via-teal-500 to-cyan-500",
+    border:     "border-emerald-500/30",
+    accentText: "text-emerald-400",
+    accentBg:   "bg-emerald-500/10",
+    deliveryDays: "2.5–3 months",
+    deliveryLabel: "Program duration: 2.5–3 months",
+    bestFor: "Anyone who wants to go from zero to job-ready in AI — fast, structured, with direct 1:1 mentorship from Aman",
+    groups: [
+      {
+        heading: "🎯 Full Curriculum — Every AI Domain Covered",
+        items: [
+          "Generative AI — LLMs, prompt engineering, RAG pipelines, fine-tuning, production GenAI apps",
+          "Agentic AI — multi-agent systems, tool use, LangChain, LangGraph, AutoGen from scratch",
+          "Machine Learning — supervised, unsupervised, ensemble methods, end-to-end ML pipelines",
+          "Deep Learning — CNNs, RNNs, Transformers — theory + implementation in PyTorch",
+          "NLP — tokenization, embeddings, sentiment analysis, NER, QA systems, LLM fine-tuning",
+          "MLOps — Docker, CI/CD for ML, MLflow, model serving, monitoring in production",
+          "AIOps — AI for IT operations, anomaly detection, log analysis, automated incident response",
+          "Resume & Career — ATS-optimized resume, full LinkedIn overhaul, 15+ mock interviews",
+        ],
+      },
+      {
+        heading: "💻 Live Project Hands-On — 5+ Real Projects Built Together",
+        items: [
+          "5+ end-to-end projects built live in sessions — you code alongside Aman, not just watch",
+          "Projects span every domain: GenAI chatbot, ML pipeline, agentic system, NLP tool, MLOps deploy",
+          "Every project deployed to production (Vercel, HuggingFace, or AWS) — not just local demos",
+          "GitHub portfolio of 5+ production-grade AI projects ready to impress any recruiter",
+          "Each project ships with architecture docs + 20 interview-ready Q&As written by Aman",
+        ],
+      },
+      {
+        heading: "🧑‍💻 1:1 Session Structure",
+        items: [
+          "3 live 1:1 sessions per week (60–90 min each) via Google Meet — strictly 1:1, never batch",
+          "Every session recorded and shared within 24h — revise unlimited times at your own pace",
+          "WhatsApp doubt support between sessions — same-day replies from Aman personally",
+          "Weekly progress review + customised plan tailored to your pace and goals",
+          "Flexible scheduling — morning, evening, or weekend slots to fit your life",
+        ],
+      },
+      {
+        heading: "🚀 Career Placement — Until You Get the Offer",
+        items: [
+          "Complete resume rewrite — ATS-optimised for AI / ML / GenAI roles at top companies",
+          "Full LinkedIn profile overhaul — headline, about, experience, featured projects, skills",
+          "15+ mock interview sessions — technical, behavioural & company-specific simulations",
+          "Personalised job application strategy + company shortlist (20+ target companies)",
+          "Direct referrals via Aman's hiring network",
+          "Placement support continues after program ends — no expiry, no time limit, until you're hired",
+        ],
+      },
+      {
+        heading: "⭐ What Makes This Different",
+        items: [
+          "Strictly 1:1 — Aman accepts a maximum of 3 students at any time. Zero compromise on attention.",
+          "One program, zero gaps — covers every topic top AI/ML companies actually interview on",
+          "No pre-recorded fluff — every session is live, adaptive, and built around your questions",
+          "Certificate of completion + letter of recommendation from Aman on request",
+        ],
+      },
+    ],
+  },
+]
+
 // ─── Process Steps ────────────────────────────────────────────────────────────
 const CAREER_STEPS = [
   { n: "01", icon: MessageSquare, title: "Tell us about yourself",  desc: "WhatsApp Aman — your background, target role, and current level." },
@@ -374,6 +450,12 @@ const WEBSITE_STEPS = [
   { n: "02", icon: Layers,     title: "Design & architecture",   desc: "Wireframe + tech plan delivered within 48h for your approval." },
   { n: "03", icon: Cpu,        title: "We build & update daily", desc: "Daily progress updates on WhatsApp — you always know the status." },
   { n: "04", icon: Globe,      title: "Launch & hand-off",       desc: "Site goes live. Full code on your GitHub. Docs included." },
+]
+const COACHING_STEPS = [
+  { n: "01", icon: MessageSquare, title: "Apply on WhatsApp",       desc: "Tell Aman your goals, current level & availability. Free — zero commitment." },
+  { n: "02", icon: Phone,         title: "Free screening call",     desc: "30-min 1:1 call to confirm fit, scope the curriculum & lock your start date." },
+  { n: "03", icon: Code2,         title: "We build, week by week",  desc: "3 live sessions/week. Real projects. Real feedback. Measurable progress every week." },
+  { n: "04", icon: Rocket,        title: "You land the offer",      desc: "Portfolio complete. Resume polished. Interviews crushed. Offer in hand." },
 ]
 
 // ─── Comparison tables (derived from the package data above) ────────────────────
@@ -422,6 +504,9 @@ const FAQS = [
   { q: "How do payments work?", a: "50% upfront via Razorpay, 50% on delivery. For the ₹1,999 Blueprint, it's 100% upfront. Scope is fully agreed before any payment." },
   { q: "What if I'm not happy with the result?", a: "We iterate until you're satisfied. For career packages, support continues until you receive an offer — or we refund accordingly." },
   { q: "How quickly do you respond on WhatsApp?", a: "Usually within 2–4 hours during IST business hours. Weekends may be slightly slower." },
+  { q: "Is the 1:1 Mastery Program truly 1:1 or a batch class?", a: "Strictly 1:1. Aman limits this to a maximum of 3 students at any point in time — so every session is fully dedicated to you. No batch recordings, no group calls, no shared slots." },
+  { q: "Do I need prior coding or AI experience to join the coaching program?", a: "No prior AI experience required. Basic Python familiarity helps, but we'll cover everything from first principles. If you've never coded before, WhatsApp Aman and we'll discuss a pre-program prep path." },
+  { q: "What if I miss a session during the coaching program?", a: "Every session is recorded and shared within 24h. We reschedule missed sessions when needed — your progress is what matters, not a rigid calendar." },
 ]
 
 // ─── Card Component ───────────────────────────────────────────────────────────
@@ -466,7 +551,7 @@ function PkgCard({ pkg, i }: { pkg: Package; i: number }) {
         </div>
         <div className="flex items-center gap-1.5 mb-5">
           <Clock className="w-3 h-3 text-zinc-600" />
-          <span className="text-xs text-zinc-600">Delivered in {pkg.deliveryDays}</span>
+          <span className="text-xs text-zinc-600">{pkg.deliveryLabel ?? `Delivered in ${pkg.deliveryDays}`}</span>
         </div>
 
         <div className={`h-px w-full mb-5 bg-gradient-to-r ${pkg.topBar} opacity-20`} />
@@ -530,12 +615,12 @@ function PkgCard({ pkg, i }: { pkg: Package; i: number }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ServicesContent() {
-  const [tab, setTab]         = useState<"career" | "website">("career")
+  const [tab, setTab]         = useState<"career" | "website" | "coaching">("career")
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
-  const packages = tab === "career" ? CAREER : WEBSITE
-  const steps    = tab === "career" ? CAREER_STEPS : WEBSITE_STEPS
-  const compare  = tab === "career" ? CAREER_COMPARE : WEBSITE_COMPARE
+  const packages = tab === "career" ? CAREER : tab === "website" ? WEBSITE : COACHING
+  const steps    = tab === "career" ? CAREER_STEPS : tab === "website" ? WEBSITE_STEPS : COACHING_STEPS
+  const compare  = tab === "career" ? CAREER_COMPARE : tab === "website" ? WEBSITE_COMPARE : CAREER_COMPARE
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
@@ -585,16 +670,22 @@ export default function ServicesContent() {
         </div>
 
         {/* Tab toggle */}
-        <div className="inline-flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 gap-1">
-          {(["career", "website"] as const).map(t => (
+        <div className="inline-flex bg-zinc-900 border border-zinc-800 rounded-xl p-1 gap-1 flex-wrap justify-center">
+          {(["career", "website", "coaching"] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                tab === t ? "bg-orange-500 text-white shadow-lg shadow-orange-500/20" : "text-zinc-400 hover:text-zinc-200"
+                tab === t
+                  ? t === "coaching"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20"
+                    : "bg-orange-500 text-white shadow-lg shadow-orange-500/20"
+                  : "text-zinc-400 hover:text-zinc-200"
               }`}
             >
-              {t === "career" ? <><Briefcase className="w-4 h-4" />AI Career</> : <><Globe className="w-4 h-4" />AI Website</>}
+              {t === "career"   ? <><Briefcase      className="w-4 h-4" />AI Career</>
+             : t === "website"  ? <><Globe          className="w-4 h-4" />AI Website</>
+             :                    <><GraduationCap  className="w-4 h-4" />1:1 Coaching</>}
             </button>
           ))}
         </div>
@@ -602,25 +693,65 @@ export default function ServicesContent() {
 
       {/* ── Packages ── */}
       <section className="max-w-6xl mx-auto px-4 mb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {packages.map((pkg, i) => <PkgCard key={pkg.id} pkg={pkg} i={i} />)}
-        </div>
 
-        {/* Custom quote */}
-        <div className="mt-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-bold text-zinc-200 mb-0.5">Need something custom?</p>
-            <p className="text-xs text-zinc-500">Different budget, specific tech, or tight deadline — just ask. Same-day quote.</p>
-          </div>
-          <a href={waLink("Custom Enquiry")} target="_blank" rel="noopener noreferrer"
-            className="shrink-0 flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 text-sm font-bold px-5 py-2.5 rounded-xl transition-all">
-            <MessageSquare className="w-4 h-4" /> Discuss Custom →
-          </a>
-        </div>
+        {tab === "coaching" ? (
+          <>
+            {/* Coaching hero banner */}
+            <div className="mb-8 text-center max-w-2xl mx-auto">
+              <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold px-4 py-2 rounded-full mb-4">
+                <Users className="w-3.5 h-3.5" /> Strictly 1:1 · Max 3 students at any time
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-100 mb-3">
+                One program to replace every course,{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
+                  bootcamp & YouTube playlist
+                </span>
+              </h2>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                2.5–3 months of live 1:1 sessions covering GenAI, Agentic AI, ML, Deep Learning, NLP, MLOps, AIOps
+                — every topic AI companies hire on, every week building real projects you can show recruiters.
+              </p>
+            </div>
+
+            <div className="max-w-2xl mx-auto">
+              <PkgCard pkg={COACHING[0]} i={0} />
+            </div>
+
+            {/* Coaching CTA strip */}
+            <div className="mt-5 max-w-2xl mx-auto bg-gradient-to-br from-emerald-500/8 via-zinc-900 to-teal-500/8 border border-emerald-500/25 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-zinc-200 mb-0.5">Only 3 seats open at a time</p>
+                <p className="text-xs text-zinc-500">WhatsApp Aman to check availability and book your free screening call.</p>
+              </div>
+              <a href={waLink("1:1 Mastery Program (₹1,05,000)")} target="_blank" rel="noopener noreferrer"
+                className="shrink-0 flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-500/25">
+                <MessageSquare className="w-4 h-4" /> Check Seat Availability →
+              </a>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {packages.map((pkg, i) => <PkgCard key={pkg.id} pkg={pkg} i={i} />)}
+            </div>
+
+            {/* Custom quote */}
+            <div className="mt-5 bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold text-zinc-200 mb-0.5">Need something custom?</p>
+                <p className="text-xs text-zinc-500">Different budget, specific tech, or tight deadline — just ask. Same-day quote.</p>
+              </div>
+              <a href={waLink("Custom Enquiry")} target="_blank" rel="noopener noreferrer"
+                className="shrink-0 flex items-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 text-sm font-bold px-5 py-2.5 rounded-xl transition-all">
+                <MessageSquare className="w-4 h-4" /> Discuss Custom →
+              </a>
+            </div>
+          </>
+        )}
       </section>
 
       {/* ── Compare tiers ── */}
-      <section className="max-w-5xl mx-auto px-4 mt-16 mb-4">
+      {tab !== "coaching" && <section className="max-w-5xl mx-auto px-4 mt-16 mb-4">
         <div className="text-center mb-8">
           <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">Compare</p>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-zinc-100">What&apos;s included in each tier</h2>
@@ -654,7 +785,7 @@ export default function ServicesContent() {
             </tbody>
           </table>
         </div>
-      </section>
+      </section>}
 
       {/* ── Why work with me ── */}
       <section className="max-w-5xl mx-auto px-4 mt-16 mb-16">
@@ -727,6 +858,26 @@ export default function ServicesContent() {
           ))}
         </div>
       </section>
+
+      {/* ── Coaching curriculum callout ── */}
+      {tab === "coaching" && (
+        <section className="max-w-4xl mx-auto px-4 mb-16">
+          <div className="bg-gradient-to-br from-emerald-500/8 via-zinc-900 to-teal-500/8 border border-emerald-500/20 rounded-2xl p-8 text-center">
+            <GraduationCap className="w-8 h-8 text-emerald-400 mx-auto mb-4" />
+            <h3 className="text-xl font-extrabold text-zinc-100 mb-2">Every AI topic. Real projects. 1:1 attention — every single session.</h3>
+            <p className="text-sm text-zinc-400 max-w-xl mx-auto mb-6 leading-relaxed">
+              No pre-recorded videos. No batch classes. No passive learning.
+              Every session is live, adaptive, and focused entirely on your questions and pace.
+              You leave each week with working code you built yourself — not just notes.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {["GenAI","Agentic AI","Machine Learning","Deep Learning","NLP","MLOps","AIOps","Live Projects","Resume","Mock Interviews","Career Placement"].map(t => (
+                <span key={t} className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-3 py-1 rounded-full font-mono">{t}</span>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Website stack callout ── */}
       {tab === "website" && (
