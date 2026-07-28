@@ -17,11 +17,13 @@ const CATEGORIES = [
   'RAG',
   'Agents',
   'Fine-Tuning',
+  'Prompting',
   'MLOps',
   'Python',
   'System Design',
   'Transformers',
   'Vector DB',
+  'Interview Prep',
   'General',
 ]
 

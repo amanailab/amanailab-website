@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { Download, X, FileText } from "lucide-react";
+import { Download, X, FileText, ArrowRight } from "lucide-react";
 
 // Read-only client for fetching resources list from DB
 const supabase = createClient(
@@ -29,6 +29,7 @@ const TOPIC_COLORS: Record<string, string> = {
   Transformers: "bg-pink-500/20 text-pink-300 border-pink-500/30",
   MLOps: "bg-rose-500/20 text-rose-300 border-rose-500/30",
   "Vector DB": "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
+  "Interview Prep": "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
   General: "bg-zinc-500/20 text-zinc-300 border-zinc-500/30",
 };
 
@@ -185,6 +186,7 @@ export default function ResourcesContent() {
     setStatus("success");
 
     // Trigger download after short delay so user sees success message
+    // Modal stays open so user sees the mentorship nudge
     setTimeout(() => {
       const link = document.createElement("a");
       link.href = selectedPdf.file;
@@ -192,7 +194,6 @@ export default function ResourcesContent() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      setTimeout(closeModal, 800);
     }, 600);
   }
 
@@ -249,6 +250,175 @@ export default function ResourcesContent() {
         </div>
       </div>
 
+      {/* Mentorship Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        <div className="border-t border-zinc-800 pt-16">
+          {/* Heading */}
+          <div className="text-center mb-12">
+            <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-3">
+              Mentorship Programs
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-zinc-100 mb-4">
+              Want to go further?
+            </h2>
+            <p className="text-zinc-400 text-base max-w-xl mx-auto leading-relaxed">
+              These free resources are just the start. Our mentorship programs get you job-ready with real AI projects, mock interviews &amp; 1:1 guidance from Aman.
+            </p>
+          </div>
+
+          {/* Package Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+            {/* Blueprint */}
+            <div className="flex flex-col bg-zinc-900 border border-blue-500/25 rounded-2xl overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-600" />
+              <div className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">🗺️</span>
+                  <div>
+                    <p className="font-bold text-zinc-100">Blueprint</p>
+                    <p className="text-xs text-zinc-500">Freshers &amp; students</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-extrabold text-zinc-100 mb-1">
+                  ₹1,999{" "}
+                  <span className="text-sm font-normal text-zinc-500">~$24</span>
+                </p>
+                <p className="text-zinc-400 text-sm mb-5">
+                  The perfect launchpad for your AI journey
+                </p>
+                <ul className="flex flex-col gap-2 mb-6 flex-1">
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-blue-400 font-bold mt-0.5">✓</span>
+                    30-min strategy call with Aman
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-blue-400 font-bold mt-0.5">✓</span>
+                    Custom AI project idea + architecture doc
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-blue-400 font-bold mt-0.5">✓</span>
+                    Resume bullets + 5-day WhatsApp support
+                  </li>
+                </ul>
+                <a
+                  href={`https://wa.me/919997600372?text=${encodeURIComponent('Hi Aman! I\'m interested in the "Blueprint" package from AmanAI Lab. Can you share more details?')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all"
+                >
+                  Get Started
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+
+            {/* Launchpad */}
+            <div className="flex flex-col bg-zinc-900 border border-orange-500/30 rounded-2xl overflow-hidden relative">
+              <div className="h-1 bg-gradient-to-r from-orange-500 to-orange-600" />
+              <div className="absolute top-4 right-4">
+                <span className="text-xs font-bold bg-orange-500 text-white px-2.5 py-1 rounded-full">
+                  Most Popular
+                </span>
+              </div>
+              <div className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">🚀</span>
+                  <div>
+                    <p className="font-bold text-zinc-100">Launchpad</p>
+                    <p className="text-xs text-zinc-500">Working professionals</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-extrabold text-zinc-100 mb-1">
+                  ₹4,999{" "}
+                  <span className="text-sm font-normal text-zinc-500">~$60</span>
+                </p>
+                <p className="text-zinc-400 text-sm mb-5">
+                  Build it. Practice it. Land the job.
+                </p>
+                <ul className="flex flex-col gap-2 mb-6 flex-1">
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-orange-400 font-bold mt-0.5">✓</span>
+                    Full production-ready project code
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-orange-400 font-bold mt-0.5">✓</span>
+                    30 Q&amp;As + 2 live mock interviews
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-orange-400 font-bold mt-0.5">✓</span>
+                    Resume review + 14-day WhatsApp support
+                  </li>
+                </ul>
+                <a
+                  href={`https://wa.me/919997600372?text=${encodeURIComponent('Hi Aman! I\'m interested in the "Launchpad" package from AmanAI Lab. Can you share more details?')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20"
+                >
+                  Get Started
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+
+            {/* Placement */}
+            <div className="flex flex-col bg-zinc-900 border border-amber-500/30 rounded-2xl overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
+              <div className="p-6 flex flex-col flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">👑</span>
+                  <div>
+                    <p className="font-bold text-zinc-100">Placement</p>
+                    <p className="text-xs text-zinc-500">Serious candidates</p>
+                  </div>
+                </div>
+                <p className="text-2xl font-extrabold text-zinc-100 mb-1">
+                  ₹9,999{" "}
+                  <span className="text-sm font-normal text-zinc-500">~$120</span>
+                </p>
+                <p className="text-zinc-400 text-sm mb-5">
+                  We don&apos;t stop until you&apos;re hired
+                </p>
+                <ul className="flex flex-col gap-2 mb-6 flex-1">
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-amber-400 font-bold mt-0.5">✓</span>
+                    2 production-ready AI projects
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-amber-400 font-bold mt-0.5">✓</span>
+                    5 mock interviews + company-specific prep
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-zinc-400">
+                    <span className="text-amber-400 font-bold mt-0.5">✓</span>
+                    Full resume &amp; LinkedIn overhaul + referrals
+                  </li>
+                </ul>
+                <a
+                  href={`https://wa.me/919997600372?text=${encodeURIComponent('Hi Aman! I\'m interested in the "Placement" package from AmanAI Lab. Can you share more details?')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all"
+                >
+                  Get Started
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* See all plans link */}
+          <div className="text-center">
+            <a
+              href="/services"
+              className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 font-semibold text-sm transition-colors"
+            >
+              See all plans &amp; full details
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Email Capture Modal */}
       {selectedPdf && (
         <div
@@ -276,12 +446,32 @@ export default function ResourcesContent() {
             </div>
 
             {status === "success" ? (
-              <div className="flex flex-col items-center gap-3 py-4 text-center">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
-                  <Download className="w-6 h-6 text-emerald-400" />
+              <div className="flex flex-col gap-5">
+                {/* Download success */}
+                <div className="flex flex-col items-center gap-2 text-center">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                    <Download className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <p className="text-emerald-400 font-semibold">Download starting…</p>
+                  <p className="text-zinc-500 text-sm">Check your downloads folder.</p>
                 </div>
-                <p className="text-emerald-400 font-semibold">Download starting…</p>
-                <p className="text-zinc-500 text-sm">Check your downloads folder.</p>
+
+                {/* Mentorship nudge */}
+                <div className="border border-orange-500/25 bg-orange-500/5 rounded-xl p-4">
+                  <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-1.5">
+                    Want personalized help?
+                  </p>
+                  <p className="text-zinc-300 text-sm leading-relaxed mb-4">
+                    Get 1:1 mentorship, mock interviews &amp; real AI project code — our career packages get you job-ready fast.
+                  </p>
+                  <a
+                    href="/services"
+                    className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20"
+                  >
+                    View Mentorship Plans
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleDownload} className="flex flex-col gap-4">
