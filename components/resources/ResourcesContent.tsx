@@ -315,11 +315,6 @@ export default function ResourcesContent() {
             {/* Launchpad */}
             <div className="flex flex-col bg-zinc-900 border border-orange-500/30 rounded-2xl overflow-hidden relative">
               <div className="h-1 bg-gradient-to-r from-orange-500 to-orange-600" />
-              <div className="absolute top-4 right-4">
-                <span className="text-xs font-bold bg-orange-500 text-white px-2.5 py-1 rounded-full">
-                  Most Popular
-                </span>
-              </div>
               <div className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-2xl">🚀</span>
@@ -362,8 +357,13 @@ export default function ResourcesContent() {
             </div>
 
             {/* Placement */}
-            <div className="flex flex-col bg-zinc-900 border border-amber-500/30 rounded-2xl overflow-hidden">
+            <div className="flex flex-col bg-zinc-900 border border-amber-500/30 rounded-2xl overflow-hidden relative">
               <div className="h-1 bg-gradient-to-r from-amber-400 to-yellow-500" />
+              <div className="absolute top-4 right-4">
+                <span className="text-xs font-bold bg-amber-500 text-white px-2.5 py-1 rounded-full">
+                  Most Popular
+                </span>
+              </div>
               <div className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-2xl">👑</span>
