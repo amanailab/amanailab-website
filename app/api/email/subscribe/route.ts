@@ -164,17 +164,10 @@ export async function POST(req: Request) {
     })
 
     if (resendErr) {
-      // Roll back token so the user can retry cleanly. Don't lie about success —
-      // if the verification email failed to send, the user would wait forever.
-      // NOTE: Set RESEND_FROM_EMAIL to a verified sender (e.g. "AmanAI Lab <newsletter@amanailab.com>").
-      // onboarding@resend.dev only delivers to your own Resend-registered email.
-      await supabase
-        .from('newsletter_subscribers')
-        .update({ verification_token: null, token_expires_at: null })
-        .eq('email', email)
-      return NextResponse.json({
-        error: "We couldn't send the verification email. Please try again in a moment.",
-      }, { status: 502 })
+      // Email sending failed (e.g. unverified sender domain) but the subscriber
+      // is already saved — allow the download to proceed. The verification email
+      // is best-effort; it must never block lead capture or PDF access.
+      console.error('[subscribe] resend error (non-blocking):', resendErr)
     }
 
     return NextResponse.json({ success: true, alreadyVerified: false })
