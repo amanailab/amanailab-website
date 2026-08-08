@@ -29,6 +29,7 @@ const navLinks = [
   { href: '/admin/code-problems',     label: 'Code Lab',        icon: Code2 },
   { href: '/admin/community',         label: 'Community',       icon: MessageSquare },
   { href: '/admin/resources',         label: 'Cheat Sheets',    icon: BookOpen },
+  { href: '/admin/notes',             label: 'Notes & PDFs',    icon: FileText },
   { href: '/admin/news',              label: 'News',            icon: Newspaper },
   { href: '/admin/emails',            label: 'Emails & Waitlist', icon: Mail },
 ]

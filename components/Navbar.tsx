@@ -39,6 +39,7 @@ interface NavLink {
   kind: "link"
   href: string
   label: string
+  badge?: string
 }
 
 type NavItem = NavLink | NavDropdown
@@ -52,6 +53,7 @@ const navItems: NavItem[] = [
       { href: "/series",    label: "Series",      description: "Structured AI/ML YouTube series",      icon: <YoutubeIcon className="w-4 h-4" /> },
       { href: "/news",      label: "AI News",     description: "Daily curated AI & ML news",           icon: <Newspaper className="w-4 h-4" /> },
       { href: "/resources", label: "Resources",   description: "Free cheat sheets & PDFs",             icon: <BookOpen className="w-4 h-4" /> },
+      { href: "/notes",     label: "Notes & PDFs",  description: "Premium study notes — free for members", icon: <Crown className="w-4 h-4" /> },
     ],
   },
   {
@@ -98,7 +100,7 @@ const navItems: NavItem[] = [
       { href: "/career?tab=job-questions", label: "JD → Questions", description: "Paste a JD → get tailored questions", icon: <Briefcase className="w-4 h-4" /> },
     ],
   },
-  { kind: "link", href: "/blog",     label: "Blog"     },
+  { kind: "link", href: "/notes",    label: "Notes",    badge: "Members Free" },
   { kind: "link", href: "/services", label: "Services" },
   { kind: "link", href: "/about",    label: "About"    },
 ];
@@ -229,13 +231,18 @@ export default function Navbar() {
                     key={item.href}
                     href={item.href}
                     aria-current={active ? "page" : undefined}
-                    className={`relative px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
+                    className={`relative flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
                       active
                         ? "text-orange-400 bg-orange-500/8"
                         : "text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60"
                     }`}
                   >
                     {item.label}
+                    {item.badge && (
+                      <span className="text-[9px] font-black uppercase tracking-wide text-orange-400 bg-orange-500/15 border border-orange-500/25 px-1.5 py-0.5 rounded-full leading-none">
+                        {item.badge}
+                      </span>
+                    )}
                     {active && (
                       <motion.span
                         layoutId="nav-dot"
@@ -461,13 +468,18 @@ export default function Navbar() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${
+                      className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${
                         active
                           ? "text-orange-400 bg-orange-500/10"
                           : "text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60"
                       }`}
                     >
                       {item.label}
+                      {item.badge && (
+                        <span className="text-[9px] font-black uppercase tracking-wide text-orange-400 bg-orange-500/15 border border-orange-500/25 px-1.5 py-0.5 rounded-full leading-none">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 }
