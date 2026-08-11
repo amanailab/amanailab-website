@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   if (!(await auth())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { title, description, topic, pages, emoji, gradient, preview_points, price, pdf_path, is_new, sort_order } = await req.json()
+    const { title, description, topic, pages, emoji, gradient, preview_points, price, pdf_path, preview_image, is_new, sort_order } = await req.json()
 
     if (!title || !topic || !pdf_path) {
       return NextResponse.json({ error: 'title, topic and pdf_path are required.' }, { status: 400 })
@@ -47,6 +47,7 @@ export async function POST(req: Request) {
         preview_points: Array.isArray(preview_points) ? preview_points : [],
         price: Number(price) || 99,
         pdf_path,
+        ...(preview_image ? { preview_image } : {}),
         is_new: Boolean(is_new),
         is_active: true,
         sort_order: Number(sort_order) || 0,

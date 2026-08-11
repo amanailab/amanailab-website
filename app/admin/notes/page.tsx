@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import {
   Plus, Trash2, Eye, EyeOff, Loader2, CheckCircle,
-  UploadCloud, X, FileText, ExternalLink,
+  UploadCloud, X, FileText, ExternalLink, ImageIcon,
 } from 'lucide-react'
+import Image from 'next/image'
 import type { Note } from '@/lib/notes-data'
 import Link from 'next/link'
 
@@ -36,19 +37,22 @@ function fmt(b: number) {
 }
 
 export default function AdminNotesPage() {
-  const [notes, setNotes]         = useState<Note[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [showForm, setShowForm]   = useState(false)
-  const [form, setForm]           = useState(EMPTY)
-  const [uploaded, setUploaded]   = useState<Uploaded | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadPct, setUploadPct] = useState(0)
-  const [saving, setSaving]       = useState(false)
-  const [banner, setBanner]       = useState<{ msg: string; ok: boolean } | null>(null)
-  const [toggling, setToggling]   = useState<string | null>(null)
-  const [deleting, setDeleting]   = useState<string | null>(null)
-  const [dragOver, setDragOver]   = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [notes, setNotes]               = useState<Note[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [showForm, setShowForm]         = useState(false)
+  const [form, setForm]                 = useState(EMPTY)
+  const [uploaded, setUploaded]         = useState<Uploaded | null>(null)
+  const [uploading, setUploading]       = useState(false)
+  const [uploadPct, setUploadPct]       = useState(0)
+  const [previewImg, setPreviewImg]     = useState<string | null>(null)
+  const [uploadingImg, setUploadingImg] = useState(false)
+  const [saving, setSaving]             = useState(false)
+  const [banner, setBanner]             = useState<{ msg: string; ok: boolean } | null>(null)
+  const [toggling, setToggling]         = useState<string | null>(null)
+  const [deleting, setDeleting]         = useState<string | null>(null)
+  const [dragOver, setDragOver]         = useState(false)
+  const fileRef    = useRef<HTMLInputElement>(null)
+  const imgRef     = useRef<HTMLInputElement>(null)
 
   function flash(msg: string, ok = true) {
     setBanner({ msg, ok }); setTimeout(() => setBanner(null), 4000)
@@ -89,6 +93,22 @@ export default function AdminNotesPage() {
     const file = e.dataTransfer.files?.[0]; if (file) handleFilePick(file)
   }
 
+  async function handleImagePick(file: File) {
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    if (!allowed.includes(file.type)) { flash('PNG, JPG or WebP only.', false); return }
+    setUploadingImg(true)
+    try {
+      const fd = new FormData(); fd.append('file', file)
+      const res  = await fetch('/api/admin/notes/upload-preview', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Upload failed')
+      setPreviewImg(data.preview_image)
+      flash('Preview image uploaded!')
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Image upload failed', false)
+    } finally { setUploadingImg(false); if (imgRef.current) imgRef.current.value = '' }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!uploaded)          { flash('Upload a PDF first.', false); return }
@@ -106,13 +126,14 @@ export default function AdminNotesPage() {
           sort_order:  Number(form.sort_order) || 0,
           preview_points: form.preview_points.filter((p) => p.trim()),
           pdf_path:    uploaded.pdf_path,
+          ...(previewImg ? { preview_image: previewImg } : {}),
         }),
       })
       const data = await res.json()
       if (!res.ok) { flash(data.error ?? 'Failed to save.', false); return }
       flash('Note published successfully!')
       setNotes((prev) => [data, ...prev])
-      setShowForm(false); setForm(EMPTY); setUploaded(null)
+      setShowForm(false); setForm(EMPTY); setUploaded(null); setPreviewImg(null)
     } finally { setSaving(false) }
   }
 
@@ -175,7 +196,7 @@ export default function AdminNotesPage() {
               </p>
             </div>
             <button
-              onClick={() => { setShowForm(!showForm); if (showForm) { setForm(EMPTY); setUploaded(null) } }}
+              onClick={() => { setShowForm(!showForm); if (showForm) { setForm(EMPTY); setUploaded(null); setPreviewImg(null) } }}
               className={`flex items-center gap-2 text-sm font-bold px-5 py-2.5 rounded-xl transition-all ${
                 showForm
                   ? 'bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300'
@@ -364,6 +385,36 @@ export default function AdminNotesPage() {
                       ))}
                     </div>
                   </F>
+
+                  {/* Preview image upload */}
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5">
+                      Preview Image <span className="text-zinc-700 normal-case font-normal">(optional — screenshot of first page)</span>
+                    </label>
+                    <input ref={imgRef} type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden"
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImagePick(f) }} />
+                    {previewImg ? (
+                      <div className="flex items-start gap-3">
+                        <div className="relative w-24 h-32 rounded-xl overflow-hidden border border-zinc-700 shrink-0">
+                          <Image src={previewImg} alt="Preview" fill className="object-cover" />
+                        </div>
+                        <div className="flex flex-col gap-2 justify-center">
+                          <p className="text-xs text-emerald-400 font-semibold">✓ Preview image uploaded</p>
+                          <button type="button" onClick={() => setPreviewImg(null)}
+                            className="text-xs font-bold text-zinc-500 hover:text-red-400 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 px-3 py-1.5 rounded-lg transition-all w-fit">
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => imgRef.current?.click()} disabled={uploadingImg}
+                        className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-dashed border-zinc-700 text-zinc-500 hover:text-zinc-300 text-xs font-semibold px-4 py-3 rounded-xl transition-all w-full justify-center">
+                        {uploadingImg
+                          ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading image…</>
+                          : <><ImageIcon className="w-4 h-4" /> Upload sample page screenshot (PNG / JPG)</>}
+                      </button>
+                    )}
+                  </div>
 
                   {/* "New" badge toggle */}
                   <label className="flex items-center gap-3 cursor-pointer group w-fit">

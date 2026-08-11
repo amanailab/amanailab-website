@@ -11,6 +11,7 @@ export type Note = {
   preview_points: string[]
   price: number
   pdf_path: string        // filename inside the Supabase "notes" storage bucket
+  preview_image?: string  // public URL of a first-page screenshot (optional)
   is_new: boolean
   is_active: boolean
   sort_order: number

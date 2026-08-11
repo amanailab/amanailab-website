@@ -100,9 +100,10 @@ const navItems: NavItem[] = [
       { href: "/career?tab=job-questions", label: "JD → Questions", description: "Paste a JD → get tailored questions", icon: <Briefcase className="w-4 h-4" /> },
     ],
   },
-  { kind: "link", href: "/notes",    label: "Notes",    badge: "Members Free" },
-  { kind: "link", href: "/services", label: "Services" },
-  { kind: "link", href: "/about",    label: "About"    },
+  { kind: "link", href: "/notes",         label: "Notes",         badge: "Members Free" },
+  { kind: "link", href: "/services",      label: "Services" },
+  { kind: "link", href: "/connect-aman",  label: "Book a Session", badge: "1:1" },
+  { kind: "link", href: "/about",         label: "About"    },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
