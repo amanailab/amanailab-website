@@ -349,7 +349,7 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
                     {/* Live PDF preview */}
                     <div>
                       <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Sample Page</p>
-                      <PdfPreview noteId={modal.note.id} fade={true} pages={1} />
+                      <PdfPreview noteId={modal.note.id} fade={true} pages={2} />
                     </div>
 
                     {/* Price + CTA */}
