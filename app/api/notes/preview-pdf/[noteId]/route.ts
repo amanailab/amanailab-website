@@ -10,7 +10,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ noteId: 
 
   try {
     const { noteId } = await params
-    const supabase = getAdminSupabase()
+    const supabase   = getAdminSupabase()
 
     const { data: note, error } = await supabase
       .from('notes')
@@ -18,39 +18,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ noteId: 
       .eq('id', noteId)
       .single()
 
-    if (error || !note) return new Response('Not found', { status: 404 })
+    if (error || !note?.pdf_path) return new Response('Not found', { status: 404 })
 
-    // Generate a short-lived signed URL — then proxy-fetch it so the browser
-    // never hits Supabase directly (avoids CORS). Crucially we forward Range
-    // headers so PDF.js can do partial fetches and only download pages 1-2.
-    const { data: signed, error: signErr } = await supabase.storage
+    // Download the full blob server-side (avoids CORS — browser never touches Supabase directly)
+    const { data, error: dlErr } = await supabase.storage
       .from('notes')
-      .createSignedUrl(note.pdf_path, 300)
+      .download(note.pdf_path)
 
-    if (signErr || !signed?.signedUrl) {
+    if (dlErr || !data) {
+      console.error('[notes/preview-pdf] download error:', dlErr?.message)
       return new Response('Could not load PDF', { status: 500 })
     }
 
-    // Forward Range header if PDF.js asks for a byte range
-    const rangeHeader = req.headers.get('Range')
-    const upstreamHeaders: Record<string, string> = {}
-    if (rangeHeader) upstreamHeaders['Range'] = rangeHeader
-
-    const upstream = await fetch(signed.signedUrl, { headers: upstreamHeaders })
-
-    const resHeaders = new Headers()
-    resHeaders.set('Content-Type', 'application/pdf')
-    resHeaders.set('Cache-Control', 'private, max-age=300')
-    resHeaders.set('Accept-Ranges', 'bytes')  // tell PDF.js range requests are OK
-
-    const contentRange  = upstream.headers.get('Content-Range')
-    const contentLength = upstream.headers.get('Content-Length')
-    if (contentRange)  resHeaders.set('Content-Range',  contentRange)
-    if (contentLength) resHeaders.set('Content-Length', contentLength)
-
-    return new Response(upstream.body, {
-      status:  upstream.status,  // 200 or 206 (partial content)
-      headers: resHeaders,
+    return new Response(data, {
+      headers: {
+        'Content-Type':  'application/pdf',
+        'Cache-Control': 'private, max-age=300',
+        'Accept-Ranges': 'none',
+      },
     })
   } catch (err) {
     console.error('[notes/preview-pdf]', err)
