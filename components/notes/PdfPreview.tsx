@@ -80,13 +80,11 @@ export default function PdfPreview({ noteId, fade = true, pages: maxPages = 1 }:
     async function init() {
       setState('fetching'); setErrMsg('')
       try {
-        const res = await fetch(`/api/notes/preview-url/${noteId}`)
-        if (!res.ok) throw new Error('Preview unavailable')
-        const { url } = await res.json()
-
         await loadLib()
         if (cancelled) return
 
+        // Proxy route — same origin, no CORS
+        const url = `/api/notes/preview-pdf/${noteId}`
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER
         const doc = await window.pdfjsLib.getDocument({ url, withCredentials: false }).promise
         if (cancelled) return
