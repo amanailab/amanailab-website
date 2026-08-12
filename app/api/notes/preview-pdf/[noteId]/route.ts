@@ -20,18 +20,37 @@ export async function GET(req: Request, { params }: { params: Promise<{ noteId: 
 
     if (error || !note) return new Response('Not found', { status: 404 })
 
-    // Download server-side — no CORS, no signed URL needed in browser
-    const { data, error: dlErr } = await supabase.storage
+    // Generate a short-lived signed URL — then proxy-fetch it so the browser
+    // never hits Supabase directly (avoids CORS). Crucially we forward Range
+    // headers so PDF.js can do partial fetches and only download pages 1-2.
+    const { data: signed, error: signErr } = await supabase.storage
       .from('notes')
-      .download(note.pdf_path)
+      .createSignedUrl(note.pdf_path, 300)
 
-    if (dlErr || !data) return new Response('Could not load PDF', { status: 500 })
+    if (signErr || !signed?.signedUrl) {
+      return new Response('Could not load PDF', { status: 500 })
+    }
 
-    return new Response(data, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Cache-Control': 'private, max-age=300',
-      },
+    // Forward Range header if PDF.js asks for a byte range
+    const rangeHeader = req.headers.get('Range')
+    const upstreamHeaders: Record<string, string> = {}
+    if (rangeHeader) upstreamHeaders['Range'] = rangeHeader
+
+    const upstream = await fetch(signed.signedUrl, { headers: upstreamHeaders })
+
+    const resHeaders = new Headers()
+    resHeaders.set('Content-Type', 'application/pdf')
+    resHeaders.set('Cache-Control', 'private, max-age=300')
+    resHeaders.set('Accept-Ranges', 'bytes')  // tell PDF.js range requests are OK
+
+    const contentRange  = upstream.headers.get('Content-Range')
+    const contentLength = upstream.headers.get('Content-Length')
+    if (contentRange)  resHeaders.set('Content-Range',  contentRange)
+    if (contentLength) resHeaders.set('Content-Length', contentLength)
+
+    return new Response(upstream.body, {
+      status:  upstream.status,  // 200 or 206 (partial content)
+      headers: resHeaders,
     })
   } catch (err) {
     console.error('[notes/preview-pdf]', err)
