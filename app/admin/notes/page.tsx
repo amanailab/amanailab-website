@@ -7,6 +7,7 @@ import {
   UploadCloud, X, FileText, ExternalLink, ImageIcon,
 } from 'lucide-react'
 import Image from 'next/image'
+import PdfPreview from '@/components/notes/PdfPreview'
 import type { Note } from '@/lib/notes-data'
 import Link from 'next/link'
 
@@ -37,6 +38,7 @@ function fmt(b: number) {
 }
 
 export default function AdminNotesPage() {
+  const [previewNote, setPreviewNote]   = useState<Note | null>(null)
   const [notes, setNotes]               = useState<Note[]>([])
   const [loading, setLoading]           = useState(true)
   const [showForm, setShowForm]         = useState(false)
@@ -178,6 +180,34 @@ export default function AdminNotesPage() {
         }`}>
           {banner.ok ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
           {banner.msg}
+        </div>
+      )}
+
+      {/* ── PDF Preview Modal ── */}
+      {previewNote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setPreviewNote(null)}>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${previewNote.gradient} flex items-center justify-center text-lg shrink-0`}>
+                  {previewNote.emoji}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-zinc-100 truncate">{previewNote.title}</p>
+                  <p className="text-xs text-zinc-600">{previewNote.pages} pages · {previewNote.topic}</p>
+                </div>
+              </div>
+              <button onClick={() => setPreviewNote(null)}
+                className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-lg flex items-center justify-center transition-colors shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {/* PDF Preview — 2 pages for admin */}
+            <div className="p-4 max-h-[70vh] overflow-y-auto">
+              <PdfPreview noteId={previewNote.id} fade={false} pages={2} />
+            </div>
+          </div>
         </div>
       )}
 
@@ -494,6 +524,11 @@ export default function AdminNotesPage() {
                     </div>
                     {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => setPreviewNote(note)}
+                        title="Preview PDF"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-orange-400 hover:bg-orange-500/10 transition-all">
+                        <Eye className="w-4 h-4" />
+                      </button>
                       <button onClick={() => toggleActive(note)} disabled={toggling === note.id}
                         title={note.is_active ? 'Hide' : 'Make live'}
                         className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700 transition-all disabled:opacity-40">

@@ -5,10 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Download, Crown, CreditCard, X, CheckCircle,
   FileText, Loader2, Lock, Sparkles, Eye,
-  BookOpen, ChevronRight, ImageIcon,
+  BookOpen, ChevronRight,
 } from 'lucide-react'
 import type { Note } from '@/lib/notes-data'
-import Image from 'next/image'
+import PdfPreview from '@/components/notes/PdfPreview'
 
 declare global {
   interface Window {
@@ -289,39 +289,20 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
               >
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
 
-                  {/* Gradient banner */}
-                  <div className={`relative h-36 bg-gradient-to-br ${modal.note.gradient} shrink-0`}>
-                    <div className="absolute inset-0 bg-black/30" />
+                  {/* Compact header */}
+                  <div className={`relative h-20 bg-gradient-to-br ${modal.note.gradient} shrink-0`}>
+                    <div className="absolute inset-0 bg-black/35" />
                     <div className="absolute inset-0 opacity-[0.07]"
                       style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
-
-                    {/* Preview image inside banner */}
-                    {modal.note.preview_image ? (
-                      <div className="absolute right-4 bottom-0 translate-y-1/2 w-24 h-32 rounded-xl overflow-hidden border-2 border-zinc-800 shadow-2xl z-10">
-                        <Image
-                          src={modal.note.preview_image}
-                          alt="Preview"
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-zinc-900 to-transparent" />
-                        <div className="absolute bottom-1 inset-x-0 flex justify-center">
-                          <span className="text-[8px] font-black text-zinc-400 uppercase tracking-wide">Sample Page</span>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="relative z-10 p-5 flex flex-col h-full justify-end">
+                    <div className="relative z-10 px-5 flex flex-col h-full justify-center">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[9px] font-black text-white/60 bg-white/10 border border-white/15 px-2 py-0.5 rounded-full uppercase tracking-wide">{modal.note.topic}</span>
                         {modal.note.is_new && (
                           <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/20 border border-emerald-500/25 px-2 py-0.5 rounded-full uppercase">New</span>
                         )}
                       </div>
-                      <p className="text-base font-extrabold text-white leading-snug pr-28">{modal.note.title}</p>
+                      <p className="text-sm font-extrabold text-white leading-snug pr-10">{modal.note.title}</p>
                     </div>
-
-                    {/* Close button */}
                     <button onClick={close}
                       className="absolute top-3 right-3 z-20 w-7 h-7 bg-black/40 hover:bg-black/60 text-white rounded-lg flex items-center justify-center transition-colors">
                       <X className="w-4 h-4" />
@@ -365,24 +346,11 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
                       </div>
                     )}
 
-                    {/* Preview image expanded (if no space in banner) */}
-                    {modal.note.preview_image && (
-                      <div>
-                        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Sample Page</p>
-                        <div className="relative rounded-xl overflow-hidden border border-zinc-800">
-                          <Image
-                            src={modal.note.preview_image}
-                            alt="Sample page preview"
-                            width={480}
-                            height={320}
-                            className="w-full object-cover"
-                          />
-                          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-zinc-900 via-zinc-900/80 to-transparent flex items-end justify-center pb-3">
-                            <span className="text-xs font-bold text-zinc-500">Buy to unlock full PDF</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    {/* Live PDF preview */}
+                    <div>
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Sample Page</p>
+                      <PdfPreview noteId={modal.note.id} fade={true} pages={1} />
+                    </div>
 
                     {/* Price + CTA */}
                     <div className="border-t border-zinc-800 pt-4 space-y-2.5">
