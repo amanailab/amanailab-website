@@ -117,7 +117,7 @@ export default async function RootLayout({
         />
         {/* Clarity loaded via MicrosoftClarity component below — no duplicate here */}
       </head>
-      <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased">
+      <body className="min-h-screen flex flex-col bg-zinc-950 text-zinc-50 antialiased" suppressHydrationWarning>
         {/* Skip link for keyboard/screen-reader users */}
         <a
           href="#main-content"
