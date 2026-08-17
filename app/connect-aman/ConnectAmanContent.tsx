@@ -310,6 +310,8 @@ export default function ConnectAmanContent() {
   const [rzpReady, setRzpReady] = useState(false)
   const [error, setError]       = useState('')
   const paymentSucceeded        = React.useRef(false)
+  // Synchronous guard — prevents multiple handleBook calls before React re-renders the disabled state
+  const isHandlingBook          = React.useRef(false)
 
   useEffect(() => {
     if (document.querySelector('script[src*="razorpay"]')) { setRzpReady(true); return }
@@ -320,10 +322,18 @@ export default function ConnectAmanContent() {
   }, [])
 
   async function handleBook(session: Session) {
-    if (!rzpReady) { setError('Payment is loading, please try again.'); return }
+    // Hard synchronous guard: prevents any button from starting a second checkout while one is
+    // already in progress, even if the user clicks multiple buttons before React re-renders.
+    if (isHandlingBook.current) return
+    isHandlingBook.current = true
+
+    if (!rzpReady) {
+      setError('Payment is loading, please try again.')
+      isHandlingBook.current = false
+      return
+    }
     setError('')
     setBooking({ type: 'paying', session })
-
     paymentSucceeded.current = false
 
     try {
@@ -374,15 +384,21 @@ export default function ConnectAmanContent() {
             setBooking({ type: 'idle' })
           }
         },
-        // Only reset to idle on dismiss if payment didn't succeed — Razorpay fires ondismiss
-        // even after a successful payment when the modal closes, which would race with the
-        // async handler above and wipe out the success state.
-        modal: { ondismiss: () => { if (!paymentSucceeded.current) setBooking({ type: 'idle' }) } },
+        // Razorpay fires ondismiss even after a successful payment (when the modal closes),
+        // so we guard with paymentSucceeded ref. Also reset isHandlingBook so the user
+        // can start a new checkout after closing.
+        modal: {
+          ondismiss: () => {
+            isHandlingBook.current = false
+            if (!paymentSucceeded.current) setBooking({ type: 'idle' })
+          },
+        },
       })
       rzp.open()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
       setBooking({ type: 'idle' })
+      isHandlingBook.current = false
     }
   }
 

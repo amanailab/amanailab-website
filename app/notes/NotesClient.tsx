@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Download, Crown, CreditCard, X, CheckCircle,
@@ -33,6 +33,8 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError]         = useState('')
   const [rzpReady, setRzpReady]   = useState(false)
+  // Prevents the modal backdrop from closing the dialog while Razorpay checkout is active
+  const isBuying                  = useRef(false)
 
   const topicCounts = notes.reduce<Record<string, number>>((acc, n) => {
     acc[n.topic] = (acc[n.topic] ?? 0) + 1
@@ -52,7 +54,12 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
     document.body.appendChild(s)
   }, [])
 
-  function close() { setModal({ type: 'none' }); setCodeInput(''); setError(''); setIsLoading(false) }
+  function close() {
+    // Never close our modal while Razorpay checkout is active — the backdrop is still
+    // mounted behind Razorpay and clicks that "miss" Razorpay's overlay would dismiss it.
+    if (isBuying.current) return
+    setModal({ type: 'none' }); setCodeInput(''); setError(''); setIsLoading(false)
+  }
 
   function openPreview(note: Note) { setModal({ type: 'preview', note }); setError('') }
   function openCode(note: Note)    { setModal({ type: 'code',    note }); setCodeInput(''); setError('') }
@@ -102,14 +109,23 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
           } catch {
             setError('Network error. Your payment was received — contact support with ID: ' + r.razorpay_payment_id)
           } finally {
+            isBuying.current = false
             setIsLoading(false)
           }
         },
-        modal: { ondismiss: () => setIsLoading(false) },
+        modal: {
+          ondismiss: () => {
+            isBuying.current = false
+            setIsLoading(false)
+          },
+        },
       })
+      // Mark as buying BEFORE opening — prevents backdrop from dismissing our modal
+      isBuying.current = true
       rzp.open()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
+      isBuying.current = false
       setIsLoading(false)
     }
   }
