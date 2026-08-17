@@ -45,7 +45,8 @@ export async function POST(req: Request) {
     if (!res.ok) {
       const err = await res.json()
       console.error('[booking/create-order] Razorpay error:', err)
-      return NextResponse.json({ error: 'Failed to create payment order.' }, { status: 502 })
+      const desc = err?.error?.description ?? 'Failed to create payment order.'
+      return NextResponse.json({ error: desc }, { status: 502 })
     }
 
     const order = await res.json()
