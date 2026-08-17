@@ -148,12 +148,13 @@ type BookingState =
 // ─── Session card ─────────────────────────────────────────────────────────────
 
 function SessionCard({
-  session, i, onBook, paying,
+  session, i, onBook, paying, isActive,
 }: {
   session: Session
   i: number
   onBook: (s: Session) => void
   paying: boolean
+  isActive: boolean
 }) {
   const Icon = session.icon
   return (
@@ -224,8 +225,10 @@ function SessionCard({
               : 'bg-orange-500 hover:bg-orange-400 text-white hover:shadow-lg hover:shadow-orange-500/25'
             }`}
         >
-          {paying
+          {isActive
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening payment…</>
+            : paying
+            ? 'Unavailable right now'
             : <>Book Now — {session.price} <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
@@ -488,6 +491,7 @@ export default function ConnectAmanContent() {
               i={i}
               onBook={handleBook}
               paying={isPaying}
+              isActive={booking.type === 'paying' && booking.session.id === s.id}
             />
           ))}
         </div>
