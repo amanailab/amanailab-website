@@ -36,9 +36,10 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        amount:   note.price * 100,
-        currency: 'INR',
-        receipt:  `note_${noteId}_${Date.now()}`,
+        amount:          note.price * 100,
+        currency:        'INR',
+        receipt:         `note_${noteId}_${Date.now()}`,
+        payment_capture: 1,
       }),
     })
 

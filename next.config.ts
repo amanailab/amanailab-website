@@ -19,7 +19,7 @@ const securityHeaders = [
       "default-src 'self'",
       // Scripts: self + analytics (GA/Clarity) + Giscus + Pyodide CDN (in-browser Python)
       // wasm-unsafe-eval is required for Pyodide WebAssembly execution
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://giscus.app https://cdn.jsdelivr.net https://checkout.razorpay.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://giscus.app https://cdn.jsdelivr.net https://checkout.razorpay.com https://cdn.razorpay.com",
       // Styles: self + inline (Tailwind JIT, framer-motion) + Monaco editor CSS from CDN
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
       // Fonts: Geist (Google) + Monaco editor icon font (codicon.ttf) from CDN

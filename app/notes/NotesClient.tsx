@@ -91,14 +91,19 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
         order_id: order.id, image: '/logo.jpg',
         theme: { color: '#f97316' },
         handler: async (r: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
-          const vRes  = await fetch('/api/notes/verify-payment', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ noteId: note.id, paymentId: r.razorpay_payment_id, orderId: r.razorpay_order_id, signature: r.razorpay_signature }),
-          })
-          const vData = await vRes.json()
-          if (!vRes.ok) setError('Payment verified but download failed. Contact support: ' + r.razorpay_payment_id)
-          else          setModal({ type: 'download', note, url: vData.url })
-          setIsLoading(false)
+          try {
+            const vRes  = await fetch('/api/notes/verify-payment', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ noteId: note.id, paymentId: r.razorpay_payment_id, orderId: r.razorpay_order_id, signature: r.razorpay_signature }),
+            })
+            const vData = await vRes.json()
+            if (!vRes.ok) setError('Payment received but download failed. Contact support with ID: ' + r.razorpay_payment_id)
+            else          setModal({ type: 'download', note, url: vData.url })
+          } catch {
+            setError('Network error. Your payment was received — contact support with ID: ' + r.razorpay_payment_id)
+          } finally {
+            setIsLoading(false)
+          }
         },
         modal: { ondismiss: () => setIsLoading(false) },
       })

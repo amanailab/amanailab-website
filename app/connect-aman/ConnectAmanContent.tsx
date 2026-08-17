@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -309,6 +309,7 @@ export default function ConnectAmanContent() {
   const [booking, setBooking]   = useState<BookingState>({ type: 'idle' })
   const [rzpReady, setRzpReady] = useState(false)
   const [error, setError]       = useState('')
+  const paymentSucceeded        = React.useRef(false)
 
   useEffect(() => {
     if (document.querySelector('script[src*="razorpay"]')) { setRzpReady(true); return }
@@ -322,6 +323,8 @@ export default function ConnectAmanContent() {
     if (!rzpReady) { setError('Payment is loading, please try again.'); return }
     setError('')
     setBooking({ type: 'paying', session })
+
+    paymentSucceeded.current = false
 
     try {
       const orderRes = await fetch('/api/booking/create-order', {
@@ -347,25 +350,34 @@ export default function ConnectAmanContent() {
           razorpay_order_id:   string
           razorpay_signature:  string
         }) => {
-          const vRes = await fetch('/api/booking/verify-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              paymentId:   r.razorpay_payment_id,
-              orderId:     r.razorpay_order_id,
-              signature:   r.razorpay_signature,
-              sessionType: session.id,
-            }),
-          })
-          const vData = await vRes.json()
-          if (!vRes.ok) {
-            setError('Payment received but verification failed. Contact Aman with ID: ' + r.razorpay_payment_id)
+          try {
+            const vRes = await fetch('/api/booking/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                paymentId:   r.razorpay_payment_id,
+                orderId:     r.razorpay_order_id,
+                signature:   r.razorpay_signature,
+                sessionType: session.id,
+              }),
+            })
+            const vData = await vRes.json()
+            if (!vRes.ok) {
+              setError('Payment received but verification failed. Contact Aman with ID: ' + r.razorpay_payment_id)
+              setBooking({ type: 'idle' })
+            } else {
+              paymentSucceeded.current = true
+              setBooking({ type: 'success', session, paymentId: vData.paymentId })
+            }
+          } catch {
+            setError('Network error during verification. Save your Payment ID and contact Aman: ' + r.razorpay_payment_id)
             setBooking({ type: 'idle' })
-          } else {
-            setBooking({ type: 'success', session, paymentId: vData.paymentId })
           }
         },
-        modal: { ondismiss: () => setBooking({ type: 'idle' }) },
+        // Only reset to idle on dismiss if payment didn't succeed — Razorpay fires ondismiss
+        // even after a successful payment when the modal closes, which would race with the
+        // async handler above and wipe out the success state.
+        modal: { ondismiss: () => { if (!paymentSucceeded.current) setBooking({ type: 'idle' }) } },
       })
       rzp.open()
     } catch (e) {

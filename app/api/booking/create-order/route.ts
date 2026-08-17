@@ -34,10 +34,11 @@ export async function POST(req: Request) {
       method: 'POST',
       headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        amount:   session.amount * 100,
-        currency: 'INR',
-        receipt:  `booking_${sessionType}_${Date.now()}`,
-        notes:    { session_type: sessionType, session_label: session.label },
+        amount:          session.amount * 100,
+        currency:        'INR',
+        receipt:         `booking_${sessionType}_${Date.now()}`,
+        payment_capture: 1,
+        notes:           { session_type: sessionType, session_label: session.label },
       }),
     })
 
