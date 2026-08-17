@@ -33,8 +33,10 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError]         = useState('')
   const [rzpReady, setRzpReady]   = useState(false)
-  // Prevents the modal backdrop from closing the dialog while Razorpay checkout is active
-  const isBuying                  = useRef(false)
+  // Prevents the backdrop from closing the dialog while Razorpay checkout is active
+  const isBuying        = useRef(false)
+  // Set to true the moment payment succeeds so ondismiss (which fires right after) does not wipe state
+  const paymentSucceeded = useRef(false)
 
   const topicCounts = notes.reduce<Record<string, number>>((acc, n) => {
     acc[n.topic] = (acc[n.topic] ?? 0) + 1
@@ -83,6 +85,7 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
   async function buy(note: Note) {
     if (!rzpReady) { setError('Payment is loading, try again.'); return }
     setIsLoading(true); setError('')
+    paymentSucceeded.current = false
     try {
       const orderRes = await fetch('/api/notes/create-order', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -105,7 +108,10 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
             })
             const vData = await vRes.json()
             if (!vRes.ok) setError('Payment received but download failed. Contact support with ID: ' + r.razorpay_payment_id)
-            else          setModal({ type: 'download', note, url: vData.url })
+            else {
+              paymentSucceeded.current = true
+              setModal({ type: 'download', note, url: vData.url })
+            }
           } catch {
             setError('Network error. Your payment was received — contact support with ID: ' + r.razorpay_payment_id)
           } finally {
@@ -116,7 +122,10 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
         modal: {
           ondismiss: () => {
             isBuying.current = false
-            setIsLoading(false)
+            // Only reset loading if payment did not already succeed.
+            // Razorpay fires ondismiss right after the handler for successful payments,
+            // so without this guard we'd wipe isLoading while verify-payment is still in-flight.
+            if (!paymentSucceeded.current) setIsLoading(false)
           },
         },
       })
