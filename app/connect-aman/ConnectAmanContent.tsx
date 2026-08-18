@@ -11,11 +11,15 @@ import {
   PhoneCall, ClipboardList, Trophy,
 } from 'lucide-react'
 
+interface RazorpayFailure {
+  error?: { description?: string; reason?: string; code?: string }
+}
+
 declare global {
   interface Window {
     Razorpay: new (options: Record<string, unknown>) => {
       open(): void
-      on(event: string, handler: () => void): void
+      on(event: string, handler: (response: RazorpayFailure) => void): void
     }
   }
 }
@@ -396,12 +400,13 @@ export default function ConnectAmanContent() {
           },
         },
       })
-      // Reset state when Razorpay reports a payment failure (e.g. authentication failed, card declined).
-      // Without this, the modal stays open on top of the page showing the error, and ondismiss
-      // only fires after the user manually closes it — so we eagerly reset here too.
-      rzp.on('payment.failed', () => {
+      // Reset state and surface the real reason when Razorpay reports a payment failure
+      // (authentication failed, card declined, expired key, etc.). Without this the user
+      // just sees the checkout close with no explanation.
+      rzp.on('payment.failed', (resp: RazorpayFailure) => {
         isHandlingBook.current = false
         setBooking({ type: 'idle' })
+        setError(resp?.error?.description || 'Payment failed. Please try again.')
       })
       rzp.open()
     } catch (e) {
@@ -419,7 +424,7 @@ export default function ConnectAmanContent() {
         {booking.type === 'success' && (
           <SuccessOverlay
             state={booking}
-            onClose={() => setBooking({ type: 'idle' })}
+            onClose={() => { paymentSucceeded.current = false; setBooking({ type: 'idle' }) }}
           />
         )}
       </AnimatePresence>

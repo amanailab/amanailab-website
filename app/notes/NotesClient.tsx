@@ -10,11 +10,15 @@ import {
 import type { Note } from '@/lib/notes-data'
 import PdfPreview from '@/components/notes/PdfPreview'
 
+interface RazorpayFailure {
+  error?: { description?: string; reason?: string; code?: string }
+}
+
 declare global {
   interface Window {
     Razorpay: new (options: Record<string, unknown>) => {
       open(): void
-      on(event: string, handler: () => void): void
+      on(event: string, handler: (response: RazorpayFailure) => void): void
     }
   }
 }
@@ -132,9 +136,10 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
           },
         },
       })
-      rzp.on('payment.failed', () => {
+      rzp.on('payment.failed', (resp: RazorpayFailure) => {
         isBuying.current = false
         setIsLoading(false)
+        setError(resp?.error?.description || 'Payment failed. Please try again.')
       })
       // Mark as buying BEFORE opening — prevents backdrop from dismissing our modal
       isBuying.current = true

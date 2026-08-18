@@ -35,10 +35,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 })
     }
 
-    // Step 2: Optionally confirm payment status via Razorpay API (fail-open).
-    // If the API is unreachable we still honour the payment — the HMAC above is
-    // cryptographic proof that Razorpay initiated the transaction. We only block
-    // if the payment is definitively in a failed or un-started state.
+    // Step 2: Confirm the payment was actually captured via the Razorpay API.
+    // When the API is reachable we REQUIRE the money to have moved: status must be
+    // 'captured' (auto-capture) or 'authorized'. Anything else (created, failed,
+    // refunded…) is rejected so we never hand over the file without real payment.
+    // Only if the API itself is unreachable do we fall back to the HMAC signature,
+    // which is still cryptographic proof that Razorpay generated this payment.
     if (keyId) {
       try {
         const auth   = Buffer.from(`${keyId}:${keySecret}`).toString('base64')
@@ -47,11 +49,12 @@ export async function POST(req: Request) {
         })
         if (payRes.ok) {
           const payment = await payRes.json()
-          if (payment.status === 'failed' || payment.status === 'created') {
-            console.error('[notes/verify-payment] Payment in invalid state:', payment.status, paymentId)
-            return NextResponse.json({ error: `Payment ${payment.status} — please try again.` }, { status: 400 })
+          const paid = payment.status === 'captured' || payment.status === 'authorized'
+          if (!paid) {
+            console.error('[notes/verify-payment] Payment not captured:', payment.status, paymentId)
+            return NextResponse.json({ error: `Payment not completed (status: ${payment.status}). Please try again.` }, { status: 400 })
           }
-          console.log('[notes/verify-payment] Payment status confirmed:', payment.status, paymentId)
+          console.log('[notes/verify-payment] Payment captured:', payment.status, paymentId)
         } else {
           console.warn('[notes/verify-payment] Could not fetch payment status, proceeding on valid signature:', paymentId)
         }
