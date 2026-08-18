@@ -94,8 +94,11 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
       const order = await orderRes.json()
       if (!orderRes.ok) throw new Error(order.error ?? 'Could not create order')
 
+      const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      if (!rzpKey) throw new Error('Payment not configured. Please contact us.')
+
       const rzp = new window.Razorpay({
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        key: rzpKey,
         amount: order.amount, currency: order.currency,
         name: 'AmanAI Lab', description: note.title,
         order_id: order.id, image: '/logo.jpg',
