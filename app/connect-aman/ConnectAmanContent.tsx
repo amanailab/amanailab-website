@@ -148,12 +148,11 @@ type BookingState =
 // ─── Session card ─────────────────────────────────────────────────────────────
 
 function SessionCard({
-  session, i, onBook, paying, isActive,
+  session, i, onBook, isActive,
 }: {
   session: Session
   i: number
   onBook: (s: Session) => void
-  paying: boolean
   isActive: boolean
 }) {
   const Icon = session.icon
@@ -215,20 +214,18 @@ function SessionCard({
           <span className="text-zinc-300">{session.bestFor}</span>
         </p>
 
-        {/* CTA */}
+        {/* CTA — only this button changes state; others stay orange (ref guard blocks parallel payments) */}
         <button
           onClick={() => onBook(session)}
-          disabled={paying}
+          disabled={isActive}
           className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all mt-auto
-            ${paying
+            ${isActive
               ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
               : 'bg-orange-500 hover:bg-orange-400 text-white hover:shadow-lg hover:shadow-orange-500/25'
             }`}
         >
           {isActive
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening payment…</>
-            : paying
-            ? 'Unavailable right now'
             : <>Book Now — {session.price} <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
@@ -357,7 +354,6 @@ export default function ConnectAmanContent() {
         order_id:    order.id,
         image:       '/logo.jpg',
         theme:       { color: '#f97316' },
-        prefill:     { contact: '' },
         handler: async (r: {
           razorpay_payment_id: string
           razorpay_order_id:   string
@@ -404,8 +400,6 @@ export default function ConnectAmanContent() {
       isHandlingBook.current = false
     }
   }
-
-  const isPaying = booking.type === 'paying'
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
@@ -490,7 +484,6 @@ export default function ConnectAmanContent() {
               session={s}
               i={i}
               onBook={handleBook}
-              paying={isPaying}
               isActive={booking.type === 'paying' && booking.session.id === s.id}
             />
           ))}
