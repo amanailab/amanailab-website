@@ -129,6 +129,10 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
           },
         },
       })
+      rzp.on('payment.failed', () => {
+        isBuying.current = false
+        setIsLoading(false)
+      })
       // Mark as buying BEFORE opening — prevents backdrop from dismissing our modal
       isBuying.current = true
       rzp.open()

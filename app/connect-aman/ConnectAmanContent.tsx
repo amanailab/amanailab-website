@@ -393,6 +393,13 @@ export default function ConnectAmanContent() {
           },
         },
       })
+      // Reset state when Razorpay reports a payment failure (e.g. authentication failed, card declined).
+      // Without this, the modal stays open on top of the page showing the error, and ondismiss
+      // only fires after the user manually closes it — so we eagerly reset here too.
+      rzp.on('payment.failed', () => {
+        isHandlingBook.current = false
+        setBooking({ type: 'idle' })
+      })
       rzp.open()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
