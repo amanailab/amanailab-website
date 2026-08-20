@@ -8,6 +8,7 @@ interface DiagramNodeLike {
 interface DiagramEdgeLike {
   source: string
   target: string
+  data?: { label?: string }
 }
 
 /** Serialize a node/edge graph into a plain-text description for the AI reviewer. */
@@ -16,7 +17,10 @@ export function serializeDiagram(nodes: DiagramNodeLike[], edges: DiagramEdgeLik
   const byId = Object.fromEntries(nodes.map(n => [n.id, n.data?.label || n.data?.kind || 'node']))
   const comps = nodes.map(n => `- ${n.data?.label || n.data?.kind || 'node'}`).join('\n')
   const conns = edges.length
-    ? edges.map(e => `- ${byId[e.source] ?? '?'} → ${byId[e.target] ?? '?'}`).join('\n')
+    ? edges.map(e => {
+        const label = e.data?.label ? ` [${e.data.label}]` : ''
+        return `- ${byId[e.source] ?? '?'} →${label} ${byId[e.target] ?? '?'}`
+      }).join('\n')
     : '- (components placed but no connections drawn yet)'
   return `Components on the canvas:\n${comps}\n\nData flow / connections:\n${conns}`
 }

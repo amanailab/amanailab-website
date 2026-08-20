@@ -7,8 +7,8 @@ import {
   ArrowLeft, Save, Sparkles, CheckCircle, Circle, AlertCircle, Loader2,
   Eye, PenLine, X, RefreshCw, Play, Pause, RotateCcw, Building2, BookOpen,
   ListChecks, Cpu, Lightbulb, Target, Award, Bold, Heading2, Heading3,
-  List, Minus, Plus, Code2, Clock, Terminal, ChevronRight, ChevronLeft,
-  GripVertical,
+  List, Minus, Plus, Code2, ChevronRight, ChevronLeft, GripVertical,
+  Trophy, Hash,
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
@@ -18,7 +18,7 @@ import { DESIGN_TEMPLATE } from '@/lib/system-design-problems'
 const SystemCanvas = dynamic(() => import('./SystemCanvas'), {
   ssr: false,
   loading: () => (
-    <div className="flex-1 min-h-0 bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center justify-center">
+    <div className="flex-1 min-h-0 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-center">
       <Loader2 size={14} className="animate-spin text-zinc-600" />
     </div>
   ),
@@ -39,12 +39,7 @@ type RightTab   = 'write' | 'code' | 'preview'
 type LeftTab    = 'problem' | 'framework' | 'components'
 type CodeLang   = 'sql' | 'python' | 'typescript' | 'yaml' | 'plaintext'
 
-interface CodeSnippet {
-  id: string
-  name: string
-  language: CodeLang
-  code: string
-}
+interface CodeSnippet { id: string; name: string; language: CodeLang; code: string }
 
 interface ReviewResult {
   overallScore: number
@@ -58,10 +53,11 @@ interface ReviewResult {
   interviewerNote: string
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const STORAGE_PREFIX = 'sd_design_v2_'
-const CANVAS_PREFIX  = 'sd_canvas_v1_'
-const CODE_PREFIX    = 'sd_code_v1_'
+// ── Storage keys ──────────────────────────────────────────────────────────────
+const STORAGE_PREFIX    = 'sd_design_v2_'
+const CANVAS_PREFIX     = 'sd_canvas_v1_'
+const CODE_PREFIX       = 'sd_code_v1_'
+const COMPLETION_PREFIX = 'sd_best_v1_'
 
 const CODE_LANGS: { id: CodeLang; label: string }[] = [
   { id: 'sql',        label: 'SQL'        },
@@ -87,14 +83,17 @@ const SECTION_LABELS: Record<string, string> = {
 }
 
 // ── Interview phases ──────────────────────────────────────────────────────────
-interface Phase { name: string; shortName: string; color: string; bg: string; time: string; step: number }
+interface Phase {
+  step: number; name: string; shortName: string
+  color: string; bg: string; time: string; tip: string
+}
 
 const PHASES: Phase[] = [
-  { step: 1, name: 'Clarify Requirements', shortName: 'Clarify',      color: 'text-blue-400',   bg: 'bg-blue-500',   time: '0–3 min'   },
-  { step: 2, name: 'Capacity Estimation',  shortName: 'Estimation',   color: 'text-cyan-400',   bg: 'bg-cyan-500',   time: '3–6 min'   },
-  { step: 3, name: 'High-Level Design',    shortName: 'Architecture', color: 'text-green-400',  bg: 'bg-green-500',  time: '6–21 min'  },
-  { step: 4, name: 'Deep Dive',            shortName: 'Deep Dive',    color: 'text-violet-400', bg: 'bg-violet-500', time: '21–41 min' },
-  { step: 5, name: 'Trade-offs & Scale',   shortName: 'Trade-offs',   color: 'text-red-400',    bg: 'bg-red-500',    time: '41–45 min' },
+  { step: 1, name: 'Clarify Requirements', shortName: 'Clarify',      color: 'text-blue-400',   bg: 'bg-blue-500',   time: '0–3m',   tip: 'State 3 core requirements, scale, SLA, and what you\'re NOT building.' },
+  { step: 2, name: 'Capacity Estimation',  shortName: 'Estimate',     color: 'text-cyan-400',   bg: 'bg-cyan-500',   time: '3–6m',   tip: 'DAU → QPS → storage → bandwidth. Quick math, then move on.' },
+  { step: 3, name: 'High-Level Design',    shortName: 'Architecture', color: 'text-green-400',  bg: 'bg-green-500',  time: '6–21m',  tip: 'Draw main components, name each service, choose DB, explain data flow.' },
+  { step: 4, name: 'Deep Dive',            shortName: 'Deep Dive',    color: 'text-violet-400', bg: 'bg-violet-500', time: '21–41m', tip: 'Pick 2–3 critical components. Go deep: schema, API, algorithms, trade-offs.' },
+  { step: 5, name: 'Trade-offs & Scale',   shortName: 'Trade-offs',   color: 'text-orange-400', bg: 'bg-orange-500', time: '41–45m', tip: 'What did you trade off? How would you handle 10× load? What would you change?' },
 ]
 
 function getPhase(timerSec: number, started: boolean): Phase | null {
@@ -107,12 +106,12 @@ function getPhase(timerSec: number, started: boolean): Phase | null {
   return PHASES[4]
 }
 
-// ── Architecture text snippets ─────────────────────────────────────────────────
+// ── Architecture component snippets ───────────────────────────────────────────
 const ARCH_COMPONENTS = [
-  { label: 'Load Balancer',    icon: '⚖️', snippet: '**Load Balancer** (nginx / AWS ALB)\n- Distributes requests across N app-server instances\n- Health checks every 30 s, sticky sessions optional\n- Algorithm: round-robin / least-connections\n' },
-  { label: 'API Gateway',      icon: '🚪', snippet: '**API Gateway** (Kong / AWS API GW)\n- Rate limiting: token bucket (__ req/s per user)\n- Auth (JWT / OAuth 2), routing, logging\n- Target overhead: < 2 ms P99\n' },
+  { label: 'Load Balancer',    icon: '⚖️', snippet: '**Load Balancer** (nginx / AWS ALB)\n- Distributes requests across N app-server instances\n- Health checks every 30s, sticky sessions optional\n- Algorithm: round-robin / least-connections\n' },
+  { label: 'API Gateway',      icon: '🚪', snippet: '**API Gateway** (Kong / AWS API GW)\n- Rate limiting: token bucket (__ req/s per user)\n- Auth (JWT / OAuth 2), routing, logging\n- Target overhead: < 2ms P99\n' },
   { label: 'Cache (Redis)',     icon: '⚡', snippet: '**Cache** (Redis Cluster)\n- Strategy: Cache-aside / Write-through\n- TTL: __ s, Eviction: LRU\n- Hit-rate target: __%, Storage: __ GB\n' },
-  { label: 'SQL Database',     icon: '🗄️', snippet: '**SQL Database** (PostgreSQL / MySQL)\n- 1 primary + N read replicas (__ % read traffic)\n- Sharding by `user_id` (range / consistent hash)\n- Key indexes: `(user_id)`, `(created_at)`\n' },
+  { label: 'SQL Database',     icon: '🗄️', snippet: '**SQL Database** (PostgreSQL / MySQL)\n- 1 primary + N read replicas\n- Sharding by `user_id` (range / consistent hash)\n- Key indexes: `(user_id)`, `(created_at)`\n' },
   { label: 'NoSQL Database',   icon: '📦', snippet: '**NoSQL** (DynamoDB / Cassandra)\n- Partition key: `__`, Sort key: `__`\n- Consistency: eventual / strong\n- Throughput: __ RCU / __ WCU\n' },
   { label: 'Message Queue',    icon: '📨', snippet: '**Message Queue** (Kafka / SQS)\n- Topics: __, Partitions: __ (parallelism)\n- Consumer groups: __, Retention: __ days\n- Throughput: __ msg/s; at-least-once delivery\n' },
   { label: 'CDN',              icon: '🌐', snippet: '**CDN** (CloudFront / Cloudflare)\n- Caches static assets at PoP edges\n- Cache-Control: `max-age=__`\n- Origin fallback on cache miss\n' },
@@ -123,22 +122,22 @@ const ARCH_COMPONENTS = [
   { label: 'Object Storage',   icon: '🗂️', snippet: '**Object Storage** (S3 / GCS)\n- Stores: models, logs, datasets, embeddings\n- Lifecycle: Glacier after __ days\n- Versioning enabled; signed URLs for secure access\n' },
 ]
 
-// ── Interview framework ────────────────────────────────────────────────────────
+// ── Interview framework steps ─────────────────────────────────────────────────
 const FRAMEWORK_STEPS = [
   {
     num: '01', time: '2–3 min', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/25',
     title: 'Clarify Requirements',
-    tips: ['What are the 3 core functional requirements?', 'What scale? (users, QPS, data volume)', 'Latency SLA? Availability SLA?', 'Explicitly state what you are NOT building'],
+    tips: ['What are the 3 core functional requirements?', 'What scale? (users, QPS, data volume)', 'Latency SLA? Availability SLA?', 'State what you are NOT building'],
   },
   {
     num: '02', time: '2–3 min', color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/25',
     title: 'Capacity Estimation',
-    tips: ['DAU → QPS: divide by 86,400', 'Storage: record_size × daily_writes × retention', 'Bandwidth: avg_request_size × QPS', 'State whether to go deeper or move on'],
+    tips: ['DAU → QPS: divide by 86,400', 'Storage: record_size × daily_writes × retention', 'Bandwidth: avg_request_size × QPS', 'Move on quickly — don\'t over-engineer this step'],
   },
   {
     num: '03', time: '10–15 min', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/25',
     title: 'High-Level Architecture',
-    tips: ['Draw/describe main components and data flow', 'Choose SQL vs NoSQL — justify why', 'Identify stateless vs stateful services', 'Explain each component in one sentence'],
+    tips: ['Draw main components and data flow', 'Choose SQL vs NoSQL — justify why', 'Identify stateless vs stateful services', 'Explain each component in one sentence'],
   },
   {
     num: '04', time: '15–20 min', color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/25',
@@ -146,13 +145,22 @@ const FRAMEWORK_STEPS = [
     tips: ['Pick the most critical or risky components', 'Detail schemas, APIs, key algorithms', 'Discuss trade-offs — don\'t just describe', 'Cover failure modes and edge cases'],
   },
   {
-    num: '05', time: '5–10 min', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/25',
+    num: '05', time: '5–10 min', color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/25',
     title: 'Scale & Trade-offs',
     tips: ['Identify your design\'s bottlenecks', 'How would you handle 10× traffic?', 'What did you trade off and why?', 'What would you change with more time?'],
   },
 ]
 
-// ── Markdown → HTML ────────────────────────────────────────────────────────────
+// ── Section jump targets ───────────────────────────────────────────────────────
+const SECTION_JUMPS = [
+  { label: 'Req',  heading: '## 1. Requirements Clarification' },
+  { label: 'Cap',  heading: '## 2. Capacity Estimation' },
+  { label: 'Arch', heading: '## 3. High-Level Architecture' },
+  { label: 'Dive', heading: '## 4. Core Component Design' },
+  { label: 'Trade',heading: '## 9. Trade-offs & Alternatives Considered' },
+]
+
+// ── Markdown → HTML (preview) ─────────────────────────────────────────────────
 function mdToHtml(md: string): string {
   return md
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -180,67 +188,70 @@ function makeSnippet(name = 'Schema', lang: CodeLang = 'sql'): CodeSnippet {
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function DesignPad({ problem }: { problem: SDProblem }) {
 
-  // ── UI state ─────────────────────────────────────────────────────────────
-  const [mobilePane, setMobilePane]   = useState<MobilePane>('canvas')
-  const [rightTab, setRightTab]       = useState<RightTab>('write')
-  const [leftTab, setLeftTab]         = useState<LeftTab>('problem')
-  const [leftOpen, setLeftOpen]       = useState(false)   // collapsed by default → more canvas space
-  const [rightWidth, setRightWidth]   = useState(440)     // px, draggable
+  // ── UI state ──────────────────────────────────────────────────────────────
+  const [mobilePane, setMobilePane]     = useState<MobilePane>('canvas')
+  const [rightTab, setRightTab]         = useState<RightTab>('write')
+  const [leftTab, setLeftTab]           = useState<LeftTab>('problem')
+  const [leftOpen, setLeftOpen]         = useState(true)
+  const [rightWidth, setRightWidth]     = useState(420)
 
-  // ── Content ──────────────────────────────────────────────────────────────
-  const [design, setDesign]           = useState('')
-  const [snippets, setSnippets]       = useState<CodeSnippet[]>([])
-  const [activeId, setActiveId]       = useState('')
-  const [checklist, setChecklist]     = useState<Record<string, boolean>>({})
-  const [savedAt, setSavedAt]         = useState<Date | null>(null)
+  // ── Content ───────────────────────────────────────────────────────────────
+  const [design, setDesign]             = useState('')
+  const [snippets, setSnippets]         = useState<CodeSnippet[]>([])
+  const [activeId, setActiveId]         = useState('')
+  const [checklist, setChecklist]       = useState<Record<string, boolean>>({})
+  const [savedAt, setSavedAt]           = useState<Date | null>(null)
   const [diagramNodes, setDiagramNodes] = useState(0)
 
   // ── Snippet rename ────────────────────────────────────────────────────────
-  const [renamingId, setRenamingId]   = useState<string | null>(null)
-  const [renameVal, setRenameVal]     = useState('')
+  const [renamingId, setRenamingId]     = useState<string | null>(null)
+  const [renameVal, setRenameVal]       = useState('')
 
   // ── Timer ─────────────────────────────────────────────────────────────────
-  const [timerSec, setTimerSec]       = useState(45 * 60)
-  const [timerOn, setTimerOn]         = useState(false)
+  const [timerSec, setTimerSec]         = useState(45 * 60)
+  const [timerOn, setTimerOn]           = useState(false)
   const [timerStarted, setTimerStarted] = useState(false)
 
   // ── AI review ─────────────────────────────────────────────────────────────
-  const [reviewing, setReviewing]     = useState(false)
-  const [review, setReview]           = useState<ReviewResult | null>(null)
-  const [reviewError, setReviewError] = useState('')
-  const [reviewOpen, setReviewOpen]   = useState(false)
+  const [reviewing, setReviewing]       = useState(false)
+  const [review, setReview]             = useState<ReviewResult | null>(null)
+  const [reviewError, setReviewError]   = useState('')
+  const [reviewOpen, setReviewOpen]     = useState(false)
+
+  // ── Hints (progressive) ───────────────────────────────────────────────────
+  const [hintsRevealed, setHintsRevealed] = useState(0)
+
+  // ── Completion tracking ───────────────────────────────────────────────────
+  const [bestScore, setBestScore] = useState<{ score: number; grade: string } | null>(null)
 
   // ── Refs ──────────────────────────────────────────────────────────────────
-  const textareaRef    = useRef<HTMLTextAreaElement>(null)
-  const saveTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const timerInterval  = useRef<ReturnType<typeof setInterval> | null>(null)
+  const textareaRef   = useRef<HTMLTextAreaElement>(null)
+  const saveTimer     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null)
   const diagramTextRef = useRef('')
-  const startedRef     = useRef(false)
-  const resizingRef    = useRef(false)
-  const resizeStartX   = useRef(0)
-  const resizeStartW   = useRef(0)
+  const startedRef    = useRef(false)
+  const resizingRef   = useRef(false)
+  const resizeStartX  = useRef(0)
+  const resizeStartW  = useRef(0)
 
-  // Always-current state snapshot for stable callbacks
   const snap = useRef({ design, checklist, snippets, activeId })
   snap.current = { design, checklist, snippets, activeId }
 
-  const storageKey = STORAGE_PREFIX + problem.slug
-  const canvasKey  = CANVAS_PREFIX  + problem.slug
-  const codeKey    = CODE_PREFIX    + problem.slug
+  const storageKey    = STORAGE_PREFIX    + problem.slug
+  const canvasKey     = CANVAS_PREFIX     + problem.slug
+  const codeKey       = CODE_PREFIX       + problem.slug
+  const completionKey = COMPLETION_PREFIX + problem.slug
 
-  // ── Panel resize (right panel drag handle) ────────────────────────────────
+  // ── Panel resize ──────────────────────────────────────────────────────────
   const onResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     resizingRef.current = true
     resizeStartX.current = e.clientX
     resizeStartW.current = rightWidth
-
     const onMove = (ev: MouseEvent) => {
       if (!resizingRef.current) return
-      // dragging left = right panel grows; dragging right = shrinks
       const delta = resizeStartX.current - ev.clientX
-      const next = Math.max(300, Math.min(750, resizeStartW.current + delta))
-      setRightWidth(next)
+      setRightWidth(Math.max(300, Math.min(700, resizeStartW.current + delta)))
     }
     const onUp = () => {
       resizingRef.current = false
@@ -266,7 +277,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   // ── Load saved state ───────────────────────────────────────────────────────
   useEffect(() => {
-    // Notes
     try {
       const raw = localStorage.getItem(storageKey)
       if (raw) {
@@ -279,7 +289,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       }
     } catch { setDesign(DESIGN_TEMPLATE) }
 
-    // Code snippets
     try {
       const raw = localStorage.getItem(codeKey)
       if (raw) {
@@ -288,17 +297,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         setSnippets(snips)
         setActiveId(p.activeId ?? snips[0].id)
       } else {
-        const s = makeSnippet()
-        setSnippets([s])
-        setActiveId(s.id)
+        const s = makeSnippet(); setSnippets([s]); setActiveId(s.id)
       }
-    } catch {
-      const s = makeSnippet()
-      setSnippets([s])
-      setActiveId(s.id)
-    }
+    } catch { const s = makeSnippet(); setSnippets([s]); setActiveId(s.id) }
 
-    // Seed diagram text
     try {
       const raw = localStorage.getItem(canvasKey)
       if (raw) {
@@ -309,9 +311,14 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         }
       }
     } catch {}
-  }, [storageKey, codeKey, canvasKey])
 
-  // ── Timer ──────────────────────────────────────────────────────────────────
+    try {
+      const raw = localStorage.getItem(completionKey)
+      if (raw) setBestScore(JSON.parse(raw))
+    } catch {}
+  }, [storageKey, codeKey, canvasKey, completionKey])
+
+  // ── Timer tick ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (timerOn) {
       timerInterval.current = setInterval(() => {
@@ -330,9 +337,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   }, [])
 
   // ── Persist ────────────────────────────────────────────────────────────────
-  const persist = useCallback((
-    d: string, cl: Record<string, boolean>, snips: CodeSnippet[], aid: string,
-  ) => {
+  const persist = useCallback((d: string, cl: Record<string, boolean>, snips: CodeSnippet[], aid: string) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
       try {
@@ -434,9 +439,26 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     })
   }, [persist, autoStartTimer])
 
+  // ── Section jump ───────────────────────────────────────────────────────────
+  const jumpToSection = useCallback((heading: string) => {
+    const el = textareaRef.current
+    if (!el) return
+    setRightTab('write')
+    if (mobilePane !== 'answer') setMobilePane('answer')
+    const idx = el.value.indexOf(heading)
+    if (idx >= 0) {
+      const linesBefore = el.value.substring(0, idx).split('\n').length
+      el.scrollTop = Math.max(0, (linesBefore - 2) * 20)
+      el.focus()
+      el.setSelectionRange(idx + heading.length, idx + heading.length)
+    } else {
+      insertAt('\n' + heading + '\n\n')
+    }
+  }, [mobilePane, insertAt])
+
   // ── Timer helpers ──────────────────────────────────────────────────────────
-  const fmt  = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
-  const tClr = timerSec <= 300 ? 'text-red-400' : timerSec <= 600 ? 'text-orange-400' : 'text-zinc-200'
+  const fmt      = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  const tClr     = timerSec <= 300 ? 'text-red-400' : timerSec <= 600 ? 'text-orange-400' : 'text-zinc-200'
   const resetTimer = () => { setTimerOn(false); setTimerSec(45 * 60); setTimerStarted(false); startedRef.current = false }
   const startTimer = () => { startedRef.current = true; setTimerOn(true); setTimerStarted(true) }
 
@@ -450,41 +472,45 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   }
 
   // ── AI review ─────────────────────────────────────────────────────────────
-  const buildPayload = () => {
-    const diagram = diagramTextRef.current.trim()
-    let d = design.trim()
-    if (diagram) d += `\n\n---\n\n## Architecture Diagram (visual canvas)\n${diagram}`
-    return {
-      problem: problem.problem,
-      design: d,
-      codeSnippets: snippets.filter(s => s.code.trim()).map(s => ({ name: s.name, language: s.language, code: s.code })),
-    }
-  }
-
   const handleReview = async () => {
     const { snippets: snips } = snap.current
     const hasText    = design.trim().length >= 100
     const hasDiagram = diagramNodes >= 2
     const hasCode    = snips.some(s => s.code.trim().length > 0)
     if (!hasText && !hasDiagram && !hasCode) {
-      setReviewError('Add more content first — write a few paragraphs, draw 2+ diagram components, or add code snippets.')
+      setReviewError('Add more content first — write a few paragraphs, draw 2+ diagram components, or add code.')
       return
     }
     setReviewing(true); setReviewError(''); setReview(null)
     try {
+      const diagram = diagramTextRef.current.trim()
+      let d = design.trim()
+      if (diagram) d += `\n\n---\n\n## Architecture Diagram (visual canvas)\n${diagram}`
       const res = await fetch('/api/system-design/review', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(buildPayload()),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          problem: problem.problem,
+          design: d,
+          codeSnippets: snips.filter(s => s.code.trim()).map(s => ({ name: s.name, language: s.language, code: s.code })),
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Review failed')
-      setReview(data.review); setReviewOpen(true)
+      setReview(data.review)
+      setReviewOpen(true)
+      // Persist best score
+      if (!bestScore || data.review.overallScore > bestScore.score) {
+        const next = { score: data.review.overallScore, grade: data.review.grade }
+        setBestScore(next)
+        try { localStorage.setItem(completionKey, JSON.stringify(next)) } catch {}
+      }
     } catch (e: unknown) {
       setReviewError((e instanceof Error ? e.message : '') || 'Review failed. Try again.')
     } finally { setReviewing(false) }
   }
 
-  // ── Derived ────────────────────────────────────────────────────────────────
+  // ── Derived values ─────────────────────────────────────────────────────────
   const phase         = getPhase(timerSec, timerStarted)
   const coveredCount  = Object.values(checklist).filter(Boolean).length
   const wordCount     = design.split(/\s+/).filter(Boolean).length
@@ -493,79 +519,116 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const RING_C        = 2 * Math.PI * 42
   const gradeColor: Record<string, string> = { A: '#10b981', B: '#3b82f6', C: '#eab308', D: '#ef4444' }
 
-  // ─ Render ──────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="h-full flex flex-col bg-zinc-950 overflow-hidden">
 
-      {/* ── HEADER ───────────────────────────────────────────────────────── */}
-      <header className="h-12 flex-shrink-0 flex items-center gap-2 px-3 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur z-30">
+      {/* ═══ HEADER ══════════════════════════════════════════════════════════ */}
+      <header className="h-14 flex-shrink-0 flex items-center gap-2 px-3 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur z-30">
+
         <Link href="/system-design"
           className="flex items-center gap-1 text-zinc-500 hover:text-zinc-200 text-xs transition-colors flex-shrink-0">
           <ArrowLeft size={13} /><span className="hidden sm:inline">Problems</span>
         </Link>
-        <span className="text-zinc-700 hidden sm:inline">›</span>
-        <span className="text-sm font-semibold text-zinc-200 truncate flex-1 min-w-0">{problem.title}</span>
+        <span className="text-zinc-700 hidden sm:inline text-sm">›</span>
 
-        <span className={`hidden lg:inline flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full border font-bold ${
+        <span className="text-sm font-semibold text-zinc-100 truncate max-w-[140px] sm:max-w-[260px] lg:max-w-none">{problem.title}</span>
+
+        <span className={`hidden md:inline flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full border font-bold ${
           problem.difficulty === 'Hard'
             ? 'text-red-400 border-red-500/30 bg-red-500/10'
             : 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
         }`}>{problem.difficulty}</span>
 
-        {/* Phase badge */}
-        {phase ? (
-          <span className={`hidden xl:flex items-center gap-1 flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 font-semibold ${phase.color}`}>
-            <Clock size={9} /> {phase.shortName}
-          </span>
-        ) : timerStarted ? null : (
-          <span className="hidden xl:inline flex-shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-600 font-semibold">
-            Ready
-          </span>
+        {/* Phase timeline segments */}
+        <div className="hidden lg:flex items-center gap-1 ml-2 flex-shrink-0">
+          {PHASES.map((p, i) => {
+            const isCurrent = phase?.step === p.step
+            const isPast    = (phase?.step ?? 0) > p.step
+            return (
+              <div key={p.step} className="flex items-center gap-0.5">
+                <div title={`${p.name} · ${p.time}`}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-md transition-all text-[10px] font-semibold cursor-default ${
+                    isCurrent ? `${p.color} bg-zinc-800 ring-1 ring-inset ring-zinc-700`
+                    : isPast  ? 'text-zinc-700'
+                    : 'text-zinc-800'
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-all ${
+                    isCurrent ? `${p.bg} shadow-sm` : isPast ? 'bg-zinc-700' : 'bg-zinc-800'
+                  }`} />
+                  {p.shortName}
+                </div>
+                {i < PHASES.length - 1 && <span className="text-zinc-800 text-xs">›</span>}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Best score badge */}
+        {bestScore && (
+          <div className={`hidden lg:flex items-center gap-1 flex-shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-bold ${GRADE_CONFIG[bestScore.grade]?.color ?? 'text-zinc-400'} ${GRADE_CONFIG[bestScore.grade]?.bg ?? 'bg-zinc-800 border-zinc-700'}`}>
+            <Trophy size={10} />{bestScore.score}/10
+          </div>
         )}
 
-        {/* Timer */}
+        <div className="flex-1" />
+
+        {/* Timer controls */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <span className={`text-sm font-mono font-bold tabular-nums ${tClr}`}>{fmt(timerSec)}</span>
           {!timerStarted ? (
             <button onClick={startTimer}
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
+              className="flex items-center gap-1 text-[10px] px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors font-semibold">
               <Play size={10} /><span className="hidden sm:inline">Start</span>
             </button>
           ) : (
             <>
               <button onClick={() => setTimerOn(v => !v)}
-                className="w-6 h-6 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
-                {timerOn ? <Pause size={10} /> : <Play size={10} />}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
+                {timerOn ? <Pause size={11} /> : <Play size={11} />}
               </button>
               <button onClick={resetTimer}
-                className="w-6 h-6 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
-                <RotateCcw size={9} />
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
+                <RotateCcw size={10} />
               </button>
             </>
           )}
         </div>
 
-        <button onClick={downloadMd} title="Download answer as Markdown"
+        <button onClick={downloadMd} title="Download as Markdown"
           className="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0">
           <Save size={13} />
         </button>
 
         <button onClick={handleReview} disabled={reviewing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold transition-all disabled:opacity-60 flex-shrink-0 shadow-lg shadow-orange-500/20">
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white text-xs font-semibold transition-all disabled:opacity-60 flex-shrink-0 shadow-lg shadow-orange-500/20">
           {reviewing ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-          <span>{reviewing ? 'Reviewing…' : 'AI Review'}</span>
+          <span className="hidden sm:inline">{reviewing ? 'Reviewing…' : 'AI Review'}</span>
+          <span className="sm:hidden">{reviewing ? '…' : 'Review'}</span>
         </button>
       </header>
 
-      {/* ── MOBILE TAB BAR ───────────────────────────────────────────────── */}
+      {/* Phase tip bar — shows the current phase prompt below the header */}
+      {phase && timerStarted && (
+        <div className={`hidden xl:flex flex-shrink-0 items-center gap-2 px-4 py-1.5 border-b border-zinc-900/80 text-[11px] ${phase.color}`}
+          style={{ background: 'rgba(9,9,11,0.95)' }}>
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${phase.bg} animate-pulse`} />
+          <span className="font-bold">{phase.name}</span>
+          <span className="text-zinc-700 mx-0.5">·</span>
+          <span className="text-zinc-500">{phase.tip}</span>
+        </div>
+      )}
+
+      {/* ═══ MOBILE TAB BAR ══════════════════════════════════════════════════ */}
       <div className="xl:hidden flex-shrink-0 flex border-b border-zinc-800 bg-zinc-950">
         {([
           { id: 'problem' as MobilePane, icon: <ListChecks size={12} />, label: 'Problem' },
           { id: 'canvas'  as MobilePane, icon: <Code2 size={12} />,      label: 'Diagram' },
-          { id: 'answer'  as MobilePane, icon: <PenLine size={12} />,    label: 'Answer'  },
+          { id: 'answer'  as MobilePane, icon: <PenLine size={12} />,    label: 'Write'   },
         ]).map(tab => (
           <button key={tab.id} onClick={() => setMobilePane(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-all border-b-2 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold transition-all border-b-2 ${
               mobilePane === tab.id
                 ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-zinc-500 hover:text-zinc-300'
@@ -575,35 +638,18 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         ))}
       </div>
 
-      {/* ── MAIN BODY ────────────────────────────────────────────────────── */}
+      {/* ═══ MAIN BODY ═══════════════════════════════════════════════════════ */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
 
-        {/* ── LEFT: collapsed icon rail (desktop only) ─────────────────── */}
-        {!leftOpen && (
-          <div className="hidden xl:flex flex-col w-10 flex-shrink-0 border-r border-zinc-800 bg-zinc-950 items-center pt-2 gap-1">
-            {([
-              { id: 'problem'    as LeftTab, icon: <ListChecks size={15} />, title: 'Problem'   },
-              { id: 'framework'  as LeftTab, icon: <BookOpen size={15} />,   title: 'Framework' },
-              { id: 'components' as LeftTab, icon: <Cpu size={15} />,        title: 'Snippets'  },
-            ]).map(t => (
-              <button key={t.id}
-                onClick={() => { setLeftTab(t.id); setLeftOpen(true) }}
-                title={t.title}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-all">
-                {t.icon}
-              </button>
-            ))}
-            <div className="flex-1" />
-            <button onClick={() => setLeftOpen(true)} title="Expand sidebar"
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-700 hover:text-zinc-400 hover:bg-zinc-800 transition-all mb-2">
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        )}
+        {/* ── LEFT SIDEBAR ────────────────────────────────────────────────── */}
+        <aside className={`
+          ${mobilePane === 'problem' ? 'flex' : 'hidden'}
+          ${leftOpen ? 'xl:flex xl:w-[280px]' : 'xl:hidden'}
+          flex-col w-full xl:flex-shrink-0 border-r border-zinc-800 bg-zinc-950 min-h-0
+        `}>
 
-        {/* ── LEFT SIDEBAR expanded ────────────────────────────────────── */}
-        <aside className={`${mobilePane === 'problem' ? 'flex' : 'hidden'} ${leftOpen ? 'xl:flex' : 'xl:hidden'} flex-col w-full xl:w-[252px] xl:flex-shrink-0 border-r border-zinc-800 bg-zinc-950 min-h-0`}>
-          <div className="flex gap-0.5 p-1.5 border-b border-zinc-800 flex-shrink-0">
+          {/* Sidebar tab bar */}
+          <div className="flex items-center gap-0.5 p-1.5 border-b border-zinc-800 flex-shrink-0">
             {([
               { id: 'problem'    as LeftTab, icon: <ListChecks size={12} />, label: 'Problem'   },
               { id: 'framework'  as LeftTab, icon: <BookOpen size={12} />,   label: 'Framework' },
@@ -611,110 +657,155 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
             ]).map(t => (
               <button key={t.id} onClick={() => setLeftTab(t.id)}
                 className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
-                  leftTab === t.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                  leftTab === t.id
+                    ? 'bg-zinc-800 text-zinc-100'
+                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'
                 }`}>
                 {t.icon}<span className="hidden xl:inline">{t.label}</span>
               </button>
             ))}
-            <button onClick={() => setLeftOpen(false)} title="Collapse sidebar"
+            <button onClick={() => setLeftOpen(false)} title="Collapse"
               className="hidden xl:flex w-7 h-7 items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-all flex-shrink-0">
               <ChevronLeft size={13} />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto min-h-0 p-2.5 space-y-2.5">
 
+            {/* ─── PROBLEM TAB ─── */}
             {leftTab === 'problem' && (
               <>
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                  <div className="px-3 py-2 border-b border-zinc-800">
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">The Problem</span>
+                {/* Problem statement */}
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="px-3 py-2.5 border-b border-zinc-800/70 flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">The Problem</span>
+                    <span className={`ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${
+                      problem.category === 'LLM Infrastructure' ? 'text-violet-400 bg-violet-500/10 border-violet-500/20'
+                      : problem.category === 'ML Systems' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+                      : 'text-green-400 bg-green-500/10 border-green-500/20'
+                    }`}>{problem.category}</span>
                   </div>
-                  <div className="px-3 py-2.5 text-xs text-zinc-400 leading-relaxed"
+                  <div className="px-3 py-3 text-xs text-zinc-400 leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: mdToHtml(problem.problem) }} />
                 </div>
 
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                  <div className="px-3 py-2 border-b border-zinc-800">
+                {/* Scale & Constraints */}
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="px-3 py-2 border-b border-zinc-800/70">
                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Scale &amp; Constraints</span>
                   </div>
                   <ul className="px-3 py-2.5 space-y-1.5">
                     {problem.constraints.map(c => (
                       <li key={c} className="flex items-start gap-1.5 text-xs text-zinc-400">
-                        <span className="text-orange-400 flex-shrink-0 mt-0.5 text-[10px]">▸</span><span>{c}</span>
+                        <span className="text-orange-400/80 flex-shrink-0 mt-0.5 text-[10px]">▸</span>
+                        <span className="leading-snug">{c}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                  <div className="px-3 py-2 border-b border-zinc-800 flex items-center justify-between">
+                {/* Must Cover checklist */}
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="px-3 py-2 border-b border-zinc-800/70 flex items-center gap-2">
                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Must Cover</span>
-                    <span className={`text-[10px] font-bold tabular-nums ${coveredCount === problem.keyAreas.length ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                      {coveredCount}/{problem.keyAreas.length}
-                    </span>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="h-1 bg-zinc-800">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-300"
-                      style={{ width: `${(coveredCount / Math.max(problem.keyAreas.length, 1)) * 100}%` }}
-                    />
+                    <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
+                        style={{ width: `${(coveredCount / Math.max(problem.keyAreas.length, 1)) * 100}%` }} />
+                    </div>
+                    <span className={`text-[10px] font-bold tabular-nums flex-shrink-0 ${
+                      coveredCount === problem.keyAreas.length ? 'text-emerald-400' : 'text-zinc-600'
+                    }`}>{coveredCount}/{problem.keyAreas.length}</span>
                   </div>
                   <div className="px-3 py-2.5 space-y-2">
                     {problem.keyAreas.map(area => (
                       <button key={area} onClick={() => toggleCheck(area)}
-                        className="w-full flex items-start gap-2 text-left group">
+                        className="w-full flex items-start gap-2.5 text-left group">
                         {checklist[area]
-                          ? <CheckCircle size={12} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                          : <Circle size={12} className="text-zinc-700 group-hover:text-zinc-500 transition-colors flex-shrink-0 mt-0.5" />}
-                        <span className={`text-xs leading-snug ${checklist[area] ? 'line-through text-zinc-600' : 'text-zinc-300'}`}>{area}</span>
+                          ? <CheckCircle size={13} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                          : <Circle size={13} className="text-zinc-700 group-hover:text-zinc-500 transition-colors flex-shrink-0 mt-0.5" />}
+                        <span className={`text-xs leading-snug transition-colors ${
+                          checklist[area] ? 'line-through text-zinc-700' : 'text-zinc-300 group-hover:text-zinc-100'
+                        }`}>{area}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                  <div className="px-3 py-2 border-b border-zinc-800 flex items-center gap-1.5">
-                    <Lightbulb size={11} className="text-yellow-400" />
+                {/* Progressive hints */}
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl overflow-hidden">
+                  <div className="px-3 py-2 border-b border-zinc-800/70 flex items-center gap-1.5">
+                    <Lightbulb size={11} className="text-yellow-400 flex-shrink-0" />
                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Hints</span>
+                    {hintsRevealed > 0 && (
+                      <span className="ml-auto text-[10px] text-zinc-600 tabular-nums">
+                        {hintsRevealed}/{problem.hints.length}
+                      </span>
+                    )}
                   </div>
-                  <div className="px-3 py-2.5 space-y-1.5">
-                    {problem.hints.map((h, i) => (
-                      <p key={i} className="text-xs text-zinc-500 leading-relaxed">💡 {h}</p>
-                    ))}
+                  <div className="px-3 py-2.5 space-y-2.5">
+                    {hintsRevealed === 0 ? (
+                      <p className="text-[11px] text-zinc-600 italic">Try on your own first. Reveal hints only when stuck.</p>
+                    ) : (
+                      problem.hints.slice(0, hintsRevealed).map((h, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-zinc-400 leading-relaxed">
+                          <span className="text-yellow-400/80 flex-shrink-0 font-bold mt-0.5 text-[10px]">{i + 1}.</span>
+                          <span>{h}</span>
+                        </div>
+                      ))
+                    )}
+                    {hintsRevealed < problem.hints.length && (
+                      <button
+                        onClick={() => setHintsRevealed(n => n + 1)}
+                        className="w-full flex items-center gap-1.5 justify-center text-[11px] px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20 transition-colors font-semibold">
+                        <Lightbulb size={11} />
+                        {hintsRevealed === 0 ? 'Show first hint' : 'Show next hint'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </>
             )}
 
+            {/* ─── FRAMEWORK TAB ─── */}
             {leftTab === 'framework' && (
               <div className="space-y-2">
-                <p className="text-[10px] text-zinc-600 px-0.5">FAANG interview structure · 45 min total</p>
-                {/* Phase progress dots */}
-                {phase && (
-                  <div className="flex gap-1.5 px-0.5">
+                <p className="text-[10px] text-zinc-600 px-0.5 pb-0.5">FAANG interview structure · 45 min total</p>
+
+                {/* Phase progress bar */}
+                {timerStarted && (
+                  <div className="flex gap-1 px-0.5 mb-3">
                     {PHASES.map(p => (
-                      <div key={p.step}
-                        className={`flex-1 h-1 rounded-full transition-all ${p.step <= phase.step ? p.bg : 'bg-zinc-800'}`}
+                      <div key={p.step} title={p.name}
+                        className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${
+                          (phase?.step ?? 0) >= p.step ? p.bg : 'bg-zinc-800'
+                        }`}
                       />
                     ))}
                   </div>
                 )}
-                {FRAMEWORK_STEPS.map(step => (
-                  <div key={step.num} className={`border rounded-xl ${step.bg} ${phase?.step === Number(step.num) ? 'ring-1 ring-offset-0' : ''}`}>
+
+                {FRAMEWORK_STEPS.map((step, i) => (
+                  <div key={step.num}
+                    className={`border rounded-xl transition-all ${step.bg} ${
+                      phase?.step === i + 1 ? 'shadow-lg' : ''
+                    }`}
+                  >
                     <div className="px-3 py-2.5">
                       <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`text-base font-extrabold opacity-30 ${step.color} tabular-nums leading-none`}>{step.num}</span>
-                        <div>
+                        <span className={`text-xl font-extrabold opacity-20 ${step.color} tabular-nums leading-none`}>{step.num}</span>
+                        <div className="flex-1 min-w-0">
                           <p className={`text-xs font-bold ${step.color}`}>{step.title}</p>
                           <p className="text-[10px] text-zinc-600">{step.time}</p>
                         </div>
+                        {phase?.step === i + 1 && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-zinc-900/80 border border-zinc-700 text-zinc-300 font-bold flex-shrink-0">NOW</span>
+                        )}
                       </div>
                       <ul className="space-y-1">
                         {step.tips.map(tip => (
-                          <li key={tip} className={`flex items-start gap-1 text-[11px] text-zinc-400`}>
-                            <span className={`${step.color} mt-0.5 flex-shrink-0 text-[10px]`}>→</span>{tip}
+                          <li key={tip} className="flex items-start gap-1.5 text-[11px] text-zinc-400 leading-snug">
+                            <span className={`${step.color} mt-0.5 flex-shrink-0 text-[9px]`}>→</span>{tip}
                           </li>
                         ))}
                       </ul>
@@ -724,9 +815,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               </div>
             )}
 
+            {/* ─── COMPONENTS TAB ─── */}
             {leftTab === 'components' && (
-              <div className="space-y-2">
-                <p className="text-[10px] text-zinc-600 px-0.5">Click a component to insert a text template into your written answer.</p>
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-zinc-600 px-0.5 pb-1">Click a component to insert its template into your written answer.</p>
                 {ARCH_COMPONENTS.map(c => (
                   <button key={c.label}
                     onClick={() => {
@@ -734,9 +826,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       setRightTab('write')
                       if (mobilePane !== 'answer') setMobilePane('answer')
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-600 hover:bg-zinc-800/60 transition-all text-left group">
-                    <span className="text-sm leading-none flex-shrink-0">{c.icon}</span>
-                    <span className="text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors">{c.label}</span>
+                    className="w-full flex items-center gap-2.5 px-3 py-2 bg-zinc-900/50 border border-zinc-800 rounded-xl hover:border-zinc-600 hover:bg-zinc-800/70 transition-all text-left group">
+                    <span className="text-base leading-none flex-shrink-0">{c.icon}</span>
+                    <span className="text-[11px] font-medium text-zinc-400 group-hover:text-zinc-100 transition-colors flex-1 min-w-0">{c.label}</span>
+                    <ChevronRight size={11} className="text-zinc-700 group-hover:text-zinc-400 flex-shrink-0 transition-colors" />
                   </button>
                 ))}
               </div>
@@ -744,12 +837,24 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           </div>
         </aside>
 
-        {/* ── CANVAS ───────────────────────────────────────────────────── */}
+        {/* Collapsed sidebar expander */}
+        {!leftOpen && (
+          <button
+            onClick={() => setLeftOpen(true)}
+            title="Open problem panel"
+            className="hidden xl:flex w-8 flex-shrink-0 border-r border-zinc-800 flex-col items-center justify-center gap-2 hover:bg-zinc-900 transition-colors cursor-pointer group"
+          >
+            <ListChecks size={13} className="text-zinc-700 group-hover:text-zinc-400 transition-colors" />
+            <ChevronRight size={12} className="text-zinc-800 group-hover:text-zinc-500 transition-colors" />
+          </button>
+        )}
+
+        {/* ═══ CANVAS ══════════════════════════════════════════════════════ */}
         <main className={`${mobilePane === 'canvas' ? 'flex' : 'hidden'} xl:flex flex-1 min-w-0 min-h-0 flex-col p-2`}>
           <SystemCanvas fill storageKey={canvasKey} onChange={handleCanvasChange} onInteract={autoStartTimer} />
         </main>
 
-        {/* ── RESIZE HANDLE (desktop only) ─────────────────────────────── */}
+        {/* Resize handle */}
         <div
           onMouseDown={onResizeStart}
           className="hidden xl:flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center group relative z-10 hover:bg-orange-500/20 transition-colors"
@@ -758,11 +863,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           <GripVertical size={12} className="text-zinc-700 group-hover:text-orange-400 transition-colors" />
         </div>
 
-        {/* ── RIGHT PANEL ──────────────────────────────────────────────── */}
+        {/* ═══ RIGHT PANEL ═════════════════════════════════════════════════ */}
         <aside
           style={{ width: rightWidth }}
-          className={`${mobilePane === 'answer' ? 'flex' : 'hidden'} xl:flex flex-col w-full xl:flex-shrink-0 border-l border-zinc-800 bg-zinc-950 min-h-0`}>
-
+          className={`${mobilePane === 'answer' ? 'flex' : 'hidden'} xl:flex flex-col w-full xl:flex-shrink-0 border-l border-zinc-800 bg-zinc-950 min-h-0`}
+        >
           {/* Tab bar */}
           <div className="h-11 flex items-center gap-2 px-2 border-b border-zinc-800 flex-shrink-0">
             <div className="flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
@@ -779,70 +884,80 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 </button>
               ))}
             </div>
-            <span className="ml-auto text-[10px] text-zinc-600 flex items-center gap-1">
-              {savedAt ? <><Save size={9} className="text-zinc-700" />saved</> : 'unsaved'}
-            </span>
+            {savedAt && (
+              <span className="ml-auto text-[10px] text-zinc-700 flex items-center gap-1">
+                <Save size={9} />saved
+              </span>
+            )}
           </div>
 
-          {/* ── WRITE TAB ──────────────────────────────────────────────── */}
+          {/* ── WRITE TAB ─────────────────────────────────────────────────── */}
           {rightTab === 'write' && (
             <>
-              <div className="flex items-center gap-0.5 px-2 py-1 border-b border-zinc-800 flex-shrink-0 bg-zinc-900/30">
+              {/* Toolbar */}
+              <div className="flex items-center gap-0.5 px-1.5 py-1 border-b border-zinc-800 flex-shrink-0 bg-zinc-900/40 overflow-x-auto">
                 {[
-                  { icon: <Heading2 size={13} />,  label: 'H2',     action: () => insertAt('\n## ')       },
-                  { icon: <Heading3 size={13} />,  label: 'H3',     action: () => insertAt('\n### ')      },
-                  { icon: <Bold size={13} />,      label: 'Bold',   action: () => wrap('**', '**')        },
-                  { icon: <List size={13} />,      label: 'List',   action: () => insertAt('\n- ')        },
-                  { icon: <Minus size={13} />,     label: 'Rule',   action: () => insertAt('\n\n---\n\n') },
-                  { icon: <Terminal size={13} />,  label: 'Code',   action: () => insertAt('\n```\n\n```\n') },
+                  { icon: <Heading2 size={13} />,  label: 'H2',      action: () => insertAt('\n## ')       },
+                  { icon: <Heading3 size={13} />,  label: 'H3',      action: () => insertAt('\n### ')      },
+                  { icon: <Bold size={13} />,      label: 'Bold',    action: () => wrap('**', '**')        },
+                  { icon: <List size={13} />,      label: 'List',    action: () => insertAt('\n- ')        },
+                  { icon: <Minus size={13} />,     label: 'Divider', action: () => insertAt('\n\n---\n\n') },
+                  { icon: <Code2 size={13} />,     label: 'Code',    action: () => insertAt('\n```\n\n```\n') },
                 ].map(({ icon, label, action }) => (
                   <button key={label} onClick={action} title={label}
-                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all flex-shrink-0">
                     {icon}
                   </button>
                 ))}
-                <span className="ml-auto text-[10px] text-zinc-700 pr-1">{wordCount} words</span>
+
+                <div className="w-px h-4 bg-zinc-800 mx-1 flex-shrink-0" />
+
+                {/* Section jump */}
+                {SECTION_JUMPS.map(s => (
+                  <button key={s.label} onClick={() => jumpToSection(s.heading)} title={`Jump to ${s.label}`}
+                    className="flex items-center gap-0.5 px-1.5 h-7 rounded-md text-[10px] text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-all font-medium flex-shrink-0">
+                    <Hash size={8} />{s.label}
+                  </button>
+                ))}
+
+                <span className="ml-auto text-[10px] text-zinc-700 pr-1 flex-shrink-0 tabular-nums">{wordCount}w</span>
               </div>
+
               <textarea
                 ref={textareaRef}
                 value={design}
                 onChange={e => handleDesignChange(e.target.value)}
                 spellCheck={false}
-                placeholder="Explain your design — requirements, capacity estimates, component choices, data model, trade-offs…"
+                placeholder="Start writing your system design..."
                 className="flex-1 min-h-0 w-full bg-zinc-950 px-4 py-3 text-sm text-zinc-200 font-mono leading-relaxed resize-none outline-none placeholder-zinc-700"
               />
             </>
           )}
 
-          {/* ── CODE TAB ───────────────────────────────────────────────── */}
+          {/* ── CODE TAB ──────────────────────────────────────────────────── */}
           {rightTab === 'code' && (
             <div className="flex flex-col flex-1 min-h-0">
               {/* Snippet tabs */}
               <div className="flex items-center border-b border-zinc-800 bg-zinc-900/40 flex-shrink-0 overflow-x-auto">
                 {snippets.map(s => (
-                  <div
-                    key={s.id}
-                    className={`flex items-center gap-0 flex-shrink-0 border-r border-zinc-800 transition-colors ${
-                      activeId === s.id ? 'bg-zinc-950 border-b-0' : 'hover:bg-zinc-900/60'
+                  <div key={s.id}
+                    className={`flex items-center flex-shrink-0 border-r border-zinc-800 transition-colors ${
+                      activeId === s.id ? 'bg-zinc-950' : 'hover:bg-zinc-900/60'
                     }`}
                     style={activeId === s.id ? { borderBottom: '2px solid #f97316' } : {}}
                   >
                     {renamingId === s.id ? (
-                      <input
-                        autoFocus
-                        value={renameVal}
+                      <input autoFocus value={renameVal}
                         onChange={e => setRenameVal(e.target.value)}
                         onBlur={() => commitRename(s.id)}
                         onKeyDown={e => { if (e.key === 'Enter') commitRename(s.id); if (e.key === 'Escape') setRenamingId(null) }}
                         className="px-3 py-2 bg-transparent text-xs text-zinc-200 outline-none w-28"
                       />
                     ) : (
-                      <button
-                        onClick={() => setActiveId(s.id)}
+                      <button onClick={() => setActiveId(s.id)}
                         onDoubleClick={() => { setRenamingId(s.id); setRenameVal(s.name) }}
                         title="Double-click to rename"
-                        className={`px-3 py-2 text-[11px] font-medium transition-colors ${activeId === s.id ? 'text-zinc-100' : 'text-zinc-500'}`}
-                      >
+                        className={`px-3 py-2 text-[11px] font-medium transition-colors ${activeId === s.id ? 'text-zinc-100' : 'text-zinc-500'}`}>
                         {s.name}
                       </button>
                     )}
@@ -858,14 +973,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   className="flex items-center gap-1 px-2.5 py-2 text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0">
                   <Plus size={11} />
                 </button>
-                {/* Language selector */}
                 {activeSnippet && (
                   <div className="ml-auto flex items-center px-2 flex-shrink-0">
-                    <select
-                      value={activeSnippet.language}
+                    <select value={activeSnippet.language}
                       onChange={e => handleLangChange(e.target.value as CodeLang)}
-                      className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-[11px] rounded-md px-2 py-0.5 outline-none cursor-pointer"
-                    >
+                      className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-[11px] rounded-md px-2 py-0.5 outline-none cursor-pointer">
                       {CODE_LANGS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
                     </select>
                   </div>
@@ -883,7 +995,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                     theme="vs-dark"
                     options={{
                       fontSize: 13,
-                      fontFamily: '"JetBrains Mono", "Fira Code", "Cascadia Code", monospace',
+                      fontFamily: '"JetBrains Mono", "Fira Code", monospace',
                       lineNumbers: 'on' as const,
                       minimap: { enabled: false },
                       scrollBeyondLastLine: false,
@@ -894,21 +1006,19 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       folding: false,
                       scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
                       tabSize: 2,
-                      insertSpaces: true,
                     }}
                   />
                 </div>
               )}
 
-              {/* Code footer */}
               <div className="flex items-center px-3 py-1.5 border-t border-zinc-800 flex-shrink-0 text-[10px] text-zinc-600">
                 <span>{snippets.length} snippet{snippets.length !== 1 ? 's' : ''} · {codeLines} lines</span>
-                <span className="ml-auto">Double-click a tab to rename</span>
+                <span className="ml-auto">Double-click tab to rename</span>
               </div>
             </div>
           )}
 
-          {/* ── PREVIEW TAB ────────────────────────────────────────────── */}
+          {/* ── PREVIEW TAB ───────────────────────────────────────────────── */}
           {rightTab === 'preview' && (
             <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3">
               {design.trim()
@@ -918,7 +1028,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               {snippets.some(s => s.code.trim()) && (
                 <div className="mt-5 space-y-3">
                   <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                    <Code2 size={11} /> Code Snippets
+                    <Code2 size={11} />Code Snippets
                   </p>
                   {snippets.filter(s => s.code.trim()).map(s => (
                     <div key={s.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
@@ -934,41 +1044,50 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
             </div>
           )}
 
-          {/* Right panel footer */}
-          <div className="flex items-center gap-2 px-3 py-1.5 border-t border-zinc-800 flex-shrink-0 text-[10px] text-zinc-600">
-            <span>{wordCount}w</span>
+          {/* Right panel status bar */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-zinc-800 flex-shrink-0 text-[10px] text-zinc-600">
+            <span className="tabular-nums">{wordCount}w</span>
             <span className="text-zinc-800">·</span>
-            <span>{diagramNodes} nodes</span>
-            {codeLines > 0 && <><span className="text-zinc-800">·</span><span>{codeLines} code lines</span></>}
+            <span className="tabular-nums">{diagramNodes} nodes</span>
+            {codeLines > 0 && <>
+              <span className="text-zinc-800">·</span>
+              <span className="tabular-nums">{codeLines} lines</span>
+            </>}
             <span className="text-zinc-800">·</span>
             <span className={coveredCount === problem.keyAreas.length ? 'text-emerald-500 font-semibold' : ''}>
               {coveredCount}/{problem.keyAreas.length} covered
             </span>
-            <span className="ml-auto flex items-center gap-1 text-orange-500/50">
-              <Sparkles size={8} />AI reads all three sections
+            {bestScore && <>
+              <span className="text-zinc-800">·</span>
+              <span className={`font-semibold ${GRADE_CONFIG[bestScore.grade]?.color ?? ''}`}>
+                Best {bestScore.score}/10
+              </span>
+            </>}
+            <span className="ml-auto flex items-center gap-1 text-orange-500/40">
+              <Sparkles size={8} />AI reads all three
             </span>
           </div>
         </aside>
       </div>
 
-      {/* ── AI REVIEW DRAWER ─────────────────────────────────────────────── */}
+      {/* ═══ AI REVIEW DRAWER ═══════════════════════════════════════════════ */}
       {reviewOpen && review && (
         <>
-          <div onClick={() => setReviewOpen(false)} className="absolute inset-0 bg-black/60 z-40" />
-          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[460px] bg-zinc-950 border-l border-zinc-800 z-50 flex flex-col shadow-2xl">
-            <div className="h-11 flex items-center justify-between px-4 border-b border-zinc-800 flex-shrink-0">
+          <div onClick={() => setReviewOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm z-40" />
+          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[480px] bg-zinc-950 border-l border-zinc-800 z-50 flex flex-col shadow-2xl">
+            <div className="h-12 flex items-center justify-between px-4 border-b border-zinc-800 flex-shrink-0">
               <span className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
                 <Sparkles size={14} className="text-orange-400" />AI Review
               </span>
               <button onClick={() => setReviewOpen(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800">
+                className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors">
                 <X size={15} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {/* Score ring */}
-              <div className="p-5 flex items-center gap-4 border-b border-zinc-800 bg-gradient-to-b from-zinc-900/50 to-transparent">
+              <div className="p-5 flex items-center gap-5 border-b border-zinc-800 bg-gradient-to-b from-zinc-900/50 to-transparent">
                 <div className="relative w-[88px] h-[88px] flex-shrink-0">
                   <svg width="88" height="88" viewBox="0 0 100 100" className="-rotate-90">
                     <circle cx="50" cy="50" r="42" fill="none" stroke="#27272a" strokeWidth="9" />
@@ -983,10 +1102,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-bold ${GRADE_CONFIG[review.grade]?.color ?? ''} ${GRADE_CONFIG[review.grade]?.bg ?? ''}`}>
-                    <Award size={11} />Grade {review.grade} · {GRADE_CONFIG[review.grade]?.label ?? ''}
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold ${GRADE_CONFIG[review.grade]?.color ?? ''} ${GRADE_CONFIG[review.grade]?.bg ?? ''}`}>
+                    <Award size={12} />Grade {review.grade} · {GRADE_CONFIG[review.grade]?.label ?? ''}
                   </span>
-                  <p className="text-sm text-zinc-300 leading-relaxed mt-2">{review.summary}</p>
+                  <p className="text-sm text-zinc-300 leading-relaxed mt-2.5">{review.summary}</p>
                 </div>
               </div>
 
@@ -1001,11 +1120,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                           <span className="text-[11px] text-zinc-400 w-24 flex-shrink-0">{SECTION_LABELS[key] ?? key}</span>
                           <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all duration-500 ${score >= 8 ? 'bg-emerald-500' : score >= 6 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                              className={`h-full rounded-full transition-all duration-700 ${score >= 8 ? 'bg-emerald-500' : score >= 6 ? 'bg-yellow-500' : 'bg-red-500'}`}
                               style={{ width: `${score * 10}%` }}
                             />
                           </div>
-                          <span className="text-[11px] font-bold text-zinc-300 w-9 text-right tabular-nums">{score}/10</span>
+                          <span className="text-[11px] font-bold text-zinc-300 w-8 text-right tabular-nums">{score}/10</span>
                         </div>
                       ))}
                     </div>
@@ -1019,15 +1138,13 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
                         <Code2 size={11} />Code Quality
                       </p>
-                      <span className={`text-xs font-bold tabular-nums ${review.codeQuality.score >= 8 ? 'text-emerald-400' : review.codeQuality.score >= 6 ? 'text-yellow-400' : 'text-red-400'}`}>
+                      <span className={`text-xs font-bold ${review.codeQuality.score >= 8 ? 'text-emerald-400' : review.codeQuality.score >= 6 ? 'text-yellow-400' : 'text-red-400'}`}>
                         {review.codeQuality.score}/10
                       </span>
                     </div>
                     <div className="h-1 bg-zinc-800 rounded-full overflow-hidden mb-2.5">
-                      <div
-                        className={`h-full rounded-full ${review.codeQuality.score >= 8 ? 'bg-emerald-500' : review.codeQuality.score >= 6 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                        style={{ width: `${review.codeQuality.score * 10}%` }}
-                      />
+                      <div className={`h-full rounded-full ${review.codeQuality.score >= 8 ? 'bg-emerald-500' : review.codeQuality.score >= 6 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                        style={{ width: `${review.codeQuality.score * 10}%` }} />
                     </div>
                     <p className="text-sm text-zinc-300 leading-relaxed">{review.codeQuality.notes}</p>
                   </div>
@@ -1036,12 +1153,12 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 {/* Strengths */}
                 {review.strengths.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                       <CheckCircle size={11} />Strengths
                     </p>
                     <ul className="space-y-2">
                       {review.strengths.map((s, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
+                        <li key={i} className="flex items-start gap-2 text-sm text-zinc-300 leading-snug">
                           <CheckCircle size={13} className="text-emerald-400 mt-0.5 flex-shrink-0" />{s}
                         </li>
                       ))}
@@ -1052,12 +1169,12 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 {/* Gaps */}
                 {review.gaps.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                       <AlertCircle size={11} />Gaps to Fix
                     </p>
                     <ul className="space-y-2">
                       {review.gaps.map((g, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
+                        <li key={i} className="flex items-start gap-2 text-sm text-zinc-300 leading-snug">
                           <AlertCircle size={13} className="text-red-400 mt-0.5 flex-shrink-0" />{g}
                         </li>
                       ))}
@@ -1066,8 +1183,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 )}
 
                 {/* Top suggestion */}
-                <div className="bg-orange-500/10 border border-orange-500/25 rounded-xl px-4 py-3">
-                  <p className="text-[10px] font-bold text-orange-400 mb-1.5 flex items-center gap-1.5">
+                <div className="bg-orange-500/10 border border-orange-500/25 rounded-xl px-4 py-3.5">
+                  <p className="text-[10px] font-bold text-orange-400 mb-2 flex items-center gap-1.5">
                     <Target size={11} />Top Priority Improvement
                   </p>
                   <p className="text-sm text-zinc-200 leading-relaxed">{review.topSuggestion}</p>
@@ -1075,8 +1192,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
                 {/* Interviewer note */}
                 {review.interviewerNote && (
-                  <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3">
-                    <p className="text-[10px] font-bold text-zinc-500 mb-1.5 flex items-center gap-1.5">
+                  <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3.5">
+                    <p className="text-[10px] font-bold text-zinc-500 mb-2 flex items-center gap-1.5">
                       <Building2 size={10} />What the interviewer would say
                     </p>
                     <p className="text-sm text-zinc-400 italic leading-relaxed">&ldquo;{review.interviewerNote}&rdquo;</p>
@@ -1099,7 +1216,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-start gap-2 px-4 py-3 bg-red-500/15 border border-red-500/40 rounded-xl text-sm text-red-200 shadow-xl max-w-sm w-[calc(100%-2rem)]">
           <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
           <span className="flex-1">{reviewError}</span>
-          <button onClick={() => setReviewError('')} className="text-red-300 hover:text-red-100">
+          <button onClick={() => setReviewError('')} className="text-red-300 hover:text-red-100 flex-shrink-0">
             <X size={14} />
           </button>
         </div>

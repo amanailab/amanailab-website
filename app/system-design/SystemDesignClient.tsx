@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Search, X, CheckCircle2, CircleDot, Circle, Filter } from 'lucide-react'
+import { ArrowRight, Search, X, CircleDot, Circle, Filter, Trophy } from 'lucide-react'
 import { DESIGN_TEMPLATE } from '@/lib/system-design-problems'
 
 export interface SDItem {
@@ -13,8 +13,16 @@ export interface SDItem {
   category: string
 }
 
-const STORAGE_PREFIX = 'sd_design_v2_'
+const STORAGE_PREFIX    = 'sd_design_v2_'
+const COMPLETION_PREFIX = 'sd_best_v1_'
 const TEMPLATE_WORDS = DESIGN_TEMPLATE.split(/\s+/).filter(Boolean).length
+
+const GRADE_COLOR: Record<string, string> = {
+  A: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25',
+  B: 'text-blue-400 bg-blue-500/10 border-blue-500/25',
+  C: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/25',
+  D: 'text-red-400 bg-red-500/10 border-red-500/25',
+}
 
 const DIFF_COLOR: Record<string, string> = {
   Hard:   'text-red-400 bg-red-500/10 border-red-500/25',
@@ -35,15 +43,16 @@ function abbr(c: string) {
 }
 
 export default function SystemDesignClient({ problems }: { problems: SDItem[] }) {
-  const [words, setWords]   = useState<Record<string, number>>({})
+  const [words, setWords]     = useState<Record<string, number>>({})
+  const [scores, setScores]   = useState<Record<string, { score: number; grade: string }>>({})
   const [mounted, setMounted] = useState(false)
-  const [cat, setCat]       = useState<(typeof CATEGORIES)[number]>('All')
-  const [diff, setDiff]     = useState<(typeof DIFFICULTIES)[number]>('All')
-  const [query, setQuery]   = useState('')
+  const [cat, setCat]         = useState<(typeof CATEGORIES)[number]>('All')
+  const [diff, setDiff]       = useState<(typeof DIFFICULTIES)[number]>('All')
+  const [query, setQuery]     = useState('')
 
-  // Read each problem's saved work from localStorage to show progress.
   useEffect(() => {
     const w: Record<string, number> = {}
+    const s: Record<string, { score: number; grade: string }> = {}
     for (const p of problems) {
       try {
         const raw = localStorage.getItem(STORAGE_PREFIX + p.slug)
@@ -51,14 +60,20 @@ export default function SystemDesignClient({ problems }: { problems: SDItem[] })
           const parsed = JSON.parse(raw)
           w[p.slug] = (parsed.design ?? '').split(/\s+/).filter(Boolean).length
         }
-      } catch { /* ignore */ }
+      } catch {}
+      try {
+        const raw = localStorage.getItem(COMPLETION_PREFIX + p.slug)
+        if (raw) s[p.slug] = JSON.parse(raw)
+      } catch {}
     }
     setWords(w)
+    setScores(s)
     setMounted(true)
   }, [problems])
 
-  const started = (slug: string) => (words[slug] ?? 0) > TEMPLATE_WORDS + 15
+  const started      = (slug: string) => (words[slug] ?? 0) > TEMPLATE_WORDS + 15
   const startedCount = useMemo(() => problems.filter(p => started(p.slug)).length, [words, problems]) // eslint-disable-line react-hooks/exhaustive-deps
+  const reviewedCount = useMemo(() => Object.keys(scores).length, [scores])
   const companyCount = useMemo(() => new Set(problems.flatMap(p => p.companies)).size, [problems])
 
   const filtered = useMemo(() => {
@@ -80,7 +95,8 @@ export default function SystemDesignClient({ problems }: { problems: SDItem[] })
         <div className="flex items-center justify-between gap-4 flex-wrap mb-4">
           <div className="flex items-center gap-5">
             <Stat value={problems.length} label="Problems" />
-            <Stat value={mounted ? startedCount : 0} label="Started" accent />
+            <Stat value={mounted ? startedCount : 0} label="Attempted" accent />
+            <Stat value={mounted ? reviewedCount : 0} label="Reviewed" gold />
             <Stat value={companyCount} label="Companies" />
           </div>
           <div className="text-right">
@@ -153,6 +169,7 @@ export default function SystemDesignClient({ problems }: { problems: SDItem[] })
             const meta = CATEGORY_META[p.category] ?? { color: 'text-zinc-400 bg-zinc-800 border-zinc-700', bar: 'bg-zinc-500', dot: 'bg-zinc-400' }
             const wc = words[p.slug] ?? 0
             const isStarted = started(p.slug)
+            const bestScore = scores[p.slug]
             return (
               <Link key={p.slug} href={`/system-design/${p.slug}`}
                 className="group relative flex items-center gap-4 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl pl-4 pr-4 py-3.5 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 overflow-hidden">
@@ -170,9 +187,14 @@ export default function SystemDesignClient({ problems }: { problems: SDItem[] })
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-semibold text-zinc-100 group-hover:text-white transition-colors">{p.title}</p>
-                    {mounted && isStarted && (
+                    {mounted && isStarted && !bestScore && (
                       <span className="text-[10px] font-semibold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-1.5 py-0.5 rounded-full">
                         in progress · {wc} words
+                      </span>
+                    )}
+                    {mounted && bestScore && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full border flex items-center gap-1 ${GRADE_COLOR[bestScore.grade] ?? ''}`}>
+                        <Trophy size={9} />{bestScore.score}/10
                       </span>
                     )}
                   </div>
@@ -201,10 +223,10 @@ export default function SystemDesignClient({ problems }: { problems: SDItem[] })
   )
 }
 
-function Stat({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
+function Stat({ value, label, accent, gold }: { value: number; label: string; accent?: boolean; gold?: boolean }) {
   return (
     <div>
-      <div className={`text-2xl font-extrabold ${accent ? 'text-violet-400' : 'text-zinc-100'} tabular-nums`}>{value}</div>
+      <div className={`text-2xl font-extrabold tabular-nums ${accent ? 'text-violet-400' : gold ? 'text-yellow-400' : 'text-zinc-100'}`}>{value}</div>
       <div className="text-[10px] text-zinc-500 uppercase tracking-wide">{label}</div>
     </div>
   )
