@@ -17,7 +17,15 @@ function toStringArray(v: unknown, max = 6): string[] {
   return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).slice(0, max)
 }
 
-/** Coerce arbitrary AI output into the exact shape the UI expects, with safe defaults. */
+function normalizeCodeQuality(v: unknown): { score: number; notes: string } | null {
+  if (!v || typeof v !== 'object') return null
+  const r = v as Record<string, unknown>
+  const score = clampScore(r.score)
+  const notes = typeof r.notes === 'string' ? r.notes.trim() : ''
+  if (!score || !notes) return null
+  return { score, notes }
+}
+
 function normalizeReview(raw: unknown) {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const grade = typeof r.grade === 'string' && ['A', 'B', 'C', 'D'].includes(r.grade.toUpperCase())
@@ -29,13 +37,20 @@ function normalizeReview(raw: unknown) {
   return {
     overallScore: clampScore(r.overallScore) ?? 5,
     grade,
-    summary: typeof r.summary === 'string' ? r.summary : 'Review generated, but the summary was incomplete. Try again for a fuller assessment.',
+    summary: typeof r.summary === 'string' ? r.summary : 'Review generated, but the summary was incomplete.',
     strengths: toStringArray(r.strengths),
     gaps: toStringArray(r.gaps),
     sectionScores,
+    codeQuality: normalizeCodeQuality(r.codeQuality),
     topSuggestion: typeof r.topSuggestion === 'string' ? r.topSuggestion : 'Add more detail on your trade-offs and bottlenecks.',
     interviewerNote: typeof r.interviewerNote === 'string' ? r.interviewerNote : '',
   }
+}
+
+interface CodeSnippet {
+  name: string
+  language: string
+  code: string
 }
 
 export async function POST(req: Request) {
@@ -44,7 +59,7 @@ export async function POST(req: Request) {
   if (!allowed) {
     return NextResponse.json(
       { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
-      { status: 429 }
+      { status: 429 },
     )
   }
 
@@ -52,53 +67,81 @@ export async function POST(req: Request) {
     const body = await req.json()
     const problem = typeof body?.problem === 'string' ? body.problem : ''
     let design = typeof body?.design === 'string' ? body.design : ''
+    const codeSnippets: CodeSnippet[] = Array.isArray(body?.codeSnippets)
+      ? body.codeSnippets.filter(
+          (s: unknown) => s && typeof s === 'object' && typeof (s as CodeSnippet).code === 'string' && (s as CodeSnippet).code.trim().length > 0,
+        ).slice(0, 6)
+      : []
+
     if (!problem || !design.trim()) {
       return NextResponse.json({ error: 'Problem and design are required.' }, { status: 400 })
     }
     if (design.trim().length < 100) {
       return NextResponse.json({ error: 'Design answer is too short. Please write more detail before requesting a review.' }, { status: 400 })
     }
-    // Cap input to keep prompt size and cost bounded under load
-    const MAX_DESIGN_CHARS = 16_000
+
+    const MAX_DESIGN_CHARS = 14_000
+    const MAX_CODE_CHARS   = 4_000
     if (design.length > MAX_DESIGN_CHARS) design = design.slice(0, MAX_DESIGN_CHARS)
+
+    const codeSection = codeSnippets.length > 0
+      ? `\nCANDIDATE CODE SNIPPETS:\n${codeSnippets.map(s => {
+          const code = s.code.length > MAX_CODE_CHARS / codeSnippets.length
+            ? s.code.slice(0, Math.floor(MAX_CODE_CHARS / codeSnippets.length))
+            : s.code
+          return `### ${s.name} (${s.language})\n\`\`\`${s.language}\n${code}\n\`\`\``
+        }).join('\n\n')}`
+      : ''
+
+    const hasCode = codeSnippets.length > 0
 
     const raw = await callAI({
       messages: [
         {
           role: 'system',
-          content: `You are a senior staff engineer at a top AI company (Google/Meta/OpenAI) conducting ML system design interviews. You give structured, honest, educational feedback on candidate system design answers. You are encouraging but precise — you don't pad feedback with empty praise. Return ONLY valid JSON with no markdown wrapping.`,
+          content: `You are a senior staff engineer at a top-tier AI company (Google DeepMind / Meta AI / OpenAI) who has conducted 300+ ML system design interviews. You give structured, honest, educational feedback. You are encouraging but precise — specific over vague, actionable over generic. Never give empty praise. Return ONLY valid JSON with no markdown wrapping.`,
         },
         {
           role: 'user',
-          content: `Review this system design answer for the following interview question.
+          content: `Review this system design answer for the following ML system design interview question.
 
 PROBLEM:
 ${problem}
 
-CANDIDATE ANSWER:
+CANDIDATE'S WRITTEN ANSWER:
 ${design}
+${codeSection}
+
+Evaluate across these dimensions:
+- Requirements Clarification: Did they identify functional + non-functional requirements, scale, SLAs?
+- Architecture: Are the components correct, well-chosen, and clearly described?
+- Scalability: Bottleneck identification, horizontal scaling, caching, sharding?
+- Data Model: Schema design, storage choice justification, query patterns?
+- Trade-offs: Did they reason about alternatives, pros/cons, and make deliberate choices?
+${hasCode ? '- Code Quality: Is the code correct, complete, idiomatic, and interview-ready? Does it match the design?' : ''}
 
 Return JSON in exactly this format:
 {
   "overallScore": <integer 1-10>,
   "grade": "<A|B|C|D>",
-  "summary": "<2-3 sentence overall assessment>",
-  "strengths": ["<specific strength>", "<specific strength>"],
-  "gaps": ["<specific missing area or weak reasoning>", "<...>"],
+  "summary": "<2-3 sentences: overall quality, biggest strength, and most critical gap>",
+  "strengths": ["<specific, concrete strength citing their actual answer>", "<another>"],
+  "gaps": ["<specific gap with what an interviewer expects to see>", "<another>"],
   "sectionScores": {
-    "requirements": <1-10 or null if not present>,
+    "requirements": <1-10 or null if not addressed>,
     "architecture": <1-10 or null>,
     "scalability": <1-10 or null>,
     "dataModel": <1-10 or null>,
     "tradeoffs": <1-10 or null>
   },
-  "topSuggestion": "<single most impactful improvement they should make>",
-  "interviewerNote": "<what an interviewer would say after this answer — be specific and realistic>"
+  "codeQuality": ${hasCode ? '{ "score": <1-10>, "notes": "<2-3 sentences on correctness, completeness, style, and whether it matches the stated design>" }' : 'null'},
+  "topSuggestion": "<the single highest-impact improvement — be specific, not generic>",
+  "interviewerNote": "<what a real interviewer would say after this answer — 1-2 sentences, honest and specific>"
 }`,
         },
       ],
-      temperature: 0.4,
-      max_tokens: 900,
+      temperature: 0.35,
+      max_tokens: 1100,
       response_format: { type: 'json_object' },
     })
 
@@ -109,7 +152,6 @@ Return JSON in exactly this format:
       return NextResponse.json({ error: 'Failed to parse AI review. Please try again.' }, { status: 500 })
     }
 
-    // Normalise the shape so the UI always receives valid, safe data
     return NextResponse.json({ review: normalizeReview(parsed) })
   } catch (err) {
     console.error('[system-design/review]', err)
