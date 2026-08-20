@@ -50,7 +50,7 @@ export async function callAI(options: AIOptions): Promise<string> {
           "Content-Type": "application/json",
           Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
-        body: JSON.stringify({ model: "llama-3.3-70b-versatile", ...options }),
+        body: JSON.stringify({ model: "groq/compound", ...options }),
       },
       TIMEOUT_MS,
     )
@@ -83,7 +83,7 @@ export async function callAI(options: AIOptions): Promise<string> {
           "Content-Type": "application/json",
           Authorization: `Bearer ${process.env.GEMINI_API_KEY}`,
         },
-        body: JSON.stringify({ model: "gemini-2.0-flash", ...options }),
+        body: JSON.stringify({ model: "gemini-3.6-flash", ...options }),
       },
       TIMEOUT_MS,
     )
