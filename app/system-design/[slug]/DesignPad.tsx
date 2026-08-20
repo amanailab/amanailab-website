@@ -7,7 +7,8 @@ import {
   ArrowLeft, Save, Sparkles, CheckCircle, Circle, AlertCircle, Loader2,
   Eye, PenLine, X, RefreshCw, Play, Pause, RotateCcw, Building2, BookOpen,
   ListChecks, Cpu, Lightbulb, Target, Award, Bold, Heading2, Heading3,
-  List, Minus, Plus, Code2, Clock, Terminal,
+  List, Minus, Plus, Code2, Clock, Terminal, ChevronRight, ChevronLeft,
+  GripVertical,
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
@@ -183,6 +184,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [mobilePane, setMobilePane]   = useState<MobilePane>('canvas')
   const [rightTab, setRightTab]       = useState<RightTab>('write')
   const [leftTab, setLeftTab]         = useState<LeftTab>('problem')
+  const [leftOpen, setLeftOpen]       = useState(false)   // collapsed by default → more canvas space
+  const [rightWidth, setRightWidth]   = useState(440)     // px, draggable
 
   // ── Content ──────────────────────────────────────────────────────────────
   const [design, setDesign]           = useState('')
@@ -213,6 +216,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const timerInterval  = useRef<ReturnType<typeof setInterval> | null>(null)
   const diagramTextRef = useRef('')
   const startedRef     = useRef(false)
+  const resizingRef    = useRef(false)
+  const resizeStartX   = useRef(0)
+  const resizeStartW   = useRef(0)
 
   // Always-current state snapshot for stable callbacks
   const snap = useRef({ design, checklist, snippets, activeId })
@@ -221,6 +227,29 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const storageKey = STORAGE_PREFIX + problem.slug
   const canvasKey  = CANVAS_PREFIX  + problem.slug
   const codeKey    = CODE_PREFIX    + problem.slug
+
+  // ── Panel resize (right panel drag handle) ────────────────────────────────
+  const onResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    resizingRef.current = true
+    resizeStartX.current = e.clientX
+    resizeStartW.current = rightWidth
+
+    const onMove = (ev: MouseEvent) => {
+      if (!resizingRef.current) return
+      // dragging left = right panel grows; dragging right = shrinks
+      const delta = resizeStartX.current - ev.clientX
+      const next = Math.max(300, Math.min(750, resizeStartW.current + delta))
+      setRightWidth(next)
+    }
+    const onUp = () => {
+      resizingRef.current = false
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [rightWidth])
 
   // ── Auto-start timer ───────────────────────────────────────────────────────
   const autoStartTimer = useCallback(() => {
@@ -549,8 +578,31 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       {/* ── MAIN BODY ────────────────────────────────────────────────────── */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
 
-        {/* ── LEFT SIDEBAR ─────────────────────────────────────────────── */}
-        <aside className={`${mobilePane === 'problem' ? 'flex' : 'hidden'} xl:flex flex-col w-full xl:w-[252px] xl:flex-shrink-0 border-r border-zinc-800 bg-zinc-950 min-h-0`}>
+        {/* ── LEFT: collapsed icon rail (desktop only) ─────────────────── */}
+        {!leftOpen && (
+          <div className="hidden xl:flex flex-col w-10 flex-shrink-0 border-r border-zinc-800 bg-zinc-950 items-center pt-2 gap-1">
+            {([
+              { id: 'problem'    as LeftTab, icon: <ListChecks size={15} />, title: 'Problem'   },
+              { id: 'framework'  as LeftTab, icon: <BookOpen size={15} />,   title: 'Framework' },
+              { id: 'components' as LeftTab, icon: <Cpu size={15} />,        title: 'Snippets'  },
+            ]).map(t => (
+              <button key={t.id}
+                onClick={() => { setLeftTab(t.id); setLeftOpen(true) }}
+                title={t.title}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-all">
+                {t.icon}
+              </button>
+            ))}
+            <div className="flex-1" />
+            <button onClick={() => setLeftOpen(true)} title="Expand sidebar"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-700 hover:text-zinc-400 hover:bg-zinc-800 transition-all mb-2">
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* ── LEFT SIDEBAR expanded ────────────────────────────────────── */}
+        <aside className={`${mobilePane === 'problem' ? 'flex' : 'hidden'} ${leftOpen ? 'xl:flex' : 'xl:hidden'} flex-col w-full xl:w-[252px] xl:flex-shrink-0 border-r border-zinc-800 bg-zinc-950 min-h-0`}>
           <div className="flex gap-0.5 p-1.5 border-b border-zinc-800 flex-shrink-0">
             {([
               { id: 'problem'    as LeftTab, icon: <ListChecks size={12} />, label: 'Problem'   },
@@ -564,6 +616,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 {t.icon}<span className="hidden xl:inline">{t.label}</span>
               </button>
             ))}
+            <button onClick={() => setLeftOpen(false)} title="Collapse sidebar"
+              className="hidden xl:flex w-7 h-7 items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-all flex-shrink-0">
+              <ChevronLeft size={13} />
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
@@ -693,8 +749,19 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           <SystemCanvas fill storageKey={canvasKey} onChange={handleCanvasChange} onInteract={autoStartTimer} />
         </main>
 
+        {/* ── RESIZE HANDLE (desktop only) ─────────────────────────────── */}
+        <div
+          onMouseDown={onResizeStart}
+          className="hidden xl:flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center group relative z-10 hover:bg-orange-500/20 transition-colors"
+          title="Drag to resize"
+        >
+          <GripVertical size={12} className="text-zinc-700 group-hover:text-orange-400 transition-colors" />
+        </div>
+
         {/* ── RIGHT PANEL ──────────────────────────────────────────────── */}
-        <aside className={`${mobilePane === 'answer' ? 'flex' : 'hidden'} xl:flex flex-col w-full xl:w-[456px] xl:flex-shrink-0 border-l border-zinc-800 bg-zinc-950 min-h-0`}>
+        <aside
+          style={{ width: rightWidth }}
+          className={`${mobilePane === 'answer' ? 'flex' : 'hidden'} xl:flex flex-col w-full xl:flex-shrink-0 border-l border-zinc-800 bg-zinc-950 min-h-0`}>
 
           {/* Tab bar */}
           <div className="h-11 flex items-center gap-2 px-2 border-b border-zinc-800 flex-shrink-0">
