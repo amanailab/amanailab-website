@@ -142,6 +142,8 @@ interface Props {
   onInteract?: () => void
   /** Tailwind height classes for the canvas area. */
   heightClass?: string
+  /** When true, the canvas fills its parent's height (flex layout). */
+  fill?: boolean
 }
 
 const defaultEdgeOptions = {
@@ -151,7 +153,7 @@ const defaultEdgeOptions = {
 }
 
 // ── Inner canvas (needs ReactFlowProvider context) ────────────────────────────
-function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(100vh-320px)] min-h-[460px]' }: Props) {
+function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(100vh-320px)] min-h-[460px]', fill = false }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<ArchNode>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const { screenToFlowPosition } = useReactFlow()
@@ -233,9 +235,9 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
   }, [nodes.length, setNodes, setEdges])
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={fill ? 'flex flex-col gap-2 h-full min-h-0' : 'flex flex-col gap-2'}>
       {/* Palette */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-2 flex-shrink-0">
         <div className="flex items-center gap-1.5 mb-2 px-1">
           <MousePointerClick size={11} className="text-orange-400" />
           <span className="text-[10px] text-zinc-500">Drag onto the canvas — or tap to drop. Double-click a box to rename. Drag between boxes to connect.</span>
@@ -265,7 +267,7 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
         ref={wrapperRef}
         onDrop={onDrop}
         onDragOver={onDragOver}
-        className={`relative ${heightClass} bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden`}
+        className={`relative ${fill ? 'flex-1 min-h-0' : heightClass} bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden`}
       >
         <ReactFlow
           nodes={nodes}
@@ -317,10 +319,12 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
         </div>
       </div>
 
-      <p className="text-[10px] text-zinc-600 flex items-center gap-1.5 px-1">
-        <Sparkles size={10} className="text-orange-400" />
-        Your diagram is included automatically when you click <span className="text-zinc-400 font-medium">AI Review</span>. Select a box or arrow and press Delete to remove it.
-      </p>
+      {!fill && (
+        <p className="text-[10px] text-zinc-600 flex items-center gap-1.5 px-1">
+          <Sparkles size={10} className="text-orange-400" />
+          Your diagram is included automatically when you click <span className="text-zinc-400 font-medium">AI Review</span>. Select a box or arrow and press Delete to remove it.
+        </p>
+      )}
     </div>
   )
 }

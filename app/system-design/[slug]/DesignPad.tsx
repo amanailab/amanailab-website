@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft, Save, Sparkles, CheckCircle, Circle, ChevronDown,
-  AlertCircle, Trophy, Loader2, Eye, Timer,
-  Play, Pause, RotateCcw, Building2, BookOpen, Code2,
-  Layers, HelpCircle, MessageCircle, ListChecks, Cpu,
-  Bold, Heading2, Heading3, List, Minus, Workflow,
+  ArrowLeft, Save, Sparkles, CheckCircle, Circle,
+  AlertCircle, Loader2, Eye, PenLine, X, RefreshCw,
+  Play, Pause, RotateCcw, Building2, BookOpen,
+  ListChecks, Cpu, Lightbulb, Target, Award,
+  Bold, Heading2, Heading3, List, Minus, Workflow, PanelRightClose, PanelRightOpen,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { serializeDiagram } from './diagram-utils'
@@ -18,8 +18,8 @@ import { DESIGN_TEMPLATE } from '@/lib/system-design-problems'
 const SystemCanvas = dynamic(() => import('./SystemCanvas'), {
   ssr: false,
   loading: () => (
-    <div className="h-[46vh] min-h-[360px] bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center justify-center">
-      <span className="text-xs text-zinc-600">Loading canvas…</span>
+    <div className="h-full bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center justify-center">
+      <span className="text-xs text-zinc-600 flex items-center gap-2"><Loader2 size={13} className="animate-spin" /> Loading canvas…</span>
     </div>
   ),
 })
@@ -28,7 +28,7 @@ const STORAGE_PREFIX = 'sd_design_v2_'
 const CANVAS_PREFIX  = 'sd_canvas_v1_'
 
 type LeftTab = 'problem' | 'framework' | 'components'
-type EditorMode = 'workspace' | 'preview'
+type EditorMode = 'write' | 'preview'
 
 interface ReviewResult {
   overallScore: number
@@ -161,18 +161,20 @@ function markdownToHtml(md: string): string {
 
 export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [design, setDesign]           = useState('')
-  const [editorMode, setEditorMode]   = useState<EditorMode>('workspace')
+  const [notesView, setNotesView]     = useState<EditorMode>('write')
   const [leftTab, setLeftTab]         = useState<LeftTab>('problem')
+  const [briefOpen, setBriefOpen]     = useState(false)
+  const [notesOpen, setNotesOpen]     = useState(true)
+  const [mobilePane, setMobilePane]   = useState<'canvas' | 'notes'>('canvas')
   const [savedAt, setSavedAt]         = useState<Date | null>(null)
   const [reviewing, setReviewing]     = useState(false)
   const [review, setReview]           = useState<ReviewResult | null>(null)
   const [reviewError, setReviewError] = useState('')
-  const [showReview, setShowReview]   = useState(false)
+  const [reviewOpen, setReviewOpen]   = useState(false)
   const [checklist, setChecklist]     = useState<Record<string, boolean>>({})
   const [timerSec, setTimerSec]       = useState(45 * 60)
   const [timerOn, setTimerOn]         = useState(false)
   const [timerStarted, setTimerStarted] = useState(false)
-  const [diagramText, setDiagramText] = useState('')
   const [diagramNodes, setDiagramNodes] = useState(0)
   const saveTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timerInterval                 = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -192,7 +194,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   const handleCanvasChange = useCallback((text: string, count: number) => {
     diagramTextRef.current = text
-    setDiagramText(text)
     setDiagramNodes(count)
   }, [])
 
@@ -218,9 +219,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       if (!raw) return
       const p = JSON.parse(raw)
       if (Array.isArray(p.nodes) && p.nodes.length) {
-        const text = serializeDiagram(p.nodes, p.edges ?? [])
-        diagramTextRef.current = text
-        setDiagramText(text)
+        diagramTextRef.current = serializeDiagram(p.nodes, p.edges ?? [])
         setDiagramNodes(p.nodes.length)
       }
     } catch { /* ignore */ }
@@ -337,7 +336,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Review failed')
       setReview(data.review)
-      setShowReview(true)
+      setReviewOpen(true)
     } catch (e: unknown) {
       setReviewError((e instanceof Error ? e.message : '') || 'Review failed. Try again.')
     } finally { setReviewing(false) }
@@ -347,433 +346,351 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const wordCount    = design.split(/\s+/).filter(Boolean).length
 
   // ─ Render ─────────────────────────────────────────────────────────────────
+  const RING_C = 2 * Math.PI * 42
+  const gradeStroke: Record<string, string> = { A: '#10b981', B: '#3b82f6', C: '#eab308', D: '#ef4444' }
+
+  const openNotes = () => { setNotesOpen(true); setMobilePane('notes') }
+
   return (
-    <div className="min-h-full bg-zinc-950 flex flex-col">
+    <div className="h-full flex flex-col bg-zinc-950 relative overflow-hidden">
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-zinc-950/98 backdrop-blur-sm border-b border-zinc-800 flex-shrink-0">
-        <div className="max-w-[1400px] mx-auto px-4 h-12 flex items-center gap-3">
-          {/* Back */}
-          <Link href="/system-design" className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-xs transition-colors flex-shrink-0">
-            <ArrowLeft size={13} /> Problems
-          </Link>
-          <span className="text-zinc-700">›</span>
+      <header className="h-12 flex-shrink-0 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 border-b border-zinc-800 bg-zinc-950 z-30">
+        <Link href="/system-design" className="flex items-center gap-1.5 text-zinc-400 hover:text-zinc-200 text-xs transition-colors flex-shrink-0">
+          <ArrowLeft size={14} /> <span className="hidden sm:inline">Problems</span>
+        </Link>
+        <span className="text-zinc-700 hidden sm:inline">›</span>
+        <span className="text-sm font-semibold text-zinc-200 truncate flex-1 min-w-0">{problem.title}</span>
 
-          {/* Title */}
-          <span className="text-sm font-semibold text-zinc-200 truncate flex-1 min-w-0">{problem.title}</span>
+        <span className={`hidden md:inline flex-shrink-0 text-[11px] px-2 py-0.5 rounded-full border font-medium ${
+          problem.difficulty === 'Hard' ? 'text-red-400 border-red-500/30 bg-red-500/10' : 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
+        }`}>{problem.difficulty}</span>
 
-          {/* Company tags */}
-          <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
-            {problem.companies.slice(0, 4).map(c => (
-              <span key={c} className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700 whitespace-nowrap">
-                {c === 'Microsoft' ? 'MSFT' : c === 'Anthropic' ? 'Anth' : c === 'DeepMind' ? 'DeepM' : c}
-              </span>
-            ))}
-          </div>
-
-          {/* Timer */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className={`text-sm font-mono font-bold tabular-nums ${timerColor}`}>{fmtTime(timerSec)}</span>
-            {!timerStarted ? (
-              <button onClick={startTimerManually}
-                className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
-                <Play size={10} /> Start
-              </button>
-            ) : (
-              <>
-                <button onClick={() => setTimerOn(v => !v)}
-                  className="w-6 h-6 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
-                  {timerOn ? <Pause size={10} /> : <Play size={10} />}
-                </button>
-                <button onClick={resetTimer}
-                  className="w-6 h-6 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
-                  <RotateCcw size={10} />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Difficulty */}
-          <span className={`hidden sm:inline flex-shrink-0 text-[11px] px-2 py-0.5 rounded-full border font-medium ${
-            problem.difficulty === 'Hard' ? 'text-red-400 border-red-500/30 bg-red-500/10' : 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
-          }`}>{problem.difficulty}</span>
-
-          {/* Save status */}
-          {savedAt && (
-            <span className="hidden md:flex items-center gap-1 text-[10px] text-zinc-600 flex-shrink-0">
-              <Save size={9} /> {savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
-          {/* Download */}
-          <button onClick={downloadDesign} title="Download as Markdown"
-            className="hidden sm:flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0">
-            <Save size={11} /> .md
-          </button>
-
-          {/* AI Review */}
-          <button onClick={handleReview} disabled={reviewing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold transition-all disabled:opacity-60 flex-shrink-0">
-            {reviewing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-            <span className="hidden sm:inline">{reviewing ? 'Reviewing…' : 'AI Review'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Main layout ───────────────────────────────────────────────────── */}
-      <div className="flex-1 max-w-[1400px] mx-auto w-full px-4 py-4 grid lg:grid-cols-[320px_1fr] gap-4 items-start">
-
-        {/* ── Left panel ────────────────────────────────────────────────── */}
-        <aside className="lg:sticky lg:top-14 flex flex-col gap-3 max-h-[calc(100vh-112px)] overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-800">
-
-          {/* Tab buttons */}
-          <div className="flex gap-1 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
-            {([
-              { id: 'problem',    icon: <ListChecks size={13} />, label: 'Problem'    },
-              { id: 'framework',  icon: <BookOpen size={13} />,   label: 'Framework'  },
-              { id: 'components', icon: <Cpu size={13} />,        label: 'Components' },
-            ] as { id: LeftTab; icon: React.ReactNode; label: string }[]).map(t => (
-              <button key={t.id} onClick={() => setLeftTab(t.id)}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  leftTab === t.id ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
-                }`}>
-                {t.icon} {t.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Problem tab */}
-          {leftTab === 'problem' && (
+        {/* Timer */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className={`text-sm font-mono font-bold tabular-nums ${timerColor}`}>{fmtTime(timerSec)}</span>
+          {!timerStarted ? (
+            <button onClick={startTimerManually} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
+              <Play size={10} /> <span className="hidden sm:inline">Start</span>
+            </button>
+          ) : (
             <>
-              {/* Problem statement */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-zinc-800">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">The Problem</span>
-                </div>
-                <div className="px-4 py-3 text-xs text-zinc-300 leading-relaxed space-y-2 prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: markdownToHtml(problem.problem) }} />
-              </div>
-
-              {/* Constraints */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-zinc-800">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Scale & Constraints</span>
-                </div>
-                <ul className="px-4 py-3 space-y-1.5">
-                  {problem.constraints.map(c => (
-                    <li key={c} className="flex items-start gap-2 text-xs text-zinc-400">
-                      <span className="text-orange-400 flex-shrink-0 mt-0.5">▸</span><span>{c}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Must-cover checklist */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Must Cover</span>
-                  <span className={`text-[10px] font-bold ${coveredCount === problem.keyAreas.length ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                    {coveredCount}/{problem.keyAreas.length}
-                  </span>
-                </div>
-                <div className="px-4 py-3 space-y-2">
-                  {problem.keyAreas.map(area => (
-                    <button key={area} onClick={() => toggleCheck(area)}
-                      className="w-full flex items-start gap-2 text-left group">
-                      <span className="mt-0.5 flex-shrink-0">
-                        {checklist[area]
-                          ? <CheckCircle size={13} className="text-emerald-400" />
-                          : <Circle size={13} className="text-zinc-700 group-hover:text-zinc-500 transition-colors" />
-                        }
-                      </span>
-                      <span className={`text-xs leading-snug ${checklist[area] ? 'line-through text-zinc-600' : 'text-zinc-300'}`}>
-                        {area}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Hints */}
-              <details className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden group">
-                <summary className="px-4 py-2.5 flex items-center justify-between cursor-pointer list-none">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Hints (if stuck)</span>
-                  <ChevronDown size={13} className="text-zinc-600 group-open:rotate-180 transition-transform" />
-                </summary>
-                <div className="px-4 pb-3 border-t border-zinc-800 space-y-2 pt-2">
-                  {problem.hints.map((h, i) => (
-                    <p key={i} className="text-xs text-zinc-500 leading-relaxed">💡 {h}</p>
-                  ))}
-                </div>
-              </details>
+              <button onClick={() => setTimerOn(v => !v)} className="w-6 h-6 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
+                {timerOn ? <Pause size={10} /> : <Play size={10} />}
+              </button>
+              <button onClick={resetTimer} className="w-6 h-6 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
+                <RotateCcw size={10} />
+              </button>
             </>
           )}
+        </div>
 
-          {/* Framework tab */}
-          {leftTab === 'framework' && (
-            <div className="space-y-2">
-              <p className="text-[10px] text-zinc-600 px-1">FAANG System Design Interview Structure (45 min)</p>
-              {FRAMEWORK_STEPS.map(step => (
-                <div key={step.num} className={`border rounded-xl overflow-hidden ${step.bg}`}>
-                  <div className="px-4 py-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-lg font-extrabold opacity-40 ${step.color} tabular-nums leading-none`}>{step.num}</span>
-                      <div>
-                        <p className={`text-xs font-bold ${step.color}`}>{step.title}</p>
-                        <p className="text-[10px] text-zinc-600">{step.time}</p>
-                      </div>
-                    </div>
-                    <ul className="space-y-1">
-                      {step.tips.map(tip => (
-                        <li key={tip} className="flex items-start gap-1.5 text-[11px] text-zinc-400">
-                          <span className={`${step.color} mt-0.5 flex-shrink-0 text-[10px]`}>→</span>
-                          {tip}
-                        </li>
+        {/* Brief */}
+        <button onClick={() => setBriefOpen(true)} className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors flex-shrink-0">
+          <BookOpen size={12} /> <span className="hidden md:inline">Brief</span>
+        </button>
+
+        {/* Download */}
+        <button onClick={downloadDesign} title="Download answer as Markdown" className="hidden sm:flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0">
+          <Save size={13} />
+        </button>
+
+        {/* AI Review */}
+        <button onClick={handleReview} disabled={reviewing}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold transition-all disabled:opacity-60 flex-shrink-0 shadow-lg shadow-orange-500/20">
+          {reviewing ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+          <span>{reviewing ? 'Reviewing…' : 'AI Review'}</span>
+        </button>
+      </header>
+
+      {/* ── Mobile pane switch ───────────────────────────────────────────── */}
+      <div className="lg:hidden flex-shrink-0 flex gap-1 p-1.5 border-b border-zinc-800 bg-zinc-950">
+        <button onClick={() => setMobilePane('canvas')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobilePane === 'canvas' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500'}`}>
+          <Workflow size={13} /> Diagram
+        </button>
+        <button onClick={() => setMobilePane('notes')}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${mobilePane === 'notes' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500'}`}>
+          <PenLine size={13} /> Answer
+        </button>
+      </div>
+
+      {/* ── Body ─────────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex min-h-0 relative">
+
+        {/* Canvas */}
+        <main className={`${mobilePane === 'canvas' ? 'flex' : 'hidden'} lg:flex flex-1 min-w-0 min-h-0 flex-col p-3`}>
+          <SystemCanvas fill storageKey={canvasKey} onChange={handleCanvasChange} onInteract={autoStartTimer} />
+        </main>
+
+        {/* Collapsed notes rail (desktop) */}
+        {!notesOpen && (
+          <button onClick={() => setNotesOpen(true)}
+            className="hidden lg:flex flex-col items-center gap-3 w-11 flex-shrink-0 border-l border-zinc-800 bg-zinc-900/40 hover:bg-zinc-900 text-zinc-500 hover:text-zinc-300 transition-colors pt-4">
+            <PanelRightOpen size={16} />
+            <span className="text-[10px] font-semibold [writing-mode:vertical-rl] rotate-180 tracking-wide">Your Answer</span>
+          </button>
+        )}
+
+        {/* Notes panel */}
+        <aside className={`${mobilePane === 'notes' ? 'flex' : 'hidden'} ${notesOpen ? 'lg:flex' : 'lg:hidden'} flex-col w-full lg:w-[400px] xl:w-[460px] lg:flex-shrink-0 border-l border-zinc-800 bg-zinc-950 min-h-0`}>
+          {/* header */}
+          <div className="h-11 flex items-center justify-between px-3 border-b border-zinc-800 flex-shrink-0">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300">
+              <PenLine size={13} className="text-orange-400" /> Your Answer
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+                <button onClick={() => setNotesView('write')} className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all ${notesView === 'write' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}><PenLine size={10} /> Write</button>
+                <button onClick={() => setNotesView('preview')} className={`flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all ${notesView === 'preview' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}><Eye size={10} /> Preview</button>
+              </div>
+              <button onClick={() => setNotesOpen(false)} title="Hide panel" className="hidden lg:flex w-7 h-7 items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+                <PanelRightClose size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* markdown toolbar */}
+          {notesView === 'write' && (
+            <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-zinc-800 flex-shrink-0">
+              {[
+                { icon: <Heading2 size={13} />, label: 'H2', action: () => insertAt('\n## ') },
+                { icon: <Heading3 size={13} />, label: 'H3', action: () => insertAt('\n### ') },
+                { icon: <Bold size={13} />,     label: 'Bold', action: () => wrap('**', '**') },
+                { icon: <List size={13} />,     label: 'List', action: () => insertAt('\n- ') },
+                { icon: <Minus size={13} />,    label: 'Divider', action: () => insertAt('\n\n---\n\n') },
+              ].map(({ icon, label, action }) => (
+                <button key={label} onClick={action} title={label} className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">{icon}</button>
+              ))}
+              <span className="ml-auto text-[10px] text-zinc-600 flex items-center gap-1 pr-1">
+                {savedAt ? <><Save size={9} /> saved</> : 'unsaved'}
+              </span>
+            </div>
+          )}
+
+          {/* content */}
+          {notesView === 'write' ? (
+            <textarea ref={textareaRef} value={design} onChange={e => handleChange(e.target.value)} spellCheck={false}
+              placeholder="Explain your design — requirements, capacity numbers, component choices, trade-offs, bottlenecks…"
+              className="flex-1 min-h-0 w-full bg-zinc-950 px-4 py-3 text-sm text-zinc-200 font-mono leading-relaxed resize-none outline-none placeholder-zinc-700" />
+          ) : (
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 leading-relaxed">
+              {design.trim() ? <div dangerouslySetInnerHTML={{ __html: markdownToHtml(design) }} /> : <p className="text-zinc-600 italic text-sm">Nothing written yet.</p>}
+            </div>
+          )}
+
+          {/* footer */}
+          <div className="flex items-center justify-between px-3 py-1.5 border-t border-zinc-800 flex-shrink-0 text-[10px] text-zinc-600">
+            <span>{wordCount} words · {diagramNodes} diagram nodes</span>
+            <span className="flex items-center gap-1"><Sparkles size={10} className="text-orange-400" /> AI reads diagram + writing</span>
+          </div>
+        </aside>
+      </div>
+
+      {/* ── Brief drawer ─────────────────────────────────────────────────── */}
+      {briefOpen && (
+        <>
+          <div onClick={() => setBriefOpen(false)} className="absolute inset-0 bg-black/50 z-40" />
+          <aside className="absolute left-0 top-0 bottom-0 w-[92%] sm:w-[380px] bg-zinc-950 border-r border-zinc-800 z-50 flex flex-col shadow-2xl">
+            <div className="h-11 flex items-center justify-between px-3 border-b border-zinc-800 flex-shrink-0">
+              <span className="text-sm font-semibold text-zinc-200">Problem Brief</span>
+              <button onClick={() => setBriefOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800"><X size={15} /></button>
+            </div>
+
+            {/* tabs */}
+            <div className="flex gap-1 p-2 border-b border-zinc-800 flex-shrink-0">
+              {([
+                { id: 'problem',    icon: <ListChecks size={13} />, label: 'Problem'    },
+                { id: 'framework',  icon: <BookOpen size={13} />,   label: 'Framework'  },
+                { id: 'components', icon: <Cpu size={13} />,        label: 'Snippets'   },
+              ] as { id: LeftTab; icon: React.ReactNode; label: string }[]).map(t => (
+                <button key={t.id} onClick={() => setLeftTab(t.id)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${leftTab === t.id ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                  {t.icon} {t.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              {leftTab === 'problem' && (
+                <>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-zinc-800"><span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">The Problem</span></div>
+                    <div className="px-4 py-3 text-xs text-zinc-300 leading-relaxed space-y-2" dangerouslySetInnerHTML={{ __html: markdownToHtml(problem.problem) }} />
+                  </div>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-zinc-800"><span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Scale &amp; Constraints</span></div>
+                    <ul className="px-4 py-3 space-y-1.5">
+                      {problem.constraints.map(c => (
+                        <li key={c} className="flex items-start gap-2 text-xs text-zinc-400"><span className="text-orange-400 flex-shrink-0 mt-0.5">▸</span><span>{c}</span></li>
                       ))}
                     </ul>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Components tab */}
-          {leftTab === 'components' && (
-            <div className="space-y-2">
-              <p className="text-[10px] text-zinc-600 px-1">Click any component to insert a detailed template snippet into your written answer</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {ARCH_COMPONENTS.map(c => (
-                  <button key={c.label} onClick={() => { setEditorMode('workspace'); insertAt('\n' + c.snippet) }}
-                    className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-600 hover:bg-zinc-800/60 transition-all text-left group">
-                    <span className="text-base leading-none flex-shrink-0">{c.icon}</span>
-                    <span className="text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors leading-snug">{c.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </aside>
-
-        {/* ── Editor panel ──────────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3">
-
-          {/* Editor toolbar */}
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            {/* Workspace / Preview toggle */}
-            <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
-              <button onClick={() => setEditorMode('workspace')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  editorMode === 'workspace' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
-                }`}>
-                <Workflow size={11} /> Workspace
-              </button>
-              <button onClick={() => setEditorMode('preview')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  editorMode === 'preview' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
-                }`}>
-                <Eye size={11} /> Preview
-              </button>
-            </div>
-
-            {/* Markdown toolbar (for the written answer) */}
-            {editorMode === 'workspace' && (
-              <div className="flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
-                {[
-                  { icon: <Heading2 size={13} />, label: 'H2', action: () => insertAt('\n## ') },
-                  { icon: <Heading3 size={13} />, label: 'H3', action: () => insertAt('\n### ') },
-                  { icon: <Bold size={13} />,     label: 'Bold', action: () => wrap('**', '**') },
-                  { icon: <List size={13} />,     label: 'List', action: () => insertAt('\n- ') },
-                  { icon: <Minus size={13} />,    label: 'Divider', action: () => insertAt('\n\n---\n\n') },
-                ].map(({ icon, label, action }) => (
-                  <button key={label} onClick={action} title={label}
-                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700 transition-all">
-                    {icon}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 text-[10px] text-zinc-600 ml-auto">
-              <Timer size={10} />
-              <span>{diagramNodes} nodes · {wordCount} words · auto-saved</span>
-            </div>
-          </div>
-
-          {/* Combined workspace: diagram + written answer together */}
-          {editorMode === 'workspace' && (
-            <>
-              {/* Step 1 — diagram */}
-              <section className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2 px-0.5">
-                  <span className="flex items-center justify-center w-4 h-4 rounded-full bg-orange-500/15 text-orange-400 text-[9px] font-bold">1</span>
-                  <span className="text-xs font-semibold text-zinc-300">Draw your architecture</span>
-                  <span className="text-[10px] text-zinc-600 hidden sm:inline">— drag components onto the canvas and connect them</span>
-                </div>
-                <SystemCanvas
-                  storageKey={canvasKey}
-                  onChange={handleCanvasChange}
-                  onInteract={autoStartTimer}
-                  heightClass="h-[46vh] min-h-[360px]"
-                />
-              </section>
-
-              {/* Step 2 — written answer */}
-              <section className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2 px-0.5">
-                  <span className="flex items-center justify-center w-4 h-4 rounded-full bg-orange-500/15 text-orange-400 text-[9px] font-bold">2</span>
-                  <span className="text-xs font-semibold text-zinc-300">Explain your design in writing</span>
-                  <span className="text-[10px] text-zinc-600 hidden sm:inline">— requirements, capacity numbers, trade-offs, deep dives</span>
-                </div>
-                <textarea
-                  ref={textareaRef}
-                  value={design}
-                  onChange={e => handleChange(e.target.value)}
-                  placeholder="Explain your design here — requirements, capacity estimation, component choices, trade-offs…"
-                  spellCheck={false}
-                  className="w-full h-[40vh] min-h-[320px] bg-zinc-900 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-5 py-4 text-sm text-zinc-200 font-mono leading-relaxed resize-y outline-none transition-colors placeholder-zinc-700"
-                />
-              </section>
-
-              <p className="text-[11px] text-zinc-500 flex items-center gap-1.5 px-0.5">
-                <Sparkles size={12} className="text-orange-400 flex-shrink-0" />
-                <span><strong className="text-zinc-300">AI Review</strong> reads both your diagram and your writing together — build the picture above, explain it below, then hit AI Review.</span>
-              </p>
-            </>
-          )}
-
-          {editorMode === 'preview' && (
-            <div className="w-full min-h-[500px] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-zinc-200 leading-relaxed">
-              {diagramText.trim() && (
-                <div className="mb-5 pb-4 border-b border-zinc-800">
-                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Workflow size={11} className="text-orange-400" /> Architecture Diagram
-                  </p>
-                  <pre className="text-xs text-zinc-400 whitespace-pre-wrap font-mono bg-zinc-950/60 rounded-lg p-3">{diagramText}</pre>
-                </div>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Must Cover</span>
+                      <span className={`text-[10px] font-bold ${coveredCount === problem.keyAreas.length ? 'text-emerald-400' : 'text-zinc-500'}`}>{coveredCount}/{problem.keyAreas.length}</span>
+                    </div>
+                    <div className="px-4 py-3 space-y-2">
+                      {problem.keyAreas.map(area => (
+                        <button key={area} onClick={() => toggleCheck(area)} className="w-full flex items-start gap-2 text-left group">
+                          <span className="mt-0.5 flex-shrink-0">{checklist[area] ? <CheckCircle size={13} className="text-emerald-400" /> : <Circle size={13} className="text-zinc-700 group-hover:text-zinc-500 transition-colors" />}</span>
+                          <span className={`text-xs leading-snug ${checklist[area] ? 'line-through text-zinc-600' : 'text-zinc-300'}`}>{area}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+                    <div className="px-4 py-2.5 border-b border-zinc-800 flex items-center gap-1.5"><Lightbulb size={12} className="text-yellow-400" /><span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Hints</span></div>
+                    <div className="px-4 py-3 space-y-2">
+                      {problem.hints.map((h, i) => (<p key={i} className="text-xs text-zinc-500 leading-relaxed">💡 {h}</p>))}
+                    </div>
+                  </div>
+                </>
               )}
-              {design.trim()
-                ? <div dangerouslySetInnerHTML={{ __html: markdownToHtml(design) }} />
-                : <p className="text-zinc-600 italic text-sm">Nothing written yet — switch to Workspace to start.</p>
-              }
-            </div>
-          )}
 
-          {/* Review error */}
-          {reviewError && (
-            <div className="flex items-start gap-2 px-4 py-3 bg-red-500/10 border border-red-500/30 rounded-xl text-sm text-red-300">
-              <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-              {reviewError}
-            </div>
-          )}
-
-          {/* AI Review result */}
-          {review && (
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-              <button onClick={() => setShowReview(v => !v)}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-zinc-800/40 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Sparkles size={15} className="text-orange-400" />
-                  <span className="font-bold text-zinc-200 text-sm">AI Review Result</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border font-bold ${GRADE_CONFIG[review.grade]?.color ?? ''} ${GRADE_CONFIG[review.grade]?.bg ?? ''}`}>
-                    {review.grade} · {review.overallScore}/10
-                  </span>
-                  <span className="hidden sm:inline text-xs text-zinc-500">{GRADE_CONFIG[review.grade]?.label}</span>
-                </div>
-                <ChevronDown size={14} className={`text-zinc-500 transition-transform ${showReview ? 'rotate-180' : ''}`} />
-              </button>
-
-              {showReview && (
-                <div className="border-t border-zinc-800 px-5 py-5 space-y-4">
-                  <p className="text-sm text-zinc-300 leading-relaxed">{review.summary}</p>
-
-                  {/* Section scores */}
-                  {Object.entries(review.sectionScores).some(([, v]) => v !== null) && (
-                    <div>
-                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Section Scores</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {Object.entries(review.sectionScores).map(([key, score]) => score !== null && (
-                          <div key={key} className="bg-zinc-950/60 rounded-xl px-3 py-2">
-                            <div className="text-[9px] text-zinc-600 mb-1.5 uppercase tracking-wide">{SECTION_LABELS[key] ?? key}</div>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full ${score >= 8 ? 'bg-emerald-500' : score >= 6 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                                  style={{ width: `${score * 10}%` }} />
-                              </div>
-                              <span className="text-xs font-bold text-zinc-300 w-8 text-right">{score}/10</span>
-                            </div>
-                          </div>
-                        ))}
+              {leftTab === 'framework' && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-zinc-600 px-1">FAANG interview structure (45 min)</p>
+                  {FRAMEWORK_STEPS.map(step => (
+                    <div key={step.num} className={`border rounded-xl overflow-hidden ${step.bg}`}>
+                      <div className="px-4 py-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-lg font-extrabold opacity-40 ${step.color} tabular-nums leading-none`}>{step.num}</span>
+                          <div><p className={`text-xs font-bold ${step.color}`}>{step.title}</p><p className="text-[10px] text-zinc-600">{step.time}</p></div>
+                        </div>
+                        <ul className="space-y-1">
+                          {step.tips.map(tip => (<li key={tip} className="flex items-start gap-1.5 text-[11px] text-zinc-400"><span className={`${step.color} mt-0.5 flex-shrink-0 text-[10px]`}>→</span>{tip}</li>))}
+                        </ul>
                       </div>
                     </div>
-                  )}
+                  ))}
+                </div>
+              )}
 
-                  {/* Strengths */}
-                  {review.strengths.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">✓ Strengths</p>
-                      <ul className="space-y-1.5">
-                        {review.strengths.map((s, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
-                            <CheckCircle size={13} className="text-emerald-400 mt-0.5 flex-shrink-0" /> {s}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Gaps */}
-                  {review.gaps.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2">✗ Gaps</p>
-                      <ul className="space-y-1.5">
-                        {review.gaps.map((g, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
-                            <AlertCircle size={13} className="text-red-400 mt-0.5 flex-shrink-0" /> {g}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Top suggestion */}
-                  <div className="bg-orange-500/8 border border-orange-500/20 rounded-xl px-4 py-3">
-                    <p className="text-[10px] font-bold text-orange-400 mb-1">⭐ Top Priority Improvement</p>
-                    <p className="text-sm text-zinc-200">{review.topSuggestion}</p>
-                  </div>
-
-                  {/* Interviewer note */}
-                  <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl px-4 py-3">
-                    <p className="text-[10px] font-bold text-zinc-500 mb-1 flex items-center gap-1.5">
-                      <Building2 size={10} /> What the interviewer would say
-                    </p>
-                    <p className="text-sm text-zinc-400 italic leading-relaxed">&ldquo;{review.interviewerNote}&rdquo;</p>
+              {leftTab === 'components' && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-zinc-600 px-1">Insert a detailed text template into your written answer.</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {ARCH_COMPONENTS.map(c => (
+                      <button key={c.label} onClick={() => { insertAt('\n' + c.snippet); openNotes(); setBriefOpen(false) }}
+                        className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-600 hover:bg-zinc-800/60 transition-all text-left group">
+                        <span className="text-base leading-none flex-shrink-0">{c.icon}</span>
+                        <span className="text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors leading-snug">{c.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
             </div>
-          )}
+          </aside>
+        </>
+      )}
 
-          {/* Bottom links */}
-          <div className="flex items-center justify-between text-xs text-zinc-600 pb-4">
-            <Link href="/system-design" className="flex items-center gap-1 hover:text-zinc-400 transition-colors">
-              <ArrowLeft size={11} /> Back to problems
-            </Link>
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1">
-                <MessageCircle size={10} />
-                <Link href="/interview" className="hover:text-orange-400 transition-colors">Mock interview</Link>
-              </span>
-              <span className="flex items-center gap-1">
-                <HelpCircle size={10} />
-                <Link href="/quiz?topic=System+Design" className="hover:text-violet-400 transition-colors">Take quiz</Link>
-              </span>
-              <span className="flex items-center gap-1">
-                <Layers size={10} />
-                <Link href="/flashcards/system-design" className="hover:text-yellow-400 transition-colors">Flashcards</Link>
-              </span>
+      {/* ── AI Review scorecard drawer ───────────────────────────────────── */}
+      {reviewOpen && review && (
+        <>
+          <div onClick={() => setReviewOpen(false)} className="absolute inset-0 bg-black/50 z-40" />
+          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[440px] bg-zinc-950 border-l border-zinc-800 z-50 flex flex-col shadow-2xl">
+            <div className="h-11 flex items-center justify-between px-4 border-b border-zinc-800 flex-shrink-0">
+              <span className="text-sm font-semibold text-zinc-200 flex items-center gap-2"><Sparkles size={14} className="text-orange-400" /> AI Review</span>
+              <button onClick={() => setReviewOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800"><X size={15} /></button>
             </div>
-          </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {/* Score header */}
+              <div className="p-5 flex items-center gap-4 border-b border-zinc-800 bg-gradient-to-b from-zinc-900/50 to-transparent">
+                <div className="relative w-[92px] h-[92px] flex-shrink-0">
+                  <svg width="92" height="92" viewBox="0 0 100 100" className="-rotate-90">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#27272a" strokeWidth="8" />
+                    <circle cx="50" cy="50" r="42" fill="none" stroke={gradeStroke[review.grade] ?? '#eab308'} strokeWidth="8" strokeLinecap="round"
+                      strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - review.overallScore / 10)} />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-extrabold text-zinc-100 leading-none">{review.overallScore}<span className="text-sm text-zinc-500 font-bold">/10</span></span>
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-bold ${GRADE_CONFIG[review.grade]?.color ?? ''} ${GRADE_CONFIG[review.grade]?.bg ?? ''}`}>
+                    <Award size={11} /> Grade {review.grade} · {GRADE_CONFIG[review.grade]?.label ?? ''}
+                  </span>
+                  <p className="text-sm text-zinc-300 leading-relaxed mt-2">{review.summary}</p>
+                </div>
+              </div>
+
+              <div className="p-5 space-y-5">
+                {/* Section scores */}
+                {Object.entries(review.sectionScores).some(([, v]) => v !== null) && (
+                  <div>
+                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2.5">Section Scores</p>
+                    <div className="space-y-2">
+                      {Object.entries(review.sectionScores).map(([key, score]) => score !== null && (
+                        <div key={key} className="flex items-center gap-3">
+                          <span className="text-[11px] text-zinc-400 w-24 flex-shrink-0">{SECTION_LABELS[key] ?? key}</span>
+                          <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${score >= 8 ? 'bg-emerald-500' : score >= 6 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${score * 10}%` }} />
+                          </div>
+                          <span className="text-[11px] font-bold text-zinc-300 w-9 text-right">{score}/10</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Strengths */}
+                {review.strengths.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><CheckCircle size={11} /> Strengths</p>
+                    <ul className="space-y-1.5">
+                      {review.strengths.map((s, i) => (<li key={i} className="flex items-start gap-2 text-sm text-zinc-300"><CheckCircle size={13} className="text-emerald-400 mt-0.5 flex-shrink-0" /> {s}</li>))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Gaps */}
+                {review.gaps.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><AlertCircle size={11} /> Gaps to Fix</p>
+                    <ul className="space-y-1.5">
+                      {review.gaps.map((g, i) => (<li key={i} className="flex items-start gap-2 text-sm text-zinc-300"><AlertCircle size={13} className="text-red-400 mt-0.5 flex-shrink-0" /> {g}</li>))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Top suggestion */}
+                <div className="bg-orange-500/10 border border-orange-500/25 rounded-xl px-4 py-3">
+                  <p className="text-[10px] font-bold text-orange-400 mb-1 flex items-center gap-1.5"><Target size={11} /> Top Priority Improvement</p>
+                  <p className="text-sm text-zinc-200">{review.topSuggestion}</p>
+                </div>
+
+                {/* Interviewer note */}
+                {review.interviewerNote && (
+                  <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3">
+                    <p className="text-[10px] font-bold text-zinc-500 mb-1 flex items-center gap-1.5"><Building2 size={10} /> What the interviewer would say</p>
+                    <p className="text-sm text-zinc-400 italic leading-relaxed">&ldquo;{review.interviewerNote}&rdquo;</p>
+                  </div>
+                )}
+
+                {/* Re-run */}
+                <button onClick={handleReview} disabled={reviewing}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-semibold transition-colors disabled:opacity-60">
+                  {reviewing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                  {reviewing ? 'Reviewing…' : 'Re-run review'}
+                </button>
+              </div>
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* Review error toast */}
+      {reviewError && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-start gap-2 px-4 py-3 bg-red-500/15 border border-red-500/40 rounded-xl text-sm text-red-200 shadow-xl max-w-md mx-3">
+          <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
+          <span className="flex-1">{reviewError}</span>
+          <button onClick={() => setReviewError('')} className="text-red-300 hover:text-red-100 flex-shrink-0"><X size={14} /></button>
         </div>
-      </div>
+      )}
     </div>
   )
 }
