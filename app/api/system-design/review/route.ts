@@ -4,6 +4,40 @@ import { callAI } from '@/lib/ai-fallback'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+const SECTION_KEYS = ['requirements', 'architecture', 'scalability', 'dataModel', 'tradeoffs'] as const
+
+function clampScore(v: unknown): number | null {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return null
+  return Math.max(1, Math.min(10, Math.round(n)))
+}
+
+function toStringArray(v: unknown, max = 6): string[] {
+  if (!Array.isArray(v)) return []
+  return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).slice(0, max)
+}
+
+/** Coerce arbitrary AI output into the exact shape the UI expects, with safe defaults. */
+function normalizeReview(raw: unknown) {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const grade = typeof r.grade === 'string' && ['A', 'B', 'C', 'D'].includes(r.grade.toUpperCase())
+    ? r.grade.toUpperCase() : 'C'
+  const sectionScores: Record<string, number | null> = {}
+  const rawSections = (r.sectionScores && typeof r.sectionScores === 'object' ? r.sectionScores : {}) as Record<string, unknown>
+  for (const key of SECTION_KEYS) sectionScores[key] = clampScore(rawSections[key])
+
+  return {
+    overallScore: clampScore(r.overallScore) ?? 5,
+    grade,
+    summary: typeof r.summary === 'string' ? r.summary : 'Review generated, but the summary was incomplete. Try again for a fuller assessment.',
+    strengths: toStringArray(r.strengths),
+    gaps: toStringArray(r.gaps),
+    sectionScores,
+    topSuggestion: typeof r.topSuggestion === 'string' ? r.topSuggestion : 'Add more detail on your trade-offs and bottlenecks.',
+    interviewerNote: typeof r.interviewerNote === 'string' ? r.interviewerNote : '',
+  }
+}
+
 export async function POST(req: Request) {
   const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
   const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:sd-review`, 5, 60_000)
@@ -15,13 +49,18 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { problem, design } = await req.json()
-    if (!problem || !design?.trim()) {
+    const body = await req.json()
+    const problem = typeof body?.problem === 'string' ? body.problem : ''
+    let design = typeof body?.design === 'string' ? body.design : ''
+    if (!problem || !design.trim()) {
       return NextResponse.json({ error: 'Problem and design are required.' }, { status: 400 })
     }
-    if (design.length < 100) {
+    if (design.trim().length < 100) {
       return NextResponse.json({ error: 'Design answer is too short. Please write more detail before requesting a review.' }, { status: 400 })
     }
+    // Cap input to keep prompt size and cost bounded under load
+    const MAX_DESIGN_CHARS = 16_000
+    if (design.length > MAX_DESIGN_CHARS) design = design.slice(0, MAX_DESIGN_CHARS)
 
     const raw = await callAI({
       messages: [
@@ -63,14 +102,15 @@ Return JSON in exactly this format:
       response_format: { type: 'json_object' },
     })
 
-    let review: unknown
+    let parsed: unknown
     try {
-      review = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw))
+      parsed = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw))
     } catch {
       return NextResponse.json({ error: 'Failed to parse AI review. Please try again.' }, { status: 500 })
     }
 
-    return NextResponse.json({ review })
+    // Normalise the shape so the UI always receives valid, safe data
+    return NextResponse.json({ review: normalizeReview(parsed) })
   } catch (err) {
     console.error('[system-design/review]', err)
     return NextResponse.json({ error: 'Review failed. Please try again in a moment.' }, { status: 500 })

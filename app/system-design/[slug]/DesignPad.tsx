@@ -7,15 +7,17 @@ import {
   AlertCircle, Trophy, Loader2, Eye, PenLine, Timer,
   Play, Pause, RotateCcw, Building2, BookOpen, Code2,
   Layers, HelpCircle, MessageCircle, ListChecks, Cpu,
-  Bold, Heading2, Heading3, List, Minus,
+  Bold, Heading2, Heading3, List, Minus, Workflow,
 } from 'lucide-react'
+import SystemCanvas, { serializeDiagram } from './SystemCanvas'
 import type { SDProblem } from '@/lib/system-design-problems'
 import { DESIGN_TEMPLATE } from '@/lib/system-design-problems'
 
 const STORAGE_PREFIX = 'sd_design_v2_'
+const CANVAS_PREFIX  = 'sd_canvas_v1_'
 
 type LeftTab = 'problem' | 'framework' | 'components'
-type EditorMode = 'write' | 'preview'
+type EditorMode = 'write' | 'diagram' | 'preview'
 
 interface ReviewResult {
   overallScore: number
@@ -159,10 +161,20 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [timerSec, setTimerSec]       = useState(45 * 60)
   const [timerOn, setTimerOn]         = useState(false)
   const [timerStarted, setTimerStarted] = useState(false)
+  const [diagramText, setDiagramText] = useState('')
+  const [diagramNodes, setDiagramNodes] = useState(0)
   const saveTimer                     = useRef<ReturnType<typeof setTimeout> | null>(null)
   const timerInterval                 = useRef<ReturnType<typeof setInterval> | null>(null)
   const textareaRef                   = useRef<HTMLTextAreaElement>(null)
+  const diagramTextRef                = useRef('')
   const storageKey                    = STORAGE_PREFIX + problem.slug
+  const canvasKey                     = CANVAS_PREFIX + problem.slug
+
+  const handleCanvasChange = useCallback((text: string, count: number) => {
+    diagramTextRef.current = text
+    setDiagramText(text)
+    setDiagramNodes(count)
+  }, [])
 
   // Load saved state
   useEffect(() => {
@@ -178,6 +190,21 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       }
     } catch { setDesign(DESIGN_TEMPLATE) }
   }, [storageKey])
+
+  // Seed diagram text from a previously-saved canvas so AI Review can include it
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(canvasKey)
+      if (!raw) return
+      const p = JSON.parse(raw)
+      if (Array.isArray(p.nodes) && p.nodes.length) {
+        const text = serializeDiagram(p.nodes, p.edges ?? [])
+        diagramTextRef.current = text
+        setDiagramText(text)
+        setDiagramNodes(p.nodes.length)
+      }
+    } catch { /* ignore */ }
+  }, [canvasKey])
 
   // Timer
   useEffect(() => {
@@ -265,10 +292,18 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     })
   }, [design, handleChange])
 
-  // AI review
+  // AI review — combines the written answer with the visual diagram
+  const buildReviewPayload = () => {
+    const diagram = diagramTextRef.current.trim()
+    if (!diagram) return design
+    return `${design.trim()}\n\n---\n\n## Architecture Diagram (drawn on the visual canvas)\n${diagram}`
+  }
+
   const handleReview = async () => {
-    if (design.trim().length < 100) {
-      setReviewError('Write more before requesting a review — at least a few paragraphs.')
+    const hasEnoughText = design.trim().length >= 100
+    const hasDiagram    = diagramNodes >= 2
+    if (!hasEnoughText && !hasDiagram) {
+      setReviewError('Add more before requesting a review — write a few paragraphs, or place and connect at least a couple of components on the diagram.')
       return
     }
     setReviewing(true); setReviewError(''); setReview(null)
@@ -276,7 +311,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       const res = await fetch('/api/system-design/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem: problem.problem, design }),
+        body: JSON.stringify({ problem: problem.problem, design: buildReviewPayload() }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Review failed')
@@ -510,6 +545,15 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 }`}>
                 <PenLine size={11} /> Write
               </button>
+              <button onClick={() => setEditorMode('diagram')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  editorMode === 'diagram' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                }`}>
+                <Workflow size={11} /> Diagram
+                {diagramNodes > 0 && (
+                  <span className="text-[9px] font-bold text-orange-400 bg-orange-500/15 rounded-full px-1.5 leading-4">{diagramNodes}</span>
+                )}
+              </button>
               <button onClick={() => setEditorMode('preview')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                   editorMode === 'preview' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
@@ -543,7 +587,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           </div>
 
           {/* Editor */}
-          {editorMode === 'write' ? (
+          {editorMode === 'write' && (
             <textarea
               ref={textareaRef}
               value={design}
@@ -552,12 +596,26 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               spellCheck={false}
               className="w-full h-[calc(100vh-280px)] min-h-[500px] bg-zinc-900 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-5 py-4 text-sm text-zinc-200 font-mono leading-relaxed resize-y outline-none transition-colors placeholder-zinc-700"
             />
-          ) : (
+          )}
+
+          {editorMode === 'diagram' && (
+            <SystemCanvas storageKey={canvasKey} onChange={handleCanvasChange} />
+          )}
+
+          {editorMode === 'preview' && (
             <div className="w-full min-h-[500px] max-h-[calc(100vh-280px)] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-zinc-200 leading-relaxed">
               {design.trim()
                 ? <div dangerouslySetInnerHTML={{ __html: markdownToHtml(design) }} />
                 : <p className="text-zinc-600 italic text-sm">Nothing to preview — switch to Write.</p>
               }
+              {diagramText.trim() && (
+                <div className="mt-5 pt-4 border-t border-zinc-800">
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Workflow size={11} className="text-orange-400" /> Architecture Diagram
+                  </p>
+                  <pre className="text-xs text-zinc-400 whitespace-pre-wrap font-mono bg-zinc-950/60 rounded-lg p-3">{diagramText}</pre>
+                </div>
+              )}
             </div>
           )}
 
