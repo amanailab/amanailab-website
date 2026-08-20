@@ -23,6 +23,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { Trash2, Sparkles, Grid3x3, MousePointerClick } from 'lucide-react'
+import { serializeDiagram } from './diagram-utils'
 
 // ── Component palette ─────────────────────────────────────────────────────────
 type Color = 'orange' | 'blue' | 'emerald' | 'violet' | 'yellow' | 'cyan' | 'pink' | 'zinc'
@@ -132,22 +133,15 @@ function ArchNodeComponent({ id, data, selected }: NodeProps<ArchNode>) {
   )
 }
 
-// ── Serialize the diagram to text for the AI reviewer ─────────────────────────
-export function serializeDiagram(nodes: ArchNode[], edges: Edge[]): string {
-  if (!nodes.length) return ''
-  const byId = Object.fromEntries(nodes.map(n => [n.id, n.data.label || n.data.kind]))
-  const comps = nodes.map(n => `- ${n.data.label}`).join('\n')
-  const conns = edges.length
-    ? edges.map(e => `- ${byId[e.source] ?? '?'} → ${byId[e.target] ?? '?'}`).join('\n')
-    : '- (components placed but no connections drawn yet)'
-  return `Components on the canvas:\n${comps}\n\nData flow / connections:\n${conns}`
-}
-
 interface SavedCanvas { nodes: ArchNode[]; edges: Edge[] }
 
 interface Props {
   storageKey: string
   onChange?: (diagramText: string, nodeCount: number) => void
+  /** Fired on a genuine user action (adding/connecting a node) — used to auto-start the timer. */
+  onInteract?: () => void
+  /** Tailwind height classes for the canvas area. */
+  heightClass?: string
 }
 
 const defaultEdgeOptions = {
@@ -157,7 +151,7 @@ const defaultEdgeOptions = {
 }
 
 // ── Inner canvas (needs ReactFlowProvider context) ────────────────────────────
-function CanvasInner({ storageKey, onChange }: Props) {
+function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(100vh-320px)] min-h-[460px]' }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<ArchNode>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
   const { screenToFlowPosition } = useReactFlow()
@@ -192,13 +186,14 @@ function CanvasInner({ storageKey, onChange }: Props) {
   }, [nodes, edges, storageKey, onChange])
 
   const onConnect = useCallback(
-    (c: Connection) => setEdges(eds => addEdge({ ...c, ...defaultEdgeOptions }, eds)),
-    [setEdges],
+    (c: Connection) => { onInteract?.(); setEdges(eds => addEdge({ ...c, ...defaultEdgeOptions }, eds)) },
+    [setEdges, onInteract],
   )
 
   const addNode = useCallback((kind: string, position: { x: number; y: number }) => {
     const comp = COMP_MAP[kind]
     if (!comp) return
+    onInteract?.()
     const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `n_${Date.now()}_${Math.random()}`
     const node: ArchNode = {
       id,
@@ -207,7 +202,7 @@ function CanvasInner({ storageKey, onChange }: Props) {
       data: { kind: comp.kind, label: comp.label, icon: comp.icon, color: comp.color },
     }
     setNodes(nds => [...nds, node])
-  }, [setNodes])
+  }, [setNodes, onInteract])
 
   // Drag from palette → drop on canvas
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -270,7 +265,7 @@ function CanvasInner({ storageKey, onChange }: Props) {
         ref={wrapperRef}
         onDrop={onDrop}
         onDragOver={onDragOver}
-        className="relative h-[calc(100vh-320px)] min-h-[460px] bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden"
+        className={`relative ${heightClass} bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden`}
       >
         <ReactFlow
           nodes={nodes}

@@ -4,20 +4,31 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, Save, Sparkles, CheckCircle, Circle, ChevronDown,
-  AlertCircle, Trophy, Loader2, Eye, PenLine, Timer,
+  AlertCircle, Trophy, Loader2, Eye, Timer,
   Play, Pause, RotateCcw, Building2, BookOpen, Code2,
   Layers, HelpCircle, MessageCircle, ListChecks, Cpu,
   Bold, Heading2, Heading3, List, Minus, Workflow,
 } from 'lucide-react'
-import SystemCanvas, { serializeDiagram } from './SystemCanvas'
+import dynamic from 'next/dynamic'
+import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
 import { DESIGN_TEMPLATE } from '@/lib/system-design-problems'
+
+// React Flow is browser-only — load it client-side to keep it out of SSR/prerender
+const SystemCanvas = dynamic(() => import('./SystemCanvas'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[46vh] min-h-[360px] bg-zinc-950 border border-zinc-800 rounded-2xl flex items-center justify-center">
+      <span className="text-xs text-zinc-600">Loading canvas…</span>
+    </div>
+  ),
+})
 
 const STORAGE_PREFIX = 'sd_design_v2_'
 const CANVAS_PREFIX  = 'sd_canvas_v1_'
 
 type LeftTab = 'problem' | 'framework' | 'components'
-type EditorMode = 'write' | 'diagram' | 'preview'
+type EditorMode = 'workspace' | 'preview'
 
 interface ReviewResult {
   overallScore: number
@@ -150,7 +161,7 @@ function markdownToHtml(md: string): string {
 
 export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [design, setDesign]           = useState('')
-  const [editorMode, setEditorMode]   = useState<EditorMode>('write')
+  const [editorMode, setEditorMode]   = useState<EditorMode>('workspace')
   const [leftTab, setLeftTab]         = useState<LeftTab>('problem')
   const [savedAt, setSavedAt]         = useState<Date | null>(null)
   const [reviewing, setReviewing]     = useState(false)
@@ -167,8 +178,17 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const timerInterval                 = useRef<ReturnType<typeof setInterval> | null>(null)
   const textareaRef                   = useRef<HTMLTextAreaElement>(null)
   const diagramTextRef                = useRef('')
+  const startedRef                    = useRef(false)
   const storageKey                    = STORAGE_PREFIX + problem.slug
   const canvasKey                     = CANVAS_PREFIX + problem.slug
+
+  // Start the interview timer on the first real action (typing or drawing)
+  const autoStartTimer = useCallback(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+    setTimerOn(true)
+    setTimerStarted(true)
+  }, [])
 
   const handleCanvasChange = useCallback((text: string, count: number) => {
     diagramTextRef.current = text
@@ -222,7 +242,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const fmtTime = (s: number) => `${Math.floor(s / 60).toString().padStart(2,'0')}:${(s % 60).toString().padStart(2,'0')}`
   const timerColor = timerSec <= 300 ? 'text-red-400' : timerSec <= 600 ? 'text-orange-400' : 'text-zinc-300'
 
-  const resetTimer = () => { setTimerOn(false); setTimerSec(45 * 60); setTimerStarted(false) }
+  const resetTimer = () => { setTimerOn(false); setTimerSec(45 * 60); setTimerStarted(false); startedRef.current = false }
+  const startTimerManually = () => { startedRef.current = true; setTimerOn(true); setTimerStarted(true) }
 
   // Cleanup on unmount
   useEffect(() => {
@@ -256,7 +277,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     }, 700)
   }, [storageKey])
 
-  const handleChange = (val: string) => { setDesign(val); saveDesign(val, checklist) }
+  const handleChange = (val: string) => { autoStartTimer(); setDesign(val); saveDesign(val, checklist) }
 
   const toggleCheck = (area: string) => {
     const next = { ...checklist, [area]: !checklist[area] }
@@ -354,7 +375,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className={`text-sm font-mono font-bold tabular-nums ${timerColor}`}>{fmtTime(timerSec)}</span>
             {!timerStarted ? (
-              <button onClick={() => { setTimerOn(true); setTimerStarted(true) }}
+              <button onClick={startTimerManually}
                 className="flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 transition-colors">
                 <Play size={10} /> Start
               </button>
@@ -518,10 +539,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           {/* Components tab */}
           {leftTab === 'components' && (
             <div className="space-y-2">
-              <p className="text-[10px] text-zinc-600 px-1">Click any component to insert a template snippet at cursor position</p>
+              <p className="text-[10px] text-zinc-600 px-1">Click any component to insert a detailed template snippet into your written answer</p>
               <div className="grid grid-cols-2 gap-1.5">
                 {ARCH_COMPONENTS.map(c => (
-                  <button key={c.label} onClick={() => { setEditorMode('write'); insertAt('\n' + c.snippet) }}
+                  <button key={c.label} onClick={() => { setEditorMode('workspace'); insertAt('\n' + c.snippet) }}
                     className="flex items-center gap-2 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-600 hover:bg-zinc-800/60 transition-all text-left group">
                     <span className="text-base leading-none flex-shrink-0">{c.icon}</span>
                     <span className="text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition-colors leading-snug">{c.label}</span>
@@ -537,22 +558,13 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
           {/* Editor toolbar */}
           <div className="flex items-center justify-between flex-wrap gap-2">
-            {/* Write / Preview toggle */}
+            {/* Workspace / Preview toggle */}
             <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
-              <button onClick={() => setEditorMode('write')}
+              <button onClick={() => setEditorMode('workspace')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  editorMode === 'write' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                  editorMode === 'workspace' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
                 }`}>
-                <PenLine size={11} /> Write
-              </button>
-              <button onClick={() => setEditorMode('diagram')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  editorMode === 'diagram' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
-                }`}>
-                <Workflow size={11} /> Diagram
-                {diagramNodes > 0 && (
-                  <span className="text-[9px] font-bold text-orange-400 bg-orange-500/15 rounded-full px-1.5 leading-4">{diagramNodes}</span>
-                )}
+                <Workflow size={11} /> Workspace
               </button>
               <button onClick={() => setEditorMode('preview')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
@@ -562,8 +574,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               </button>
             </div>
 
-            {/* Markdown toolbar */}
-            {editorMode === 'write' && (
+            {/* Markdown toolbar (for the written answer) */}
+            {editorMode === 'workspace' && (
               <div className="flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
                 {[
                   { icon: <Heading2 size={13} />, label: 'H2', action: () => insertAt('\n## ') },
@@ -582,40 +594,66 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
             <div className="flex items-center gap-2 text-[10px] text-zinc-600 ml-auto">
               <Timer size={10} />
-              <span>{wordCount} words · auto-saved</span>
+              <span>{diagramNodes} nodes · {wordCount} words · auto-saved</span>
             </div>
           </div>
 
-          {/* Editor */}
-          {editorMode === 'write' && (
-            <textarea
-              ref={textareaRef}
-              value={design}
-              onChange={e => handleChange(e.target.value)}
-              placeholder="Start writing your system design…"
-              spellCheck={false}
-              className="w-full h-[calc(100vh-280px)] min-h-[500px] bg-zinc-900 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-5 py-4 text-sm text-zinc-200 font-mono leading-relaxed resize-y outline-none transition-colors placeholder-zinc-700"
-            />
-          )}
+          {/* Combined workspace: diagram + written answer together */}
+          {editorMode === 'workspace' && (
+            <>
+              {/* Step 1 — diagram */}
+              <section className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2 px-0.5">
+                  <span className="flex items-center justify-center w-4 h-4 rounded-full bg-orange-500/15 text-orange-400 text-[9px] font-bold">1</span>
+                  <span className="text-xs font-semibold text-zinc-300">Draw your architecture</span>
+                  <span className="text-[10px] text-zinc-600 hidden sm:inline">— drag components onto the canvas and connect them</span>
+                </div>
+                <SystemCanvas
+                  storageKey={canvasKey}
+                  onChange={handleCanvasChange}
+                  onInteract={autoStartTimer}
+                  heightClass="h-[46vh] min-h-[360px]"
+                />
+              </section>
 
-          {editorMode === 'diagram' && (
-            <SystemCanvas storageKey={canvasKey} onChange={handleCanvasChange} />
+              {/* Step 2 — written answer */}
+              <section className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2 px-0.5">
+                  <span className="flex items-center justify-center w-4 h-4 rounded-full bg-orange-500/15 text-orange-400 text-[9px] font-bold">2</span>
+                  <span className="text-xs font-semibold text-zinc-300">Explain your design in writing</span>
+                  <span className="text-[10px] text-zinc-600 hidden sm:inline">— requirements, capacity numbers, trade-offs, deep dives</span>
+                </div>
+                <textarea
+                  ref={textareaRef}
+                  value={design}
+                  onChange={e => handleChange(e.target.value)}
+                  placeholder="Explain your design here — requirements, capacity estimation, component choices, trade-offs…"
+                  spellCheck={false}
+                  className="w-full h-[40vh] min-h-[320px] bg-zinc-900 border border-zinc-800 focus:border-zinc-600 rounded-2xl px-5 py-4 text-sm text-zinc-200 font-mono leading-relaxed resize-y outline-none transition-colors placeholder-zinc-700"
+                />
+              </section>
+
+              <p className="text-[11px] text-zinc-500 flex items-center gap-1.5 px-0.5">
+                <Sparkles size={12} className="text-orange-400 flex-shrink-0" />
+                <span><strong className="text-zinc-300">AI Review</strong> reads both your diagram and your writing together — build the picture above, explain it below, then hit AI Review.</span>
+              </p>
+            </>
           )}
 
           {editorMode === 'preview' && (
-            <div className="w-full min-h-[500px] max-h-[calc(100vh-280px)] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-zinc-200 leading-relaxed">
-              {design.trim()
-                ? <div dangerouslySetInnerHTML={{ __html: markdownToHtml(design) }} />
-                : <p className="text-zinc-600 italic text-sm">Nothing to preview — switch to Write.</p>
-              }
+            <div className="w-full min-h-[500px] overflow-y-auto bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-zinc-200 leading-relaxed">
               {diagramText.trim() && (
-                <div className="mt-5 pt-4 border-t border-zinc-800">
+                <div className="mb-5 pb-4 border-b border-zinc-800">
                   <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <Workflow size={11} className="text-orange-400" /> Architecture Diagram
                   </p>
                   <pre className="text-xs text-zinc-400 whitespace-pre-wrap font-mono bg-zinc-950/60 rounded-lg p-3">{diagramText}</pre>
                 </div>
               )}
+              {design.trim()
+                ? <div dangerouslySetInnerHTML={{ __html: markdownToHtml(design) }} />
+                : <p className="text-zinc-600 italic text-sm">Nothing written yet — switch to Workspace to start.</p>
+              }
             </div>
           )}
 
