@@ -8,7 +8,7 @@ import {
   Eye, PenLine, X, RefreshCw, Play, Pause, RotateCcw, Building2, BookOpen,
   ListChecks, Cpu, Lightbulb, Target, Award, Bold, Heading2, Heading3,
   List, Minus, Plus, Code2, ChevronRight, ChevronLeft, GripVertical,
-  Trophy, Hash,
+  Trophy, Hash, Maximize2,
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
@@ -80,6 +80,29 @@ const SECTION_LABELS: Record<string, string> = {
   scalability:  'Scalability',
   dataModel:    'Data Model',
   tradeoffs:    'Trade-offs',
+}
+
+const SECTION_TIPS: Record<string, { low: string; mid: string }> = {
+  requirements: {
+    low: 'State 3+ functional requirements, define your SLA (latency, availability), and explicitly say what you are NOT building.',
+    mid: 'Add specific numbers to non-functional requirements — e.g. P99 ≤ 200ms, 99.9% uptime, 5M DAU.',
+  },
+  architecture: {
+    low: 'Describe all major components with data flow. Name each service and justify your database choice.',
+    mid: 'Add API contracts between services. Justify every component — why this queue, why this cache technology?',
+  },
+  scalability: {
+    low: 'Identify your main bottleneck. Add at least one of: caching strategy, sharding, or horizontal scaling.',
+    mid: 'Specify cache TTL, shard key strategy, replication factor, and auto-scaling triggers.',
+  },
+  dataModel: {
+    low: 'Define your schema with field types. Justify SQL vs NoSQL and show key indexes.',
+    mid: 'Model read/write query patterns explicitly. Add partition key reasoning for distributed storage.',
+  },
+  tradeoffs: {
+    low: 'Compare your choices to at least one alternative. Explain why you rejected other approaches.',
+    mid: 'Quantify trade-offs — latency vs cost, consistency vs availability, complexity vs simplicity.',
+  },
 }
 
 // ── Interview phases ──────────────────────────────────────────────────────────
@@ -239,6 +262,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   // ── Completion tracking ───────────────────────────────────────────────────
   const [bestScore, setBestScore] = useState<{ score: number; grade: string } | null>(null)
+
+  // ── Problem expand modal ──────────────────────────────────────────────────
+  const [problemExpanded, setProblemExpanded] = useState(false)
 
   // ── Refs ──────────────────────────────────────────────────────────────────
   const textareaRef   = useRef<HTMLTextAreaElement>(null)
@@ -455,6 +481,28 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     })
   }, [persist, autoStartTimer])
 
+  // ── Textarea keyboard shortcuts ────────────────────────────────────────────
+  const handleWriteKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const el = e.currentTarget
+    if (e.key === 'Tab') {
+      e.preventDefault()
+      const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
+      const s = el.selectionStart, end = el.selectionEnd
+      const next = d.slice(0, s) + '  ' + d.slice(end)
+      setDesign(next)
+      persist(next, cl, snips, aid)
+      requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 2 })
+    }
+    if (e.key === 'b' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      wrap('**', '**')
+    }
+    if (e.key === 'i' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      wrap('*', '*')
+    }
+  }, [wrap, persist])
+
   // ── Section jump ───────────────────────────────────────────────────────────
   const jumpToSection = useCallback((heading: string) => {
     const el = textareaRef.current
@@ -627,7 +675,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
       {/* Phase tip bar — shows the current phase prompt below the header */}
       {phase && timerStarted && (
-        <div className={`hidden xl:flex flex-shrink-0 items-center gap-2 px-4 py-1.5 border-b border-zinc-900/80 text-[11px] ${phase.color}`}
+        <div className={`hidden lg:flex flex-shrink-0 items-center gap-2 px-4 py-1.5 border-b border-zinc-900/80 text-[11px] ${phase.color}`}
           style={{ background: 'rgba(9,9,11,0.95)' }}>
           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${phase.bg} animate-pulse`} />
           <span className="font-bold">{phase.name}</span>
@@ -660,7 +708,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         {/* ── LEFT SIDEBAR ────────────────────────────────────────────────── */}
         <aside className={`
           ${mobilePane === 'problem' ? 'flex' : 'hidden'}
-          ${leftOpen ? 'xl:flex xl:w-[280px]' : 'xl:hidden'}
+          ${leftOpen ? 'xl:flex xl:w-[340px]' : 'xl:hidden'}
           flex-col w-full xl:flex-shrink-0 border-r border-zinc-800 bg-zinc-950 min-h-0
         `}>
 
@@ -696,13 +744,19 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl overflow-hidden">
                   <div className="px-3 py-2.5 border-b border-zinc-800/70 flex items-center gap-2">
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">The Problem</span>
-                    <span className={`ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0 ${
                       problem.category === 'LLM Infrastructure' ? 'text-violet-400 bg-violet-500/10 border-violet-500/20'
                       : problem.category === 'ML Systems' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20'
                       : 'text-green-400 bg-green-500/10 border-green-500/20'
                     }`}>{problem.category}</span>
+                    <button
+                      onClick={() => setProblemExpanded(true)}
+                      title="Read full problem"
+                      className="ml-auto w-6 h-6 flex items-center justify-center rounded-md text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors flex-shrink-0">
+                      <Maximize2 size={11} />
+                    </button>
                   </div>
-                  <div className="px-3 py-3 leading-relaxed"
+                  <div className="px-3 py-3 leading-relaxed text-sm"
                     dangerouslySetInnerHTML={{ __html: mdToHtml(problem.problem) }} />
                 </div>
 
@@ -936,13 +990,19 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   </button>
                 ))}
 
-                <span className="ml-auto text-[10px] text-zinc-700 pr-1 flex-shrink-0 tabular-nums">{wordCount}w</span>
+                <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                  <span className="hidden lg:flex items-center gap-1.5 text-[9px] text-zinc-700">
+                    <span>Tab=indent</span><span>·</span><span>Ctrl+B=bold</span><span>·</span><span>Ctrl+I=italic</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-700 pr-1 tabular-nums">{wordCount}w</span>
+                </div>
               </div>
 
               <textarea
                 ref={textareaRef}
                 value={design}
                 onChange={e => handleDesignChange(e.target.value)}
+                onKeyDown={handleWriteKeyDown}
                 spellCheck={false}
                 placeholder="Start writing your system design..."
                 className="flex-1 min-h-0 w-full bg-zinc-950 px-4 py-3 text-sm text-zinc-200 font-mono leading-relaxed resize-none outline-none placeholder-zinc-700"
@@ -1086,6 +1146,71 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         </aside>
       </div>
 
+      {/* ═══ PROBLEM EXPAND MODAL ══════════════════════════════════════════ */}
+      {problemExpanded && (
+        <>
+          <div onClick={() => setProblemExpanded(false)} className="absolute inset-0 bg-black/75 backdrop-blur-sm z-40" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl max-h-[88vh] flex flex-col bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
+            {/* Modal header */}
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-zinc-800 flex-shrink-0">
+              <div>
+                <p className="text-sm font-bold text-zinc-100">{problem.title}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                    problem.difficulty === 'Hard' ? 'text-red-400 border-red-500/30 bg-red-500/10' : 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10'
+                  }`}>{problem.difficulty}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${
+                    problem.category === 'LLM Infrastructure' ? 'text-violet-400 bg-violet-500/10 border-violet-500/20'
+                    : problem.category === 'ML Systems' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+                    : 'text-green-400 bg-green-500/10 border-green-500/20'
+                  }`}>{problem.category}</span>
+                  <span className="text-[10px] text-zinc-600">Asked at: {problem.companies.slice(0, 4).join(', ')}</span>
+                </div>
+              </div>
+              <button onClick={() => setProblemExpanded(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors flex-shrink-0">
+                <X size={16} />
+              </button>
+            </div>
+            {/* Modal body */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-6 py-5 text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: mdToHtml(problem.problem) }} />
+              <div className="px-6 pb-6">
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <span className="w-3 h-px bg-zinc-700" />Scale &amp; Constraints
+                </p>
+                <ul className="space-y-2">
+                  {problem.constraints.map(c => (
+                    <li key={c} className="flex items-start gap-2 text-sm text-zinc-400 leading-snug">
+                      <span className="text-orange-400/80 flex-shrink-0 mt-0.5">▸</span>{c}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mt-5 mb-3 flex items-center gap-1.5">
+                  <span className="w-3 h-px bg-zinc-700" />Must Cover in Your Answer
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {problem.keyAreas.map(area => (
+                    <span key={area} className={`text-[11px] px-2 py-1 rounded-lg border font-medium ${
+                      checklist[area]
+                        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 line-through opacity-60'
+                        : 'text-zinc-400 bg-zinc-800/60 border-zinc-700'
+                    }`}>{area}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-3 border-t border-zinc-800 flex-shrink-0">
+              <button onClick={() => setProblemExpanded(false)}
+                className="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-semibold transition-colors">
+                Back to Editor
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* ═══ AI REVIEW DRAWER ═══════════════════════════════════════════════ */}
       {reviewOpen && review && (
         <>
@@ -1130,19 +1255,29 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 {Object.entries(review.sectionScores).some(([, v]) => v !== null) && (
                   <div>
                     <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-3">Section Scores</p>
-                    <div className="space-y-2.5">
-                      {Object.entries(review.sectionScores).map(([key, score]) => score !== null && (
-                        <div key={key} className="flex items-center gap-3">
-                          <span className="text-[11px] text-zinc-400 w-24 flex-shrink-0">{SECTION_LABELS[key] ?? key}</span>
-                          <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-700 ${score >= 8 ? 'bg-emerald-500' : score >= 6 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                              style={{ width: `${score * 10}%` }}
-                            />
+                    <div className="space-y-3">
+                      {Object.entries(review.sectionScores).map(([key, score]) => {
+                        if (score === null) return null
+                        return (
+                          <div key={key} className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[11px] text-zinc-400 w-24 flex-shrink-0">{SECTION_LABELS[key] ?? key}</span>
+                              <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-700 ${score >= 8 ? 'bg-emerald-500' : score >= 6 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                                  style={{ width: `${score * 10}%` }}
+                                />
+                              </div>
+                              <span className={`text-[11px] font-bold w-8 text-right tabular-nums ${score >= 8 ? 'text-emerald-400' : score >= 6 ? 'text-yellow-400' : 'text-red-400'}`}>{score}/10</span>
+                            </div>
+                            {score < 8 && SECTION_TIPS[key] && (
+                              <p className="text-[10px] text-zinc-500 ml-[108px] leading-snug italic">
+                                → {score < 5 ? SECTION_TIPS[key].low : SECTION_TIPS[key].mid}
+                              </p>
+                            )}
                           </div>
-                          <span className="text-[11px] font-bold text-zinc-300 w-8 text-right tabular-nums">{score}/10</span>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 )}

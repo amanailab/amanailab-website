@@ -113,26 +113,33 @@ export async function POST(req: Request) {
       messages: [
         {
           role: 'system',
-          content: `You are a senior staff engineer at a top AI company who has conducted 300+ system design interviews. Give honest, specific, actionable feedback. Return ONLY valid JSON — no markdown, no prose outside JSON.`,
+          content: `You are a staff engineer at a top AI company who has run 300+ ML system design interviews. Be specific and honest — cite the candidate's actual words, not generic advice. Return ONLY valid JSON, no markdown fences.`,
         },
         {
           role: 'user',
-          content: `Review this ML system design answer.
+          content: `Evaluate this ML system design interview answer.
 
 PROBLEM: ${trimmedProblem}
 
-ANSWER:
+CANDIDATE ANSWER:
 ${design}
 ${codeSection}
 
-Score on: Requirements, Architecture, Scalability, Data Model, Trade-offs${hasCode ? ', Code Quality' : ''}.
+Score each section 1-10 (null if not addressed at all):
+- requirements: functional+non-functional reqs, SLAs, scope clarity
+- architecture: component selection, data flow, service boundaries, justification
+- scalability: bottleneck analysis, caching, sharding, fault tolerance
+- dataModel: schema, storage choice justification, indexes, query patterns
+- tradeoffs: alternatives considered, deliberate choices explained with reasoning
 
-Return JSON:
-{"overallScore":<1-10>,"grade":"<A|B|C|D>","summary":"<2-3 sentences>","strengths":["<specific>","<specific>"],"gaps":["<specific>","<specific>"],"sectionScores":{"requirements":<1-10 or null>,"architecture":<1-10 or null>,"scalability":<1-10 or null>,"dataModel":<1-10 or null>,"tradeoffs":<1-10 or null>},"codeQuality":${hasCode ? '{"score":<1-10>,"notes":"<2-3 sentences>"}' : 'null'},"topSuggestion":"<single best improvement>","interviewerNote":"<1-2 sentences honest feedback>"}`,
+Strengths and gaps MUST reference specific content from the answer. Gaps must say exactly what is missing.
+
+Return JSON only:
+{"overallScore":<1-10>,"grade":"<A|B|C|D>","summary":"<2-3 sentences: overall quality, key strength, critical gap>","strengths":["<specific citing answer>","<specific citing answer>"],"gaps":["<specific missing detail + what to add>","<specific missing detail + what to add>"],"sectionScores":{"requirements":<1-10|null>,"architecture":<1-10|null>,"scalability":<1-10|null>,"dataModel":<1-10|null>,"tradeoffs":<1-10|null>},"codeQuality":${hasCode ? '{"score":<1-10>,"notes":"<correctness, completeness, style>"}' : 'null'},"topSuggestion":"<single highest-impact specific improvement>","interviewerNote":"<what a real interviewer would think — honest, 1-2 sentences>"}`,
         },
       ],
       temperature: 0.3,
-      max_tokens: 900,
+      max_tokens: 1000,
       response_format: { type: 'json_object' },
     })
 

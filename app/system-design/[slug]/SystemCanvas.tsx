@@ -302,9 +302,9 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
       <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl flex-shrink-0 overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800/60">
           <MousePointerClick size={10} className="text-orange-400 flex-shrink-0" />
-          <span className="text-[10px] text-zinc-500">Click to add · Drag to canvas · Drag between nodes to connect · Double-click node to rename · Click edge to label</span>
+          <span className="text-[10px] text-zinc-500">Click to add · Drag onto canvas · Drag between handle dots (◉) to connect · Double-click node to rename · Click arrow to label · Delete/Backspace removes selected</span>
         </div>
-        <div className="flex gap-1.5 px-3 py-2 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex flex-wrap gap-1.5 px-3 py-2">
           {CANVAS_COMPONENTS.map(comp => {
             const c = COLOR_CLASSES[comp.color]
             return (
@@ -359,9 +359,23 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
         {/* Empty state */}
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-6">
-            <Grid3x3 size={32} className="text-zinc-800 mb-3" />
-            <p className="text-sm text-zinc-500 font-medium">Start building your architecture</p>
-            <p className="text-xs text-zinc-600 mt-1.5 max-w-xs leading-relaxed">Drag a component from the palette above, or tap to drop it. Then drag between boxes to draw connections.</p>
+            <Grid3x3 size={28} className="text-zinc-800 mb-4" />
+            <p className="text-sm font-semibold text-zinc-500 mb-4">Build your architecture diagram</p>
+            <ul className="space-y-2 text-left max-w-xs">
+              {[
+                'Click any component above to place it on the canvas',
+                'Drag components to reposition them anywhere',
+                'Drag from a handle dot (◉) to another node to draw a connection',
+                'Click a connection arrow to add a flow label (e.g. "REST", "gRPC")',
+                'Double-click a node to rename it',
+                'Select a node or edge then press Delete to remove it',
+              ].map((tip, i) => (
+                <li key={i} className="text-xs text-zinc-600 flex items-start gap-2">
+                  <span className="text-orange-400/70 font-bold flex-shrink-0 tabular-nums leading-relaxed">{i + 1}.</span>
+                  <span className="leading-relaxed">{tip}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
