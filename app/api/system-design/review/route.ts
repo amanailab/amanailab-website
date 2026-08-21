@@ -5,10 +5,14 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 function extractJSON(raw: string): string {
-  // Strip ```json...``` or ```...``` markdown fences
+  // Strip ```json...``` or ```...``` markdown fences (greedy — handles nested braces)
   const fenced = raw.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
-  if (fenced) return fenced[1].trim()
-  // Find outermost {...}
+  if (fenced) {
+    const inner = fenced[1].trim()
+    // Validate it starts with { before committing
+    if (inner.startsWith('{')) return inner
+  }
+  // Find the widest {...} span (handles prose before/after the JSON)
   const start = raw.indexOf('{')
   const end = raw.lastIndexOf('}')
   if (start !== -1 && end > start) return raw.slice(start, end + 1)
