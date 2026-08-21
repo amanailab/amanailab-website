@@ -50,7 +50,7 @@ export async function callAI(options: AIOptions): Promise<string> {
           "Content-Type": "application/json",
           Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
         },
-        body: JSON.stringify({ model: "qwen/qwen3.6-27b", ...options }),
+        body: JSON.stringify({ model: "openai/gpt-oss-120b", ...options }),
       },
       TIMEOUT_MS,
     )

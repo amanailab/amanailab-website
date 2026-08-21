@@ -5,8 +5,16 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 function extractJSON(raw: string): string {
-  // Strip <think>...</think> blocks emitted by reasoning/thinking models (e.g. Qwen3)
-  let s = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+  let s = raw
+
+  // Strip complete <think>...</think> blocks (reasoning model chain-of-thought)
+  s = s.replace(/<think>[\s\S]*?<\/think>/gi, '')
+
+  // Strip truncated / unclosed <think> block (model ran out of tokens mid-reasoning)
+  const openThink = s.search(/<think>/i)
+  if (openThink !== -1) s = s.slice(0, openThink)
+
+  s = s.trim()
 
   // Strip ```json...``` or ```...``` markdown fences
   const fenced = s.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
@@ -15,7 +23,7 @@ function extractJSON(raw: string): string {
     if (inner.startsWith('{')) return inner
   }
 
-  // Find the outermost {...} span (skips prose before/after the JSON object)
+  // Find the outermost {...} span (skips prose before/after JSON)
   const start = s.indexOf('{')
   const end = s.lastIndexOf('}')
   if (start !== -1 && end > start) return s.slice(start, end + 1)
