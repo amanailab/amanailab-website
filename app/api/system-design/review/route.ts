@@ -5,18 +5,21 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 function extractJSON(raw: string): string {
-  // Strip ```json...``` or ```...``` markdown fences (greedy — handles nested braces)
-  const fenced = raw.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+  // Strip <think>...</think> blocks emitted by reasoning/thinking models (e.g. Qwen3)
+  let s = raw.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+
+  // Strip ```json...``` or ```...``` markdown fences
+  const fenced = s.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
   if (fenced) {
     const inner = fenced[1].trim()
-    // Validate it starts with { before committing
     if (inner.startsWith('{')) return inner
   }
-  // Find the widest {...} span (handles prose before/after the JSON)
-  const start = raw.indexOf('{')
-  const end = raw.lastIndexOf('}')
-  if (start !== -1 && end > start) return raw.slice(start, end + 1)
-  return raw.trim()
+
+  // Find the outermost {...} span (skips prose before/after the JSON object)
+  const start = s.indexOf('{')
+  const end = s.lastIndexOf('}')
+  if (start !== -1 && end > start) return s.slice(start, end + 1)
+  return s
 }
 
 const SECTION_KEYS = ['requirements', 'architecture', 'scalability', 'dataModel', 'tradeoffs'] as const
@@ -143,8 +146,7 @@ Return JSON only:
         },
       ],
       temperature: 0.3,
-      max_tokens: 1000,
-      response_format: { type: 'json_object' },
+      max_tokens: 1200,
     })
 
     let parsed: unknown
