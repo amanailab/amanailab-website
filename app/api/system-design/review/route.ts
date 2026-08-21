@@ -4,6 +4,17 @@ import { callAI } from '@/lib/ai-fallback'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+function extractJSON(raw: string): string {
+  // Strip ```json...``` or ```...``` markdown fences
+  const fenced = raw.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
+  if (fenced) return fenced[1].trim()
+  // Find outermost {...}
+  const start = raw.indexOf('{')
+  const end = raw.lastIndexOf('}')
+  if (start !== -1 && end > start) return raw.slice(start, end + 1)
+  return raw.trim()
+}
+
 const SECTION_KEYS = ['requirements', 'architecture', 'scalability', 'dataModel', 'tradeoffs'] as const
 
 function clampScore(v: unknown): number | null {
@@ -80,8 +91,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Design answer is too short. Please write more detail before requesting a review.' }, { status: 400 })
     }
 
-    const MAX_DESIGN_CHARS = 14_000
-    const MAX_CODE_CHARS   = 4_000
+    // Trim aggressively to avoid Groq 413 Payload Too Large (≈ 6K token limit)
+    const MAX_PROBLEM_CHARS = 1_500
+    const MAX_DESIGN_CHARS  = 5_000
+    const MAX_CODE_CHARS    = 1_500
+    const trimmedProblem = problem.length > MAX_PROBLEM_CHARS ? problem.slice(0, MAX_PROBLEM_CHARS) + '…' : problem
     if (design.length > MAX_DESIGN_CHARS) design = design.slice(0, MAX_DESIGN_CHARS)
 
     const codeSection = codeSnippets.length > 0
@@ -99,56 +113,35 @@ export async function POST(req: Request) {
       messages: [
         {
           role: 'system',
-          content: `You are a senior staff engineer at a top-tier AI company (Google DeepMind / Meta AI / OpenAI) who has conducted 300+ ML system design interviews. You give structured, honest, educational feedback. You are encouraging but precise — specific over vague, actionable over generic. Never give empty praise. Return ONLY valid JSON with no markdown wrapping.`,
+          content: `You are a senior staff engineer at a top AI company who has conducted 300+ system design interviews. Give honest, specific, actionable feedback. Return ONLY valid JSON — no markdown, no prose outside JSON.`,
         },
         {
           role: 'user',
-          content: `Review this system design answer for the following ML system design interview question.
+          content: `Review this ML system design answer.
 
-PROBLEM:
-${problem}
+PROBLEM: ${trimmedProblem}
 
-CANDIDATE'S WRITTEN ANSWER:
+ANSWER:
 ${design}
 ${codeSection}
 
-Evaluate across these dimensions:
-- Requirements Clarification: Did they identify functional + non-functional requirements, scale, SLAs?
-- Architecture: Are the components correct, well-chosen, and clearly described?
-- Scalability: Bottleneck identification, horizontal scaling, caching, sharding?
-- Data Model: Schema design, storage choice justification, query patterns?
-- Trade-offs: Did they reason about alternatives, pros/cons, and make deliberate choices?
-${hasCode ? '- Code Quality: Is the code correct, complete, idiomatic, and interview-ready? Does it match the design?' : ''}
+Score on: Requirements, Architecture, Scalability, Data Model, Trade-offs${hasCode ? ', Code Quality' : ''}.
 
-Return JSON in exactly this format:
-{
-  "overallScore": <integer 1-10>,
-  "grade": "<A|B|C|D>",
-  "summary": "<2-3 sentences: overall quality, biggest strength, and most critical gap>",
-  "strengths": ["<specific, concrete strength citing their actual answer>", "<another>"],
-  "gaps": ["<specific gap with what an interviewer expects to see>", "<another>"],
-  "sectionScores": {
-    "requirements": <1-10 or null if not addressed>,
-    "architecture": <1-10 or null>,
-    "scalability": <1-10 or null>,
-    "dataModel": <1-10 or null>,
-    "tradeoffs": <1-10 or null>
-  },
-  "codeQuality": ${hasCode ? '{ "score": <1-10>, "notes": "<2-3 sentences on correctness, completeness, style, and whether it matches the stated design>" }' : 'null'},
-  "topSuggestion": "<the single highest-impact improvement — be specific, not generic>",
-  "interviewerNote": "<what a real interviewer would say after this answer — 1-2 sentences, honest and specific>"
-}`,
+Return JSON:
+{"overallScore":<1-10>,"grade":"<A|B|C|D>","summary":"<2-3 sentences>","strengths":["<specific>","<specific>"],"gaps":["<specific>","<specific>"],"sectionScores":{"requirements":<1-10 or null>,"architecture":<1-10 or null>,"scalability":<1-10 or null>,"dataModel":<1-10 or null>,"tradeoffs":<1-10 or null>},"codeQuality":${hasCode ? '{"score":<1-10>,"notes":"<2-3 sentences>"}' : 'null'},"topSuggestion":"<single best improvement>","interviewerNote":"<1-2 sentences honest feedback>"}`,
         },
       ],
-      temperature: 0.35,
-      max_tokens: 1100,
+      temperature: 0.3,
+      max_tokens: 900,
       response_format: { type: 'json_object' },
     })
 
     let parsed: unknown
     try {
-      parsed = JSON.parse(typeof raw === 'string' ? raw : JSON.stringify(raw))
+      const cleaned = extractJSON(typeof raw === 'string' ? raw : JSON.stringify(raw))
+      parsed = JSON.parse(cleaned)
     } catch {
+      console.error('[system-design/review] JSON parse failed. Raw response:', raw?.slice?.(0, 300))
       return NextResponse.json({ error: 'Failed to parse AI review. Please try again.' }, { status: 500 })
     }
 

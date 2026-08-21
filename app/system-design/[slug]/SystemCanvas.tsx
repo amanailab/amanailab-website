@@ -89,7 +89,11 @@ function ArchNodeComponent({ id, data, selected }: NodeProps<ArchNode>) {
     updateNodeData(id, { label: next })
   }
 
-  const handleClass = '!w-2 !h-2 !bg-zinc-600 !border !border-zinc-900 hover:!bg-orange-400 !transition-colors'
+  const handleClass = `!w-3 !h-3 !rounded-full !border-2 !transition-colors !duration-150 ${
+    selected
+      ? '!bg-orange-400 !border-orange-600'
+      : '!bg-zinc-700 !border-zinc-900 hover:!bg-orange-400 hover:!border-orange-500'
+  }`
 
   return (
     <div
@@ -294,13 +298,13 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
 
   return (
     <div className={fill ? 'flex flex-col gap-2 h-full min-h-0' : 'flex flex-col gap-2'}>
-      {/* Component palette */}
-      <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl px-3 py-2 flex-shrink-0">
-        <div className="flex items-center gap-1.5 mb-2">
-          <MousePointerClick size={11} className="text-orange-400 flex-shrink-0" />
-          <span className="text-[10px] text-zinc-500">Drag onto canvas — or tap to add. Double-click a box to rename. Drag between boxes to connect. Click a connection to label it.</span>
+      {/* Component palette — single scrolling row to maximise canvas height */}
+      <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl flex-shrink-0 overflow-hidden">
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800/60">
+          <MousePointerClick size={10} className="text-orange-400 flex-shrink-0" />
+          <span className="text-[10px] text-zinc-500">Click to add · Drag to canvas · Drag between nodes to connect · Double-click node to rename · Click edge to label</span>
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex gap-1.5 px-3 py-2 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
           {CANVAS_COMPONENTS.map(comp => {
             const c = COLOR_CLASSES[comp.color]
             return (
@@ -309,11 +313,11 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
                 draggable
                 onDragStart={e => { e.dataTransfer.setData('application/sd-kind', comp.kind); e.dataTransfer.effectAllowed = 'move' }}
                 onClick={() => addToCentre(comp.kind)}
-                title={`Add ${comp.label}`}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg bg-zinc-950/60 border ${c.border} hover:bg-zinc-800 hover:${c.border} transition-all cursor-grab active:cursor-grabbing`}
+                title={comp.label}
+                className={`flex items-center gap-1 px-2 py-1 rounded-lg bg-zinc-950/60 border ${c.border} hover:bg-zinc-800 transition-all cursor-grab active:cursor-grabbing flex-shrink-0`}
               >
                 <span className="text-sm leading-none">{comp.icon}</span>
-                <span className={`text-[10px] font-medium ${c.text}`}>{comp.label}</span>
+                <span className={`text-[10px] font-medium ${c.text} whitespace-nowrap`}>{comp.label}</span>
               </button>
             )
           })}

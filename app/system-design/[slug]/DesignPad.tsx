@@ -162,21 +162,37 @@ const SECTION_JUMPS = [
 
 // ── Markdown → HTML (preview) ─────────────────────────────────────────────────
 function mdToHtml(md: string): string {
-  return md
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-xs overflow-x-auto my-3 text-orange-300 font-mono leading-relaxed"><code>$1</code></pre>')
-    .replace(/`([^`\n]+)`/g, '<code class="bg-zinc-800 px-1.5 py-0.5 rounded text-orange-300 text-xs font-mono">$1</code>')
-    .replace(/^### (.+)$/gm, '<h3 class="text-sm font-bold text-zinc-100 mt-4 mb-1.5">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-base font-extrabold text-zinc-100 mt-5 mb-2 border-b border-zinc-800 pb-1">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-lg font-extrabold text-zinc-100 mt-6 mb-3">$1</h1>')
-    .replace(/\*\*([^*\n]+)\*\*/g, '<strong class="text-zinc-100 font-semibold">$1</strong>')
-    .replace(/\*([^*\n]+)\*/g, '<em class="text-zinc-300">$1</em>')
-    .replace(/^---$/gm, '<hr class="border-zinc-800 my-4" />')
-    .replace(/^- (.+)$/gm, '<li class="flex items-start gap-1.5 text-zinc-300 mb-1 text-sm"><span class="text-orange-400 mt-0.5 flex-shrink-0 text-xs">▸</span><span>$1</span></li>')
-    .replace(/(<li[^>]*>[\s\S]*?<\/li>\n?)+/g, m => `<ul class="space-y-0.5 my-2">${m}</ul>`)
-    .replace(/^(\d+)\. (.+)$/gm, '<li class="text-zinc-300 mb-1 ml-5 text-sm list-decimal">$2</li>')
-    .replace(/<!-- [\s\S]*? -->/g, '')
-    .replace(/\n\n+/g, '</p><p class="mb-2 text-zinc-400 text-sm leading-relaxed">')
+  // Remove HTML comments
+  let out = md.replace(/<!--[\s\S]*?-->/g, '')
+  // Escape HTML entities
+  out = out.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  // Fenced code blocks
+  out = out.replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre class="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 text-xs overflow-x-auto my-2 text-orange-300 font-mono leading-relaxed"><code>$1</code></pre>')
+  // Inline code
+  out = out.replace(/`([^`\n]+)`/g, '<code class="bg-zinc-800 px-1 py-0.5 rounded text-orange-300 text-xs font-mono">$1</code>')
+  // Bold / italic
+  out = out.replace(/\*\*([^*\n]+)\*\*/g, '<strong class="text-zinc-100 font-semibold">$1</strong>')
+  out = out.replace(/\*([^*\n]+)\*/g, '<em class="text-zinc-300">$1</em>')
+  // Headings (process before paragraph splits)
+  out = out.replace(/^### (.+)$/gm, '<h3 class="text-sm font-bold text-zinc-100 mt-3 mb-1">$1</h3>')
+  out = out.replace(/^## (.+)$/gm, '<h2 class="text-sm font-extrabold text-orange-400 mt-4 mb-1.5 uppercase tracking-wide">$1</h2>')
+  out = out.replace(/^# (.+)$/gm, '<h1 class="text-base font-extrabold text-zinc-100 mt-4 mb-2">$1</h1>')
+  // HR
+  out = out.replace(/^---$/gm, '<hr class="border-zinc-800 my-3" />')
+  // Unordered list items
+  out = out.replace(/^- (.+)$/gm, '<li class="flex items-start gap-1.5 text-zinc-300 mb-1"><span class="text-orange-400 flex-shrink-0 mt-0.5 text-[10px]">▸</span><span>$1</span></li>')
+  // Wrap consecutive <li> in <ul>
+  out = out.replace(/(<li[\s\S]*?<\/li>\n?)+/g, m => `<ul class="space-y-0.5 my-2 ml-1">${m}</ul>`)
+  // Ordered list items
+  out = out.replace(/^(\d+)\. (.+)$/gm, '<li class="text-zinc-300 mb-1 ml-5 list-decimal">$2</li>')
+  // Paragraphs: split on blank lines, skip already-HTML lines
+  out = out.split(/\n\n+/).map(block => {
+    const t = block.trim()
+    if (!t) return ''
+    if (t.startsWith('<')) return t
+    return `<p class="mb-2 text-zinc-300 text-sm leading-relaxed">${t.replace(/\n/g, ' ')}</p>`
+  }).join('\n')
+  return out
 }
 
 function makeSnippet(name = 'Schema', lang: CodeLang = 'sql'): CodeSnippet {
@@ -193,7 +209,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [rightTab, setRightTab]         = useState<RightTab>('write')
   const [leftTab, setLeftTab]           = useState<LeftTab>('problem')
   const [leftOpen, setLeftOpen]         = useState(true)
-  const [rightWidth, setRightWidth]     = useState(420)
+  const [rightWidth, setRightWidth]     = useState(400)
 
   // ── Content ───────────────────────────────────────────────────────────────
   const [design, setDesign]             = useState('')
@@ -686,7 +702,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       : 'text-green-400 bg-green-500/10 border-green-500/20'
                     }`}>{problem.category}</span>
                   </div>
-                  <div className="px-3 py-3 text-xs text-zinc-400 leading-relaxed"
+                  <div className="px-3 py-3 leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: mdToHtml(problem.problem) }} />
                 </div>
 
