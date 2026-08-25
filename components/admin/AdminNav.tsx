@@ -30,6 +30,7 @@ const navLinks = [
   { href: '/admin/community',         label: 'Community',       icon: MessageSquare },
   { href: '/admin/resources',         label: 'Cheat Sheets',    icon: BookOpen },
   { href: '/admin/notes',             label: 'Notes & PDFs',    icon: FileText },
+  { href: '/admin/packages',          label: 'PDF Bundles',     icon: Library  },
   { href: '/admin/news',              label: 'News',            icon: Newspaper },
   { href: '/admin/emails',            label: 'Emails & Waitlist', icon: Mail },
 ]

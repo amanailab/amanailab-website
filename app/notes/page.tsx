@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getAdminSupabase } from '@/lib/admin'
-import type { Note } from '@/lib/notes-data'
+import type { Note, NotePackage } from '@/lib/notes-data'
 import NotesClient from './NotesClient'
 
 export const revalidate = 30
@@ -36,11 +36,26 @@ async function getNotes(): Promise<Note[]> {
   }
 }
 
+async function getPackages(): Promise<NotePackage[]> {
+  try {
+    const supabase = getAdminSupabase()
+    const { data } = await supabase
+      .from('packages')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false })
+    return (data as NotePackage[]) ?? []
+  } catch {
+    return []
+  }
+}
+
 export default async function NotesPage() {
-  const notes = await getNotes()
+  const [notes, packages] = await Promise.all([getNotes(), getPackages()])
   return (
     <div className="pt-20">
-      <NotesClient notes={notes} />
+      <NotesClient notes={notes} packages={packages} />
     </div>
   )
 }

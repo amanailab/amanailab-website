@@ -59,12 +59,19 @@ export default function PdfPreview({ noteId, fade = true, pages: maxPages = 2 }:
   const [attempt, setAttempt] = useState(0)
 
   async function drawPage(doc: PdfDoc, n: number, canvas: HTMLCanvasElement) {
-    const page     = await doc.getPage(n)
-    const w        = Math.max(canvas.parentElement?.clientWidth ?? 0, 320)
-    const raw      = page.getViewport({ scale: 1 })
-    const vp       = page.getViewport({ scale: w / raw.width })
-    canvas.width   = vp.width
-    canvas.height  = vp.height
+    const page      = await doc.getPage(n)
+    const container = canvas.parentElement
+    const cssW      = Math.max(
+      container?.getBoundingClientRect().width || container?.clientWidth || 0,
+      320,
+    )
+    const dpr       = Math.min(window.devicePixelRatio || 1, 2)
+    const raw       = page.getViewport({ scale: 1 })
+    const vp        = page.getViewport({ scale: (cssW / raw.width) * dpr })
+    canvas.width    = vp.width
+    canvas.height   = vp.height
+    canvas.style.width  = `${cssW}px`
+    canvas.style.height = `${Math.round(vp.height / dpr)}px`
     await page.render({ canvasContext: canvas.getContext('2d')!, viewport: vp }).promise
   }
 

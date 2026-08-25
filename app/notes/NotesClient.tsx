@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Download, Crown, CreditCard, X, CheckCircle,
   FileText, Loader2, Lock, Sparkles, Eye,
-  BookOpen, ChevronRight,
+  BookOpen, ChevronRight, Package as PackageIcon,
 } from 'lucide-react'
-import type { Note } from '@/lib/notes-data'
+import type { Note, NotePackage } from '@/lib/notes-data'
 import PdfPreview from '@/components/notes/PdfPreview'
 
 interface RazorpayFailure {
@@ -23,23 +23,26 @@ declare global {
   }
 }
 
+type DownloadItem = { title: string; url: string }
+
 type ModalState =
   | { type: 'none' }
-  | { type: 'preview'; note: Note }
-  | { type: 'code';    note: Note }
-  | { type: 'pay';     note: Note }
-  | { type: 'download'; note: Note; url: string }
+  | { type: 'preview';      note: Note }
+  | { type: 'code';         note: Note }
+  | { type: 'pay';          note: Note }
+  | { type: 'download';     note: Note; url: string }
+  | { type: 'pay-pkg';      pkg: NotePackage }
+  | { type: 'code-pkg';     pkg: NotePackage }
+  | { type: 'download-pkg'; pkg: NotePackage; items: DownloadItem[] }
 
-export default function NotesClient({ notes }: { notes: Note[] }) {
+export default function NotesClient({ notes, packages }: { notes: Note[]; packages: NotePackage[] }) {
   const [filter, setFilter]       = useState('All')
   const [modal, setModal]         = useState<ModalState>({ type: 'none' })
   const [codeInput, setCodeInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError]         = useState('')
   const [rzpReady, setRzpReady]   = useState(false)
-  // Prevents the backdrop from closing the dialog while Razorpay checkout is active
-  const isBuying        = useRef(false)
-  // Set to true the moment payment succeeds so ondismiss (which fires right after) does not wipe state
+  const isBuying         = useRef(false)
   const paymentSucceeded = useRef(false)
 
   const topicCounts = notes.reduce<Record<string, number>>((acc, n) => {
@@ -48,9 +51,9 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
   }, {})
   const topics = ['All', ...Object.keys(topicCounts)]
 
-  const showLatest = filter === 'All' && notes.length >= 3
+  const showLatest  = filter === 'All' && notes.length >= 3
   const latestNotes = notes.slice(0, 3)
-  const filtered = filter === 'All' ? notes : notes.filter((n) => n.topic === filter)
+  const filtered    = filter === 'All' ? notes : notes.filter((n) => n.topic === filter)
 
   useEffect(() => {
     if (document.querySelector('script[src*="razorpay"]')) { setRzpReady(true); return }
@@ -61,15 +64,15 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
   }, [])
 
   function close() {
-    // Never close our modal while Razorpay checkout is active — the backdrop is still
-    // mounted behind Razorpay and clicks that "miss" Razorpay's overlay would dismiss it.
     if (isBuying.current) return
     setModal({ type: 'none' }); setCodeInput(''); setError(''); setIsLoading(false)
   }
 
-  function openPreview(note: Note) { setModal({ type: 'preview', note }); setError('') }
-  function openCode(note: Note)    { setModal({ type: 'code',    note }); setCodeInput(''); setError('') }
-  function openPay(note: Note)     { setModal({ type: 'pay',     note }); setError('') }
+  function openPreview(note: Note)       { setModal({ type: 'preview',  note }); setError('') }
+  function openCode(note: Note)          { setModal({ type: 'code',     note }); setCodeInput(''); setError('') }
+  function openPay(note: Note)           { setModal({ type: 'pay',      note }); setError('') }
+  function openPackagePay(pkg: NotePackage)  { setModal({ type: 'pay-pkg',  pkg  }); setError('') }
+  function openPackageCode(pkg: NotePackage) { setModal({ type: 'code-pkg', pkg  }); setCodeInput(''); setError('') }
 
   async function verifyCode(note: Note) {
     if (!codeInput.trim()) { setError('Please enter your member code.'); return }
@@ -82,6 +85,21 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
       const data = await res.json()
       if (!res.ok) setError(data.error ?? 'Invalid code.')
       else         setModal({ type: 'download', note, url: data.url })
+    } catch { setError('Something went wrong. Please try again.') }
+    finally   { setIsLoading(false) }
+  }
+
+  async function verifyPackageCode(pkg: NotePackage) {
+    if (!codeInput.trim()) { setError('Please enter your member code.'); return }
+    setIsLoading(true); setError('')
+    try {
+      const res  = await fetch('/api/packages/verify-code', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: codeInput.trim(), packageId: pkg.id }),
+      })
+      const data = await res.json()
+      if (!res.ok) setError(data.error ?? 'Invalid code.')
+      else         setModal({ type: 'download-pkg', pkg, items: data.items })
     } catch { setError('Something went wrong. Please try again.') }
     finally   { setIsLoading(false) }
   }
@@ -102,8 +120,7 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
       if (!rzpKey) throw new Error('Payment not configured. Please contact us.')
 
       const rzp = new window.Razorpay({
-        key: rzpKey,
-        amount: order.amount, currency: order.currency,
+        key: rzpKey, amount: order.amount, currency: order.currency,
         name: 'AmanAI Lab', description: note.title,
         order_id: order.id, image: '/logo.jpg',
         theme: { color: '#f97316' },
@@ -115,43 +132,81 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
             })
             const vData = await vRes.json()
             if (!vRes.ok) setError('Payment received but download failed. Contact support with ID: ' + r.razorpay_payment_id)
-            else {
-              paymentSucceeded.current = true
-              setModal({ type: 'download', note, url: vData.url })
-            }
+            else { paymentSucceeded.current = true; setModal({ type: 'download', note, url: vData.url }) }
           } catch {
             setError('Network error. Your payment was received — contact support with ID: ' + r.razorpay_payment_id)
-          } finally {
-            isBuying.current = false
-            setIsLoading(false)
-          }
+          } finally { isBuying.current = false; setIsLoading(false) }
         },
         modal: {
           ondismiss: () => {
             isBuying.current = false
-            // Only reset loading if payment did not already succeed.
-            // Razorpay fires ondismiss right after the handler for successful payments,
-            // so without this guard we'd wipe isLoading while verify-payment is still in-flight.
             if (!paymentSucceeded.current) setIsLoading(false)
           },
         },
       })
       rzp.on('payment.failed', (resp: RazorpayFailure) => {
-        isBuying.current = false
-        setIsLoading(false)
+        isBuying.current = false; setIsLoading(false)
         setError(resp?.error?.description || 'Payment failed. Please try again.')
       })
-      // Mark as buying BEFORE opening — prevents backdrop from dismissing our modal
-      isBuying.current = true
-      rzp.open()
+      isBuying.current = true; rzp.open()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
-      isBuying.current = false
-      setIsLoading(false)
+      isBuying.current = false; setIsLoading(false)
     }
   }
 
-  if (notes.length === 0) {
+  async function buyPackage(pkg: NotePackage) {
+    if (!rzpReady) { setError('Payment is loading, try again.'); return }
+    setIsLoading(true); setError('')
+    paymentSucceeded.current = false
+    try {
+      const orderRes = await fetch('/api/packages/create-order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: pkg.id }),
+      })
+      const order = await orderRes.json()
+      if (!orderRes.ok) throw new Error(order.error ?? 'Could not create order')
+
+      const rzpKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+      if (!rzpKey) throw new Error('Payment not configured. Please contact us.')
+
+      const rzp = new window.Razorpay({
+        key: rzpKey, amount: order.amount, currency: order.currency,
+        name: 'AmanAI Lab', description: pkg.title,
+        order_id: order.id, image: '/logo.jpg',
+        theme: { color: '#f97316' },
+        handler: async (r: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+          try {
+            const vRes  = await fetch('/api/packages/verify-payment', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ packageId: pkg.id, paymentId: r.razorpay_payment_id, orderId: r.razorpay_order_id, signature: r.razorpay_signature }),
+            })
+            const vData = await vRes.json()
+            if (!vRes.ok) setError('Payment received but download failed. Contact support with ID: ' + r.razorpay_payment_id)
+            else { paymentSucceeded.current = true; setModal({ type: 'download-pkg', pkg, items: vData.items }) }
+          } catch {
+            setError('Network error. Your payment was received — contact support with ID: ' + r.razorpay_payment_id)
+          } finally { isBuying.current = false; setIsLoading(false) }
+        },
+        modal: {
+          ondismiss: () => {
+            isBuying.current = false
+            if (!paymentSucceeded.current) setIsLoading(false)
+          },
+        },
+      })
+      rzp.on('payment.failed', (resp: RazorpayFailure) => {
+        isBuying.current = false; setIsLoading(false)
+        setError(resp?.error?.description || 'Payment failed. Please try again.')
+      })
+      isBuying.current = true; rzp.open()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong')
+      isBuying.current = false; setIsLoading(false)
+    }
+  }
+
+  if (notes.length === 0 && packages.length === 0) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -214,6 +269,34 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
         </div>
       </section>
 
+      {/* ════════════════ BUNDLES ════════════════ */}
+      {packages.length > 0 && (
+        <section className="px-4 pb-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-px flex-1 bg-zinc-800" />
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
+                <PackageIcon className="w-3 h-3 text-orange-400" />
+                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">PDF Bundles</span>
+              </div>
+              <div className="h-px flex-1 bg-zinc-800" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {packages.map((pkg) => (
+                <PackageCard
+                  key={pkg.id}
+                  pkg={pkg}
+                  notes={notes}
+                  onBuy={() => openPackagePay(pkg)}
+                  onCode={() => openPackageCode(pkg)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ════════════════ LATEST NOTES ════════════════ */}
       {showLatest && (
         <section className="px-4 pb-8">
@@ -255,30 +338,34 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
 
       {/* ════════════════ FILTER TABS ════════════════ */}
       <div className="sticky top-0 z-20 bg-[#09090b]/90 backdrop-blur-lg border-b border-zinc-900">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2 overflow-x-auto scrollbar-none">
-          {topics.map((t) => {
-            const count  = t === 'All' ? notes.length : topicCounts[t]
-            const active = filter === t
-            return (
-              <button key={t} onClick={() => setFilter(t)}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
-                  active
-                    ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
-                    : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                }`}>
-                {t}
-                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                  active ? 'bg-white/20' : 'bg-zinc-800 text-zinc-500'
-                }`}>{count}</span>
+        <div className="max-w-5xl mx-auto relative">
+          <div className="px-4 py-3 flex items-center gap-2 overflow-x-auto scrollbar-none">
+            {topics.map((t) => {
+              const count  = t === 'All' ? notes.length : topicCounts[t]
+              const active = filter === t
+              return (
+                <button key={t} onClick={() => setFilter(t)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                    active
+                      ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
+                      : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                  }`}>
+                  {t}
+                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                    active ? 'bg-white/20' : 'bg-zinc-800 text-zinc-500'
+                  }`}>{count}</span>
+                </button>
+              )
+            })}
+            {filter !== 'All' && (
+              <button onClick={() => setFilter('All')}
+                className="ml-auto shrink-0 flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors">
+                <X className="w-3 h-3" /> Clear
               </button>
-            )
-          })}
-          {filter !== 'All' && (
-            <button onClick={() => setFilter('All')}
-              className="ml-auto shrink-0 flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors">
-              <X className="w-3 h-3" /> Clear
-            </button>
-          )}
+            )}
+          </div>
+          {/* Gradient fade on right edge — shows more tabs exist */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#09090b]/90 to-transparent" />
         </div>
       </div>
 
@@ -320,7 +407,7 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
             <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={close} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
 
-            {/* ── Preview modal ── */}
+            {/* ── Note preview modal ── */}
             {modal.type === 'preview' && (
               <motion.div key="preview"
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -330,8 +417,6 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
                 className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-lg px-4"
               >
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-
-                  {/* Compact header */}
                   <div className={`relative h-20 bg-gradient-to-br ${modal.note.gradient} shrink-0`}>
                     <div className="absolute inset-0 bg-black/35" />
                     <div className="absolute inset-0 opacity-[0.07]"
@@ -351,10 +436,7 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
                     </button>
                   </div>
 
-                  {/* Scrollable body */}
                   <div className="overflow-y-auto flex-1 p-5 space-y-5">
-
-                    {/* Stats row */}
                     <div className="flex items-center gap-3">
                       {[
                         { icon: FileText, label: `${modal.note.pages} pages`  },
@@ -368,12 +450,10 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
                       ))}
                     </div>
 
-                    {/* Description */}
                     {modal.note.description && (
                       <p className="text-sm text-zinc-400 leading-relaxed">{modal.note.description}</p>
                     )}
 
-                    {/* What's inside */}
                     {modal.note.preview_points.length > 0 && (
                       <div>
                         <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3">What&apos;s inside</p>
@@ -388,13 +468,11 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
                       </div>
                     )}
 
-                    {/* Live PDF preview */}
                     <div>
                       <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Sample Page</p>
                       <PdfPreview noteId={modal.note.id} fade={true} pages={2} />
                     </div>
 
-                    {/* Price + CTA */}
                     <div className="border-t border-zinc-800 pt-4 space-y-2.5">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm text-zinc-500">Price</span>
@@ -414,7 +492,7 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
               </motion.div>
             )}
 
-            {/* ── Code / Pay / Download modals ── */}
+            {/* ── Note: code / pay / download modals ── */}
             {(modal.type === 'code' || modal.type === 'pay' || modal.type === 'download') && (
               <motion.div key="md"
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -423,7 +501,6 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
               >
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
                   <div className="h-0.5 bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
-
                   <div className="flex items-center justify-between px-5 pt-5 pb-4">
                     <h2 className="font-extrabold text-zinc-100">
                       {modal.type === 'code'     && '👑 Member Free Access'}
@@ -534,9 +611,234 @@ export default function NotesClient({ notes }: { notes: Note[] }) {
                 </div>
               </motion.div>
             )}
+
+            {/* ── Package: pay modal ── */}
+            {modal.type === 'pay-pkg' && (
+              <motion.div key="pay-pkg"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }} transition={{ duration: 0.18 }}
+                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm px-4"
+              >
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+                  <div className={`h-1 bg-gradient-to-r ${modal.pkg.gradient}`} />
+                  <div className="flex items-center justify-between px-5 pt-5 pb-4">
+                    <h2 className="font-extrabold text-zinc-100">💳 Buy Bundle</h2>
+                    <button onClick={close}
+                      className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-lg flex items-center justify-center transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="px-5 pb-5 space-y-4">
+                    <div className="flex items-center gap-3 bg-zinc-800/60 border border-zinc-700/50 rounded-xl p-3">
+                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${modal.pkg.gradient} flex items-center justify-center text-xl shrink-0`}>
+                        {modal.pkg.emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-zinc-100 truncate">{modal.pkg.title}</p>
+                        <p className="text-xs text-zinc-500">{modal.pkg.note_ids.length} PDFs included</p>
+                      </div>
+                      <span className="font-extrabold text-orange-400 shrink-0">₹{modal.pkg.price}</span>
+                    </div>
+                    <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 space-y-2.5 text-sm">
+                      {[['Includes', `${modal.pkg.note_ids.length} PDF files`, 'text-zinc-200'],
+                        ['Type', 'One-time · no subscription', 'text-emerald-400'],
+                        ['Delivery', 'Instant download — all files', 'text-emerald-400']].map(([k, v, c]) => (
+                        <div key={k} className="flex justify-between">
+                          <span className="text-zinc-600">{k}</span>
+                          <span className={c}>{v}</span>
+                        </div>
+                      ))}
+                      <div className="border-t border-zinc-800 pt-2.5 flex justify-between items-center">
+                        <span className="font-bold text-zinc-200">Total</span>
+                        <span className="font-extrabold text-orange-400 text-2xl">₹{modal.pkg.price}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-800/40 rounded-xl px-3 py-2.5">
+                      <Lock className="w-3.5 h-3.5 shrink-0" /> UPI · PhonePe · GPay · Cards · Netbanking
+                    </div>
+                    {error && <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
+                    <button onClick={() => buyPackage(modal.pkg)} disabled={isLoading}
+                      className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
+                      {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening…</> : <><CreditCard className="w-4 h-4" /> Pay ₹{modal.pkg.price}</>}
+                    </button>
+                    <p className="text-center text-xs text-zinc-600">YouTube member?{' '}
+                      <button onClick={() => openPackageCode(modal.pkg)} className="text-orange-400 hover:underline">Get it free</button>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Package: member code modal ── */}
+            {modal.type === 'code-pkg' && (
+              <motion.div key="code-pkg"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }} transition={{ duration: 0.18 }}
+                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm px-4"
+              >
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+                  <div className={`h-1 bg-gradient-to-r ${modal.pkg.gradient}`} />
+                  <div className="flex items-center justify-between px-5 pt-5 pb-4">
+                    <h2 className="font-extrabold text-zinc-100">👑 Member Free Bundle</h2>
+                    <button onClick={close}
+                      className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-lg flex items-center justify-center transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="px-5 pb-5 space-y-3">
+                    <div className="flex items-center gap-3 bg-zinc-800/60 border border-zinc-700/50 rounded-xl p-3">
+                      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${modal.pkg.gradient} flex items-center justify-center text-xl shrink-0`}>
+                        {modal.pkg.emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-zinc-100 truncate">{modal.pkg.title}</p>
+                        <p className="text-xs text-zinc-500">{modal.pkg.note_ids.length} PDFs · ₹{modal.pkg.price} value</p>
+                      </div>
+                    </div>
+                    <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 space-y-2">
+                      <p className="text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-2">How to get your code</p>
+                      {[['1', 'Join our YouTube channel (click Join)'],
+                        ['2', 'Open the Members-only Community post'],
+                        ['3', 'Copy the monthly code and paste below']].map(([n, t]) => (
+                        <div key={n} className="flex items-start gap-2">
+                          <span className="w-4 h-4 text-[10px] font-black rounded-full bg-orange-500/15 text-orange-400 flex items-center justify-center shrink-0 mt-0.5">{n}</span>
+                          <span className="text-xs text-zinc-500 leading-relaxed">{t}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1.5">Your Code</label>
+                      <input type="text" value={codeInput}
+                        onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                        onKeyDown={(e) => e.key === 'Enter' && verifyPackageCode(modal.pkg)}
+                        placeholder="e.g. AMAN-AUG2026" autoFocus
+                        className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm font-mono tracking-widest outline-none transition-colors" />
+                    </div>
+                    {error && <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
+                    <button onClick={() => verifyPackageCode(modal.pkg)} disabled={isLoading}
+                      className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
+                      {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</> : <><Crown className="w-4 h-4" /> Get All PDFs Free</>}
+                    </button>
+                    <p className="text-center text-xs text-zinc-600">Not a member?{' '}
+                      <button onClick={() => openPackagePay(modal.pkg)} className="text-orange-400 hover:underline">Buy for ₹{modal.pkg.price}</button>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Package: download modal ── */}
+            {modal.type === 'download-pkg' && (
+              <motion.div key="dl-pkg"
+                initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }} transition={{ duration: 0.18 }}
+                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md px-4"
+              >
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
+                  <div className={`h-1 bg-gradient-to-r ${modal.pkg.gradient}`} />
+                  <div className="flex items-center justify-between px-5 pt-5 pb-4">
+                    <h2 className="font-extrabold text-zinc-100">🎉 Bundle Ready!</h2>
+                    <button onClick={close}
+                      className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-lg flex items-center justify-center transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="px-5 pb-5 space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-zinc-300">
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+                        className="w-8 h-8 bg-emerald-500/10 border border-emerald-500/25 rounded-lg flex items-center justify-center shrink-0">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                      </motion.div>
+                      <span className="font-bold">{modal.items.length} PDFs ready — download each below</span>
+                    </div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      {modal.items.map((item, i) => (
+                        <a key={i} href={item.url} download target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-3 w-full bg-emerald-500/8 hover:bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-semibold py-2.5 px-4 rounded-xl transition-all group">
+                          <Download className="w-4 h-4 shrink-0 group-hover:translate-y-0.5 transition-transform" />
+                          <span className="text-sm truncate">{item.title}</span>
+                        </a>
+                      ))}
+                    </div>
+                    <p className="text-xs text-zinc-700 text-center pt-1">Links valid for 1 hour — save all files now.</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </>
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+/* ── Package Card ── */
+function PackageCard({ pkg, notes, onBuy, onCode }: {
+  pkg: NotePackage; notes: Note[]; onBuy(): void; onCode(): void
+}) {
+  const pkgNotes       = notes.filter(n => pkg.note_ids.includes(n.id))
+  const individualTotal = pkgNotes.reduce((s, n) => s + n.price, 0)
+  const savings         = individualTotal - pkg.price
+  const showCount       = Math.min(pkgNotes.length, 4)
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 hover:border-orange-500/30 rounded-2xl overflow-hidden transition-all group">
+      <div className={`h-1.5 bg-gradient-to-r ${pkg.gradient}`} />
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${pkg.gradient} flex items-center justify-center text-2xl shrink-0`}>
+              {pkg.emoji}
+            </div>
+            <div>
+              <h3 className="font-extrabold text-zinc-100 text-sm leading-snug">{pkg.title}</h3>
+              {pkg.description && <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{pkg.description}</p>}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            {savings > 0 && (
+              <div className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full mb-1 whitespace-nowrap">
+                SAVE ₹{savings}
+              </div>
+            )}
+            <div className="text-xl font-extrabold text-orange-400">₹{pkg.price}</div>
+            {savings > 0 && (
+              <div className="text-[10px] text-zinc-600 line-through">₹{individualTotal}</div>
+            )}
+          </div>
+        </div>
+
+        {/* Notes list */}
+        {pkgNotes.length > 0 && (
+          <div className="grid grid-cols-1 gap-1 mb-4">
+            {pkgNotes.slice(0, showCount).map(n => (
+              <div key={n.id} className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                <span className="text-orange-400 shrink-0 font-bold">✓</span>
+                <span className="truncate">{n.title}</span>
+                <span className="text-zinc-700 shrink-0 ml-auto">{n.pages}p</span>
+              </div>
+            ))}
+            {pkgNotes.length > showCount && (
+              <div className="text-[11px] text-zinc-600 pl-3.5">
+                +{pkgNotes.length - showCount} more PDFs included
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* CTAs */}
+        <div className="flex gap-2 pt-3 border-t border-zinc-800">
+          <button onClick={onCode}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/20 text-orange-400 text-xs font-bold py-2.5 rounded-xl transition-all">
+            <Crown className="w-3.5 h-3.5" /> Member? Free
+          </button>
+          <button onClick={onBuy}
+            className="flex-[2] flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-md shadow-orange-500/20">
+            <CreditCard className="w-3.5 h-3.5" /> Buy Bundle — ₹{pkg.price}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -558,12 +860,7 @@ function NoteCard({ note, index, onPreview, onCode, onBuy }: {
         boxShadow:   hovered ? '0 16px 32px -8px rgb(0 0 0 / 0.6)' : 'none',
       }}
     >
-      {/* Gradient header — clicking opens preview */}
-      <button
-        onClick={onPreview}
-        className="w-full text-left"
-        aria-label={`Preview ${note.title}`}
-      >
+      <button onClick={onPreview} className="w-full text-left" aria-label={`Preview ${note.title}`}>
         <div className={`h-28 bg-gradient-to-br ${note.gradient} relative overflow-hidden flex items-end px-4 pb-3`}>
           <div className="absolute inset-0 bg-black/20" />
           <div className="absolute inset-0 opacity-[0.08]"
@@ -575,8 +872,6 @@ function NoteCard({ note, index, onPreview, onCode, onBuy }: {
             )}
             <span className="text-[10px] font-bold text-white/70 bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full">{note.pages}p</span>
           </div>
-
-          {/* Preview indicator */}
           <div className={`absolute top-2 left-2 flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full transition-opacity duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}>
             <Eye className="w-2.5 h-2.5 text-white/80" />
             <span className="text-[9px] font-bold text-white/80">Preview</span>
@@ -584,13 +879,11 @@ function NoteCard({ note, index, onPreview, onCode, onBuy }: {
         </div>
       </button>
 
-      {/* Body */}
       <div className="p-4 flex flex-col flex-1">
         <span className="self-start text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700/60 text-zinc-500 mb-2">{note.topic}</span>
         <h3 className="text-sm font-extrabold text-zinc-100 leading-snug mb-1.5 line-clamp-2">{note.title}</h3>
         <p className="text-xs text-zinc-600 leading-relaxed line-clamp-2 mb-3">{note.description}</p>
 
-        {/* Preview bullets */}
         {note.preview_points.length > 0 && (
           <ul className="space-y-1 mb-4 flex-1">
             {note.preview_points.slice(0, 3).map((pt, i) => (
@@ -607,7 +900,6 @@ function NoteCard({ note, index, onPreview, onCode, onBuy }: {
           </ul>
         )}
 
-        {/* Price + CTA */}
         <div className="mt-auto border-t border-zinc-800 pt-3">
           <div className="flex items-center justify-between mb-2.5">
             <span className="text-[10px] text-zinc-600 flex items-center gap-1"><FileText className="w-3 h-3" /> {note.pages} pages</span>

@@ -17,3 +17,18 @@ export type Note = {
   sort_order: number
   created_at: string
 }
+
+// Type matching the Supabase `packages` table columns.
+// To add new packages: go to /admin/packages on your website.
+export type NotePackage = {
+  id: string
+  title: string
+  description: string
+  price: number
+  emoji: string
+  gradient: string
+  note_ids: string[]
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
