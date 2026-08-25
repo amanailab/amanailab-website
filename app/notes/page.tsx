@@ -36,6 +36,21 @@ async function getNotes(): Promise<Note[]> {
   }
 }
 
+// Fetches ALL notes (incl. bundle-only is_active=false) so PackageCard can
+// resolve titles/pages for every note_id regardless of public visibility.
+async function getAllNotes(): Promise<Note[]> {
+  try {
+    const supabase = getAdminSupabase()
+    const { data } = await supabase
+      .from('notes')
+      .select('id, title, pages, price, pdf_path, topic, gradient, emoji, is_active')
+      .order('sort_order', { ascending: true })
+    return (data as Note[]) ?? []
+  } catch {
+    return []
+  }
+}
+
 async function getPackages(): Promise<NotePackage[]> {
   try {
     const supabase = getAdminSupabase()
@@ -52,10 +67,10 @@ async function getPackages(): Promise<NotePackage[]> {
 }
 
 export default async function NotesPage() {
-  const [notes, packages] = await Promise.all([getNotes(), getPackages()])
+  const [notes, allNotes, packages] = await Promise.all([getNotes(), getAllNotes(), getPackages()])
   return (
     <div className="pt-20">
-      <NotesClient notes={notes} packages={packages} />
+      <NotesClient notes={notes} allNotes={allNotes} packages={packages} />
     </div>
   )
 }

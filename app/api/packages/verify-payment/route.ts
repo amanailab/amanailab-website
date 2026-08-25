@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { getAdminSupabase } from '@/lib/admin'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { sendReceiptEmail } from '@/lib/send-receipt'
 
 export const runtime = 'nodejs'
 
@@ -87,46 +86,22 @@ export async function POST(req: Request) {
       if (data?.signedUrl) items.push({ title: note.title, url: data.signedUrl })
     }
 
-    // Step 5: Save order + send receipt email (non-blocking)
-    void (async () => {
-      try {
-        // Generate 24-hour URLs for the receipt email
-        const emailItems: { title: string; url: string }[] = []
-        for (const note of notes) {
-          const { data } = await supabase.storage.from('notes').createSignedUrl(note.pdf_path, 86_400)
-          if (data?.signedUrl) emailItems.push({ title: note.title, url: data.signedUrl })
-        }
-
-        await supabase.from('orders').insert({
-          type:                 'package',
-          item_id:              pkg.id,
-          item_title:           pkg.title,
-          amount:               amountPaise,
-          razorpay_payment_id:  paymentId,
-          razorpay_order_id:    orderId,
-          customer_email:       customerEmail   || null,
-          customer_name:        customerName    || null,
-          customer_contact:     customerContact || null,
-          status:               'completed',
-          via:                  'payment',
-        })
-
-        if (customerEmail && emailItems.length) {
-          await sendReceiptEmail({
-            to:           customerEmail,
-            customerName: customerName || undefined,
-            itemTitle:    pkg.title,
-            amountPaise,
-            paymentId,
-            via:          'payment',
-            type:         'package',
-            items:        emailItems,
-          })
-        }
-      } catch (e) {
-        console.error('[pkg/verify-payment] post-payment tasks failed:', e)
-      }
-    })()
+    // Step 5: Save order (non-blocking, best-effort)
+    void supabase.from('orders').insert({
+      type:                 'package',
+      item_id:              pkg.id,
+      item_title:           pkg.title,
+      amount:               amountPaise,
+      razorpay_payment_id:  paymentId,
+      razorpay_order_id:    orderId,
+      customer_email:       customerEmail   || null,
+      customer_name:        customerName    || null,
+      customer_contact:     customerContact || null,
+      status:               'completed',
+      via:                  'payment',
+    }).then(({ error }) => {
+      if (error) console.error('[pkg/verify-payment] order insert failed:', error)
+    })
 
     return NextResponse.json({ items })
   } catch (err) {

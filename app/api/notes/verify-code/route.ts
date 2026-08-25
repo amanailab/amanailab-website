@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/admin'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { sendReceiptEmail } from '@/lib/send-receipt'
 
 export const runtime = 'nodejs'
 
@@ -13,7 +12,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { code, noteId, email } = await req.json()
+    const { code, noteId } = await req.json()
 
     if (!code || typeof code !== 'string') {
       return NextResponse.json({ error: 'Please enter a code.' }, { status: 400 })
@@ -53,46 +52,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Could not generate download link.' }, { status: 500 })
     }
 
-    // Save order + send receipt email (non-blocking, best-effort)
-    void (async () => {
-      try {
-        const customerEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
-
-        await supabase.from('orders').insert({
-          type:                'note',
-          item_id:             note.id,
-          item_title:          note.title,
-          amount:              0,
-          razorpay_payment_id: null,
-          razorpay_order_id:   null,
-          customer_email:      customerEmail || null,
-          customer_name:       null,
-          customer_contact:    null,
-          status:              'completed',
-          via:                 'member_code',
-        })
-
-        if (customerEmail) {
-          // Generate 24-hour URL for the receipt email
-          const { data: longUrl } = await supabase.storage
-            .from('notes')
-            .createSignedUrl(note.pdf_path, 86_400)
-
-          if (longUrl?.signedUrl) {
-            await sendReceiptEmail({
-              to:          customerEmail,
-              itemTitle:   note.title,
-              amountPaise: 0,
-              via:         'member_code',
-              type:        'note',
-              items:       [{ title: note.title, url: longUrl.signedUrl }],
-            })
-          }
-        }
-      } catch (e) {
-        console.error('[notes/verify-code] post-download tasks failed:', e)
-      }
-    })()
+    // Save order record (non-blocking, best-effort)
+    void supabase.from('orders').insert({
+      type:                'note',
+      item_id:             note.id,
+      item_title:          note.title,
+      amount:              0,
+      razorpay_payment_id: null,
+      razorpay_order_id:   null,
+      customer_email:      null,
+      customer_name:       null,
+      customer_contact:    null,
+      status:              'completed',
+      via:                 'member_code',
+    }).then(({ error }) => {
+      if (error) console.error('[notes/verify-code] order insert failed:', error)
+    })
 
     return NextResponse.json({ url: data.signedUrl })
   } catch (err) {

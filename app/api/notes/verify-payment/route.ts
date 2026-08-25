@@ -2,7 +2,6 @@ import { NextResponse }  from 'next/server'
 import { createHmac }    from 'crypto'
 import { getAdminSupabase } from '@/lib/admin'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { sendReceiptEmail } from '@/lib/send-receipt'
 
 export const runtime = 'nodejs'
 
@@ -85,46 +84,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Could not generate download link.' }, { status: 500 })
     }
 
-    // Step 5: Save order + send receipt email (non-blocking, best-effort)
-    void (async () => {
-      try {
-        // Generate 24-hour URL for the receipt email
-        const { data: longUrl } = await supabase.storage
-          .from('notes')
-          .createSignedUrl(note.pdf_path, 86_400)
-
-        // Save order record
-        await supabase.from('orders').insert({
-          type:                 'note',
-          item_id:              note.id,
-          item_title:           note.title,
-          amount:               amountPaise,
-          razorpay_payment_id:  paymentId,
-          razorpay_order_id:    orderId,
-          customer_email:       customerEmail   || null,
-          customer_name:        customerName    || null,
-          customer_contact:     customerContact || null,
-          status:               'completed',
-          via:                  'payment',
-        })
-
-        // Send receipt if we have an email
-        if (customerEmail && longUrl?.signedUrl) {
-          await sendReceiptEmail({
-            to:           customerEmail,
-            customerName: customerName  || undefined,
-            itemTitle:    note.title,
-            amountPaise,
-            paymentId,
-            via:          'payment',
-            type:         'note',
-            items:        [{ title: note.title, url: longUrl.signedUrl }],
-          })
-        }
-      } catch (e) {
-        console.error('[notes/verify-payment] post-payment tasks failed:', e)
-      }
-    })()
+    // Step 5: Save order (non-blocking, best-effort)
+    void supabase.from('orders').insert({
+      type:                 'note',
+      item_id:              note.id,
+      item_title:           note.title,
+      amount:               amountPaise,
+      razorpay_payment_id:  paymentId,
+      razorpay_order_id:    orderId,
+      customer_email:       customerEmail   || null,
+      customer_name:        customerName    || null,
+      customer_contact:     customerContact || null,
+      status:               'completed',
+      via:                  'payment',
+    }).then(({ error }) => {
+      if (error) console.error('[notes/verify-payment] order insert failed:', error)
+    })
 
     return NextResponse.json({ url: shortUrl.signedUrl })
   } catch (err) {

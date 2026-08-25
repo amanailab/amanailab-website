@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Download, Crown, CreditCard, X, CheckCircle,
   FileText, Loader2, Lock, Sparkles, Eye,
-  BookOpen, ChevronRight, Package as PackageIcon,
+  BookOpen, Package as PackageIcon,
 } from 'lucide-react'
 import type { Note, NotePackage } from '@/lib/notes-data'
 import PdfPreview from '@/components/notes/PdfPreview'
@@ -35,14 +35,19 @@ type ModalState =
   | { type: 'code-pkg';     pkg: NotePackage }
   | { type: 'download-pkg'; pkg: NotePackage; items: DownloadItem[] }
 
-export default function NotesClient({ notes, packages }: { notes: Note[]; packages: NotePackage[] }) {
-  const [filter, setFilter]         = useState('All')
-  const [modal, setModal]           = useState<ModalState>({ type: 'none' })
-  const [codeInput, setCodeInput]   = useState('')
-  const [emailInput, setEmailInput] = useState('')
-  const [isLoading, setIsLoading]   = useState(false)
-  const [error, setError]           = useState('')
-  const [rzpReady, setRzpReady]     = useState(false)
+export default function NotesClient({
+  notes, allNotes, packages,
+}: {
+  notes: Note[]
+  allNotes: Note[]
+  packages: NotePackage[]
+}) {
+  const [filter, setFilter]       = useState('All')
+  const [modal, setModal]         = useState<ModalState>({ type: 'none' })
+  const [codeInput, setCodeInput] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError]         = useState('')
+  const [rzpReady, setRzpReady]   = useState(false)
   const isBuying         = useRef(false)
   const paymentSucceeded = useRef(false)
 
@@ -50,11 +55,9 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
     acc[n.topic] = (acc[n.topic] ?? 0) + 1
     return acc
   }, {})
-  const topics = ['All', ...Object.keys(topicCounts)]
-
-  const showLatest  = filter === 'All' && notes.length >= 3
-  const latestNotes = notes.slice(0, 3)
-  const filtered    = filter === 'All' ? notes : notes.filter((n) => n.topic === filter)
+  const topics   = ['All', ...Object.keys(topicCounts)]
+  const filtered = filter === 'All' ? notes : notes.filter((n) => n.topic === filter)
+  const minPrice = notes.length ? Math.min(...notes.map(n => n.price)) : 99
 
   useEffect(() => {
     if (document.querySelector('script[src*="razorpay"]')) { setRzpReady(true); return }
@@ -66,14 +69,14 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
 
   function close() {
     if (isBuying.current) return
-    setModal({ type: 'none' }); setCodeInput(''); setEmailInput(''); setError(''); setIsLoading(false)
+    setModal({ type: 'none' }); setCodeInput(''); setError(''); setIsLoading(false)
   }
 
-  function openPreview(note: Note)       { setModal({ type: 'preview',  note }); setError('') }
-  function openCode(note: Note)          { setModal({ type: 'code',     note }); setCodeInput(''); setEmailInput(''); setError('') }
-  function openPay(note: Note)           { setModal({ type: 'pay',      note }); setError('') }
+  function openPreview(note: Note)           { setModal({ type: 'preview',  note }); setError('') }
+  function openCode(note: Note)              { setModal({ type: 'code',     note }); setCodeInput(''); setError('') }
+  function openPay(note: Note)               { setModal({ type: 'pay',      note }); setError('') }
   function openPackagePay(pkg: NotePackage)  { setModal({ type: 'pay-pkg',  pkg  }); setError('') }
-  function openPackageCode(pkg: NotePackage) { setModal({ type: 'code-pkg', pkg  }); setCodeInput(''); setEmailInput(''); setError('') }
+  function openPackageCode(pkg: NotePackage) { setModal({ type: 'code-pkg', pkg  }); setCodeInput(''); setError('') }
 
   async function verifyCode(note: Note) {
     if (!codeInput.trim()) { setError('Please enter your member code.'); return }
@@ -81,7 +84,7 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
     try {
       const res  = await fetch('/api/notes/verify-code', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: codeInput.trim(), noteId: note.id, email: emailInput.trim() || undefined }),
+        body: JSON.stringify({ code: codeInput.trim(), noteId: note.id }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error ?? 'Invalid code.')
@@ -96,7 +99,7 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
     try {
       const res  = await fetch('/api/packages/verify-code', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: codeInput.trim(), packageId: pkg.id, email: emailInput.trim() || undefined }),
+        body: JSON.stringify({ code: codeInput.trim(), packageId: pkg.id }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error ?? 'Invalid code.')
@@ -222,14 +225,13 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
   return (
     <div className="min-h-screen">
 
-      {/* ════════════════ COMPACT HERO ════════════════ */}
-      <section className="relative pt-10 pb-8 px-4 overflow-hidden">
+      {/* ════════════════ HERO ════════════════ */}
+      <section className="relative pt-10 pb-6 px-4 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[200px] bg-orange-500/6 rounded-full blur-3xl" />
         </div>
-
         <div className="relative max-w-5xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div>
               <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 text-orange-400 text-[11px] font-bold px-3 py-1.5 rounded-full mb-4 uppercase tracking-widest">
                 <Sparkles className="w-3 h-3" /> Premium Study Notes
@@ -240,18 +242,18 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
               </h1>
               <p className="text-zinc-500 text-sm mt-2 max-w-xs">
                 Handcrafted PDFs from every AmanAI Lab video.{' '}
-                <span className="text-zinc-400">{notes.length} notes · {topics.length - 1} topics</span>
+                <span className="text-zinc-400">{notes.length} notes · {topics.length - 1} topic{topics.length - 1 !== 1 ? 's' : ''}</span>
               </p>
             </div>
 
-            <div className="flex flex-col gap-2.5 shrink-0 sm:w-72">
+            <div className="flex flex-col gap-2 shrink-0 sm:w-68">
               <div className="flex items-center gap-3 bg-orange-500/8 border border-orange-500/25 rounded-xl px-4 py-3">
                 <div className="w-8 h-8 bg-orange-500/15 rounded-lg flex items-center justify-center shrink-0">
                   <Crown className="w-4 h-4 text-orange-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-zinc-200">YouTube Member</p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">Enter monthly code → download free</p>
+                  <p className="text-[10px] text-zinc-600 mt-0.5">Enter monthly code → all notes free</p>
                 </div>
                 <span className="text-[10px] font-black text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded-full border border-orange-500/20 shrink-0">FREE</span>
               </div>
@@ -263,7 +265,7 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
                   <p className="text-xs font-bold text-zinc-300">Non-Member</p>
                   <p className="text-[10px] text-zinc-600 mt-0.5">Pay once · instant download · no login</p>
                 </div>
-                <span className="text-[10px] font-black text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">₹99</span>
+                <span className="text-[10px] font-black text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">from ₹{minPrice}</span>
               </div>
             </div>
           </div>
@@ -272,65 +274,25 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
 
       {/* ════════════════ BUNDLES ════════════════ */}
       {packages.length > 0 && (
-        <section className="px-4 pb-8">
+        <section className="px-4 pb-6">
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-5">
+            <div className="flex items-center gap-3 mb-4">
               <div className="h-px flex-1 bg-zinc-800" />
               <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
                 <PackageIcon className="w-3 h-3 text-orange-400" />
-                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">PDF Bundles</span>
+                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">PDF Bundles — Best Value</span>
               </div>
               <div className="h-px flex-1 bg-zinc-800" />
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {packages.map((pkg) => (
                 <PackageCard
                   key={pkg.id}
                   pkg={pkg}
-                  notes={notes}
+                  allNotes={allNotes}
                   onBuy={() => openPackagePay(pkg)}
                   onCode={() => openPackageCode(pkg)}
                 />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ════════════════ LATEST NOTES ════════════════ */}
-      {showLatest && (
-        <section className="px-4 pb-8">
-          <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-px flex-1 bg-zinc-800" />
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full">
-                <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Latest Notes</span>
-              </div>
-              <div className="h-px flex-1 bg-zinc-800" />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {latestNotes.map((note, i) => (
-                <motion.div key={note.id}
-                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-                  onClick={() => openPreview(note)}
-                  className="group relative flex items-center gap-3 bg-zinc-900 border border-zinc-800 hover:border-orange-500/30 rounded-2xl p-3.5 transition-all cursor-pointer"
-                >
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${note.gradient} flex items-center justify-center text-2xl shrink-0`}>
-                    {note.emoji}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <span className="text-[9px] font-black text-orange-400 bg-orange-500/10 border border-orange-500/15 px-1.5 py-0.5 rounded-full uppercase tracking-wide">{note.topic}</span>
-                      <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-1.5 py-0.5 rounded-full uppercase">New</span>
-                    </div>
-                    <p className="text-xs font-bold text-zinc-200 leading-snug truncate">{note.title}</p>
-                    <p className="text-[10px] text-zinc-600 mt-0.5">{note.pages} pages</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-orange-400 transition-colors shrink-0" />
-                </motion.div>
               ))}
             </div>
           </div>
@@ -365,7 +327,6 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
               </button>
             )}
           </div>
-          {/* Gradient fade on right edge — shows more tabs exist */}
           <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#09090b]/90 to-transparent" />
         </div>
       </div>
@@ -549,15 +510,6 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
                             placeholder="e.g. AMAN-AUG2026" autoFocus
                             className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm font-mono tracking-widest outline-none transition-colors" />
                         </div>
-                        <div>
-                          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1.5">
-                            Your Email <span className="normal-case font-normal text-zinc-700">(optional — to get download link in inbox)</span>
-                          </label>
-                          <input type="email" value={emailInput}
-                            onChange={(e) => setEmailInput(e.target.value)}
-                            placeholder="you@example.com"
-                            className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors" />
-                        </div>
                         {error && <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
                         <button onClick={() => verifyCode(modal.note)} disabled={isLoading}
                           className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
@@ -724,15 +676,6 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
                         placeholder="e.g. AMAN-AUG2026" autoFocus
                         className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm font-mono tracking-widest outline-none transition-colors" />
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1.5">
-                        Your Email <span className="normal-case font-normal text-zinc-700">(optional — receive download links in inbox)</span>
-                      </label>
-                      <input type="email" value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        placeholder="you@example.com"
-                        className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors" />
-                    </div>
                     {error && <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
                     <button onClick={() => verifyPackageCode(modal.pkg)} disabled={isLoading}
                       className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
@@ -793,10 +736,10 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
 }
 
 /* ── Package Card ── */
-function PackageCard({ pkg, notes, onBuy, onCode }: {
-  pkg: NotePackage; notes: Note[]; onBuy(): void; onCode(): void
+function PackageCard({ pkg, allNotes, onBuy, onCode }: {
+  pkg: NotePackage; allNotes: Note[]; onBuy(): void; onCode(): void
 }) {
-  const pkgNotes       = notes.filter(n => pkg.note_ids.includes(n.id))
+  const pkgNotes        = allNotes.filter(n => pkg.note_ids.includes(n.id))
   const individualTotal = pkgNotes.reduce((s, n) => s + n.price, 0)
   const savings         = individualTotal - pkg.price
   const showCount       = Math.min(pkgNotes.length, 4)
@@ -828,7 +771,6 @@ function PackageCard({ pkg, notes, onBuy, onCode }: {
           </div>
         </div>
 
-        {/* Notes list */}
         {pkgNotes.length > 0 && (
           <div className="grid grid-cols-1 gap-1 mb-4">
             {pkgNotes.slice(0, showCount).map(n => (
@@ -846,7 +788,6 @@ function PackageCard({ pkg, notes, onBuy, onCode }: {
           </div>
         )}
 
-        {/* CTAs */}
         <div className="flex gap-2 pt-3 border-t border-zinc-800">
           <button onClick={onCode}
             className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/20 text-orange-400 text-xs font-bold py-2.5 rounded-xl transition-all">
