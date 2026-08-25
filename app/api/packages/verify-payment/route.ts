@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { getAdminSupabase } from '@/lib/admin'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { sendReceiptEmail } from '@/lib/send-receipt'
 
 export const runtime = 'nodejs'
 
@@ -20,13 +21,18 @@ export async function POST(req: Request) {
     const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim()
     if (!keySecret) return NextResponse.json({ error: 'Payment not configured.' }, { status: 500 })
 
-    // Verify HMAC signature — primary security check
+    // Step 1: Verify HMAC signature
     const expected = createHmac('sha256', keySecret).update(`${orderId}|${paymentId}`).digest('hex')
     if (expected !== signature) {
       return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 })
     }
 
-    // Confirm payment was captured via Razorpay API
+    // Step 2: Confirm payment captured + extract customer details
+    let customerEmail   = ''
+    let customerName    = ''
+    let customerContact = ''
+    let amountPaise     = 0
+
     if (keyId) {
       try {
         const auth   = Buffer.from(`${keyId}:${keySecret}`).toString('base64')
@@ -38,19 +44,24 @@ export async function POST(req: Request) {
           const paid = payment.status === 'captured' || payment.status === 'authorized'
           if (!paid) {
             return NextResponse.json(
-              { error: `Payment not completed (status: ${payment.status}). Please try again.` },
+              { error: `Payment not completed (status: ${payment.status}).` },
               { status: 400 },
             )
           }
+          customerEmail   = payment.email   ?? ''
+          customerContact = payment.contact ?? ''
+          customerName    = payment.notes?.name ?? ''
+          amountPaise     = payment.amount  ?? 0
         }
-      } catch { /* proceed on valid HMAC if Razorpay API is unreachable */ }
+      } catch { /* proceed on valid HMAC */ }
     }
 
-    // Fetch package note_ids
+    // Step 3: Fetch package + notes
     const supabase = getAdminSupabase()
+
     const { data: pkg, error: pkgErr } = await supabase
       .from('packages')
-      .select('note_ids')
+      .select('id, title, note_ids, price')
       .eq('id', packageId)
       .single()
 
@@ -58,7 +69,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Package not found.' }, { status: 404 })
     }
 
-    // Fetch notes in the package
+    if (!amountPaise) amountPaise = (pkg.price ?? 0) * 100
+
     const { data: notes } = await supabase
       .from('notes')
       .select('id, title, pdf_path')
@@ -68,12 +80,51 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Package has no notes.' }, { status: 404 })
     }
 
-    // Generate 1-hour signed URLs for each note PDF
+    // Step 4: Generate 1-hour signed URLs for immediate download modal
     const items: { title: string; url: string }[] = []
     for (const note of notes) {
       const { data } = await supabase.storage.from('notes').createSignedUrl(note.pdf_path, 3600)
       if (data?.signedUrl) items.push({ title: note.title, url: data.signedUrl })
     }
+
+    // Step 5: Save order + send receipt email (non-blocking)
+    void (async () => {
+      try {
+        // Generate 24-hour URLs for the receipt email
+        const emailItems: { title: string; url: string }[] = []
+        for (const note of notes) {
+          const { data } = await supabase.storage.from('notes').createSignedUrl(note.pdf_path, 86_400)
+          if (data?.signedUrl) emailItems.push({ title: note.title, url: data.signedUrl })
+        }
+
+        await supabase.from('orders').insert({
+          type:                 'package',
+          item_id:              pkg.id,
+          item_title:           pkg.title,
+          amount:               amountPaise,
+          razorpay_payment_id:  paymentId,
+          razorpay_order_id:    orderId,
+          customer_email:       customerEmail   || null,
+          customer_name:        customerName    || null,
+          customer_contact:     customerContact || null,
+          status:               'completed',
+        })
+
+        if (customerEmail && emailItems.length) {
+          await sendReceiptEmail({
+            to:           customerEmail,
+            customerName: customerName || undefined,
+            itemTitle:    pkg.title,
+            amountPaise,
+            paymentId,
+            type:         'package',
+            items:        emailItems,
+          })
+        }
+      } catch (e) {
+        console.error('[pkg/verify-payment] post-payment tasks failed:', e)
+      }
+    })()
 
     return NextResponse.json({ items })
   } catch (err) {

@@ -2,6 +2,7 @@ import { NextResponse }  from 'next/server'
 import { createHmac }    from 'crypto'
 import { getAdminSupabase } from '@/lib/admin'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { sendReceiptEmail } from '@/lib/send-receipt'
 
 export const runtime = 'nodejs'
 
@@ -20,27 +21,22 @@ export async function POST(req: Request) {
     const keyId     = process.env.RAZORPAY_KEY_ID?.trim()
     const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim()
     if (!keySecret) {
-      console.error('[notes/verify-payment] RAZORPAY_KEY_SECRET not set')
       return NextResponse.json({ error: 'Payment not configured.' }, { status: 500 })
     }
 
-    // Step 1: Verify HMAC-SHA256 signature — primary security check
+    // Step 1: Verify HMAC-SHA256 signature
     const body     = `${orderId}|${paymentId}`
     const expected = createHmac('sha256', keySecret).update(body).digest('hex')
-
-    console.log('[notes/verify-payment] orderId:', orderId, '| paymentId:', paymentId)
-    console.log('[notes/verify-payment] signature match:', expected === signature)
-
     if (expected !== signature) {
       return NextResponse.json({ error: 'Payment verification failed.' }, { status: 400 })
     }
 
-    // Step 2: Confirm the payment was actually captured via the Razorpay API.
-    // When the API is reachable we REQUIRE the money to have moved: status must be
-    // 'captured' (auto-capture) or 'authorized'. Anything else (created, failed,
-    // refunded…) is rejected so we never hand over the file without real payment.
-    // Only if the API itself is unreachable do we fall back to the HMAC signature,
-    // which is still cryptographic proof that Razorpay generated this payment.
+    // Step 2: Confirm payment captured + extract customer details
+    let customerEmail   = ''
+    let customerName    = ''
+    let customerContact = ''
+    let amountPaise     = 0
+
     if (keyId) {
       try {
         const auth   = Buffer.from(`${keyId}:${keySecret}`).toString('base64')
@@ -51,23 +47,26 @@ export async function POST(req: Request) {
           const payment = await payRes.json()
           const paid = payment.status === 'captured' || payment.status === 'authorized'
           if (!paid) {
-            console.error('[notes/verify-payment] Payment not captured:', payment.status, paymentId)
-            return NextResponse.json({ error: `Payment not completed (status: ${payment.status}). Please try again.` }, { status: 400 })
+            return NextResponse.json(
+              { error: `Payment not completed (status: ${payment.status}). Please try again.` },
+              { status: 400 },
+            )
           }
-          console.log('[notes/verify-payment] Payment captured:', payment.status, paymentId)
-        } else {
-          console.warn('[notes/verify-payment] Could not fetch payment status, proceeding on valid signature:', paymentId)
+          customerEmail   = payment.email   ?? ''
+          customerContact = payment.contact ?? ''
+          customerName    = payment.notes?.name ?? ''
+          amountPaise     = payment.amount  ?? 0
         }
-      } catch (fetchErr) {
-        console.warn('[notes/verify-payment] Razorpay status check error, proceeding:', fetchErr)
+      } catch {
+        // proceed on valid HMAC if Razorpay API is unreachable
       }
     }
 
-    // Step 3: Fetch note pdf_path from DB
+    // Step 3: Fetch note
     const supabase = getAdminSupabase()
     const { data: note, error: noteErr } = await supabase
       .from('notes')
-      .select('pdf_path')
+      .select('id, title, pdf_path, price')
       .eq('id', noteId)
       .single()
 
@@ -75,17 +74,57 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Note not found.' }, { status: 404 })
     }
 
-    // Generate 1-hour signed URL
-    const { data, error } = await supabase.storage
+    if (!amountPaise) amountPaise = (note.price ?? 0) * 100
+
+    // Step 4: Generate 1-hour URL for immediate download modal
+    const { data: shortUrl, error: shortErr } = await supabase.storage
       .from('notes')
       .createSignedUrl(note.pdf_path, 3600)
 
-    if (error || !data?.signedUrl) {
-      console.error('[notes/verify-payment] Supabase storage error:', error)
+    if (shortErr || !shortUrl?.signedUrl) {
       return NextResponse.json({ error: 'Could not generate download link.' }, { status: 500 })
     }
 
-    return NextResponse.json({ url: data.signedUrl })
+    // Step 5: Save order + send receipt email (non-blocking, best-effort)
+    void (async () => {
+      try {
+        // Generate 24-hour URL for the receipt email
+        const { data: longUrl } = await supabase.storage
+          .from('notes')
+          .createSignedUrl(note.pdf_path, 86_400)
+
+        // Save order record
+        await supabase.from('orders').insert({
+          type:                 'note',
+          item_id:              note.id,
+          item_title:           note.title,
+          amount:               amountPaise,
+          razorpay_payment_id:  paymentId,
+          razorpay_order_id:    orderId,
+          customer_email:       customerEmail   || null,
+          customer_name:        customerName    || null,
+          customer_contact:     customerContact || null,
+          status:               'completed',
+        })
+
+        // Send receipt if we have an email
+        if (customerEmail && longUrl?.signedUrl) {
+          await sendReceiptEmail({
+            to:           customerEmail,
+            customerName: customerName  || undefined,
+            itemTitle:    note.title,
+            amountPaise,
+            paymentId,
+            type:         'note',
+            items:        [{ title: note.title, url: longUrl.signedUrl }],
+          })
+        }
+      } catch (e) {
+        console.error('[notes/verify-payment] post-payment tasks failed:', e)
+      }
+    })()
+
+    return NextResponse.json({ url: shortUrl.signedUrl })
   } catch (err) {
     console.error('[notes/verify-payment]', err)
     return NextResponse.json({ error: 'Something went wrong.' }, { status: 500 })

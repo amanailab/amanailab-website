@@ -88,7 +88,7 @@ const footerLinks = {
     { href: "/blog",      label: "Blog"            },
     { href: "/news",      label: "AI News"         },
     { href: "/resources", label: "Free Resources"  },
-    { href: "/bootcamp",  label: "Bootcamp 🔥"      },
+    { href: "/notes",     label: "Notes & PDFs"    },
   ],
   Company: [
     { href: "/about",    label: "About"    },

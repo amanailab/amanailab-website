@@ -69,7 +69,6 @@ const navItems: NavItem[] = [
       { href: "/paper-explainer",     label: "Paper Explainer",      description: "Any AI paper, explained at 3 levels",   icon: <ScrollText className="w-4 h-4" /> },
     ],
   },
-  { kind: "link", href: "/bootcamp", label: "Bootcamp", badge: "LIVE" },
   {
     kind: "dropdown",
     label: "Interview",
