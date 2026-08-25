@@ -36,12 +36,13 @@ type ModalState =
   | { type: 'download-pkg'; pkg: NotePackage; items: DownloadItem[] }
 
 export default function NotesClient({ notes, packages }: { notes: Note[]; packages: NotePackage[] }) {
-  const [filter, setFilter]       = useState('All')
-  const [modal, setModal]         = useState<ModalState>({ type: 'none' })
-  const [codeInput, setCodeInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError]         = useState('')
-  const [rzpReady, setRzpReady]   = useState(false)
+  const [filter, setFilter]         = useState('All')
+  const [modal, setModal]           = useState<ModalState>({ type: 'none' })
+  const [codeInput, setCodeInput]   = useState('')
+  const [emailInput, setEmailInput] = useState('')
+  const [isLoading, setIsLoading]   = useState(false)
+  const [error, setError]           = useState('')
+  const [rzpReady, setRzpReady]     = useState(false)
   const isBuying         = useRef(false)
   const paymentSucceeded = useRef(false)
 
@@ -65,14 +66,14 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
 
   function close() {
     if (isBuying.current) return
-    setModal({ type: 'none' }); setCodeInput(''); setError(''); setIsLoading(false)
+    setModal({ type: 'none' }); setCodeInput(''); setEmailInput(''); setError(''); setIsLoading(false)
   }
 
   function openPreview(note: Note)       { setModal({ type: 'preview',  note }); setError('') }
-  function openCode(note: Note)          { setModal({ type: 'code',     note }); setCodeInput(''); setError('') }
+  function openCode(note: Note)          { setModal({ type: 'code',     note }); setCodeInput(''); setEmailInput(''); setError('') }
   function openPay(note: Note)           { setModal({ type: 'pay',      note }); setError('') }
   function openPackagePay(pkg: NotePackage)  { setModal({ type: 'pay-pkg',  pkg  }); setError('') }
-  function openPackageCode(pkg: NotePackage) { setModal({ type: 'code-pkg', pkg  }); setCodeInput(''); setError('') }
+  function openPackageCode(pkg: NotePackage) { setModal({ type: 'code-pkg', pkg  }); setCodeInput(''); setEmailInput(''); setError('') }
 
   async function verifyCode(note: Note) {
     if (!codeInput.trim()) { setError('Please enter your member code.'); return }
@@ -80,7 +81,7 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
     try {
       const res  = await fetch('/api/notes/verify-code', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: codeInput.trim(), noteId: note.id }),
+        body: JSON.stringify({ code: codeInput.trim(), noteId: note.id, email: emailInput.trim() || undefined }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error ?? 'Invalid code.')
@@ -95,7 +96,7 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
     try {
       const res  = await fetch('/api/packages/verify-code', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: codeInput.trim(), packageId: pkg.id }),
+        body: JSON.stringify({ code: codeInput.trim(), packageId: pkg.id, email: emailInput.trim() || undefined }),
       })
       const data = await res.json()
       if (!res.ok) setError(data.error ?? 'Invalid code.')
@@ -548,6 +549,15 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
                             placeholder="e.g. AMAN-AUG2026" autoFocus
                             className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm font-mono tracking-widest outline-none transition-colors" />
                         </div>
+                        <div>
+                          <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1.5">
+                            Your Email <span className="normal-case font-normal text-zinc-700">(optional — to get download link in inbox)</span>
+                          </label>
+                          <input type="email" value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            placeholder="you@example.com"
+                            className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors" />
+                        </div>
                         {error && <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
                         <button onClick={() => verifyCode(modal.note)} disabled={isLoading}
                           className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
@@ -713,6 +723,15 @@ export default function NotesClient({ notes, packages }: { notes: Note[]; packag
                         onKeyDown={(e) => e.key === 'Enter' && verifyPackageCode(modal.pkg)}
                         placeholder="e.g. AMAN-AUG2026" autoFocus
                         className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm font-mono tracking-widest outline-none transition-colors" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-wider mb-1.5">
+                        Your Email <span className="normal-case font-normal text-zinc-700">(optional — receive download links in inbox)</span>
+                      </label>
+                      <input type="email" value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full bg-zinc-800 border border-zinc-700 focus:border-orange-500 text-zinc-100 placeholder-zinc-600 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors" />
                     </div>
                     {error && <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
                     <button onClick={() => verifyPackageCode(modal.pkg)} disabled={isLoading}

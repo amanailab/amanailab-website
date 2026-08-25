@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import {
   Plus, Trash2, Eye, EyeOff, Loader2, CheckCircle, X, ExternalLink,
+  UploadCloud, FileText,
 } from 'lucide-react'
 import { Crown } from 'lucide-react'
 import type { Note, NotePackage } from '@/lib/notes-data'
 import Link from 'next/link'
+import { useRef } from 'react'
 
 const GRADIENTS = [
   { label: 'Orange → Red',   value: 'from-orange-500 to-red-600'   },
@@ -47,6 +49,10 @@ export default function AdminPackagesPage() {
   const [toggling, setToggling]           = useState<string | null>(null)
   const [deleting, setDeleting]           = useState<string | null>(null)
   const [banner, setBanner]               = useState<{ msg: string; ok: boolean } | null>(null)
+  const [quickTitle, setQuickTitle]       = useState('')
+  const [quickUploading, setQuickUploading] = useState(false)
+  const [showQuickUpload, setShowQuickUpload] = useState(false)
+  const quickFileRef = useRef<HTMLInputElement>(null)
 
   function flash(msg: string, ok = true) {
     setBanner({ msg, ok }); setTimeout(() => setBanner(null), 4000)
@@ -66,6 +72,44 @@ export default function AdminPackagesPage() {
 
   function toggleNote(id: string) {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(n => n !== id) : [...prev, id])
+  }
+
+  async function handleQuickUpload(file: File) {
+    if (!quickTitle.trim()) { flash('Enter a title for this PDF first.', false); return }
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      flash('PDF files only.', false); return
+    }
+    setQuickUploading(true)
+    try {
+      const fd = new FormData(); fd.append('file', file)
+      const upRes  = await fetch('/api/admin/notes/upload-pdf', { method: 'POST', body: fd })
+      const upData = await upRes.json()
+      if (!upRes.ok) throw new Error(upData.error ?? 'Upload failed')
+
+      // Create as a bundle-only note (hidden from public /notes page)
+      const noteRes  = await fetch('/api/admin/notes', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:       quickTitle.trim(),
+          topic:       'Bundle Only',
+          pdf_path:    upData.pdf_path,
+          is_new:      false,
+          is_active:   false,
+        }),
+      })
+      const newNote = await noteRes.json()
+      if (!noteRes.ok) throw new Error(newNote.error ?? 'Failed to create note')
+
+      setNotes(prev => [...prev, newNote])
+      setSelectedIds(prev => [...prev, newNote.id])
+      setQuickTitle(''); setShowQuickUpload(false)
+      flash(`"${newNote.title}" uploaded and added to bundle!`)
+    } catch (err) {
+      flash(err instanceof Error ? err.message : 'Upload failed', false)
+    } finally {
+      setQuickUploading(false)
+      if (quickFileRef.current) quickFileRef.current.value = ''
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -209,7 +253,7 @@ export default function AdminPackagesPage() {
                   <span className="text-zinc-700 normal-case font-normal">({selectedIds.length} selected)</span>
                 </label>
                 {notes.length === 0 ? (
-                  <p className="text-zinc-600 text-sm">No notes yet — add notes at /admin/notes first.</p>
+                  <p className="text-zinc-600 text-sm">No notes yet — upload a new PDF below or add notes at /admin/notes first.</p>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
                     {notes.map(note => {
@@ -229,12 +273,47 @@ export default function AdminPackagesPage() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-bold text-zinc-200 truncate">{note.title}</p>
-                            <p className="text-[10px] text-zinc-600">{note.topic} · ₹{note.price}</p>
+                            <p className="text-[10px] text-zinc-600">
+                              {note.is_active ? note.topic : <span className="text-orange-400">Bundle-only (hidden)</span>} · ₹{note.price}
+                            </p>
                           </div>
                         </button>
                       )
                     })}
                   </div>
+                )}
+
+                {/* Quick upload a brand new PDF for this bundle */}
+                <input ref={quickFileRef} type="file" accept="application/pdf,.pdf" className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) handleQuickUpload(f) }} />
+
+                {showQuickUpload ? (
+                  <div className="border border-dashed border-zinc-700 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-zinc-400">Upload new PDF to bundle</p>
+                      <button type="button" onClick={() => setShowQuickUpload(false)}
+                        className="text-zinc-600 hover:text-zinc-400 transition-colors">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <input value={quickTitle} onChange={e => setQuickTitle(e.target.value)}
+                      placeholder="PDF title (e.g. System Design Cheatsheet)"
+                      className="w-full bg-zinc-950 border border-zinc-800 focus:border-orange-500/70 text-zinc-100 placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all" />
+                    <button type="button" disabled={quickUploading || !quickTitle.trim()}
+                      onClick={() => quickFileRef.current?.click()}
+                      className="w-full flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 border border-zinc-700 text-zinc-300 text-xs font-bold py-2.5 rounded-xl transition-all">
+                      {quickUploading
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
+                        : <><UploadCloud className="w-4 h-4" /> Choose PDF &amp; upload</>}
+                    </button>
+                    <p className="text-[10px] text-zinc-700">This PDF will be hidden from the public /notes page — bundle only.</p>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setShowQuickUpload(true)}
+                    className="flex items-center justify-center gap-2 w-full border border-dashed border-zinc-700 hover:border-orange-500/40 bg-zinc-800/30 hover:bg-orange-500/5 text-zinc-500 hover:text-orange-400 text-xs font-semibold py-2.5 rounded-xl transition-all">
+                    <UploadCloud className="w-4 h-4" />
+                    Upload new PDF for this bundle
+                  </button>
                 )}
               </div>
 

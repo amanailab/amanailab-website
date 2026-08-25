@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
-import { Loader2, RefreshCw, Package, FileText, IndianRupee, Mail, Phone } from 'lucide-react'
+import { Loader2, RefreshCw, Package, FileText, IndianRupee, Mail, Phone, Crown } from 'lucide-react'
 
 interface Order {
   id: string
@@ -10,12 +10,13 @@ interface Order {
   item_id: string
   item_title: string
   amount: number
-  razorpay_payment_id: string
-  razorpay_order_id: string
+  razorpay_payment_id: string | null
+  razorpay_order_id: string | null
   customer_email: string | null
   customer_name: string | null
   customer_contact: string | null
   status: string
+  via: string
   created_at: string
 }
 
@@ -46,9 +47,10 @@ export default function AdminOrdersPage() {
   }
   useEffect(() => { load() }, [])
 
-  const totalRevenue = orders.reduce((s, o) => s + o.amount, 0)
+  const totalRevenue = orders.filter(o => o.via !== 'member_code').reduce((s, o) => s + o.amount, 0)
   const noteCount    = orders.filter(o => o.type === 'note').length
   const pkgCount     = orders.filter(o => o.type === 'package').length
+  const memberCount  = orders.filter(o => o.via === 'member_code').length
 
   return (
     <div className="flex min-h-screen bg-zinc-950">
@@ -70,11 +72,12 @@ export default function AdminOrdersPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: 'Total Revenue', value: fmt(totalRevenue), icon: IndianRupee, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20' },
-              { label: 'Note Sales',    value: noteCount,         icon: FileText,    color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20'   },
-              { label: 'Bundle Sales',  value: pkgCount,          icon: Package,     color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20' },
+              { label: 'Total Revenue',  value: fmt(totalRevenue), icon: IndianRupee, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20'   },
+              { label: 'Note Sales',     value: noteCount,         icon: FileText,    color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20'       },
+              { label: 'Bundle Sales',   value: pkgCount,          icon: Package,     color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20'   },
+              { label: 'Member Access',  value: memberCount,       icon: Crown,       color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20'   },
             ].map(s => (
               <div key={s.label} className={`flex items-center gap-4 ${s.bg} border rounded-2xl p-5`}>
                 <div className={`w-10 h-10 rounded-xl ${s.bg} border flex items-center justify-center shrink-0`}>
@@ -109,7 +112,7 @@ export default function AdminOrdersPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-zinc-800">
-                      {['Date', 'Type', 'Item', 'Amount', 'Customer', 'Contact', 'Payment ID'].map(h => (
+                      {['Date', 'Type', 'Via', 'Item', 'Amount', 'Customer', 'Contact', 'Payment ID'].map(h => (
                         <th key={h} className="px-4 py-3 text-left text-[10px] font-black text-zinc-500 uppercase tracking-wider whitespace-nowrap">
                           {h}
                         </th>
@@ -130,11 +133,24 @@ export default function AdminOrdersPage() {
                             {order.type}
                           </span>
                         </td>
+                        <td className="px-4 py-3">
+                          {order.via === 'member_code' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full border text-yellow-400 bg-yellow-500/10 border-yellow-500/20 uppercase whitespace-nowrap">
+                              <Crown className="w-2.5 h-2.5" /> Member
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full border text-emerald-400 bg-emerald-500/10 border-emerald-500/20 uppercase whitespace-nowrap">
+                              Paid
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 max-w-[180px]">
                           <p className="text-xs font-semibold text-zinc-200 truncate">{order.item_title}</p>
                         </td>
-                        <td className="px-4 py-3 text-sm font-extrabold text-orange-400 whitespace-nowrap">
-                          {fmt(order.amount)}
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {order.via === 'member_code'
+                            ? <span className="text-sm font-extrabold text-yellow-400">Free</span>
+                            : <span className="text-sm font-extrabold text-orange-400">{fmt(order.amount)}</span>}
                         </td>
                         <td className="px-4 py-3 max-w-[160px]">
                           {order.customer_email ? (
@@ -161,9 +177,9 @@ export default function AdminOrdersPage() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <span className="text-[10px] font-mono text-zinc-600 select-all">
-                            {order.razorpay_payment_id}
-                          </span>
+                          {order.razorpay_payment_id
+                            ? <span className="text-[10px] font-mono text-zinc-600 select-all">{order.razorpay_payment_id}</span>
+                            : <span className="text-xs text-zinc-700">—</span>}
                         </td>
                       </tr>
                     ))}

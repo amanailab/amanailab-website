@@ -108,6 +108,7 @@ export async function POST(req: Request) {
           customer_name:        customerName    || null,
           customer_contact:     customerContact || null,
           status:               'completed',
+          via:                  'payment',
         })
 
         if (customerEmail && emailItems.length) {
@@ -117,6 +118,7 @@ export async function POST(req: Request) {
             itemTitle:    pkg.title,
             amountPaise,
             paymentId,
+            via:          'payment',
             type:         'package',
             items:        emailItems,
           })

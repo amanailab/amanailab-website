@@ -105,6 +105,7 @@ export async function POST(req: Request) {
           customer_name:        customerName    || null,
           customer_contact:     customerContact || null,
           status:               'completed',
+          via:                  'payment',
         })
 
         // Send receipt if we have an email
@@ -115,6 +116,7 @@ export async function POST(req: Request) {
             itemTitle:    note.title,
             amountPaise,
             paymentId,
+            via:          'payment',
             type:         'note',
             items:        [{ title: note.title, url: longUrl.signedUrl }],
           })
