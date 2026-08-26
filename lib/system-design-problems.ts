@@ -16,32 +16,36 @@ const TEMPLATE = `## 1. Requirements Clarification
 ### Functional Requirements
 -
 -
+-
 
 ### Non-Functional Requirements
-- Latency:
-- Scale:
-- Availability:
-- Consistency:
+- Latency target:
+- Scale (DAU / QPS):
+- Availability SLA:
+- Consistency model:
 
 ---
 
 ## 2. Capacity Estimation
 
 - Daily Active Users:
-- Requests per second (read / write):
-- Storage:
+- Read QPS:
+- Write QPS:
+- Storage per day:
 - Bandwidth:
 
 ---
 
 ## 3. High-Level Architecture
 
-<!-- Describe your system here. List main components and how data flows between them. -->
-
 Key components:
 1.
 2.
 3.
+
+Data flow:
+- Client →
+- → → Storage
 
 ---
 
@@ -57,36 +61,48 @@ Key components:
 
 ## 5. Data Model & Storage
 
-<!-- Tables, schemas, data formats. Justify your storage choices (SQL vs NoSQL, etc.) -->
+Schema:
+
+\`\`\`sql
+-- table name
+\`\`\`
+
+Storage choice justification:
+- SQL vs NoSQL:
+- Key indexes:
 
 ---
 
 ## 6. API Design
 
-<!-- Key endpoints or interfaces your system exposes -->
-
 \`\`\`
-POST /api/...
-GET  /api/...
+POST /api/
+GET  /api/
 \`\`\`
 
 ---
 
 ## 7. Scalability & Performance
 
-<!-- Caching strategy, sharding, replication, CDN, load balancing -->
+- Caching strategy:
+- Sharding approach:
+- Auto-scaling trigger:
+- CDN usage:
 
 ---
 
 ## 8. Monitoring & Reliability
 
-<!-- Key metrics, SLOs, alerting thresholds, failure modes and mitigation -->
+- Key metrics (P99 latency, error rate, throughput):
+- Alerting thresholds:
+- Failure modes + mitigation:
 
 ---
 
 ## 9. Trade-offs & Alternatives Considered
 
-<!-- What you chose vs. what you rejected and why -->
+- What I chose vs. what I rejected:
+- Why:
 `
 
 export const SYSTEM_DESIGN_PROBLEMS: SDProblem[] = [

@@ -35,6 +35,9 @@ const DEFAULT_AI_TOPICS = [
 export async function POST(req: Request) {
   const limited = enforceRateLimit(req, 'career-interview-plan', 10, 60_000)
   if (limited) return limited
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'career')
+  if (blocked) return blocked
   try {
     const { company, daysLeft, weakTopics, strongTopics } = await req.json()
     if (!company || !daysLeft) return NextResponse.json({ error: 'company and daysLeft required' }, { status: 400 })

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
-import { Loader2, RefreshCw, Package, FileText, IndianRupee, Mail, Phone, Crown } from 'lucide-react'
+import { Loader2, RefreshCw, Package, FileText, IndianRupee, Mail, Phone, Crown, Zap } from 'lucide-react'
 
 interface Order {
   id: string
-  type: 'note' | 'package'
+  type: 'note' | 'package' | 'sd_pro' | 'full_bundle'
   item_id: string
   item_title: string
   amount: number
@@ -50,6 +50,7 @@ export default function AdminOrdersPage() {
   const totalRevenue = orders.filter(o => o.via !== 'member_code').reduce((s, o) => s + o.amount, 0)
   const noteCount    = orders.filter(o => o.type === 'note').length
   const pkgCount     = orders.filter(o => o.type === 'package').length
+  const subCount     = orders.filter(o => o.type === 'sd_pro' || o.type === 'full_bundle').length
   const memberCount  = orders.filter(o => o.via === 'member_code').length
 
   return (
@@ -72,12 +73,13 @@ export default function AdminOrdersPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {[
-              { label: 'Total Revenue',  value: fmt(totalRevenue), icon: IndianRupee, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20'   },
-              { label: 'Note Sales',     value: noteCount,         icon: FileText,    color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20'       },
-              { label: 'Bundle Sales',   value: pkgCount,          icon: Package,     color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20'   },
-              { label: 'Member Access',  value: memberCount,       icon: Crown,       color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20'   },
+              { label: 'Total Revenue',   value: fmt(totalRevenue), icon: IndianRupee, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20'   },
+              { label: 'Note Sales',      value: noteCount,         icon: FileText,    color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20'       },
+              { label: 'PDF Bundles',     value: pkgCount,          icon: Package,     color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20'   },
+              { label: 'Subscriptions',   value: subCount,          icon: Zap,         color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/20'     },
+              { label: 'Member Access',   value: memberCount,       icon: Crown,       color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20'   },
             ].map(s => (
               <div key={s.label} className={`flex items-center gap-4 ${s.bg} border rounded-2xl p-5`}>
                 <div className={`w-10 h-10 rounded-xl ${s.bg} border flex items-center justify-center shrink-0`}>
@@ -125,12 +127,16 @@ export default function AdminOrdersPage() {
                         <td className="px-4 py-3 text-xs text-zinc-500 whitespace-nowrap">{fmtDate(order.created_at)}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full border uppercase ${
-                            order.type === 'package'
-                              ? 'text-purple-400 bg-purple-500/10 border-purple-500/20'
-                              : 'text-blue-400 bg-blue-500/10 border-blue-500/20'
+                            order.type === 'package'   ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' :
+                            order.type === 'sd_pro'    ? 'text-green-400  bg-green-500/10  border-green-500/20'  :
+                            order.type === 'full_bundle' ? 'text-orange-400 bg-orange-500/10 border-orange-500/20' :
+                            'text-blue-400 bg-blue-500/10 border-blue-500/20'
                           }`}>
-                            {order.type === 'package' ? <Package className="w-2.5 h-2.5" /> : <FileText className="w-2.5 h-2.5" />}
-                            {order.type}
+                            {order.type === 'package'     && <Package className="w-2.5 h-2.5" />}
+                            {order.type === 'sd_pro'      && <Zap className="w-2.5 h-2.5" />}
+                            {order.type === 'full_bundle' && <Crown className="w-2.5 h-2.5" />}
+                            {order.type === 'note'        && <FileText className="w-2.5 h-2.5" />}
+                            {order.type === 'sd_pro' ? 'SD Pro' : order.type === 'full_bundle' ? 'Prep Kit' : order.type}
                           </span>
                         </td>
                         <td className="px-4 py-3">

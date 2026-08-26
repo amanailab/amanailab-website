@@ -22,6 +22,9 @@ const IMAGE_PDF_MESSAGE =
 export async function POST(req: Request) {
   const limited = enforceRateLimit(req, "resume-coverletter", 5, 60_000);
   if (limited) return limited;
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'coverletter')
+  if (blocked) return blocked
   try {
     const form = await req.formData();
     const file = form.get("file");

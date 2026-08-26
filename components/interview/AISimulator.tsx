@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import EmailGateModal, { isCaptured } from '@/components/shared/EmailGateModal'
 import { createClient } from '@/lib/supabase/client'
+import UpgradeBanner from '@/components/ui/UpgradeBanner'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -487,6 +488,7 @@ export default function AISimulator() {
         body: JSON.stringify({ topic, level, count: qCount }),
       })
       const data = await res.json()
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); setPhase('setup'); return }
       if (!res.ok) throw new Error(data.error ?? 'Failed to generate questions.')
       setQuestions(data.questions)
       setSession(data.questions.map((q: string) => ({ question: q, answer: '', evaluation: null, timeUsed: 0 })))
@@ -690,7 +692,11 @@ export default function AISimulator() {
             <p className="text-xs text-zinc-600">Voice features use your browser&apos;s built-in speech engine — no data sent externally.</p>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && (error.startsWith('__PAYWALL__') ? (
+            <UpgradeBanner message={error.slice(11) || undefined} />
+          ) : (
+            <p className="text-red-400 text-sm">{error}</p>
+          ))}
 
           <button
             onClick={generateSession}

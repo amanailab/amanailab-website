@@ -348,6 +348,14 @@ export default function Navbar() {
               </kbd>
             </button>
 
+            {/* Get Pro CTA */}
+            <Link
+              href="/upgrade"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-bold transition-all hover:text-orange-300"
+            >
+              <Crown className="w-3 h-3" /> Get Pro
+            </Link>
+
             {/* Divider */}
             <div className="hidden lg:block w-px h-5 bg-zinc-800" />
 
@@ -394,6 +402,13 @@ export default function Navbar() {
                           className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors"
                         >
                           <User className="w-4 h-4 text-zinc-500" /> Profile
+                        </Link>
+                        <Link
+                          href="/upgrade"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-sm text-orange-400 hover:bg-orange-500/10 hover:text-orange-300 rounded-xl transition-colors"
+                        >
+                          <Crown className="w-4 h-4" /> My Plan
                         </Link>
                         <button
                           onClick={async () => {
@@ -570,6 +585,11 @@ export default function Navbar() {
                   <User className="w-4 h-4" /> Login / Sign up
                 </Link>
               )}
+
+              <Link href="/upgrade"
+                className="flex items-center justify-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-sm font-bold px-4 py-3 rounded-xl transition-colors">
+                <Crown className="w-4 h-4" /> Get Pro — from ₹799
+              </Link>
 
               <a
                 href="https://youtube.com/@AmanAI_lab"

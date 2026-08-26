@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Map, CalendarDays, Calendar, FileText, Building2, Briefcase, Sparkles, AlertCircle, CheckCircle2, XCircle, Lightbulb, Clock, Target, BookOpen, ChevronDown, ChevronUp, Copy, Check, Download, TrendingUp, Mail, RotateCcw, ExternalLink, ArrowRight } from 'lucide-react'
 import JobQuestionsTab from './JobQuestionsTab'
 import { isCaptured, saveEmail, markCaptured } from '@/lib/email-capture'
+import UpgradeBanner from '@/components/ui/UpgradeBanner'
 
 // ─── Topic → slug mapping for phase chips ────────────────────────────────────
 const TOPIC_SLUG_MAP: Record<string, string> = {
@@ -331,6 +332,9 @@ function LoadingState({ label }: { label: string }) {
 
 // ─── Error State ──────────────────────────────────────────────────────────────
 function ErrorState({ msg }: { msg: string }) {
+  if (msg.startsWith('__PAYWALL__')) {
+    return <UpgradeBanner message={msg.slice(11)} />
+  }
   return (
     <div className="flex items-start gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{msg}
@@ -434,6 +438,7 @@ function RoadmapTab({ onSwitchToStudyPlan }: { onSwitchToStudyPlan: (role: strin
         body: JSON.stringify({ targetRole, currentSkills, currentLevel, timePerWeek }),
       })
       const data = await res.json()
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? 'Failed to generate.')
       setResult(data); setRoadmapCached(true)
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Something went wrong.') }
@@ -758,6 +763,7 @@ function StudyPlanTab({ prefill }: { prefill?: { targetRole?: string } | null })
         body: JSON.stringify({ targetRole, interviewDate, currentLevel, weakTopics, hoursPerDay }),
       })
       const data = await res.json()
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? 'Failed to generate.')
       setResult(data); setOpenWeek(0); setStudyPlanCached(true)
     } catch (e: unknown) { setError(e instanceof Error ? e.message : 'Something went wrong.') }

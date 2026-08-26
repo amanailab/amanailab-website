@@ -18,6 +18,7 @@ import {
   Code2,
   Users,
   ShoppingCart,
+  Zap,
 } from 'lucide-react'
 
 const navLinks = [
@@ -33,6 +34,7 @@ const navLinks = [
   { href: '/admin/notes',             label: 'Notes & PDFs',    icon: FileText     },
   { href: '/admin/packages',          label: 'PDF Bundles',     icon: Library      },
   { href: '/admin/orders',            label: 'Orders',          icon: ShoppingCart },
+  { href: '/admin/subscriptions',     label: 'Subscriptions',   icon: Zap },
   { href: '/admin/news',              label: 'News',            icon: Newspaper },
   { href: '/admin/emails',            label: 'Emails & Waitlist', icon: Mail },
 ]

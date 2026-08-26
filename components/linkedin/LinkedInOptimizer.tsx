@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import UpgradeBanner from '@/components/ui/UpgradeBanner'
 import {
   Sparkles, Copy, Check, TrendingUp, AlertCircle, CheckCircle2,
   Lightbulb, Upload, FileText, X, ChevronDown, ChevronUp,
@@ -185,6 +186,7 @@ export default function LinkedInOptimizer() {
         })
       }
       const data = await res.json()
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? 'Failed to optimize.')
       setResult(data)
     } catch (e: unknown) {
@@ -365,11 +367,13 @@ export default function LinkedInOptimizer() {
                 </>
               )}
 
-              {error && (
+              {error && (error.startsWith('__PAYWALL__') ? (
+                <UpgradeBanner message={error.slice(11) || undefined} />
+              ) : (
                 <div className="flex items-start gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
                 </div>
-              )}
+              ))}
 
               <button onClick={handleOptimize} disabled={loading}
                 className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-500/20">

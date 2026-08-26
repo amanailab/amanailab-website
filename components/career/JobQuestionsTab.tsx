@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import UpgradeBanner from '@/components/ui/UpgradeBanner'
 import {
   BrainCircuit, Sparkles, Loader2, ChevronDown, ChevronUp,
   CheckCircle2, Target, Lightbulb, BookOpen, ArrowRight,
@@ -166,6 +167,7 @@ export default function JobQuestionsTab() {
         body: JSON.stringify({ jd }),
       })
       const data = await res.json()
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? 'Failed to analyze')
       setResult(data)
     } catch (err) {
@@ -248,11 +250,13 @@ export default function JobQuestionsTab() {
             </div>
           </div>
 
-          {error && (
+          {error && (error.startsWith('__PAYWALL__') ? (
+            <UpgradeBanner message={error.slice(11) || undefined} />
+          ) : (
             <div className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
               <span className="shrink-0">⚠</span> {error}
             </div>
-          )}
+          ))}
 
           <button type="submit" disabled={loading || wordCount < 50}
             className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-4 py-4 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/20"

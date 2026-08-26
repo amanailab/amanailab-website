@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
+import UpgradeBanner from "@/components/ui/UpgradeBanner";
 import {
   FileText,
   Upload,
@@ -820,12 +821,14 @@ function BuilderForm(props: BuilderFormProps) {
         )}
       </div>
 
-      {error && (
+      {error && (error.startsWith('__PAYWALL__') ? (
+        <UpgradeBanner message={error.slice(11) || undefined} />
+      ) : (
         <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
           <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           <p className="text-red-300 text-sm whitespace-pre-line">{error}</p>
         </div>
-      )}
+      ))}
 
       <button
         type="button"
@@ -966,6 +969,7 @@ export default function ResumeAnalyzer() {
 
       const res = await fetch("/api/resume/analyze", { method: "POST", body: fd });
       const data = await res.json();
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to analyze resume.");
 
       const newCount = incrementUsage();
@@ -990,6 +994,7 @@ export default function ResumeAnalyzer() {
 
       const res = await fetch("/api/resume/match", { method: "POST", body: fd });
       const data = await res.json();
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to match resume.");
 
       const newCount = incrementUsage();
@@ -1017,6 +1022,7 @@ export default function ResumeAnalyzer() {
 
       const res = await fetch("/api/resume/coverletter", { method: "POST", body: fd });
       const data = await res.json();
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to generate cover letter.");
 
       const newCount = incrementUsage();
@@ -1451,6 +1457,7 @@ export default function ResumeAnalyzer() {
         body: JSON.stringify(builder),
       });
       const data = await res.json();
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to generate resume.");
 
       const newCount = incrementUsage();
@@ -1524,6 +1531,7 @@ export default function ResumeAnalyzer() {
         body: JSON.stringify(linkedIn),
       });
       const data = await res.json();
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to generate LinkedIn summary.");
 
       const newCount = incrementUsage();
@@ -1569,6 +1577,7 @@ export default function ResumeAnalyzer() {
 
       const res = await fetch("/api/resume/predict", { method: "POST", body: fd });
       const data = await res.json();
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to predict questions.");
 
       const newCount = incrementUsage();

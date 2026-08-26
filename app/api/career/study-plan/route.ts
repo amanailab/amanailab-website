@@ -14,6 +14,9 @@ export async function POST(req: Request) {
       { status: 429, headers: { 'Retry-After': String(retryAfterSec) } }
     )
   }
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'career')
+  if (blocked) return blocked
 
 
     const { targetRole, interviewDate, currentLevel, weakTopics, hoursPerDay } = await req.json()

@@ -13,6 +13,9 @@ import {
   Code2,
   MessageSquare,
   Clock,
+  IndianRupee,
+  Zap,
+  ShoppingBag,
 } from 'lucide-react'
 
 async function safeCount(table: string): Promise<number> {
@@ -48,6 +51,25 @@ async function getCounts() {
     sessions,
     codeProblems,
     communityPosts,
+  }
+}
+
+async function getRevenueStats(): Promise<{ totalRevenuePaise: number; activeSubscriptions: number; totalOrders: number }> {
+  try {
+    const supabase = getAdminSupabase()
+    const [ordersRes, subsRes] = await Promise.all([
+      supabase.from('orders').select('amount, via'),
+      supabase.from('sd_subscriptions').select('subscribed_until', { count: 'exact' }).gt('subscribed_until', new Date().toISOString()),
+    ])
+    const orders = ordersRes.data ?? []
+    const revenue = orders.filter((o: { via: string }) => o.via !== 'member_code').reduce((s: number, o: { amount: number }) => s + (o.amount ?? 0), 0)
+    return {
+      totalRevenuePaise: revenue,
+      activeSubscriptions: subsRes.count ?? 0,
+      totalOrders: orders.length,
+    }
+  } catch {
+    return { totalRevenuePaise: 0, activeSubscriptions: 0, totalOrders: 0 }
   }
 }
 
@@ -124,78 +146,37 @@ function formatDate(iso: string): string {
   })
 }
 
-const CARDS = [
-  {
-    title: 'Blog Posts',
-    description: 'Articles, drafts, and publishing',
-    Icon: FileText,
-    href: '/admin/blog',
-    countKey: 'blog' as const,
-  },
-  {
-    title: 'Interview Questions',
-    description: 'Add, edit, and bulk import',
-    Icon: HelpCircle,
-    href: '/admin/questions',
-    countKey: 'questions' as const,
-  },
-  {
-    title: 'Cheat Sheets',
-    description: 'Upload and manage PDFs',
-    Icon: BookOpen,
-    href: '/admin/resources',
-    countKey: 'resources' as const,
-  },
-  {
-    title: 'News',
-    description: 'Manual entries + bulk refresh',
-    Icon: Newspaper,
-    href: '/admin/news',
-    countKey: 'news' as const,
-  },
-  {
-    title: 'Waitlist & Emails',
-    description: 'Subscribers and contact messages',
-    Icon: Mail,
-    href: '/admin/emails',
-    countKey: 'emails' as const,
-  },
-  {
-    title: 'Users',
-    description: 'Registered users and activity',
-    Icon: Users,
-    href: '/admin/users',
-    countKey: null as null,
-  },
-  {
-    title: 'Code Problems',
-    description: 'Code Lab problem bank',
-    Icon: Code2,
-    href: '/admin/code-problems',
-    countKey: 'codeProblems' as const,
-  },
-  {
-    title: 'Community',
-    description: 'Pending and approved posts',
-    Icon: MessageSquare,
-    href: '/admin/community',
-    countKey: 'communityPosts' as const,
-  },
-]
 
 export default async function DashboardPage() {
-  const [counts, totalUsers, recentSessions] = await Promise.all([
+  const [counts, totalUsers, recentSessions, revenue] = await Promise.all([
     getCounts(),
     getTotalUsers(),
     getRecentSessions(),
+    getRevenueStats(),
   ])
+
+  const fmtRevenue = (paise: number) => `₹${Math.round(paise / 100).toLocaleString('en-IN')}`
+
+  const CARDS = [
+    { title: 'Blog Posts',         description: 'Articles, drafts, and publishing',          Icon: FileText,    href: '/admin/blog',           count: counts.blog            },
+    { title: 'Interview Questions',description: 'Add, edit, and bulk import',                 Icon: HelpCircle,  href: '/admin/questions',      count: counts.questions        },
+    { title: 'Cheat Sheets',       description: 'Upload and manage PDFs',                    Icon: BookOpen,    href: '/admin/resources',      count: counts.resources        },
+    { title: 'News',               description: 'Manual entries + bulk refresh',              Icon: Newspaper,   href: '/admin/news',           count: counts.news             },
+    { title: 'Waitlist & Emails',  description: 'Subscribers and contact messages',           Icon: Mail,        href: '/admin/emails',         count: counts.emails           },
+    { title: 'Users',              description: 'Registered users and activity',              Icon: Users,       href: '/admin/users',          count: totalUsers              },
+    { title: 'Code Problems',      description: 'Code Lab problem bank',                      Icon: Code2,       href: '/admin/code-problems',  count: counts.codeProblems     },
+    { title: 'Community',          description: 'Pending and approved posts',                 Icon: MessageSquare,href: '/admin/community',     count: counts.communityPosts   },
+    { title: 'Orders',             description: 'Purchases, subscriptions, and revenue',      Icon: ShoppingBag, href: '/admin/orders',         count: revenue.totalOrders     },
+  ]
 
   // Stat bar at top
   const topStats = [
-    { label: 'Total Users', value: totalUsers, Icon: Users },
-    { label: 'Total Sessions', value: counts.sessions, Icon: Activity },
-    { label: 'Code Problems', value: counts.codeProblems, Icon: Code2 },
-    { label: 'Community Posts', value: counts.communityPosts, Icon: MessageSquare },
+    { label: 'Total Users',         value: totalUsers,                          Icon: Users,         color: 'text-orange-400' },
+    { label: 'Revenue',             value: fmtRevenue(revenue.totalRevenuePaise), Icon: IndianRupee, color: 'text-green-400'  },
+    { label: 'Active Subscribers',  value: revenue.activeSubscriptions,          Icon: Zap,           color: 'text-blue-400'  },
+    { label: 'Total Orders',        value: revenue.totalOrders,                  Icon: ShoppingBag,   color: 'text-purple-400'},
+    { label: 'Total Sessions',      value: counts.sessions,                      Icon: Activity,      color: 'text-orange-400'},
+    { label: 'Community Posts',     value: counts.communityPosts,                Icon: MessageSquare, color: 'text-orange-400'},
   ]
 
   return (
@@ -209,21 +190,21 @@ export default async function DashboardPage() {
           </div>
 
           {/* Top stat bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {topStats.map(({ label, value, Icon }) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            {topStats.map(({ label, value, Icon, color }) => (
               <div
                 key={label}
-                className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col gap-2"
+                className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col gap-2"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-zinc-500 uppercase tracking-wide">
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">
                     {label}
                   </span>
-                  <div className="w-8 h-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                    <Icon className="w-4 h-4 text-orange-400" />
+                  <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center">
+                    <Icon className={`w-3.5 h-3.5 ${color}`} />
                   </div>
                 </div>
-                <span className="text-2xl font-extrabold tabular-nums text-zinc-100">
+                <span className={`text-xl font-extrabold tabular-nums ${color}`}>
                   {value}
                 </span>
               </div>
@@ -232,37 +213,29 @@ export default async function DashboardPage() {
 
           {/* Nav cards grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-            {CARDS.map(({ title, description, Icon, href, countKey }) => {
-              const count =
-                countKey === null
-                  ? totalUsers
-                  : countKey !== null
-                  ? counts[countKey as keyof typeof counts]
-                  : null
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className="group flex flex-col gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5 transition-all"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-orange-400" />
-                    </div>
-                    <span className="text-3xl font-extrabold tabular-nums text-zinc-100">
-                      {count ?? ''}
-                    </span>
+            {CARDS.map(({ title, description, Icon, href, count }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group flex flex-col gap-4 bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-orange-500/40 hover:shadow-lg hover:shadow-orange-500/5 transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                    <Icon className="w-5 h-5 text-orange-400" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-base font-bold text-zinc-100 mb-1">{title}</h3>
-                    <p className="text-xs text-zinc-500">{description}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-400 group-hover:gap-2 transition-all">
-                    Manage <ArrowRight className="w-3.5 h-3.5" />
+                  <span className="text-3xl font-extrabold tabular-nums text-zinc-100">
+                    {count ?? ''}
                   </span>
-                </Link>
-              )
-            })}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-bold text-zinc-100 mb-1">{title}</h3>
+                  <p className="text-xs text-zinc-500">{description}</p>
+                </div>
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-400 group-hover:gap-2 transition-all">
+                  Manage <ArrowRight className="w-3.5 h-3.5" />
+                </span>
+              </Link>
+            ))}
           </div>
 
           {/* Recent Activity */}

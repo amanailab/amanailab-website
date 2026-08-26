@@ -8,6 +8,9 @@ export const maxDuration = 60
 export async function POST(req: Request) {
   const limited = enforceRateLimit(req, 'career-job-questions', 10, 60_000)
   if (limited) return limited
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'career')
+  if (blocked) return blocked
   try {
     const { jd } = await req.json()
     if (!jd || typeof jd !== 'string' || jd.trim().length < 50) {

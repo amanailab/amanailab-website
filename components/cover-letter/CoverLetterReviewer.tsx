@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import UpgradeBanner from '@/components/ui/UpgradeBanner'
 import {
   FileText, Sparkles, Copy, Check, CheckCircle2, XCircle,
   AlertCircle, Zap, Download, Share2, ArrowRight, Target,
@@ -96,6 +97,7 @@ export default function CoverLetterReviewer() {
         body: JSON.stringify({ coverLetter, jobDescription, targetRole, targetTone }),
       })
       const data = await res.json()
+      if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? 'Failed to review.')
       setResult(data)
       setTab('feedback')
@@ -199,11 +201,13 @@ export default function CoverLetterReviewer() {
                 </div>
               </div>
 
-              {error && (
+              {error && (error.startsWith('__PAYWALL__') ? (
+                <UpgradeBanner message={error.slice(11) || undefined} />
+              ) : (
                 <div className="flex items-start gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
                 </div>
-              )}
+              ))}
 
               <button onClick={handleReview} disabled={loading}
                 className="flex items-center justify-center gap-2 w-full bg-purple-600 hover:bg-purple-500 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white font-semibold px-4 py-3.5 rounded-xl transition-all hover:shadow-lg hover:shadow-purple-500/20"

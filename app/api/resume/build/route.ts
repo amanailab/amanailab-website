@@ -62,6 +62,9 @@ export async function POST(req: Request) {
       { status: 429 }
     )
   }
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'resume-build')
+  if (blocked) return blocked
 
   try {
     const body = (await req.json()) as BuildRequest;

@@ -31,6 +31,9 @@ interface PredictResult {
 export async function POST(req: Request) {
   const limited = enforceRateLimit(req, "resume-predict", 5, 60_000);
   if (limited) return limited;
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'resume-match')
+  if (blocked) return blocked
   try {
     const form = await req.formData();
     const file = form.get("file");

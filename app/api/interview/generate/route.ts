@@ -5,6 +5,9 @@ import { enforceRateLimit } from "@/lib/rate-limit";
 export async function POST(req: Request) {
   const limited = enforceRateLimit(req, "interview-generate", 15, 60_000);
   if (limited) return limited;
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'interview')
+  if (blocked) return blocked
   try {
     const { topic, level } = await req.json();
 

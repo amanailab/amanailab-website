@@ -21,6 +21,9 @@ function s(value: unknown): string {
 export async function POST(req: Request) {
   const limited = enforceRateLimit(req, "resume-linkedin", 5, 60_000);
   if (limited) return limited;
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'linkedin')
+  if (blocked) return blocked
   try {
     const body = (await req.json()) as LinkedInRequest;
     const currentRole = s(body.currentRole);

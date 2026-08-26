@@ -1,31 +1,26 @@
 import { NextResponse } from 'next/server'
 import { callAI } from '@/lib/ai-fallback'
+import { getAdminSupabase } from '@/lib/admin'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+const FREE_LIMIT = 5
+const PAID_DAILY = 15
+
 function extractJSON(raw: string): string {
   let s = raw
-
-  // Strip complete <think>...</think> blocks (reasoning model chain-of-thought)
   s = s.replace(/<think>[\s\S]*?<\/think>/gi, '')
-
-  // Strip truncated / unclosed <think> block (model ran out of tokens mid-reasoning)
   const openThink = s.search(/<think>/i)
   if (openThink !== -1) s = s.slice(0, openThink)
-
   s = s.trim()
-
-  // Strip ```json...``` or ```...``` markdown fences
   const fenced = s.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
   if (fenced) {
     const inner = fenced[1].trim()
     if (inner.startsWith('{')) return inner
   }
-
-  // Find the outermost {...} span (skips prose before/after JSON)
   const start = s.indexOf('{')
-  const end = s.lastIndexOf('}')
+  const end   = s.lastIndexOf('}')
   if (start !== -1 && end > start) return s.slice(start, end + 1)
   return s
 }
@@ -59,40 +54,85 @@ function normalizeReview(raw: unknown) {
   const sectionScores: Record<string, number | null> = {}
   const rawSections = (r.sectionScores && typeof r.sectionScores === 'object' ? r.sectionScores : {}) as Record<string, unknown>
   for (const key of SECTION_KEYS) sectionScores[key] = clampScore(rawSections[key])
-
   return {
-    overallScore: clampScore(r.overallScore) ?? 5,
+    overallScore:    clampScore(r.overallScore) ?? 5,
     grade,
-    summary: typeof r.summary === 'string' ? r.summary : 'Review generated, but the summary was incomplete.',
-    strengths: toStringArray(r.strengths),
-    gaps: toStringArray(r.gaps),
+    summary:         typeof r.summary === 'string' ? r.summary : 'Review generated, but the summary was incomplete.',
+    strengths:       toStringArray(r.strengths),
+    gaps:            toStringArray(r.gaps),
     sectionScores,
-    codeQuality: normalizeCodeQuality(r.codeQuality),
-    topSuggestion: typeof r.topSuggestion === 'string' ? r.topSuggestion : 'Add more detail on your trade-offs and bottlenecks.',
+    codeQuality:     normalizeCodeQuality(r.codeQuality),
+    topSuggestion:   typeof r.topSuggestion === 'string' ? r.topSuggestion : 'Add more detail on your trade-offs and bottlenecks.',
     interviewerNote: typeof r.interviewerNote === 'string' ? r.interviewerNote : '',
   }
 }
 
-interface CodeSnippet {
-  name: string
-  language: string
-  code: string
-}
+interface CodeSnippet { name: string; language: string; code: string }
 
 export async function POST(req: Request) {
-  const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
-  const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:sd-review`, 5, 60_000)
-  if (!allowed) {
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
     return NextResponse.json(
-      { error: `Too many requests. Please wait ${retryAfterSec} seconds.` },
-      { status: 429 },
+      { error: 'Sign in to use AI Review.', code: 'AUTH_REQUIRED' },
+      { status: 401 },
     )
   }
 
+  // ── Subscription + usage check ────────────────────────────────────────────
+  const admin = getAdminSupabase()
+
+  const { data: sub } = await admin
+    .from('sd_subscriptions')
+    .select('subscribed_until')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const isSubscribed = !!sub && new Date(sub.subscribed_until) > new Date()
+
+  if (isSubscribed) {
+    // Use IST (UTC+5:30) for daily window — Indian users get midnight IST reset
+    const IST_MS    = 5.5 * 60 * 60 * 1000
+    const nowIst    = new Date(Date.now() + IST_MS)
+    const istStart  = new Date(
+      Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()) - IST_MS,
+    )
+
+    const { count } = await admin
+      .from('sd_review_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('used_at', istStart.toISOString())
+
+    if ((count ?? 0) >= PAID_DAILY) {
+      return NextResponse.json(
+        { error: `You've used all ${PAID_DAILY} AI reviews for today. Resets at midnight IST.`, code: 'DAILY_LIMIT' },
+        { status: 429 },
+      )
+    }
+  } else {
+    const { count } = await admin
+      .from('sd_review_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    if ((count ?? 0) >= FREE_LIMIT) {
+      return NextResponse.json(
+        { error: 'Free review limit reached. Upgrade to Pro for 15 reviews/day.', code: 'PAYWALL' },
+        { status: 402 },
+      )
+    }
+  }
+
+  // ── Parse body ─────────────────────────────────────────────────────────────
   try {
-    const body = await req.json()
-    const problem = typeof body?.problem === 'string' ? body.problem : ''
-    let design = typeof body?.design === 'string' ? body.design : ''
+    const body        = await req.json()
+    const slug        = typeof body?.slug    === 'string' ? body.slug    : ''
+    const problem     = typeof body?.problem === 'string' ? body.problem : ''
+    let   design      = typeof body?.design  === 'string' ? body.design  : ''
     const codeSnippets: CodeSnippet[] = Array.isArray(body?.codeSnippets)
       ? body.codeSnippets.filter(
           (s: unknown) => s && typeof s === 'object' && typeof (s as CodeSnippet).code === 'string' && (s as CodeSnippet).code.trim().length > 0,
@@ -103,12 +143,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Problem and design are required.' }, { status: 400 })
     }
     if (design.trim().length < 100) {
-      return NextResponse.json({ error: 'Design answer is too short. Please write more detail before requesting a review.' }, { status: 400 })
+      return NextResponse.json({ error: 'Design answer is too short. Write more before requesting a review.' }, { status: 400 })
     }
 
-    // Trim aggressively to avoid Groq 413 Payload Too Large (≈ 6K token limit)
     const MAX_PROBLEM_CHARS = 1_500
-    const MAX_DESIGN_CHARS  = 5_000
+    const MAX_DESIGN_CHARS  = 8_000
     const MAX_CODE_CHARS    = 1_500
     const trimmedProblem = problem.length > MAX_PROBLEM_CHARS ? problem.slice(0, MAX_PROBLEM_CHARS) + '…' : problem
     if (design.length > MAX_DESIGN_CHARS) design = design.slice(0, MAX_DESIGN_CHARS)
@@ -154,7 +193,7 @@ Return JSON only:
         },
       ],
       temperature: 0.3,
-      max_tokens: 1200,
+      max_tokens:  1200,
     })
 
     let parsed: unknown
@@ -162,9 +201,16 @@ Return JSON only:
       const cleaned = extractJSON(typeof raw === 'string' ? raw : JSON.stringify(raw))
       parsed = JSON.parse(cleaned)
     } catch {
-      console.error('[system-design/review] JSON parse failed. Raw response:', raw?.slice?.(0, 300))
+      console.error('[system-design/review] JSON parse failed. Raw:', raw?.slice?.(0, 300))
       return NextResponse.json({ error: 'Failed to parse AI review. Please try again.' }, { status: 500 })
     }
+
+    // ── Log usage ────────────────────────────────────────────────────────────
+    void admin.from('sd_review_usage').insert({
+      user_id:      user.id,
+      problem_slug: slug,
+      used_at:      new Date().toISOString(),
+    })
 
     return NextResponse.json({ review: normalizeReview(parsed) })
   } catch (err) {
