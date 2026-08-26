@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import type { Note, NotePackage } from '@/lib/notes-data'
 import PdfPreview from '@/components/notes/PdfPreview'
+import LoginPromptModal from '@/components/ui/LoginPromptModal'
 
 interface RazorpayFailure {
   error?: { description?: string; reason?: string; code?: string }
@@ -36,18 +37,20 @@ type ModalState =
   | { type: 'download-pkg'; pkg: NotePackage; items: DownloadItem[] }
 
 export default function NotesClient({
-  notes, allNotes, packages,
+  notes, allNotes, packages, isAuthenticated,
 }: {
   notes: Note[]
   allNotes: Note[]
   packages: NotePackage[]
+  isAuthenticated: boolean
 }) {
-  const [filter, setFilter]       = useState('All')
-  const [modal, setModal]         = useState<ModalState>({ type: 'none' })
-  const [codeInput, setCodeInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError]         = useState('')
-  const [rzpReady, setRzpReady]   = useState(false)
+  const [filter, setFilter]         = useState('All')
+  const [modal, setModal]           = useState<ModalState>({ type: 'none' })
+  const [codeInput, setCodeInput]   = useState('')
+  const [isLoading, setIsLoading]   = useState(false)
+  const [error, setError]           = useState('')
+  const [rzpReady, setRzpReady]     = useState(false)
+  const [showLoginModal, setShowLoginModal] = useState(false)
   const isBuying         = useRef(false)
   const paymentSucceeded = useRef(false)
 
@@ -74,8 +77,8 @@ export default function NotesClient({
 
   function openPreview(note: Note)           { setModal({ type: 'preview',  note }); setError('') }
   function openCode(note: Note)              { setModal({ type: 'code',     note }); setCodeInput(''); setError('') }
-  function openPay(note: Note)               { setModal({ type: 'pay',      note }); setError('') }
-  function openPackagePay(pkg: NotePackage)  { setModal({ type: 'pay-pkg',  pkg  }); setError('') }
+  function openPay(note: Note)               { if (!isAuthenticated) { setShowLoginModal(true); return } setModal({ type: 'pay', note }); setError('') }
+  function openPackagePay(pkg: NotePackage)  { if (!isAuthenticated) { setShowLoginModal(true); return } setModal({ type: 'pay-pkg', pkg }); setError('') }
   function openPackageCode(pkg: NotePackage) { setModal({ type: 'code-pkg', pkg  }); setCodeInput(''); setError('') }
 
   async function verifyCode(note: Note) {
@@ -224,6 +227,12 @@ export default function NotesClient({
 
   return (
     <div className="min-h-screen">
+      <LoginPromptModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        feature="purchase notes"
+        returnPath="/notes"
+      />
 
       {/* ════════════════ HERO ════════════════ */}
       <section className="relative pt-10 pb-6 px-4 overflow-hidden">
@@ -263,7 +272,7 @@ export default function NotesClient({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-zinc-300">Non-Member</p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">Pay once · instant download · no login</p>
+                  <p className="text-[10px] text-zinc-600 mt-0.5">Free account required · pay once · instant download</p>
                 </div>
                 <span className="text-[10px] font-black text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">from ₹{minPrice}</span>
               </div>
