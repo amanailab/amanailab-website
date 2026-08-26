@@ -133,21 +133,29 @@ export default function HeroSection() {
           Free forever · No credit card · Free account unlocks all tools in 30 seconds
         </motion.p>
 
-        {/* Tech pills */}
+        {/* Tech pills — infinite marquee */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.7 }}
-          className="flex flex-wrap justify-center gap-2.5 mt-16"
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="relative mt-14 overflow-hidden"
         >
-          {techPills.map((tech) => (
-            <span
-              key={tech}
-              className="bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 text-xs px-3 py-1.5 rounded-full select-none cursor-default"
-            >
-              {tech}
-            </span>
-          ))}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-zinc-950 to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-zinc-950 to-transparent z-10" />
+          <motion.div
+            className="flex gap-3 w-max"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ repeat: Infinity, duration: 26, ease: "linear" }}
+          >
+            {[...techPills, ...techPills].map((tech, i) => (
+              <span
+                key={i}
+                className="bg-zinc-800/60 border border-zinc-700/50 text-zinc-400 text-xs px-3.5 py-1.5 rounded-full whitespace-nowrap select-none"
+              >
+                {tech}
+              </span>
+            ))}
+          </motion.div>
         </motion.div>
       </div>
 
