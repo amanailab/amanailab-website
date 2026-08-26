@@ -130,7 +130,7 @@ export default function HeroSection() {
           transition={{ duration: 0.5, delay: 0.5 }}
           className="mt-4 text-xs text-zinc-600"
         >
-          No account required · 100% free · No credit card
+          Free forever · No credit card · Free account unlocks all tools in 30 seconds
         </motion.p>
 
         {/* Tech pills */}

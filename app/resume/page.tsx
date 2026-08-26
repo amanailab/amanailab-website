@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LogIn } from "lucide-react";
+import { LogIn, BrainCircuit, PenLine, Target } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import ResumeAnalyzer from "@/components/resume/ResumeAnalyzer";
 
@@ -69,6 +69,27 @@ export default async function ResumePage() {
           </div>
         )}
         <ResumeAnalyzer />
+
+        {/* Cross-tool suggestions */}
+        <div className="max-w-4xl mx-auto px-4 pb-16">
+          <p className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">Also in your prep toolkit</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              { href: '/interview?tab=simulator', icon: <BrainCircuit size={13} className="text-violet-400" />, label: 'AI Mock Interview',   desc: 'Practice the verbal side — scored 0–10 with feedback' },
+              { href: '/system-design',           icon: <PenLine size={13} className="text-blue-400" />,        label: 'System Design',        desc: 'Write and get AI review on ML design answers' },
+              { href: '/skill-gap',               icon: <Target size={13} className="text-orange-400" />,       label: 'Skill Gap Analyzer',   desc: 'Paste a JD — see exactly what you\'re missing' },
+            ].map(({ href, icon, label, desc }) => (
+              <Link key={label} href={href}
+                className="group flex items-start gap-3 bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl px-4 py-3.5 transition-all">
+                <div className="mt-0.5 shrink-0">{icon}</div>
+                <div>
+                  <p className="text-xs font-semibold text-zinc-300 group-hover:text-zinc-100 transition-colors">{label}</p>
+                  <p className="text-[11px] text-zinc-600 mt-0.5 leading-snug">{desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
     </>
   );
