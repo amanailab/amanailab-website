@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
 import { SITE_STATS } from '@/lib/site-stats'
-import { PenLine, Clock, Building2, Sparkles, ListChecks, Cpu } from 'lucide-react'
+import { PenLine, Clock, Building2, Sparkles, ListChecks, Cpu, LogIn } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
 import SystemDesignClient, { type SDItem } from './SystemDesignClient'
 
 export const metadata: Metadata = {
@@ -28,7 +30,10 @@ const HOW = [
   { icon: <Sparkles size={16} />,   title: 'Get AI review',      desc: 'Scores 5 sections + interviewer note',     color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
 ]
 
-export default function SystemDesignPage() {
+export default async function SystemDesignPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   const items: SDItem[] = SYSTEM_DESIGN_PROBLEMS.map(p => ({
     slug: p.slug, title: p.title, difficulty: p.difficulty, companies: p.companies, category: p.category,
   }))
@@ -53,6 +58,22 @@ export default function SystemDesignPage() {
             </p>
           </div>
         </div>
+
+        {/* ── Login notice for guests ───────────────────────────────── */}
+        {!user && (
+          <div className="flex items-center justify-between gap-4 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 mb-6">
+            <div className="flex items-center gap-3 min-w-0">
+              <LogIn size={15} className="text-orange-400 shrink-0" />
+              <p className="text-sm text-zinc-400 truncate">
+                <span className="text-zinc-200 font-semibold">Free account required</span> — sign up in 10 seconds to access the editor, save progress, and get AI reviews.
+              </p>
+            </div>
+            <Link href="/login?next=/system-design"
+              className="shrink-0 flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+              Sign in free
+            </Link>
+          </div>
+        )}
 
         {/* ── How it works ──────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">

@@ -351,7 +351,7 @@ export default function Navbar() {
             {/* Get Pro CTA */}
             <Link
               href="/upgrade"
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-bold transition-all hover:text-orange-300"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold transition-all shadow-sm shadow-orange-500/30 hover:shadow-orange-500/50"
             >
               <Crown className="w-3 h-3" /> Get Pro
             </Link>
@@ -587,7 +587,7 @@ export default function Navbar() {
               )}
 
               <Link href="/upgrade"
-                className="flex items-center justify-center gap-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 text-sm font-bold px-4 py-3 rounded-xl transition-colors">
+                className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold px-4 py-3 rounded-xl transition-colors shadow-sm shadow-orange-500/30">
                 <Crown className="w-4 h-4" /> Get Pro — from ₹799
               </Link>
 

@@ -108,7 +108,7 @@ function ArchNodeComponent({ id, data, selected }: NodeProps<ArchNode>) {
       <Handle id="r" type="source" position={Position.Right}  className={handleClass} />
 
       <div className="flex items-center gap-2">
-        <span className="text-lg leading-none flex-shrink-0">{data.icon}</span>
+        <span className="text-sm leading-none flex-shrink-0">{data.icon}</span>
         <div className="min-w-0 flex-1">
           {editing ? (
             <input
