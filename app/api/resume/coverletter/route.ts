@@ -20,6 +20,11 @@ const IMAGE_PDF_MESSAGE =
   "Your PDF appears to be image-based or scanned. Please paste your resume text instead, or use a text-based PDF resume.";
 
 export async function POST(req: Request) {
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Sign in to use this tool.' }, { status: 401 })
+
   const limited = enforceRateLimit(req, "resume-coverletter", 5, 60_000);
   if (limited) return limited;
   const { enforceDailyAllowance } = await import('@/lib/daily-allowance')

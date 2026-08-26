@@ -53,6 +53,11 @@ function s(value: unknown): string {
 }
 
 export async function POST(req: Request) {
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Sign in to use this tool.' }, { status: 401 })
+
   // Rate limit: 3 builds per 2 minutes per IP
   const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
   const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:resume-build`, 3, 120_000)

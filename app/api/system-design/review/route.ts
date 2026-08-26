@@ -5,7 +5,7 @@ import { getAdminSupabase } from '@/lib/admin'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const FREE_LIMIT = 5
+const FREE_LIMIT = 2
 const PAID_DAILY = 15
 
 function extractJSON(raw: string): string {

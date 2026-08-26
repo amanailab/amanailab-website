@@ -41,6 +41,11 @@ interface AnalysisResult {
 
 
 export async function POST(req: Request) {
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Sign in to use this tool.' }, { status: 401 })
+
   // Rate limit: 5 analyses per minute per IP
   const { checkRateLimit, getClientIp } = await import('@/lib/rate-limit')
   const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:resume`, 5, 60_000)

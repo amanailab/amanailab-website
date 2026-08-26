@@ -9,7 +9,6 @@ import {
   ListChecks, Cpu, Lightbulb, Target, Award, Bold, Heading2, Heading3,
   List, Minus, Plus, Code2, ChevronRight, ChevronLeft, GripVertical,
   Trophy, Hash, Maximize2, Crown, LogIn, ShieldCheck, Zap, Star, FileText, Briefcase,
-  Users, Share2, CheckCircle2, Clock,
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
@@ -37,7 +36,7 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 // ── Types ──────────────────────────────────────────────────────────────────────
 type MobilePane = 'problem' | 'canvas' | 'answer'
 type RightTab   = 'write' | 'code' | 'preview'
-type LeftTab    = 'problem' | 'framework' | 'components' | 'community'
+type LeftTab    = 'problem' | 'framework' | 'components'
 type CodeLang   = 'sql' | 'python' | 'typescript' | 'yaml' | 'plaintext'
 
 interface CodeSnippet { id: string; name: string; language: CodeLang; code: string }
@@ -56,14 +55,6 @@ interface ReviewResult {
 
 type PlanType = 'free' | 'sd_pro' | 'full_bundle'
 
-interface CommunityAnswer {
-  id: string
-  design_text: string
-  score: number
-  grade: 'A' | 'B'
-  upvotes: number
-  created_at: string
-}
 
 interface ProStatus {
   authenticated: boolean
@@ -294,12 +285,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [purchasing, setPurchasing]       = useState(false)
   const [selectedPlan, setSelectedPlan]   = useState<'sd_pro' | 'full_bundle'>('full_bundle')
 
-  // ── Community state ────────────────────────────────────────────────────────
-  const [communityAnswers, setCommunityAnswers] = useState<CommunityAnswer[]>([])
-  const [communityLoading, setCommunityLoading] = useState(false)
-  const [sharing, setSharing]                   = useState(false)
-  const [shared, setShared]                     = useState(false)
-  const [selectedAnswer, setSelectedAnswer]     = useState<CommunityAnswer | null>(null)
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null)
   const saveTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -522,31 +507,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
   }
 
-  // ── Community ─────────────────────────────────────────────────────────────
-  const loadCommunity = useCallback(async () => {
-    setCommunityLoading(true)
-    try {
-      const res = await fetch(`/api/sd/community?slug=${problem.slug}`)
-      const data = await res.json()
-      setCommunityAnswers(data.answers ?? [])
-    } catch {}
-    finally { setCommunityLoading(false) }
-  }, [problem.slug])
-
-  const handleShare = useCallback(async () => {
-    if (!review || !['A','B'].includes(review.grade)) return
-    setSharing(true)
-    try {
-      const res = await fetch('/api/sd/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug: problem.slug, design_text: design, score: review.overallScore, grade: review.grade }),
-      })
-      if (res.ok) { setShared(true); loadCommunity() }
-    } catch {}
-    finally { setSharing(false) }
-  }, [review, design, problem.slug, loadCommunity])
-
   // ── AI review ─────────────────────────────────────────────────────────────
   const handleReview = async () => {
     const { snippets: snips } = snap.current
@@ -767,9 +727,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               { id: 'problem'    as LeftTab, icon: <ListChecks size={12} />, label: 'Problem'   },
               { id: 'framework'  as LeftTab, icon: <BookOpen size={12} />,   label: 'Framework' },
               { id: 'components' as LeftTab, icon: <Cpu size={12} />,        label: 'Snippets'  },
-              { id: 'community'  as LeftTab, icon: <Users size={12} />,      label: 'Community' },
             ]).map(t => (
-              <button key={t.id} onClick={() => { setLeftTab(t.id); if (t.id === 'community') loadCommunity() }}
+              <button key={t.id} onClick={() => setLeftTab(t.id)}
                 className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
                   leftTab === t.id ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'
                 }`}>
@@ -918,55 +877,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               </div>
             )}
 
-            {/* ─── COMMUNITY TAB ─── */}
-            {leftTab === 'community' && (
-              <div className="space-y-3">
-                <div className="px-0.5">
-                  <p className="text-[10px] text-zinc-400 font-semibold">Top Community Answers</p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5 leading-snug">Real A &amp; B grade answers from other users. Learn what a strong answer looks like.</p>
-                </div>
-
-                {communityLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 size={18} className="animate-spin text-zinc-600" />
-                  </div>
-                ) : communityAnswers.length === 0 ? (
-                  <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-6 text-center">
-                    <Users size={20} className="text-zinc-700 mx-auto mb-2" />
-                    <p className="text-[11px] text-zinc-500 font-semibold">No shared answers yet</p>
-                    <p className="text-[10px] text-zinc-600 mt-1 leading-snug">Be the first — get an A or B grade and share your answer to help others.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {communityAnswers.map((ans, i) => (
-                      <button key={ans.id} onClick={() => setSelectedAnswer(ans)}
-                        className="w-full bg-zinc-900/60 border border-zinc-800 hover:border-zinc-600 rounded-xl p-3 text-left transition-all group">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ans.grade === 'A' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25' : 'text-blue-400 bg-blue-500/10 border-blue-500/25'}`}>
-                            Grade {ans.grade}
-                          </span>
-                          <span className="text-[10px] text-zinc-600 font-mono">{ans.score}/10</span>
-                          <span className="ml-auto text-[10px] text-zinc-700">#{i + 1}</span>
-                        </div>
-                        <p className="text-[11px] text-zinc-400 leading-snug line-clamp-3 group-hover:text-zinc-300 transition-colors">
-                          {ans.design_text.slice(0, 200).replace(/#+\s/g, '').replace(/\*\*/g, '')}…
-                        </p>
-                        <div className="flex items-center gap-1.5 mt-2 text-[10px] text-zinc-600">
-                          <Clock size={9} />
-                          {new Date(ans.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
-                          <span className="ml-auto text-orange-400/60 font-semibold group-hover:text-orange-400 transition-colors">Read full →</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                <button onClick={loadCommunity} disabled={communityLoading}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 text-[10px] font-semibold transition-all disabled:opacity-40">
-                  <RefreshCw size={10} className={communityLoading ? 'animate-spin' : ''} /> Refresh
-                </button>
-              </div>
-            )}
           </div>
         </aside>
 
@@ -1327,60 +1237,12 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   {reviewing ? 'Reviewing…' : 'Re-run Review'}
                 </button>
 
-                {/* Share with community — only for A/B grade */}
-                {review && ['A','B'].includes(review.grade) && (
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                      <Users size={11} className="text-emerald-400" /> Share with Community
-                    </p>
-                    <p className="text-[11px] text-zinc-500 mb-3 leading-snug">
-                      Your Grade {review.grade} answer can help others learn. Share anonymously — no name, no email shown.
-                    </p>
-                    {shared ? (
-                      <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold py-1.5">
-                        <CheckCircle2 size={14} /> Shared! Others can now learn from your answer.
-                      </div>
-                    ) : (
-                      <button onClick={handleShare} disabled={sharing}
-                        className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold transition-all disabled:opacity-50">
-                        {sharing ? <Loader2 size={12} className="animate-spin" /> : <Share2 size={12} />}
-                        {sharing ? 'Sharing…' : 'Share my answer anonymously'}
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           </aside>
         </>
       )}
 
-      {/* ═══ COMMUNITY ANSWER READER ════════════════════════════════════════ */}
-      {selectedAnswer && (
-        <>
-          <div onClick={() => setSelectedAnswer(null)} className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl max-h-[88vh] flex flex-col bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${selectedAnswer.grade === 'A' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/25' : 'text-blue-400 bg-blue-500/10 border-blue-500/25'}`}>
-                  Grade {selectedAnswer.grade} · {selectedAnswer.score}/10
-                </span>
-                <span className="text-xs text-zinc-600">Community answer — anonymous</span>
-              </div>
-              <button onClick={() => setSelectedAnswer(null)} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors">
-                <X size={15} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <div className="px-6 py-5 prose-custom" dangerouslySetInnerHTML={{ __html: mdToHtml(selectedAnswer.design_text) }} />
-            </div>
-            <div className="px-5 py-3 border-t border-zinc-800 flex-shrink-0 flex items-center gap-3">
-              <p className="text-[10px] text-zinc-600 flex-1">This is a real answer that earned Grade {selectedAnswer.grade}. Use it as inspiration, not a copy-paste.</p>
-              <button onClick={() => setSelectedAnswer(null)} className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors">Close</button>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* ═══ PAYWALL MODAL ══════════════════════════════════════════════════ */}
       {showPaywall && (
@@ -1399,7 +1261,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-zinc-100">Unlock AI Reviews</p>
-                  <p className="text-[11px] text-zinc-500">You&apos;ve used all 5 free reviews — pick a plan to continue</p>
+                  <p className="text-[11px] text-zinc-500">You&apos;ve used all 2 free reviews — pick a plan to continue</p>
                 </div>
                 <button onClick={() => setShowPaywall(false)} className="ml-auto text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0">
                   <X size={16} />

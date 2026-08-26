@@ -29,6 +29,11 @@ interface PredictResult {
 }
 
 export async function POST(req: Request) {
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Sign in to use this tool.' }, { status: 401 })
+
   const limited = enforceRateLimit(req, "resume-predict", 5, 60_000);
   if (limited) return limited;
   const { enforceDailyAllowance } = await import('@/lib/daily-allowance')

@@ -823,6 +823,11 @@ function BuilderForm(props: BuilderFormProps) {
 
       {error && (error.startsWith('__PAYWALL__') ? (
         <UpgradeBanner message={error.slice(11) || undefined} />
+      ) : error === '__LOGIN__' ? (
+        <div className="flex items-center justify-between gap-4 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3">
+          <p className="text-sm text-zinc-400"><span className="text-zinc-200 font-semibold">Sign in required</span> — create a free account to use resume tools.</p>
+          <Link href="/login?next=/resume" className="shrink-0 flex items-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">Sign in free</Link>
+        </div>
       ) : (
         <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3">
           <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -969,6 +974,7 @@ export default function ResumeAnalyzer() {
 
       const res = await fetch("/api/resume/analyze", { method: "POST", body: fd });
       const data = await res.json();
+      if (res.status === 401) { setError('__LOGIN__'); return }
       if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to analyze resume.");
 
@@ -994,6 +1000,7 @@ export default function ResumeAnalyzer() {
 
       const res = await fetch("/api/resume/match", { method: "POST", body: fd });
       const data = await res.json();
+      if (res.status === 401) { setError('__LOGIN__'); return }
       if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to match resume.");
 
@@ -1022,6 +1029,7 @@ export default function ResumeAnalyzer() {
 
       const res = await fetch("/api/resume/coverletter", { method: "POST", body: fd });
       const data = await res.json();
+      if (res.status === 401) { setError('__LOGIN__'); return }
       if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to generate cover letter.");
 
@@ -1457,6 +1465,7 @@ export default function ResumeAnalyzer() {
         body: JSON.stringify(builder),
       });
       const data = await res.json();
+      if (res.status === 401) { setError('__LOGIN__'); return }
       if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to generate resume.");
 
@@ -1531,6 +1540,7 @@ export default function ResumeAnalyzer() {
         body: JSON.stringify(linkedIn),
       });
       const data = await res.json();
+      if (res.status === 401) { setError('__LOGIN__'); return }
       if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to generate LinkedIn summary.");
 
@@ -1577,6 +1587,7 @@ export default function ResumeAnalyzer() {
 
       const res = await fetch("/api/resume/predict", { method: "POST", body: fd });
       const data = await res.json();
+      if (res.status === 401) { setError('__LOGIN__'); return }
       if (res.status === 402) { setError('__PAYWALL__' + (data.error ?? '')); return }
       if (!res.ok) throw new Error(data.error ?? "Failed to predict questions.");
 
