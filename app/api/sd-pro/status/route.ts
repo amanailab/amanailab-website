@@ -4,7 +4,7 @@ import { getAdminSupabase } from '@/lib/admin'
 
 export const runtime = 'nodejs'
 
-const FREE_LIMIT = 5
+const FREE_LIMIT = 2
 const PAID_DAILY = 15
 
 export async function GET() {

@@ -57,6 +57,7 @@ export async function POST(req: Request) {
     }
 
     void admin.from('orders').insert({
+      user_id:             user.id,
       type:                plan,
       item_id:             `${plan}-30d`,
       item_title:          meta.title,

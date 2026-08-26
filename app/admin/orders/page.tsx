@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
-import { Loader2, RefreshCw, Package, FileText, IndianRupee, Mail, Phone, Crown, Zap } from 'lucide-react'
+import { Loader2, RefreshCw, Package, FileText, IndianRupee, Mail, Crown, Zap } from 'lucide-react'
 
 interface Order {
   id: string
+  user_id: string | null
   type: 'note' | 'package' | 'sd_pro' | 'full_bundle'
   item_id: string
   item_title: string
@@ -114,7 +115,7 @@ export default function AdminOrdersPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-zinc-800">
-                      {['Date', 'Type', 'Via', 'Item', 'Amount', 'Customer', 'Contact', 'Payment ID'].map(h => (
+                      {['Date', 'Type', 'Via', 'Item', 'Amount', 'Customer', 'User ID', 'Payment ID'].map(h => (
                         <th key={h} className="px-4 py-3 text-left text-[10px] font-black text-zinc-500 uppercase tracking-wider whitespace-nowrap">
                           {h}
                         </th>
@@ -173,11 +174,9 @@ export default function AdminOrdersPage() {
                             <span className="text-xs text-zinc-700">—</span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
-                          {order.customer_contact ? (
-                            <span className="flex items-center gap-1 text-[11px] text-zinc-500">
-                              <Phone className="w-2.5 h-2.5 shrink-0" /> {order.customer_contact}
-                            </span>
+                        <td className="px-4 py-3 max-w-[140px]">
+                          {order.user_id ? (
+                            <span className="text-[10px] font-mono text-zinc-600 select-all truncate block">{order.user_id.slice(0, 16)}…</span>
                           ) : (
                             <span className="text-xs text-zinc-700">—</span>
                           )}

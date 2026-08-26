@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Crown, Star, Zap, ShieldCheck, RefreshCw, Sparkles,
   FileText, Briefcase, Loader2, CheckCircle, ArrowLeft,
-  CalendarDays, Lock,
+  CalendarDays, Lock, LogIn,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 
@@ -165,7 +165,7 @@ export default function UpgradePage() {
         </Link>
 
         {/* Hero */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs font-semibold mb-4">
             <Crown size={12} /> AI-Powered Interview Prep
           </div>
@@ -176,6 +176,38 @@ export default function UpgradePage() {
             One-time payment. 30 days of unlimited AI feedback. No subscriptions, no auto-renewals.
           </p>
         </div>
+
+        {/* ── Guest auth gate — shown BEFORE plans ─────────────────────── */}
+        {!loading && !status?.authenticated && (
+          <div className="mb-10 rounded-2xl border border-orange-500/30 bg-orange-500/5 p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+              <div className="w-12 h-12 rounded-xl bg-orange-500/15 border border-orange-500/25 flex items-center justify-center shrink-0">
+                <LogIn size={20} className="text-orange-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-bold text-zinc-100 mb-1">Sign in to purchase a plan</p>
+                <p className="text-sm text-zinc-400 leading-relaxed">
+                  A free account is required to buy — so your subscription is linked to you and activates instantly after payment. Takes 30 seconds.
+                </p>
+                <div className="flex flex-wrap items-center gap-3 mt-3 text-[11px] text-zinc-500">
+                  <span className="flex items-center gap-1"><ShieldCheck size={11} className="text-emerald-400" /> Payment linked to your account</span>
+                  <span className="flex items-center gap-1"><CheckCircle size={11} className="text-emerald-400" /> Activates instantly after payment</span>
+                  <span className="flex items-center gap-1"><Lock size={11} className="text-zinc-600" /> No card stored — handled by Razorpay</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+                <Link href="/signup?next=/upgrade"
+                  className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-all hover:shadow-lg hover:shadow-orange-500/25">
+                  Create free account
+                </Link>
+                <Link href="/login?next=/upgrade"
+                  className="flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all">
+                  Sign in
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Active subscription banner */}
         {!loading && status?.isSubscribed && (
@@ -326,17 +358,6 @@ export default function UpgradePage() {
           <span>Secure payment via Razorpay · Instant activation · No hidden charges</span>
         </div>
 
-        {!status?.authenticated && !loading && (
-          <p className="text-center text-xs text-zinc-600 mt-3">
-            <Link href="/login?next=/upgrade" className="text-orange-400 hover:text-orange-300 font-semibold">
-              Sign in
-            </Link>{' '}or{' '}
-            <Link href="/signup?next=/upgrade" className="text-orange-400 hover:text-orange-300 font-semibold">
-              create a free account
-            </Link>{' '}
-            to purchase a plan.
-          </p>
-        )}
 
         {/* FAQ */}
         <div className="mt-16 border-t border-zinc-800 pt-12">
