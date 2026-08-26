@@ -9,11 +9,6 @@ export async function POST(req: Request) {
   const rl = checkRateLimit(`pkg-order:${ip}`, 10, 60_000)
   if (!rl.allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
 
-  const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Sign in to purchase.' }, { status: 401 })
-
   try {
     const { packageId } = await req.json()
     if (!packageId) return NextResponse.json({ error: 'Missing packageId.' }, { status: 400 })

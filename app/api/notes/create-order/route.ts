@@ -11,11 +11,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
   }
 
-  const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Sign in to purchase.' }, { status: 401 })
-
   try {
     const { noteId } = await req.json()
     if (!noteId) return NextResponse.json({ error: 'Missing noteId.' }, { status: 400 })

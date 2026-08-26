@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { getAdminSupabase } from '@/lib/admin'
-import { createClient } from '@/lib/supabase/server'
 import type { Note, NotePackage } from '@/lib/notes-data'
 import NotesClient from './NotesClient'
 
@@ -68,13 +67,10 @@ async function getPackages(): Promise<NotePackage[]> {
 }
 
 export default async function NotesPage() {
-  const [notes, allNotes, packages, supabase] = await Promise.all([
-    getNotes(), getAllNotes(), getPackages(), createClient(),
-  ])
-  const { data: { user } } = await supabase.auth.getUser()
+  const [notes, allNotes, packages] = await Promise.all([getNotes(), getAllNotes(), getPackages()])
   return (
     <div className="pt-20">
-      <NotesClient notes={notes} allNotes={allNotes} packages={packages} isAuthenticated={!!user} />
+      <NotesClient notes={notes} allNotes={allNotes} packages={packages} />
     </div>
   )
 }

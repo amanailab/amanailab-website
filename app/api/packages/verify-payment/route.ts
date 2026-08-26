@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
 import { getAdminSupabase } from '@/lib/admin'
-import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
@@ -10,10 +9,6 @@ export async function POST(req: Request) {
   const ip = getClientIp(req)
   const rl = checkRateLimit(`pkg-verify:${ip}`, 10, 60_000)
   if (!rl.allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
-
-  const supabaseAuth = await createClient()
-  const { data: { user } } = await supabaseAuth.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Sign in to purchase.' }, { status: 401 })
 
   try {
     const { packageId, paymentId, orderId, signature } = await req.json()
@@ -93,14 +88,13 @@ export async function POST(req: Request) {
 
     // Step 5: Save order (non-blocking, best-effort)
     void supabase.from('orders').insert({
-      user_id:              user.id,
       type:                 'package',
       item_id:              pkg.id,
       item_title:           pkg.title,
       amount:               amountPaise,
       razorpay_payment_id:  paymentId,
       razorpay_order_id:    orderId,
-      customer_email:       customerEmail   || user.email || null,
+      customer_email:       customerEmail   || null,
       customer_name:        customerName    || null,
       customer_contact:     customerContact || null,
       status:               'completed',
