@@ -13,6 +13,7 @@ import {
 import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
 import { DESIGN_TEMPLATE } from '@/lib/system-design-problems'
+import LoginPromptModal from '@/components/ui/LoginPromptModal'
 
 // ── Dynamic imports ────────────────────────────────────────────────────────────
 const SystemCanvas = dynamic(() => import('./SystemCanvas'), {
@@ -1359,38 +1360,12 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       )}
 
       {/* ═══ LOGIN PROMPT MODAL ══════════════════════════════════════════════ */}
-      {showLoginPrompt && (
-        <>
-          <div onClick={() => setShowLoginPrompt(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40" />
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-blue-500 to-violet-500" />
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-                  <LogIn size={18} className="text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-zinc-100">Sign in to use AI Review</p>
-                  <p className="text-[11px] text-zinc-500">Get 5 free reviews just for signing in</p>
-                </div>
-                <button onClick={() => setShowLoginPrompt(false)} className="ml-auto text-zinc-600 hover:text-zinc-300 flex-shrink-0"><X size={16} /></button>
-              </div>
-
-              <div className="space-y-2 mb-5 text-[12.5px] text-zinc-400">
-                <div className="flex items-center gap-2"><CheckCircle size={12} className="text-blue-400 flex-shrink-0" /><span>5 free AI Reviews on sign-up</span></div>
-                <div className="flex items-center gap-2"><CheckCircle size={12} className="text-blue-400 flex-shrink-0" /><span>Your progress saved to your account</span></div>
-                <div className="flex items-center gap-2"><CheckCircle size={12} className="text-blue-400 flex-shrink-0" /><span>All tools still free without sign-in</span></div>
-              </div>
-
-              <Link href="/login" onClick={() => setShowLoginPrompt(false)}
-                className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all flex items-center justify-center gap-2">
-                <LogIn size={15} />Sign in / Create account
-              </Link>
-              <p className="text-center text-[10px] text-zinc-600 mt-3">Free · No credit card required</p>
-            </div>
-          </div>
-        </>
-      )}
+      <LoginPromptModal
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        feature="use AI Review"
+        returnPath={`/system-design/${problem.slug}`}
+      />
 
       {/* Error toast */}
       {reviewError && (
