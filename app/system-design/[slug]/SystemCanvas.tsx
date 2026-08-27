@@ -98,7 +98,7 @@ function ArchNodeComponent({ id, data, selected }: NodeProps<ArchNode>) {
   return (
     <div
       onDoubleClick={() => { setValue(data.label); setEditing(true) }}
-      className={`group relative rounded-xl border ${c.bg} px-3 py-2.5 shadow-lg min-w-[130px] max-w-[200px] transition-all cursor-default ${c.border} ${
+      className={`group relative rounded-xl border ${c.bg} px-2.5 py-2 shadow-lg min-w-[96px] max-w-[148px] transition-all cursor-default ${c.border} ${
         selected ? `ring-2 ${c.ring} shadow-xl` : 'hover:shadow-xl'
       }`}
     >

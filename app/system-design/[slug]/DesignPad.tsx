@@ -73,6 +73,7 @@ const STORAGE_PREFIX    = 'sd_design_v2_'
 const CANVAS_PREFIX     = 'sd_canvas_v1_'
 const CODE_PREFIX       = 'sd_code_v1_'
 const COMPLETION_PREFIX = 'sd_best_v1_'
+const HISTORY_PREFIX    = 'sd_history_v2_'
 
 const CODE_LANGS: { id: CodeLang; label: string }[] = [
   { id: 'sql',        label: 'SQL'        },
@@ -277,6 +278,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   const [hintsRevealed, setHintsRevealed] = useState(0)
   const [bestScore, setBestScore] = useState<{ score: number; grade: string } | null>(null)
+  const [scoreHistory, setScoreHistory] = useState<{ score: number; grade: string; ts: number }[]>([])
+  const [showExpert, setShowExpert]     = useState(false)
   const [problemExpanded, setProblemExpanded] = useState(false)
 
   // ── Pro state ──────────────────────────────────────────────────────────────
@@ -303,6 +306,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const canvasKey     = CANVAS_PREFIX     + problem.slug
   const codeKey       = CODE_PREFIX       + problem.slug
   const completionKey = COMPLETION_PREFIX + problem.slug
+  const historyKey    = HISTORY_PREFIX    + problem.slug
 
   // ── Fetch pro status on mount ─────────────────────────────────────────────
   useEffect(() => {
@@ -418,7 +422,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     } catch {}
 
     try { const raw = localStorage.getItem(completionKey); if (raw) setBestScore(JSON.parse(raw)) } catch {}
-  }, [storageKey, codeKey, canvasKey, completionKey])
+    try { const raw = localStorage.getItem(historyKey);    if (raw) setScoreHistory(JSON.parse(raw)) } catch {}
+  }, [storageKey, codeKey, canvasKey, completionKey, historyKey])
 
   // ── Timer tick ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -550,6 +555,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         setBestScore(next)
         try { localStorage.setItem(completionKey, JSON.stringify(next)) } catch {}
       }
+      const entry      = { score: data.review.overallScore, grade: data.review.grade, ts: Date.now() }
+      const nextHistory = [...scoreHistory, entry].slice(-5)
+      setScoreHistory(nextHistory)
+      try { localStorage.setItem(historyKey, JSON.stringify(nextHistory)) } catch {}
     } catch (e: unknown) {
       setReviewError((e instanceof Error ? e.message : '') || 'Review failed. Try again.')
     } finally { setReviewing(false) }
@@ -1159,6 +1168,25 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 </div>
               </div>
 
+              {/* Score history */}
+              {scoreHistory.length > 1 && (
+                <div className="px-5 py-3 border-b border-zinc-800">
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Your Attempts</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {scoreHistory.map((h, i) => {
+                      const gc = GRADE_CONFIG[h.grade]
+                      return (
+                        <div key={i} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold ${gc?.bg ?? 'bg-zinc-800 border-zinc-700'} ${gc?.color ?? 'text-zinc-400'}`}>
+                          <span className="text-zinc-600 text-[10px] font-normal">#{i + 1}</span>
+                          {h.score}/10
+                        </div>
+                      )
+                    })}
+                    <span className="text-[10px] text-zinc-700 ml-1">{scoreHistory.length >= 2 ? (scoreHistory[scoreHistory.length - 1].score > scoreHistory[0].score ? '↑ improving' : scoreHistory[scoreHistory.length - 1].score < scoreHistory[0].score ? '↓ dropped' : '→ same') : ''}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="p-5 space-y-5">
                 {Object.entries(review.sectionScores).some(([, v]) => v !== null) && (
                   <div>
@@ -1229,6 +1257,45 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3.5">
                     <p className="text-[10px] font-bold text-zinc-500 mb-2 flex items-center gap-1.5"><Building2 size={10} />What the interviewer would say</p>
                     <p className="text-sm text-zinc-400 italic leading-relaxed">&ldquo;{review.interviewerNote}&rdquo;</p>
+                  </div>
+                )}
+
+                {/* Expert approach spoiler */}
+                {problem.keyAreas.length > 0 && (
+                  <div className="bg-zinc-900/50 border border-zinc-700 rounded-xl overflow-hidden">
+                    <button onClick={() => setShowExpert(v => !v)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-zinc-800/50 transition-colors">
+                      <span className="flex items-center gap-2">
+                        <BookOpen size={14} className="text-orange-400" />
+                        See expert approach
+                      </span>
+                      <ChevronRight size={14} className={`transition-transform duration-200 text-zinc-600 ${showExpert ? 'rotate-90' : ''}`} />
+                    </button>
+                    {showExpert && (
+                      <div className="px-4 pb-4 border-t border-zinc-800 space-y-3">
+                        <p className="text-[10px] text-zinc-600 pt-3 italic">Key areas a senior engineer would cover:</p>
+                        <div className="space-y-2">
+                          {problem.keyAreas.map((area, i) => (
+                            <div key={i} className="flex items-start gap-2">
+                              <span className="w-5 h-5 rounded-full bg-orange-500/15 text-orange-400 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                              <span className="text-xs text-zinc-300 leading-relaxed">{area}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {problem.hints.length > 0 && (
+                          <>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider pt-1">Key considerations</p>
+                            <ul className="space-y-1.5">
+                              {problem.hints.map((h, i) => (
+                                <li key={i} className="flex items-start gap-2 text-xs text-zinc-400 leading-snug">
+                                  <span className="text-yellow-400/70 font-bold shrink-0 mt-0.5">→</span>{h}
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -50,6 +50,8 @@ export default function AdminPackagesPage() {
   const [deleting, setDeleting]           = useState<string | null>(null)
   const [banner, setBanner]               = useState<{ msg: string; ok: boolean } | null>(null)
   const [quickTitle, setQuickTitle]       = useState('')
+  const [quickPages, setQuickPages]       = useState('')
+  const [quickDesc, setQuickDesc]         = useState('')
   const [quickUploading, setQuickUploading] = useState(false)
   const [showQuickUpload, setShowQuickUpload] = useState(false)
   const quickFileRef = useRef<HTMLInputElement>(null)
@@ -91,6 +93,8 @@ export default function AdminPackagesPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title:       quickTitle.trim(),
+          description: quickDesc.trim(),
+          pages:       Number(quickPages) || 0,
           topic:       'Bundle Only',
           pdf_path:    upData.pdf_path,
           is_new:      false,
@@ -102,7 +106,7 @@ export default function AdminPackagesPage() {
 
       setNotes(prev => [...prev, newNote])
       setSelectedIds(prev => [...prev, newNote.id])
-      setQuickTitle(''); setShowQuickUpload(false)
+      setQuickTitle(''); setQuickPages(''); setQuickDesc(''); setShowQuickUpload(false)
       flash(`"${newNote.title}" uploaded and added to bundle!`)
     } catch (err) {
       flash(err instanceof Error ? err.message : 'Upload failed', false)
@@ -298,6 +302,12 @@ export default function AdminPackagesPage() {
                     </div>
                     <input value={quickTitle} onChange={e => setQuickTitle(e.target.value)}
                       placeholder="PDF title (e.g. System Design Cheatsheet)"
+                      className="w-full bg-zinc-950 border border-zinc-800 focus:border-orange-500/70 text-zinc-100 placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all" />
+                    <input value={quickDesc} onChange={e => setQuickDesc(e.target.value)}
+                      placeholder="Short description (optional)"
+                      className="w-full bg-zinc-950 border border-zinc-800 focus:border-orange-500/70 text-zinc-100 placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all" />
+                    <input type="number" min={0} value={quickPages} onChange={e => setQuickPages(e.target.value)}
+                      placeholder="Number of pages (e.g. 24)"
                       className="w-full bg-zinc-950 border border-zinc-800 focus:border-orange-500/70 text-zinc-100 placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all" />
                     <button type="button" disabled={quickUploading || !quickTitle.trim()}
                       onClick={() => quickFileRef.current?.click()}
