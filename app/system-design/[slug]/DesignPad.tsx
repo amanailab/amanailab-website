@@ -494,6 +494,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null)
   const saveTimer      = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const monacoEditorRef = useRef<any>(null)
   const timerInterval  = useRef<ReturnType<typeof setInterval> | null>(null)
   const diagramTextRef = useRef('')
   const startedRef     = useRef(false)
@@ -734,12 +736,13 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   const handleCheckCode = async () => {
     const active = snippets.find(s => s.id === activeId)
-    if (!active?.code.trim()) return
+    const currentCode = monacoEditorRef.current?.getValue?.() ?? active?.code ?? ''
+    if (!currentCode.trim()) return
     setCheckingCode(true); setCodeCheck(null); setCodeCheckOpen(false)
     try {
       const res  = await fetch('/api/system-design/check-code', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problem: problem.problem, language: active.language, code: active.code }),
+        body: JSON.stringify({ problem: problem.problem, language: active?.language ?? 'python', code: currentCode }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Check failed')
@@ -752,12 +755,15 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
     const next = snips.map(s => s.id === aid ? { ...s, code: t.code, language: t.language, name: t.label } : s)
     setSnippets(next); persist(d, cl, next, aid); setShowCodeTemplates(false)
+    // Push code into the uncontrolled editor directly (we use defaultValue, not value)
+    monacoEditorRef.current?.setValue?.(t.code)
+    setTimeout(() => monacoEditorRef.current?.focus?.(), 50)
   }
 
   const copyCode = () => {
-    const active = snippets.find(s => s.id === activeId)
-    if (!active?.code) return
-    navigator.clipboard.writeText(active.code).then(() => {
+    const code = monacoEditorRef.current?.getValue?.() ?? snippets.find(s => s.id === activeId)?.code ?? ''
+    if (!code) return
+    navigator.clipboard.writeText(code).then(() => {
       setCodeCopied(true); setTimeout(() => setCodeCopied(false), 2000)
     }).catch(() => {})
   }
@@ -1360,11 +1366,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                     key={activeId}
                     height="100%"
                     language={activeSnippet.language}
-                    value={activeSnippet.code}
+                    defaultValue={activeSnippet.code}
                     onChange={val => handleCodeChange(val ?? '')}
                     onMount={(editor, monaco) => {
+                      monacoEditorRef.current = editor
                       setTimeout(() => editor.focus(), 60)
-                      // Ctrl+Enter → run code check
                       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
                         document.getElementById('sd-check-code-btn')?.click()
                       })
