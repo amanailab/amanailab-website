@@ -9,6 +9,7 @@ import {
   ListChecks, Cpu, Lightbulb, Target, Award, Bold, Heading2, Heading3,
   List, Minus, Plus, Code2, ChevronRight, ChevronLeft, GripVertical,
   Trophy, Hash, Maximize2, Crown, LogIn, ShieldCheck, Zap, Star, FileText, Briefcase,
+  Copy, ClipboardCheck, FlaskConical,
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
@@ -56,6 +57,14 @@ interface ReviewResult {
 
 type PlanType = 'free' | 'sd_pro' | 'full_bundle'
 
+interface CodeCheckResult {
+  correct: boolean
+  grade: string
+  complexity: { time: string; space: string }
+  issues: string[]
+  suggestions: string[]
+  summary: string
+}
 
 interface ProStatus {
   authenticated: boolean
@@ -154,6 +163,180 @@ const ARCH_COMPONENTS = [
   { label: 'Stream Processor', icon: '🌊', snippet: '**Stream Processor** (Flink / Spark Streaming)\n- Window: tumbling __ / sliding __ / session\n- Watermark: __ s for late data\n- Throughput: __ events/s, Latency: __ ms\n' },
   { label: 'Feature Store',    icon: '🏪', snippet: '**Feature Store** (Feast / Tecton)\n- Online store: Redis → __ ms serving latency\n- Offline store: S3 / BigQuery → batch training\n- Point-in-time joins for training set generation\n' },
   { label: 'Object Storage',   icon: '🗂️', snippet: '**Object Storage** (S3 / GCS)\n- Stores: models, logs, datasets, embeddings\n- Lifecycle: Glacier after __ days\n- Versioning enabled; signed URLs for secure access\n' },
+]
+
+const CODE_TEMPLATES: { label: string; language: CodeLang; icon: string; desc: string; code: string }[] = [
+  {
+    label: 'LRU Cache', language: 'python', icon: '⚡', desc: 'O(1) get/put',
+    code: `from collections import OrderedDict
+
+class LRUCache:
+    def __init__(self, capacity: int):
+        self.cap   = capacity
+        self.cache = OrderedDict()  # preserves insertion order
+
+    def get(self, key: int) -> int:
+        if key not in self.cache:
+            return -1
+        self.cache.move_to_end(key)   # mark as recently used
+        return self.cache[key]
+
+    def put(self, key: int, value: int) -> None:
+        if key in self.cache:
+            self.cache.move_to_end(key)
+        self.cache[key] = value
+        if len(self.cache) > self.cap:
+            self.cache.popitem(last=False)  # evict LRU (first item)
+
+# Time: O(1) get/put  |  Space: O(capacity)`,
+  },
+  {
+    label: 'Token Bucket', language: 'python', icon: '🪣', desc: 'Rate limiting',
+    code: `import time
+
+class TokenBucket:
+    """Token-bucket rate limiter — allows bursting up to capacity."""
+    def __init__(self, capacity: int, refill_rate: float):
+        # refill_rate = tokens added per second
+        self.capacity    = capacity
+        self.refill_rate = refill_rate
+        self.tokens      = float(capacity)
+        self.last_refill = time.monotonic()
+
+    def _refill(self) -> None:
+        now   = time.monotonic()
+        delta = now - self.last_refill
+        self.tokens      = min(self.capacity, self.tokens + delta * self.refill_rate)
+        self.last_refill = now
+
+    def allow(self, cost: int = 1) -> bool:
+        self._refill()
+        if self.tokens >= cost:
+            self.tokens -= cost
+            return True
+        return False  # rate-limited
+
+# Time: O(1)  |  Space: O(1) per user`,
+  },
+  {
+    label: 'Consistent Hashing', language: 'python', icon: '🔄', desc: 'Distributed routing',
+    code: `import hashlib
+from bisect import bisect_right, insort
+
+class ConsistentHashRing:
+    def __init__(self, replicas: int = 150):
+        self.replicas    = replicas  # virtual nodes per server
+        self.ring        = {}        # hash -> server name
+        self.sorted_keys: list[int] = []
+
+    def _hash(self, key: str) -> int:
+        return int(hashlib.md5(key.encode()).hexdigest(), 16)
+
+    def add_server(self, server: str) -> None:
+        for i in range(self.replicas):
+            h = self._hash(f"{server}#{i}")
+            self.ring[h] = server
+            insort(self.sorted_keys, h)
+
+    def remove_server(self, server: str) -> None:
+        for i in range(self.replicas):
+            h = self._hash(f"{server}#{i}")
+            self.ring.pop(h, None)
+            self.sorted_keys.remove(h)
+
+    def get_server(self, key: str) -> str:
+        if not self.ring:
+            raise ValueError("No servers in ring")
+        h   = self._hash(key)
+        idx = bisect_right(self.sorted_keys, h) % len(self.sorted_keys)
+        return self.ring[self.sorted_keys[idx]]
+
+# Time: O(log n) lookup  |  Space: O(n × replicas)`,
+  },
+  {
+    label: 'Sliding Window', language: 'python', icon: '🪟', desc: 'Accurate rate limiting',
+    code: `from collections import deque
+import time
+
+class SlidingWindowRateLimiter:
+    """Accurate sliding-log rate limiter."""
+    def __init__(self, limit: int, window_sec: float):
+        self.limit      = limit
+        self.window_sec = window_sec
+        # In production: use Redis sorted set per user_id
+        self.requests: deque[float] = deque()
+
+    def allow(self) -> bool:
+        now    = time.monotonic()
+        cutoff = now - self.window_sec
+        while self.requests and self.requests[0] < cutoff:
+            self.requests.popleft()           # evict expired
+        if len(self.requests) < self.limit:
+            self.requests.append(now)
+            return True
+        return False                          # rate-limited
+
+# Time: O(n) worst case  |  Space: O(limit)
+# Trade-off: accurate but memory-heavy → use fixed-window for high throughput`,
+  },
+  {
+    label: 'Bloom Filter', language: 'python', icon: '🌸', desc: 'Probabilistic membership',
+    code: `import hashlib, math
+
+class BloomFilter:
+    """Probabilistic set — no false negatives, ~fp_rate false positives."""
+    def __init__(self, n: int, fp_rate: float = 0.01):
+        m = int(-n * math.log(fp_rate) / math.log(2) ** 2)
+        k = int((m / n) * math.log(2))
+        self.size = max(m, 1)
+        self.k    = max(k, 1)
+        self.bits = bytearray(self.size)
+
+    def _hashes(self, item: str):
+        for i in range(self.k):
+            h = hashlib.sha256(f"{item}:{i}".encode()).hexdigest()
+            yield int(h, 16) % self.size
+
+    def add(self, item: str) -> None:
+        for idx in self._hashes(item):
+            self.bits[idx] = 1
+
+    def might_contain(self, item: str) -> bool:
+        return all(self.bits[idx] for idx in self._hashes(item))
+
+# Time: O(k) add/lookup  |  Space: O(m) ≈ much less than a set
+# Use case: cache stampede prevention, dedup in pipelines`,
+  },
+  {
+    label: 'Min-Heap Top-K', language: 'python', icon: '📊', desc: 'Streaming top-K',
+    code: `import heapq
+from dataclasses import dataclass, field
+from typing import Any
+
+@dataclass(order=True)
+class Item:
+    score: float
+    value: Any = field(compare=False)
+
+class TopKTracker:
+    """Maintain top-K items from an unbounded stream."""
+    def __init__(self, k: int):
+        self.k    = k
+        self.heap: list[Item] = []  # min-heap (smallest score at root)
+
+    def add(self, value: Any, score: float) -> None:
+        item = Item(score, value)
+        if len(self.heap) < self.k:
+            heapq.heappush(self.heap, item)
+        elif score > self.heap[0].score:   # better than current minimum
+            heapq.heapreplace(self.heap, item)
+
+    def top_k(self) -> list[Any]:
+        return [i.value for i in sorted(self.heap, reverse=True)]
+
+# Time: O(n log k)  |  Space: O(k)
+# Use case: leaderboards, trending items, recommendation systems`,
+  },
 ]
 
 const FRAMEWORK_STEPS = [
@@ -280,6 +463,12 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [bestScore, setBestScore] = useState<{ score: number; grade: string } | null>(null)
   const [scoreHistory, setScoreHistory] = useState<{ score: number; grade: string; ts: number }[]>([])
   const [showExpert, setShowExpert]     = useState(false)
+
+  const [codeCheck, setCodeCheck]               = useState<CodeCheckResult | null>(null)
+  const [checkingCode, setCheckingCode]         = useState(false)
+  const [codeCheckOpen, setCodeCheckOpen]       = useState(false)
+  const [showCodeTemplates, setShowCodeTemplates] = useState(false)
+  const [codeCopied, setCodeCopied]             = useState(false)
   const [problemExpanded, setProblemExpanded] = useState(false)
 
   // ── Pro state ──────────────────────────────────────────────────────────────
@@ -511,6 +700,36 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     const url  = URL.createObjectURL(blob)
     const a    = Object.assign(document.createElement('a'), { href: url, download: `${problem.slug}-design.md` })
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
+  }
+
+  const handleCheckCode = async () => {
+    const active = snippets.find(s => s.id === activeId)
+    if (!active?.code.trim()) return
+    setCheckingCode(true); setCodeCheck(null); setCodeCheckOpen(false)
+    try {
+      const res  = await fetch('/api/system-design/check-code', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problem: problem.problem, language: active.language, code: active.code }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Check failed')
+      setCodeCheck(data); setCodeCheckOpen(true)
+    } catch { /* silent — user will see empty state */ }
+    finally { setCheckingCode(false) }
+  }
+
+  const insertTemplate = (t: typeof CODE_TEMPLATES[0]) => {
+    const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
+    const next = snips.map(s => s.id === aid ? { ...s, code: t.code, language: t.language, name: t.label } : s)
+    setSnippets(next); persist(d, cl, next, aid); setShowCodeTemplates(false)
+  }
+
+  const copyCode = () => {
+    const active = snippets.find(s => s.id === activeId)
+    if (!active?.code) return
+    navigator.clipboard.writeText(active.code).then(() => {
+      setCodeCopied(true); setTimeout(() => setCodeCopied(false), 2000)
+    }).catch(() => {})
   }
 
   // ── AI review ─────────────────────────────────────────────────────────────
@@ -986,7 +1205,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
           {/* ── CODE TAB ───────────────────────────────────────────────────── */}
           {rightTab === 'code' && (
-            <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex flex-col flex-1 min-h-0 relative">
+
+              {/* Snippet tab bar */}
               <div className="flex items-center border-b border-zinc-800 bg-zinc-900/40 flex-shrink-0 overflow-x-auto">
                 {snippets.map(s => (
                   <div key={s.id}
@@ -1013,11 +1234,24 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                     )}
                   </div>
                 ))}
-                <button onClick={addSnippet} className="flex items-center gap-1 px-2.5 py-2 text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0">
+                <button onClick={addSnippet} title="New snippet"
+                  className="flex items-center gap-1 px-2.5 py-2 text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0">
                   <Plus size={11} />
                 </button>
+
                 {activeSnippet && (
-                  <div className="ml-auto flex items-center px-2 flex-shrink-0">
+                  <div className="ml-auto flex items-center gap-1 px-2 flex-shrink-0">
+                    {/* Templates button */}
+                    <button onClick={() => setShowCodeTemplates(v => !v)} title="Starter templates"
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-semibold transition-colors ${showCodeTemplates ? 'bg-orange-500/20 text-orange-400' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}>
+                      <FlaskConical size={10} /> Templates
+                    </button>
+                    {/* Copy button */}
+                    <button onClick={copyCode} title="Copy code"
+                      className="w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800 transition-colors">
+                      {codeCopied ? <ClipboardCheck size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                    </button>
+                    {/* Language select */}
                     <select value={activeSnippet.language} onChange={e => handleLangChange(e.target.value as CodeLang)}
                       className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-[11px] rounded-md px-2 py-0.5 outline-none cursor-pointer">
                       {CODE_LANGS.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
@@ -1026,35 +1260,133 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 )}
               </div>
 
+              {/* Editor area */}
               {activeSnippet && (
-                <div className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0 overflow-hidden relative" style={{ minHeight: 180 }}>
                   <MonacoEditor
+                    key={activeId}
                     height="100%"
                     language={activeSnippet.language}
                     value={activeSnippet.code}
                     onChange={val => handleCodeChange(val ?? '')}
+                    onMount={editor => { setTimeout(() => editor.focus(), 60) }}
                     theme="vs-dark"
                     options={{
                       fontSize: 13,
                       fontFamily: '"JetBrains Mono", "Fira Code", monospace',
                       lineNumbers: 'on' as const,
+                      readOnly: false,
                       minimap: { enabled: false },
                       scrollBeyondLastLine: false,
                       wordWrap: 'on' as const,
                       padding: { top: 12, bottom: 12 },
                       lineHeight: 20,
                       glyphMargin: false,
-                      folding: false,
+                      folding: true,
                       scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
                       tabSize: 2,
+                      suggestOnTriggerCharacters: true,
+                      quickSuggestions: { other: true, comments: false, strings: false },
+                      acceptSuggestionOnEnter: 'on',
+                      formatOnPaste: true,
                     }}
                   />
+
+                  {/* Templates panel — slides in over the editor */}
+                  {showCodeTemplates && (
+                    <div className="absolute inset-0 flex z-10">
+                      <div className="flex-1" onClick={() => setShowCodeTemplates(false)} />
+                      <div className="w-64 bg-zinc-900 border-l border-zinc-700 flex flex-col shadow-2xl">
+                        <div className="flex items-center justify-between px-3 py-2.5 border-b border-zinc-800 flex-shrink-0">
+                          <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                            <FlaskConical size={12} className="text-orange-400" /> Starter Templates
+                          </span>
+                          <button onClick={() => setShowCodeTemplates(false)} className="text-zinc-600 hover:text-zinc-300 transition-colors">
+                            <X size={13} />
+                          </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+                          {CODE_TEMPLATES.map(t => (
+                            <button key={t.label} onClick={() => insertTemplate(t)}
+                              className="w-full flex items-start gap-2.5 px-3 py-2.5 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 rounded-xl text-left transition-all group">
+                              <span className="text-lg leading-none mt-0.5 flex-shrink-0">{t.icon}</span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold text-zinc-200 group-hover:text-white transition-colors">{t.label}</p>
+                                <p className="text-[10px] text-zinc-600 mt-0.5">{t.desc} · {t.language}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="px-3 py-2 border-t border-zinc-800 flex-shrink-0">
+                          <p className="text-[10px] text-zinc-700">Click a template to replace current snippet</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <div className="flex items-center px-3 py-1.5 border-t border-zinc-800 flex-shrink-0 text-[10px] text-zinc-600">
-                <span>{snippets.length} snippet{snippets.length !== 1 ? 's' : ''} · {codeLines} lines</span>
-                <span className="ml-auto">Double-click tab to rename</span>
+              {/* Code check results panel */}
+              {codeCheckOpen && codeCheck && (
+                <div className="border-t border-zinc-800 bg-zinc-900/60 flex-shrink-0 max-h-52 overflow-y-auto">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/60">
+                    <div className="flex items-center gap-2">
+                      <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${GRADE_CONFIG[codeCheck.grade]?.bg ?? 'bg-zinc-800 border-zinc-700'} ${GRADE_CONFIG[codeCheck.grade]?.color ?? 'text-zinc-400'}`}>
+                        {codeCheck.correct ? <CheckCircle size={9} /> : <AlertCircle size={9} />}
+                        Grade {codeCheck.grade} · {codeCheck.correct ? 'Correct' : 'Has Issues'}
+                      </span>
+                      <span className="text-[10px] text-zinc-600 font-mono">
+                        Time {codeCheck.complexity.time} · Space {codeCheck.complexity.space}
+                      </span>
+                    </div>
+                    <button onClick={() => setCodeCheckOpen(false)} className="text-zinc-700 hover:text-zinc-400 transition-colors">
+                      <X size={12} />
+                    </button>
+                  </div>
+                  <div className="px-3 py-2.5 space-y-2.5">
+                    {codeCheck.summary && (
+                      <p className="text-xs text-zinc-400 leading-relaxed">{codeCheck.summary}</p>
+                    )}
+                    {codeCheck.issues.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><AlertCircle size={9} />Issues</p>
+                        <ul className="space-y-1">
+                          {codeCheck.issues.map((issue, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-400 leading-snug">
+                              <span className="text-red-400 shrink-0 mt-0.5">→</span>{issue}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {codeCheck.suggestions.length > 0 && (
+                      <div>
+                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1.5 flex items-center gap-1"><CheckCircle size={9} />Suggestions</p>
+                        <ul className="space-y-1">
+                          {codeCheck.suggestions.map((s, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-400 leading-snug">
+                              <span className="text-emerald-400 shrink-0 mt-0.5">✓</span>{s}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Status bar */}
+              <div className="flex items-center px-3 py-1.5 border-t border-zinc-800 flex-shrink-0 text-[10px] text-zinc-600 gap-2">
+                <span className="tabular-nums">{snippets.length} snippet{snippets.length !== 1 ? 's' : ''} · {codeLines} lines</span>
+                <span className="text-zinc-800">·</span>
+                <span className="text-zinc-700">Dbl-click tab to rename</span>
+                <button onClick={handleCheckCode}
+                  disabled={checkingCode || !activeSnippet?.code.trim()}
+                  className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-bold transition-all shadow-sm shadow-orange-500/25">
+                  {checkingCode
+                    ? <><Loader2 size={10} className="animate-spin" /> Checking…</>
+                    : <><Sparkles size={10} /> Check Code</>}
+                </button>
               </div>
             </div>
           )}
