@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import {
@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
-import { DESIGN_TEMPLATE } from '@/lib/system-design-problems'
+import { DESIGN_TEMPLATE, SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
 import LoginPromptModal from '@/components/ui/LoginPromptModal'
 
 // ── Dynamic imports ────────────────────────────────────────────────────────────
@@ -355,6 +355,18 @@ const SECTION_JUMPS = [
   { label: 'Trade', heading: '## 9. Trade-offs & Alternatives Considered' },
 ]
 
+const SECTION_PROGRESS = [
+  { num: 1, label: 'Req',     fullLabel: 'Requirements', partialH: '## 1.', jumpH: '## 1. Requirements Clarification',           dot: 'bg-blue-500' },
+  { num: 2, label: 'Cap',     fullLabel: 'Capacity',     partialH: '## 2.', jumpH: '## 2. Capacity Estimation',                  dot: 'bg-cyan-500' },
+  { num: 3, label: 'Arch',    fullLabel: 'Architecture', partialH: '## 3.', jumpH: '## 3. High-Level Architecture',              dot: 'bg-green-500' },
+  { num: 4, label: 'Design',  fullLabel: 'Core Design',  partialH: '## 4.', jumpH: '## 4. Core Component Design',               dot: 'bg-violet-500' },
+  { num: 5, label: 'Data',    fullLabel: 'Data Model',   partialH: '## 5.', jumpH: '## 5. Data Model & Storage',                dot: 'bg-indigo-500' },
+  { num: 6, label: 'API',     fullLabel: 'API Design',   partialH: '## 6.', jumpH: '## 6. API Design',                         dot: 'bg-teal-500' },
+  { num: 7, label: 'Scale',   fullLabel: 'Scalability',  partialH: '## 7.', jumpH: '## 7. Scalability & Performance',           dot: 'bg-yellow-500' },
+  { num: 8, label: 'Monitor', fullLabel: 'Monitoring',   partialH: '## 8.', jumpH: '## 8. Monitoring & Reliability',            dot: 'bg-orange-500' },
+  { num: 9, label: 'Trade',   fullLabel: 'Trade-offs',   partialH: '## 9.', jumpH: '## 9. Trade-offs & Alternatives Considered', dot: 'bg-red-500' },
+]
+
 // ── Improved Markdown → HTML ───────────────────────────────────────────────────
 function mdToHtml(md: string): string {
   let out = md.replace(/<!--[\s\S]*?-->/g, '')
@@ -496,6 +508,23 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const codeKey       = CODE_PREFIX       + problem.slug
   const completionKey = COMPLETION_PREFIX + problem.slug
   const historyKey    = HISTORY_PREFIX    + problem.slug
+
+  // ── Per-section word counts for write-tab progress strip ─────────────────────
+  const sectionWords = useMemo(() => {
+    const counts: Record<number, number> = {}
+    let currentNum = 0; let words = 0
+    for (const line of design.split('\n')) {
+      const m = line.match(/^## (\d+)\./)
+      if (m) {
+        if (currentNum) counts[currentNum] = words
+        currentNum = +m[1]; words = 0
+      } else if (currentNum) {
+        words += line.split(/\s+/).filter(Boolean).length
+      }
+    }
+    if (currentNum) counts[currentNum] = words
+    return counts
+  }, [design])
 
   // ── Fetch pro status on mount ─────────────────────────────────────────────
   useEffect(() => {
@@ -1189,6 +1218,35 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 </div>
               </div>
 
+              {/* ── Section progress strip ────────────────────────────────── */}
+              <div className="flex items-end gap-1 px-3 py-2 border-b border-zinc-800/60 flex-shrink-0 bg-zinc-900/20 overflow-x-auto scrollbar-none">
+                {SECTION_PROGRESS.map(s => {
+                  const words = sectionWords[s.num] ?? 0
+                  const level = words > 80 ? 2 : words > 25 ? 1 : 0
+                  return (
+                    <button key={s.num}
+                      onClick={() => jumpToSection(s.partialH)}
+                      title={`${s.fullLabel} · ${words} words`}
+                      className="flex flex-col items-center gap-0.5 min-w-0 flex-1 group cursor-pointer">
+                      <span className={`text-[8px] font-semibold transition-colors whitespace-nowrap leading-none ${
+                        level === 2 ? 'text-zinc-400' : level === 1 ? 'text-zinc-600' : 'text-zinc-700'
+                      } group-hover:text-zinc-400`}>{words > 0 ? words : ''}</span>
+                      <div
+                        className="h-[3px] rounded-full w-full transition-all duration-300"
+                        style={{ opacity: level === 0 ? 1 : 1 }}
+                        data-level={level}
+                      >
+                        <div className={`h-full rounded-full transition-all duration-300 ${level > 0 ? s.dot : 'bg-zinc-800'}`}
+                          style={{ opacity: level === 1 ? 0.35 : 1 }} />
+                      </div>
+                      <span className={`text-[8.5px] font-medium transition-colors whitespace-nowrap ${
+                        level === 2 ? 'text-zinc-400' : 'text-zinc-600'
+                      } group-hover:text-zinc-300`}>{s.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
               {/* ── Improved textarea ─────────────────────────────────────── */}
               <textarea
                 ref={textareaRef}
@@ -1636,6 +1694,28 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   {reviewing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                   {reviewing ? 'Reviewing…' : 'Re-run Review'}
                 </button>
+
+                {/* ── Practice More recommendations ──────────────────────── */}
+                {(() => {
+                  const related = SYSTEM_DESIGN_PROBLEMS
+                    .filter(p => p.slug !== problem.slug && p.category === problem.category)
+                    .slice(0, 3)
+                  if (!related.length) return null
+                  return (
+                    <div className="border-t border-zinc-800 pt-4 space-y-2">
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <Briefcase size={10} />Practice More · {problem.category}
+                      </p>
+                      {related.map(p => (
+                        <Link key={p.slug} href={`/system-design/${p.slug}`}
+                          className="flex items-center justify-between gap-2 px-3 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-xl transition-all group">
+                          <p className="text-[11px] font-semibold text-zinc-400 group-hover:text-zinc-200 leading-snug truncate transition-colors">{p.title}</p>
+                          <ChevronRight size={11} className="text-zinc-700 group-hover:text-zinc-500 flex-shrink-0" />
+                        </Link>
+                      ))}
+                    </div>
+                  )
+                })()}
 
               </div>
             </div>
