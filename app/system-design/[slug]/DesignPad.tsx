@@ -475,6 +475,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [bestScore, setBestScore] = useState<{ score: number; grade: string } | null>(null)
   const [scoreHistory, setScoreHistory] = useState<{ score: number; grade: string; ts: number }[]>([])
   const [showExpert, setShowExpert]     = useState(false)
+  const [showHints, setShowHints]       = useState(false)
 
   const [codeCheck, setCodeCheck]               = useState<CodeCheckResult | null>(null)
   const [checkingCode, setCheckingCode]         = useState(false)
@@ -1215,6 +1216,12 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
                 <div className="ml-auto flex items-center gap-2 flex-shrink-0 pl-1">
                   <span className="text-[10px] text-zinc-700 tabular-nums font-mono">{wordCount}w</span>
+                  {problem.hints && problem.hints.length > 0 && (
+                    <button onClick={() => setShowHints(v => !v)} title="Toggle hints panel"
+                      className={`flex items-center gap-1 px-2 h-7 rounded-md text-[10px] font-semibold transition-all flex-shrink-0 ${showHints ? 'bg-orange-500/20 text-orange-400' : 'text-zinc-500 hover:text-orange-400 hover:bg-zinc-800'}`}>
+                      <Lightbulb size={11} />Hints
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1246,6 +1253,33 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   )
                 })}
               </div>
+
+              {/* ── Hints panel ───────────────────────────────────────────── */}
+              {showHints && problem.hints && problem.hints.length > 0 && (
+                <div className="border-b border-zinc-800 bg-zinc-900/40 flex-shrink-0 max-h-48 overflow-y-auto">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/60 sticky top-0 bg-zinc-900/90 backdrop-blur-sm">
+                    <span className="text-[11px] font-bold text-orange-400 flex items-center gap-1.5">
+                      <Lightbulb size={11} /> Key Areas to Cover
+                    </span>
+                    <button onClick={() => setShowHints(false)} className="text-zinc-600 hover:text-zinc-300 transition-colors"><X size={12} /></button>
+                  </div>
+                  <div className="px-3 py-2.5 space-y-1.5">
+                    {problem.hints.map((hint, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <span className="text-orange-400/60 font-bold text-[10px] tabular-nums mt-0.5 flex-shrink-0">{i + 1}.</span>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">{hint}</p>
+                      </div>
+                    ))}
+                    {problem.keyAreas && problem.keyAreas.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1 border-t border-zinc-800/60 mt-2">
+                        {problem.keyAreas.map((area, i) => (
+                          <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-500">{area}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* ── Improved textarea ─────────────────────────────────────── */}
               <textarea
@@ -1318,16 +1352,23 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 )}
               </div>
 
-              {/* Editor area */}
+              {/* Editor area — absolute inner div so height="100%" resolves reliably */}
               {activeSnippet && (
-                <div className="flex-1 min-h-0 overflow-hidden relative" style={{ minHeight: 180 }}>
+                <div className="flex-1 min-h-0 relative" style={{ minHeight: 200 }}>
+                  <div className="absolute inset-0">
                   <MonacoEditor
                     key={activeId}
                     height="100%"
                     language={activeSnippet.language}
                     value={activeSnippet.code}
                     onChange={val => handleCodeChange(val ?? '')}
-                    onMount={editor => { setTimeout(() => editor.focus(), 60) }}
+                    onMount={(editor, monaco) => {
+                      setTimeout(() => editor.focus(), 60)
+                      // Ctrl+Enter → run code check
+                      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+                        document.getElementById('sd-check-code-btn')?.click()
+                      })
+                    }}
                     theme="vs-dark"
                     options={{
                       fontSize: 13,
@@ -1336,19 +1377,32 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       readOnly: false,
                       minimap: { enabled: false },
                       scrollBeyondLastLine: false,
-                      wordWrap: 'on' as const,
-                      padding: { top: 12, bottom: 12 },
-                      lineHeight: 20,
+                      wordWrap: 'off' as const,
+                      padding: { top: 14, bottom: 14 },
+                      lineHeight: 22,
                       glyphMargin: false,
                       folding: true,
-                      scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
-                      tabSize: 2,
+                      foldingHighlight: true,
+                      scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6, alwaysConsumeMouseWheel: false },
+                      tabSize: 4,
+                      insertSpaces: true,
+                      detectIndentation: false,
+                      autoIndent: 'full' as const,
+                      formatOnType: true,
+                      formatOnPaste: true,
+                      tabCompletion: 'on' as const,
                       suggestOnTriggerCharacters: true,
                       quickSuggestions: { other: true, comments: false, strings: false },
                       acceptSuggestionOnEnter: 'on',
-                      formatOnPaste: true,
+                      renderWhitespace: 'selection' as const,
+                      bracketPairColorization: { enabled: true },
+                      guides: { indentation: true, bracketPairs: true },
+                      cursorBlinking: 'smooth' as const,
+                      cursorSmoothCaretAnimation: 'on' as const,
+                      smoothScrolling: true,
                     }}
                   />
+                  </div>
 
                   {/* Templates panel — slides in over the editor */}
                   {showCodeTemplates && (
@@ -1438,8 +1492,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 <span className="tabular-nums">{snippets.length} snippet{snippets.length !== 1 ? 's' : ''} · {codeLines} lines</span>
                 <span className="text-zinc-800">·</span>
                 <span className="text-zinc-700">Dbl-click tab to rename</span>
-                <button onClick={handleCheckCode}
+                <button id="sd-check-code-btn" onClick={handleCheckCode}
                   disabled={checkingCode || !activeSnippet?.code.trim()}
+                  title="Check Code (Ctrl+Enter)"
                   className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[10px] font-bold transition-all shadow-sm shadow-orange-500/25">
                   {checkingCode
                     ? <><Loader2 size={10} className="animate-spin" /> Checking…</>

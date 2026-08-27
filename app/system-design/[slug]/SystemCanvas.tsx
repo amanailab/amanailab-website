@@ -19,6 +19,7 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  NodeResizer,
   type Node,
   type Edge,
   type Connection,
@@ -26,7 +27,7 @@ import {
   type EdgeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Trash2, Grid3x3, MousePointerClick, Tag } from 'lucide-react'
+import { Trash2, Grid3x3, MousePointerClick, Tag, Maximize2, Undo2 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 
 // ── Component palette ─────────────────────────────────────────────────────────
@@ -98,16 +99,25 @@ function ArchNodeComponent({ id, data, selected }: NodeProps<ArchNode>) {
   return (
     <div
       onDoubleClick={() => { setValue(data.label); setEditing(true) }}
-      className={`group relative rounded-xl border ${c.bg} px-2.5 py-2 shadow-lg min-w-[96px] max-w-[148px] transition-all cursor-default ${c.border} ${
+      className={`group relative rounded-xl border ${c.bg} px-2.5 py-2 shadow-lg min-w-[96px] transition-all cursor-default ${c.border} ${
         selected ? `ring-2 ${c.ring} shadow-xl` : 'hover:shadow-xl'
       }`}
     >
+      <NodeResizer
+        color="#f97316"
+        isVisible={selected}
+        minWidth={96}
+        minHeight={44}
+        handleStyle={{ width: 9, height: 9, borderRadius: 3, backgroundColor: '#f97316', border: '2px solid #9a3412' }}
+        lineStyle={{ borderColor: '#f97316', borderWidth: 1, opacity: 0.6 }}
+      />
+
       <Handle id="t" type="source" position={Position.Top}    className={handleClass} />
       <Handle id="b" type="source" position={Position.Bottom} className={handleClass} />
       <Handle id="l" type="source" position={Position.Left}   className={handleClass} />
       <Handle id="r" type="source" position={Position.Right}  className={handleClass} />
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 h-full">
         <span className="text-sm leading-none flex-shrink-0">{data.icon}</span>
         <div className="min-w-0 flex-1">
           {editing ? (
@@ -121,7 +131,7 @@ function ArchNodeComponent({ id, data, selected }: NodeProps<ArchNode>) {
             />
           ) : (
             <>
-              <p className={`text-xs font-semibold leading-tight truncate ${c.text}`}>{data.label}</p>
+              <p className={`text-xs font-semibold leading-tight ${c.text}`} style={{ wordBreak: 'break-word' }}>{data.label}</p>
               <p className="text-[9px] text-zinc-600 leading-tight mt-0.5">{COMP_MAP[data.kind]?.label ?? 'node'}</p>
             </>
           )}
@@ -217,10 +227,21 @@ const defaultEdgeOptions = {
 function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(100vh-320px)] min-h-[460px]', fill = false }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<ArchNode>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<ArchEdge>([])
-  const { screenToFlowPosition } = useReactFlow()
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const loaded     = useRef(false)
+  const { screenToFlowPosition, fitView } = useReactFlow()
+  const wrapperRef  = useRef<HTMLDivElement>(null)
+  const saveTimer   = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loaded      = useRef(false)
+  const historyRef  = useRef<Array<{ nodes: ArchNode[]; edges: ArchEdge[] }>>([])
+
+  const pushHistory = useCallback((ns: ArchNode[], es: ArchEdge[]) => {
+    historyRef.current = [...historyRef.current.slice(-19), { nodes: ns, edges: es }]
+  }, [])
+
+  const undo = useCallback(() => {
+    const prev = historyRef.current.pop()
+    if (!prev) return
+    setNodes(prev.nodes); setEdges(prev.edges)
+  }, [setNodes, setEdges])
 
   const nodeTypes = useMemo(() => ({ arch: ArchNodeComponent }), [])
   const edgeTypes = useMemo(() => ({ labeled: LabeledEdge }), [])
@@ -261,6 +282,7 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
     const comp = COMP_MAP[kind]
     if (!comp) return
     onInteract?.()
+    pushHistory(nodes, edges)
     const id = crypto.randomUUID?.() ?? `n_${Date.now()}_${Math.random()}`
     const node: ArchNode = {
       id,
@@ -269,7 +291,7 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
       data: { kind: comp.kind, label: comp.label, icon: comp.icon, color: comp.color },
     }
     setNodes(nds => [...nds, node])
-  }, [setNodes, onInteract])
+  }, [setNodes, onInteract, pushHistory, nodes, edges])
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -302,7 +324,7 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
       <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl flex-shrink-0 overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-zinc-800/60">
           <MousePointerClick size={10} className="text-orange-400 flex-shrink-0" />
-          <span className="text-[10px] text-zinc-500">Click to add · Drag onto canvas · Drag between handle dots (◉) to connect · Double-click node to rename · Click arrow to label · Delete/Backspace removes selected</span>
+          <span className="text-[10px] text-zinc-500">Click to add · Drag onto canvas · Connect: drag from ◉ handle · Resize: select node → drag orange corners · Double-click to rename · Delete/Backspace removes</span>
         </div>
         <div className="flex flex-wrap gap-1.5 px-3 py-2">
           {CANVAS_COMPONENTS.map(comp => {
@@ -385,13 +407,29 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
             {nodes.length} nodes · {edges.length} links
           </span>
           {nodes.length > 0 && (
-            <button
-              onClick={clearCanvas}
-              title="Clear canvas"
-              className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-zinc-500 hover:text-red-400 hover:border-red-500/40 transition-colors"
-            >
-              <Trash2 size={11} />Clear
-            </button>
+            <>
+              <button
+                onClick={() => fitView({ padding: 0.15, duration: 400 })}
+                title="Fit all nodes in view"
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-zinc-500 hover:text-orange-400 hover:border-orange-500/40 transition-colors"
+              >
+                <Maximize2 size={11} />Fit
+              </button>
+              <button
+                onClick={undo}
+                title="Undo last action (Ctrl+Z)"
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors"
+              >
+                <Undo2 size={11} />
+              </button>
+              <button
+                onClick={clearCanvas}
+                title="Clear canvas"
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-zinc-500 hover:text-red-400 hover:border-red-500/40 transition-colors"
+              >
+                <Trash2 size={11} />Clear
+              </button>
+            </>
           )}
         </div>
       </div>
