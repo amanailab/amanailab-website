@@ -47,11 +47,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Package has no notes.' }, { status: 404 })
     }
 
-    // 1-hour signed URLs for the immediate download modal
-    const items: { title: string; url: string }[] = []
-    for (const note of notes) {
-      const { data } = await supabase.storage.from('notes').createSignedUrl(note.pdf_path, 3600)
-      if (data?.signedUrl) items.push({ title: note.title, url: data.signedUrl })
+    // 1-hour signed URLs in parallel
+    const urlResults = await Promise.all(
+      notes.map(note => supabase.storage.from('notes').createSignedUrl(note.pdf_path, 3600).then(r => ({ note, url: r.data?.signedUrl ?? null })))
+    )
+    const items = urlResults
+      .filter(r => r.url)
+      .map(r => ({ title: r.note.title, url: r.url! }))
+
+    if (!items.length) {
+      return NextResponse.json({ error: 'Could not generate download links. Contact support.' }, { status: 500 })
     }
 
     // Save order record (non-blocking, best-effort)

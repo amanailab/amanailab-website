@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
 import {
   Plus, Trash2, Eye, EyeOff, Loader2, CheckCircle, X, ExternalLink,
-  UploadCloud, FileText,
+  UploadCloud,
 } from 'lucide-react'
 import { Crown } from 'lucide-react'
 import type { Note, NotePackage } from '@/lib/notes-data'
