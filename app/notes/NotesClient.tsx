@@ -161,7 +161,7 @@ export default function NotesClient({
             if (!vRes.ok) setError('Payment received but download failed. Contact support with ID: ' + r.razorpay_payment_id)
             else { paymentSucceeded.current = true; setModal({ type: 'download', note, url: vData.url }) }
           } catch {
-            setError('Network error. Your payment was received â€” contact support with ID: ' + r.razorpay_payment_id)
+            setError('Network error. Your payment was received — contact support with ID: ' + r.razorpay_payment_id)
           } finally { isBuying.current = false; setIsLoading(false) }
         },
         modal: {
@@ -212,7 +212,7 @@ export default function NotesClient({
             if (!vRes.ok) setError('Payment received but download failed. Contact support with ID: ' + r.razorpay_payment_id)
             else { paymentSucceeded.current = true; setModal({ type: 'download-pkg', pkg, items: vData.items }) }
           } catch {
-            setError('Network error. Your payment was received â€” contact support with ID: ' + r.razorpay_payment_id)
+            setError('Network error. Your payment was received — contact support with ID: ' + r.razorpay_payment_id)
           } finally { isBuying.current = false; setIsLoading(false) }
         },
         modal: {
@@ -237,9 +237,9 @@ export default function NotesClient({
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-20 h-20 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4">ðŸ“š</div>
+          <div className="w-20 h-20 bg-zinc-900 border border-zinc-800 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4">📚</div>
           <p className="text-zinc-300 text-xl font-bold">Notes coming soon</p>
-          <p className="text-zinc-600 text-sm mt-1">We&apos;re preparing premium notes â€” check back shortly!</p>
+          <p className="text-zinc-600 text-sm mt-1">We&apos;re preparing premium notes — check back shortly!</p>
         </div>
       </div>
     )
@@ -248,7 +248,7 @@ export default function NotesClient({
   return (
     <div className="min-h-screen">
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HERO â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ════════════════ HERO ════════════════ */}
       <section className="relative pt-10 pb-6 px-4 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[200px] bg-orange-500/6 rounded-full blur-3xl" />
@@ -265,7 +265,7 @@ export default function NotesClient({
               </h1>
               <p className="text-zinc-500 text-sm mt-2 max-w-xs">
                 Handcrafted PDFs from every AmanAI Lab video.{' '}
-                <span className="text-zinc-400">{notes.length} notes Â· {topics.length - 1} topic{topics.length - 1 !== 1 ? 's' : ''}</span>
+                <span className="text-zinc-400">{notes.length} notes · {topics.length - 1} topic{topics.length - 1 !== 1 ? 's' : ''}</span>
               </p>
             </div>
 
@@ -276,7 +276,7 @@ export default function NotesClient({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-zinc-200">YouTube Member</p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">Enter monthly code â†’ all notes free</p>
+                  <p className="text-[10px] text-zinc-600 mt-0.5">Enter monthly code → all notes free</p>
                 </div>
                 <span className="text-[10px] font-black text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded-full border border-orange-500/20 shrink-0">FREE</span>
               </div>
@@ -286,7 +286,7 @@ export default function NotesClient({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-zinc-300">Non-Member</p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">Pay once Â· instant download Â· no login</p>
+                  <p className="text-[10px] text-zinc-600 mt-0.5">Pay once · instant download · no login</p>
                 </div>
                 <span className="text-[10px] font-black text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">from {fmt(minPrice, isIndia)}</span>
               </div>
@@ -295,7 +295,7 @@ export default function NotesClient({
         </div>
       </section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BUNDLES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ════════════════ BUNDLES ════════════════ */}
       {packages.length > 0 && (
         <section className="px-4 pb-6">
           <div className="max-w-5xl mx-auto">
@@ -303,7 +303,7 @@ export default function NotesClient({
               <div className="h-px flex-1 bg-zinc-800" />
               <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
                 <PackageIcon className="w-3 h-3 text-orange-400" />
-                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">PDF Bundles â€” Best Value</span>
+                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">PDF Bundles — Best Value</span>
               </div>
               <div className="h-px flex-1 bg-zinc-800" />
             </div>
@@ -323,7 +323,7 @@ export default function NotesClient({
         </section>
       )}
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• FILTER TABS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ════════════════ FILTER TABS ════════════════ */}
       <div className="sticky top-0 z-20 bg-[#09090b]/90 backdrop-blur-lg border-b border-zinc-900">
         <div className="max-w-5xl mx-auto">
           {/* Topic filter row */}
@@ -362,8 +362,8 @@ export default function NotesClient({
               <select value={sortBy} onChange={e => setSortBy(e.target.value as 'default' | 'price-asc' | 'price-desc' | 'newest')}
                 className="bg-zinc-900 border border-zinc-800 text-zinc-500 text-[11px] rounded-lg px-2 py-1 outline-none cursor-pointer hover:border-zinc-700 transition-colors">
                 <option value="default">Sort: Default</option>
-                <option value="price-asc">Price â†‘</option>
-                <option value="price-desc">Price â†“</option>
+                <option value="price-asc">Price ↑</option>
+                <option value="price-desc">Price ↓</option>
                 <option value="newest">Newest first</option>
               </select>
               <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
@@ -381,7 +381,7 @@ export default function NotesClient({
         </div>
       </div>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• NOTES GRID / LIST â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ════════════════ NOTES GRID / LIST ════════════════ */}
       <section className="px-4 py-6 pb-24">
         <div className="max-w-5xl mx-auto">
           {sorted.length === 0 ? (
@@ -390,7 +390,7 @@ export default function NotesClient({
               <p className="text-zinc-600 text-sm mt-1">More coming soon!</p>
             </div>
           ) : viewMode === 'list' ? (
-            /* â”€â”€ List view â”€â”€ */
+            /* ── List view ── */
             <div className="space-y-1.5">
               <AnimatePresence mode="popLayout">
                 {sorted.map((note, i) => (
@@ -403,11 +403,11 @@ export default function NotesClient({
               </AnimatePresence>
             </div>
           ) : filter !== 'All' ? (
-            /* â”€â”€ Single topic grid â”€â”€ */
+            /* ── Single topic grid ── */
             <>
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs font-bold text-zinc-600 uppercase tracking-wider">
-                  {filter} Â· {sorted.length} note{sorted.length !== 1 ? 's' : ''}
+                  {filter} · {sorted.length} note{sorted.length !== 1 ? 's' : ''}
                 </p>
                 <p className="text-[10px] text-zinc-700 flex items-center gap-1"><Eye className="w-3 h-3" /> Click any card to preview</p>
               </div>
@@ -424,7 +424,7 @@ export default function NotesClient({
               </div>
             </>
           ) : (
-            /* â”€â”€ All topics grouped â”€â”€ */
+            /* ── All topics grouped ── */
             <div className="space-y-10">
               {Object.keys(topicCounts).map(topic => {
                 const topicNotes = sorted.filter(n => n.topic === topic)
@@ -453,7 +453,7 @@ export default function NotesClient({
         </div>
       </section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• MODALS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ════════════════ MODALS ════════════════ */}
       <AnimatePresence>
         {modal.type !== 'none' && (
           <>
@@ -461,7 +461,7 @@ export default function NotesClient({
               onClick={() => { if (modal.type !== 'download' && modal.type !== 'download-pkg') close() }}
               className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
 
-            {/* â”€â”€ Note preview modal â”€â”€ */}
+            {/* ── Note preview modal ── */}
             {modal.type === 'preview' && (
               <motion.div key="preview"
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -514,7 +514,7 @@ export default function NotesClient({
                         <ul className="space-y-2.5">
                           {modal.note.preview_points.map((pt, i) => (
                             <li key={i} className="flex items-start gap-2.5">
-                              <span className="w-5 h-5 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">âœ“</span>
+                              <span className="w-5 h-5 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">✓</span>
                               <span className="text-sm text-zinc-300 leading-relaxed">{pt}</span>
                             </li>
                           ))}
@@ -538,7 +538,7 @@ export default function NotesClient({
                       </button>
                       <button onClick={() => openPay(modal.note)}
                         className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-orange-500/20">
-                        <CreditCard className="w-4 h-4" /> Buy for {fmt(modal.note.price, isIndia)} â€” Instant Download
+                        <CreditCard className="w-4 h-4" /> Buy for {fmt(modal.note.price, isIndia)} — Instant Download
                       </button>
                     </div>
                   </div>
@@ -546,7 +546,7 @@ export default function NotesClient({
               </motion.div>
             )}
 
-            {/* â”€â”€ Note: code / pay / download modals â”€â”€ */}
+            {/* ── Note: code / pay / download modals ── */}
             {(modal.type === 'code' || modal.type === 'pay' || modal.type === 'download') && (
               <motion.div key="md"
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -557,9 +557,9 @@ export default function NotesClient({
                   <div className="h-0.5 bg-gradient-to-r from-transparent via-orange-500 to-transparent" />
                   <div className="flex items-center justify-between px-5 pt-5 pb-4">
                     <h2 className="font-extrabold text-zinc-100">
-                      {modal.type === 'code'     && 'ðŸ‘‘ Member Free Access'}
-                      {modal.type === 'pay'      && 'ðŸ’³ Buy This Note'}
-                      {modal.type === 'download' && 'ðŸŽ‰ Ready to Download!'}
+                      {modal.type === 'code'     && '👑 Member Free Access'}
+                      {modal.type === 'pay'      && '💳 Buy This Note'}
+                      {modal.type === 'download' && '🎉 Ready to Download!'}
                     </h2>
                     <button onClick={close}
                       className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-lg flex items-center justify-center transition-colors">
@@ -575,7 +575,7 @@ export default function NotesClient({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-zinc-100 truncate">{modal.note.title}</p>
-                          <p className="text-xs text-zinc-500">{modal.note.pages} pages Â· {modal.note.topic}</p>
+                          <p className="text-xs text-zinc-500">{modal.note.pages} pages · {modal.note.topic}</p>
                         </div>
                         <span className="font-extrabold text-orange-400 shrink-0">{fmt(modal.note.price, isIndia)}</span>
                       </div>
@@ -605,7 +605,7 @@ export default function NotesClient({
                         {error && <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
                         <button onClick={() => verifyCode(modal.note)} disabled={isLoading}
                           className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
-                          {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifyingâ€¦</> : <><Crown className="w-4 h-4" /> Get Free Download</>}
+                          {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</> : <><Crown className="w-4 h-4" /> Get Free Download</>}
                         </button>
                         <p className="text-center text-xs text-zinc-600">Not a member?{' '}
                           <button onClick={() => openPay(modal.note)} className="text-orange-400 hover:underline">Buy for {fmt(modal.note.price, isIndia)}</button>
@@ -617,7 +617,7 @@ export default function NotesClient({
                       <div className="space-y-3">
                         <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 space-y-2.5 text-sm">
                           {[['Price', fmt(modal.note.price, isIndia), 'text-zinc-200'],
-                            ['Type', 'One-time Â· no subscription', 'text-emerald-400'],
+                            ['Type', 'One-time · no subscription', 'text-emerald-400'],
                             ['Delivery', 'Instant download', 'text-emerald-400']].map(([k, v, c]) => (
                             <div key={k} className="flex justify-between">
                               <span className="text-zinc-600">{k}</span>
@@ -630,7 +630,7 @@ export default function NotesClient({
                           </div>
                         </div>
 <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-800/40 rounded-xl px-3 py-2.5">
-                          <Lock className="w-3.5 h-3.5 shrink-0" /> UPI Â· PhonePe Â· GPay Â· Cards Â· Netbanking
+                          <Lock className="w-3.5 h-3.5 shrink-0" /> UPI · PhonePe · GPay · Cards · Netbanking
                         </div>
                         {error && (
                           <div className="space-y-2">
@@ -646,7 +646,7 @@ export default function NotesClient({
                         )}
                         <button onClick={() => buy(modal.note)} disabled={isLoading}
                           className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
-                          {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Openingâ€¦</> : <><CreditCard className="w-4 h-4" /> Pay {fmt(modal.note.price, isIndia)}</>}
+                          {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening…</> : <><CreditCard className="w-4 h-4" /> Pay {fmt(modal.note.price, isIndia)}</>}
                         </button>
                         <p className="text-center text-xs text-zinc-600">YouTube member?{' '}
                           <button onClick={() => openCode(modal.note)} className="text-orange-400 hover:underline">Get it free</button>
@@ -669,7 +669,7 @@ export default function NotesClient({
                           className="flex items-center justify-center gap-2 w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/15">
                           <Download className="w-5 h-5" /> Download PDF
                         </a>
-                        <p className="text-xs text-zinc-700">Link valid for 1 hour â€” save your file now.</p>
+                        <p className="text-xs text-zinc-700">Link valid for 1 hour — save your file now.</p>
                       </div>
                     )}
                   </div>
@@ -677,7 +677,7 @@ export default function NotesClient({
               </motion.div>
             )}
 
-            {/* â”€â”€ Package: pay modal â”€â”€ */}
+            {/* ── Package: pay modal ── */}
             {modal.type === 'pay-pkg' && (
               <motion.div key="pay-pkg"
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -687,7 +687,7 @@ export default function NotesClient({
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
                   <div className={`h-1 bg-gradient-to-r ${modal.pkg.gradient}`} />
                   <div className="flex items-center justify-between px-5 pt-5 pb-4">
-                    <h2 className="font-extrabold text-zinc-100">ðŸ’³ Buy Bundle</h2>
+                    <h2 className="font-extrabold text-zinc-100">💳 Buy Bundle</h2>
                     <button onClick={close}
                       className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-lg flex items-center justify-center transition-colors">
                       <X className="w-4 h-4" />
@@ -706,8 +706,8 @@ export default function NotesClient({
                     </div>
                     <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 space-y-2.5 text-sm">
                       {[['Includes', `${modal.pkg.note_ids.length} PDF files`, 'text-zinc-200'],
-                        ['Type', 'One-time Â· no subscription', 'text-emerald-400'],
-                        ['Delivery', 'Instant download â€” all files', 'text-emerald-400']].map(([k, v, c]) => (
+                        ['Type', 'One-time · no subscription', 'text-emerald-400'],
+                        ['Delivery', 'Instant download — all files', 'text-emerald-400']].map(([k, v, c]) => (
                         <div key={k} className="flex justify-between">
                           <span className="text-zinc-600">{k}</span>
                           <span className={c}>{v}</span>
@@ -719,7 +719,7 @@ export default function NotesClient({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-800/40 rounded-xl px-3 py-2.5">
-                      <Lock className="w-3.5 h-3.5 shrink-0" /> UPI Â· PhonePe Â· GPay Â· Cards Â· Netbanking
+                      <Lock className="w-3.5 h-3.5 shrink-0" /> UPI · PhonePe · GPay · Cards · Netbanking
                     </div>
                     {error && (
                       <div className="space-y-2">
@@ -735,7 +735,7 @@ export default function NotesClient({
                     )}
                     <button onClick={() => buyPackage(modal.pkg)} disabled={isLoading}
                       className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
-                      {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Openingâ€¦</> : <><CreditCard className="w-4 h-4" /> Pay {fmt(modal.pkg.price, isIndia)}</>}
+                      {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening…</> : <><CreditCard className="w-4 h-4" /> Pay {fmt(modal.pkg.price, isIndia)}</>}
                     </button>
                     <p className="text-center text-xs text-zinc-600">YouTube member?{' '}
                       <button onClick={() => openPackageCode(modal.pkg)} className="text-orange-400 hover:underline">Get it free</button>
@@ -745,7 +745,7 @@ export default function NotesClient({
               </motion.div>
             )}
 
-            {/* â”€â”€ Package: member code modal â”€â”€ */}
+            {/* ── Package: member code modal ── */}
             {modal.type === 'code-pkg' && (
               <motion.div key="code-pkg"
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -755,7 +755,7 @@ export default function NotesClient({
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
                   <div className={`h-1 bg-gradient-to-r ${modal.pkg.gradient}`} />
                   <div className="flex items-center justify-between px-5 pt-5 pb-4">
-                    <h2 className="font-extrabold text-zinc-100">ðŸ‘‘ Member Free Bundle</h2>
+                    <h2 className="font-extrabold text-zinc-100">👑 Member Free Bundle</h2>
                     <button onClick={close}
                       className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-lg flex items-center justify-center transition-colors">
                       <X className="w-4 h-4" />
@@ -768,7 +768,7 @@ export default function NotesClient({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-zinc-100 truncate">{modal.pkg.title}</p>
-                        <p className="text-xs text-zinc-500">{modal.pkg.note_ids.length} PDFs Â· {fmt(modal.pkg.price, isIndia)} value</p>
+                        <p className="text-xs text-zinc-500">{modal.pkg.note_ids.length} PDFs · {fmt(modal.pkg.price, isIndia)} value</p>
                       </div>
                     </div>
                     <div className="bg-zinc-950/60 border border-zinc-800 rounded-xl p-3.5 space-y-2">
@@ -793,7 +793,7 @@ export default function NotesClient({
                     {error && <p className="text-xs text-red-400 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">{error}</p>}
                     <button onClick={() => verifyPackageCode(modal.pkg)} disabled={isLoading}
                       className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-all">
-                      {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifyingâ€¦</> : <><Crown className="w-4 h-4" /> Get All PDFs Free</>}
+                      {isLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</> : <><Crown className="w-4 h-4" /> Get All PDFs Free</>}
                     </button>
                     <p className="text-center text-xs text-zinc-600">Not a member?{' '}
                       <button onClick={() => openPackagePay(modal.pkg)} className="text-orange-400 hover:underline">Buy for {fmt(modal.pkg.price, isIndia)}</button>
@@ -803,7 +803,7 @@ export default function NotesClient({
               </motion.div>
             )}
 
-            {/* â”€â”€ Package: download modal â”€â”€ */}
+            {/* ── Package: download modal ── */}
             {modal.type === 'download-pkg' && (
               <motion.div key="dl-pkg"
                 initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -813,7 +813,7 @@ export default function NotesClient({
                 <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
                   <div className={`h-1 bg-gradient-to-r ${modal.pkg.gradient}`} />
                   <div className="flex items-center justify-between px-5 pt-5 pb-4">
-                    <h2 className="font-extrabold text-zinc-100">ðŸŽ‰ Bundle Ready!</h2>
+                    <h2 className="font-extrabold text-zinc-100">🎉 Bundle Ready!</h2>
                     <button onClick={close}
                       className="w-7 h-7 bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 rounded-lg flex items-center justify-center transition-colors">
                       <X className="w-4 h-4" />
@@ -826,7 +826,7 @@ export default function NotesClient({
                         className="w-8 h-8 bg-emerald-500/10 border border-emerald-500/25 rounded-lg flex items-center justify-center shrink-0">
                         <CheckCircle className="w-4 h-4 text-emerald-400" />
                       </motion.div>
-                      <span className="font-bold">{modal.items.length} PDFs ready â€” download each below</span>
+                      <span className="font-bold">{modal.items.length} PDFs ready — download each below</span>
                     </div>
                     <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                       {modal.items.map((item, i) => (
@@ -837,7 +837,7 @@ export default function NotesClient({
                         </a>
                       ))}
                     </div>
-                    <p className="text-xs text-zinc-700 text-center pt-1">Links valid for 1 hour â€” save all files now.</p>
+                    <p className="text-xs text-zinc-700 text-center pt-1">Links valid for 1 hour — save all files now.</p>
                   </div>
                 </div>
               </motion.div>
@@ -849,7 +849,7 @@ export default function NotesClient({
   )
 }
 
-/* â”€â”€ Package Card â”€â”€ */
+/* ── Package Card ── */
 function PackageCard({ pkg, allNotes, onBuy, onCode, isIndia }: {
   pkg: NotePackage; allNotes: Note[]; onBuy(): void; onCode(): void; isIndia: boolean
 }) {
@@ -889,7 +889,7 @@ function PackageCard({ pkg, allNotes, onBuy, onCode, isIndia }: {
           <div className="grid grid-cols-1 gap-1 mb-4">
             {pkgNotes.slice(0, showCount).map(n => (
               <div key={n.id} className="flex items-center gap-1.5 text-[11px] text-zinc-400">
-                <span className="text-orange-400 shrink-0 font-bold">âœ“</span>
+                <span className="text-orange-400 shrink-0 font-bold">✓</span>
                 <span className="truncate">{n.title}</span>
                 <span className="text-zinc-700 shrink-0 ml-auto">{n.pages}p</span>
               </div>
@@ -909,7 +909,7 @@ function PackageCard({ pkg, allNotes, onBuy, onCode, isIndia }: {
           </button>
           <button onClick={onBuy}
             className="flex-[2] flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-md shadow-orange-500/20">
-            <CreditCard className="w-3.5 h-3.5" /> Buy Bundle â€” {fmt(pkg.price, isIndia)}
+            <CreditCard className="w-3.5 h-3.5" /> Buy Bundle — {fmt(pkg.price, isIndia)}
           </button>
         </div>
       </div>
@@ -917,7 +917,7 @@ function PackageCard({ pkg, allNotes, onBuy, onCode, isIndia }: {
   )
 }
 
-/* â”€â”€ Note Card â”€â”€ */
+/* ── Note Card ── */
 function NoteCard({ note, index, onPreview, onCode, onBuy, isIndia }: {
   note: Note; index: number; onPreview(): void; onCode(): void; onBuy(): void; isIndia: boolean
 }) {
@@ -962,13 +962,13 @@ function NoteCard({ note, index, onPreview, onCode, onBuy, isIndia }: {
           <ul className="space-y-1 mb-4 flex-1">
             {note.preview_points.slice(0, 3).map((pt, i) => (
               <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-500">
-                <span className="text-emerald-500 shrink-0 mt-0.5 text-[10px]">âœ“</span>
+                <span className="text-emerald-500 shrink-0 mt-0.5 text-[10px]">✓</span>
                 <span className="line-clamp-1">{pt}</span>
               </li>
             ))}
             {note.preview_points.length > 3 && (
               <li className="text-[11px] text-orange-400/80 pl-4">
-                +{note.preview_points.length - 3} more topics â†’
+                +{note.preview_points.length - 3} more topics →
               </li>
             )}
           </ul>
@@ -999,7 +999,7 @@ function NoteCard({ note, index, onPreview, onCode, onBuy, isIndia }: {
   )
 }
 
-/* â”€â”€ Note Row (list view) â”€â”€ */
+/* ── Note Row (list view) ── */
 function NoteRow({ note, index, onPreview, onCode, onBuy, isIndia }: {
   note: Note; index: number; onPreview(): void; onCode(): void; onBuy(): void; isIndia: boolean
 }) {
@@ -1019,7 +1019,7 @@ function NoteRow({ note, index, onPreview, onCode, onBuy, isIndia }: {
           <p className="text-sm font-bold text-zinc-100 truncate">{note.title}</p>
           {note.is_new && <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full uppercase shrink-0">New</span>}
         </div>
-        <p className="text-[11px] text-zinc-600 mt-0.5">{note.topic} Â· {note.pages} pages</p>
+        <p className="text-[11px] text-zinc-600 mt-0.5">{note.topic} · {note.pages} pages</p>
       </div>
       {note.description && (
         <p className="hidden md:block text-xs text-zinc-600 max-w-xs truncate flex-1">{note.description}</p>
