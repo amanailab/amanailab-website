@@ -58,6 +58,16 @@ const CANVAS_COMPONENTS: Palette[] = [
 
 const COMP_MAP = Object.fromEntries(CANVAS_COMPONENTS.map(c => [c.kind, c])) as Record<string, Palette>
 
+// Minimum dimensions per shape (used when no explicit style.width/height on the node)
+const SHAPE_MIN: Record<NodeShape, { w: number; h: number }> = {
+  rect:          { w: 96,  h: 44 },
+  pill:          { w: 110, h: 44 },
+  cylinder:      { w: 96,  h: 84 },
+  diamond:       { w: 96,  h: 96 },
+  hexagon:       { w: 110, h: 60 },
+  parallelogram: { w: 120, h: 56 },
+}
+
 // Distinct shape per component kind
 const KIND_SHAPE: Partial<Record<string, NodeShape>> = {
   client:       'pill',
@@ -188,10 +198,12 @@ function ArchNodeComponent({ id, data, selected }: NodeProps<ArchNode>) {
   // SVG-shaped nodes (diamond, hexagon, cylinder, parallelogram)
   if (isSvgShape) {
     const isVertical = shape === 'diamond'
+    const { w: minW, h: minH } = SHAPE_MIN[shape]
     return (
       <div
         onDoubleClick={() => { setValue(data.label); setEditing(true) }}
-        className="group relative w-full h-full flex items-center justify-center cursor-default"
+        className="group relative flex items-center justify-center cursor-default"
+        style={{ minWidth: minW, minHeight: minH, width: '100%', height: '100%', boxSizing: 'border-box' }}
       >
         <NodeResizer
           color="#f97316"
@@ -371,13 +383,24 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
   const nodeTypes = useMemo(() => ({ arch: ArchNodeComponent }), [])
   const edgeTypes = useMemo(() => ({ labeled: LabeledEdge }), [])
 
-  // Load saved canvas
+  // Load saved canvas — also migrates old nodes to have explicit dimensions for SVG shapes
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKey)
       if (raw) {
         const p = JSON.parse(raw) as SavedCanvas
-        if (Array.isArray(p.nodes)) setNodes(p.nodes)
+        if (Array.isArray(p.nodes)) {
+          const migrated = p.nodes.map(n => {
+            const kind = (n.data as ArchNodeData)?.kind
+            const shape = KIND_SHAPE[kind] ?? 'rect'
+            const isSvg = shape !== 'rect' && shape !== 'pill'
+            if (isSvg && !n.style?.width) {
+              return { ...n, style: { ...n.style, ...(SHAPE_INIT_STYLE[kind] ?? { width: SHAPE_MIN[shape].w, height: SHAPE_MIN[shape].h }) } }
+            }
+            return n
+          })
+          setNodes(migrated)
+        }
         if (Array.isArray(p.edges)) setEdges(p.edges)
       }
     } catch {}
@@ -490,6 +513,7 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
           connectionMode={ConnectionMode.Loose}
           defaultEdgeOptions={defaultEdgeOptions}
           deleteKeyCode={['Delete', 'Backspace']}
+          panActivationKeyCode={null}
           fitView
           proOptions={{ hideAttribution: true }}
           className="bg-zinc-950"

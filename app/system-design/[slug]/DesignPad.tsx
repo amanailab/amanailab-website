@@ -1454,6 +1454,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       suggestOnTriggerCharacters: true,
                       quickSuggestions: { other: true, comments: false, strings: false },
                       acceptSuggestionOnEnter: 'smart' as const,
+                      acceptSuggestionOnCommitCharacter: false,
                       renderWhitespace: 'selection' as const,
                       bracketPairColorization: { enabled: true },
                       guides: { indentation: true, bracketPairs: true },
