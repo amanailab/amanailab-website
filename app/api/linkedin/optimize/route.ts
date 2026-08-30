@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     )
   }
 
-  // Daily allowance: 3/day anonymous (per IP), 20/day signed-in
+  // Daily allowance: 2/day anonymous (per IP), 3/day signed-in, bundle unlimited
   const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
   const exhausted = await enforceDailyAllowance(req, 'linkedin-optimize')
   if (exhausted) return exhausted

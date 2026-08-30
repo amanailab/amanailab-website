@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const { allowed, retryAfterSec } = checkRateLimit(`${getClientIp(req)}:skill-gap`, 5, 60_000)
   if (!allowed) return NextResponse.json({ error: `Too many requests. Wait ${retryAfterSec}s.` }, { status: 429 })
 
-  // Daily allowance: 3/day anonymous (per IP), 20/day signed-in
+  // Daily allowance: 2/day anonymous (per IP), 3/day signed-in, bundle unlimited
   const exhausted = await enforceDailyAllowance(req, 'skill-gap')
   if (exhausted) return exhausted
 
