@@ -596,7 +596,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
             }),
           })
           const vd = await vr.json()
-          if (vr.ok) { setShowPaywall(false); refreshStatus() }
+          if (vr.ok) { setShowPaywall(false); setPurchasing(false); refreshStatus() }
           else setPaywallError(vd.error ?? 'Payment received but activation failed. WhatsApp Aman with your payment ID.')
         },
         modal: { ondismiss: () => setPurchasing(false) },
@@ -804,9 +804,12 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         body: JSON.stringify({ problem: problem.problem, language: active?.language ?? 'python', code: currentCode }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Check failed')
+      if (res.status === 401) { setShowLoginPrompt(true); return }
+      if (!res.ok) throw new Error(data.error ?? 'Code check failed')
       setCodeCheck(data); setCodeCheckOpen(true)
-    } catch { /* silent — user will see empty state */ }
+    } catch (err) {
+      setReviewError((err instanceof Error ? err.message : '') || 'Code check failed. Try again.')
+    }
     finally { setCheckingCode(false) }
   }
 

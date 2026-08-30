@@ -20,6 +20,9 @@ export async function POST(req: Request) {
     )
   }
 
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'interview')
+  if (blocked) return blocked
 
     const { messages, topic, level, turnCount } = await req.json()
 

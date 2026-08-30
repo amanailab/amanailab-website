@@ -22,6 +22,12 @@ export async function POST(req: Request) {
   const rl = checkRateLimit(`check-code:${getClientIp(req)}`, 10, 60_000)
   if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Wait a minute.' }, { status: 429 })
 
+  // Require authentication to protect free API credits
+  const { createClient } = await import('@/lib/supabase/server')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Sign in to use AI Code Check.', code: 'AUTH_REQUIRED' }, { status: 401 })
+
   try {
     const body     = await req.json()
     const problem  = typeof body?.problem  === 'string' ? body.problem.slice(0, 500)  : ''
