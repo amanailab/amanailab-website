@@ -38,7 +38,9 @@ async function getAuthedUserId(): Promise<string | null> {
   }
 }
 
-async function hasFullBundle(userId: string): Promise<boolean> {
+type ActivePlan = 'free' | 'sd_pro' | 'full_bundle'
+
+async function getActivePlan(userId: string): Promise<ActivePlan> {
   try {
     const admin = getAdminSupabase()
     const { data } = await admin
@@ -46,11 +48,20 @@ async function hasFullBundle(userId: string): Promise<boolean> {
       .select('plan, subscribed_until')
       .eq('user_id', userId)
       .maybeSingle()
-    if (!data) return false
-    return data.plan === 'full_bundle' && new Date(data.subscribed_until) > new Date()
+    if (!data || new Date(data.subscribed_until) <= new Date()) return 'free'
+    return data.plan === 'full_bundle' ? 'full_bundle' : 'sd_pro'
   } catch {
-    return false
+    return 'free'
   }
+}
+
+export interface AllowanceOptions {
+  /** Per-day limit for anonymous visitors (default 3). */
+  anonLimit?: number
+  /** Per-day limit for signed-in free users (default 20). */
+  authLimit?: number
+  /** Per-day limits by subscription plan. Defaults to unlimited for full_bundle only. */
+  planLimits?: Partial<Record<Exclude<ActivePlan, 'free'>, number>>
 }
 
 /**
@@ -60,15 +71,25 @@ async function hasFullBundle(userId: string): Promise<boolean> {
  *   const blocked = await enforceDailyAllowance(req, 'resume-analyze')
  *   if (blocked) return blocked
  */
-export async function enforceDailyAllowance(req: Request, feature: string): Promise<NextResponse | null> {
+export async function enforceDailyAllowance(
+  req: Request,
+  feature: string,
+  opts: AllowanceOptions = {},
+): Promise<NextResponse | null> {
   const userId = await getAuthedUserId()
 
-  // Full Bundle subscribers get unlimited access to all career/resume tools
-  if (userId && await hasFullBundle(userId)) {
-    return null
+  let limit = userId ? (opts.authLimit ?? AUTH_DAILY_LIMIT) : (opts.anonLimit ?? ANON_DAILY_LIMIT)
+
+  if (userId) {
+    const plan = await getActivePlan(userId)
+    if (plan !== 'free') {
+      const planLimit = opts.planLimits?.[plan] ?? (plan === 'full_bundle' ? BUNDLE_DAILY_LIMIT : undefined)
+      if (planLimit !== undefined) limit = planLimit
+    }
+    // Unlimited plans skip the counter entirely
+    if (limit >= BUNDLE_DAILY_LIMIT) return null
   }
 
-  const limit      = userId ? AUTH_DAILY_LIMIT : ANON_DAILY_LIMIT
   const identifier = userId ? `user:${userId}:${feature}` : `ip:${getClientIp(req)}:${feature}`
   const day        = new Date().toISOString().slice(0, 10)
 
@@ -95,7 +116,7 @@ export async function enforceDailyAllowance(req: Request, feature: string): Prom
       // Logged-in user hit limit → 402 so clients can show upgrade prompt
       return NextResponse.json(
         {
-          error:  `You've reached today's limit of ${AUTH_DAILY_LIMIT} uses for this tool. Upgrade to the Full AI Career Bundle for unlimited access.`,
+          error:  `You've reached today's limit of ${limit} uses for this tool. Upgrade for more access.`,
           code:   'PAYWALL',
           limit,
         },
@@ -105,7 +126,7 @@ export async function enforceDailyAllowance(req: Request, feature: string): Prom
     // Anonymous user hit limit → 429
     return NextResponse.json(
       {
-        error: `You've used today's ${ANON_DAILY_LIMIT} free runs for this tool. Sign in to get ${AUTH_DAILY_LIMIT} per day, or upgrade to the Full AI Career Bundle for unlimited access.`,
+        error: `You've used today's ${limit} free runs for this tool. Sign in to get more per day, or upgrade to the Full AI Career Bundle for unlimited access.`,
         code:  'RATE_LIMIT',
         limit,
       },

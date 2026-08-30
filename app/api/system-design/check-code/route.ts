@@ -28,6 +28,14 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Sign in to use AI Code Check.', code: 'AUTH_REQUIRED' }, { status: 401 })
 
+  // Daily cap: free 3/day, Pro & Bundle 15/day
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'sd-check-code', {
+    authLimit:  3,
+    planLimits: { sd_pro: 15, full_bundle: 15 },
+  })
+  if (blocked) return blocked
+
   try {
     const body     = await req.json()
     const problem  = typeof body?.problem  === 'string' ? body.problem.slice(0, 500)  : ''

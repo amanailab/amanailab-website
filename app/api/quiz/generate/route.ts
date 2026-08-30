@@ -14,6 +14,10 @@ export async function POST(req: Request) {
     )
   }
 
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'quiz')
+  if (blocked) return blocked
+
   try {
     const { topic, level, count = 5 } = await req.json()
 

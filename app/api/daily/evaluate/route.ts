@@ -17,6 +17,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Too many requests. Please wait before evaluating again.' }, { status: 429 })
   }
 
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'daily-eval')
+  if (blocked) return blocked
+
   try {
     const { questionId, userAnswer } = await req.json()
 

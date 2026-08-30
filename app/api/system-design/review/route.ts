@@ -70,7 +70,7 @@ function normalizeReview(raw: unknown) {
 interface CodeSnippet { name: string; language: string; code: string }
 interface RequestBody {
   slug?: unknown; problem?: unknown; category?: unknown; keyAreas?: unknown
-  design?: unknown; codeSnippets?: unknown
+  design?: unknown; diagram?: unknown; codeSnippets?: unknown
 }
 
 export async function POST(req: Request) {
@@ -84,6 +84,13 @@ export async function POST(req: Request) {
       { error: 'Sign in to use AI Review.', code: 'AUTH_REQUIRED' },
       { status: 401 },
     )
+  }
+
+  // Per-user guard: blocks parallel clicks from slipping past the daily-count check
+  const { checkRateLimit } = await import('@/lib/rate-limit')
+  const rl = checkRateLimit(`sd-review-user:${user.id}`, 2, 15_000)
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'A review is already running — give it a few seconds.' }, { status: 429 })
   }
 
   // ── Subscription + usage check ────────────────────────────────────────────
@@ -141,24 +148,32 @@ export async function POST(req: Request) {
       ? (body.keyAreas as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 12)
       : []
     let   design      = typeof body?.design  === 'string' ? body.design  : ''
+    let   diagram     = typeof body?.diagram === 'string' ? body.diagram : ''
     const codeSnippets: CodeSnippet[] = Array.isArray(body?.codeSnippets)
       ? body.codeSnippets.filter(
           (s: unknown) => s && typeof s === 'object' && typeof (s as CodeSnippet).code === 'string' && (s as CodeSnippet).code.trim().length > 0,
         ).slice(0, 6)
       : []
 
-    if (!problem || !design.trim()) {
-      return NextResponse.json({ error: 'Problem and design are required.' }, { status: 400 })
+    if (!problem) {
+      return NextResponse.json({ error: 'Problem is required.' }, { status: 400 })
     }
-    if (design.trim().length < 100) {
-      return NextResponse.json({ error: 'Design answer is too short. Write more before requesting a review.' }, { status: 400 })
+    const hasEnoughContent = design.trim().length >= 100 || diagram.trim().length > 0 || codeSnippets.length > 0
+    if (!hasEnoughContent) {
+      return NextResponse.json({ error: 'Not enough content to review. Write more, draw a diagram, or add code first.' }, { status: 400 })
     }
 
     const MAX_PROBLEM_CHARS = 1_500
     const MAX_DESIGN_CHARS  = 8_000
+    const MAX_DIAGRAM_CHARS = 2_000
     const MAX_CODE_CHARS    = 1_500
     const trimmedProblem = problem.length > MAX_PROBLEM_CHARS ? problem.slice(0, MAX_PROBLEM_CHARS) + '…' : problem
-    if (design.length > MAX_DESIGN_CHARS) design = design.slice(0, MAX_DESIGN_CHARS)
+    if (design.length  > MAX_DESIGN_CHARS)  design  = design.slice(0, MAX_DESIGN_CHARS)
+    if (diagram.length > MAX_DIAGRAM_CHARS) diagram = diagram.slice(0, MAX_DIAGRAM_CHARS)
+
+    const diagramSection = diagram.trim()
+      ? `\nCANDIDATE'S ARCHITECTURE DIAGRAM (drawn on visual canvas — components and connections):\n${diagram.trim()}`
+      : ''
 
     const codeSection = codeSnippets.length > 0
       ? `\nCANDIDATE CODE SNIPPETS:\n${codeSnippets.map(s => {
@@ -193,6 +208,7 @@ ${keyAreasSection}
 
 CANDIDATE'S ANSWER:
 ${design}
+${diagramSection}
 ${codeSection}
 
 EVALUATION INSTRUCTIONS:
@@ -204,7 +220,7 @@ EVALUATION INSTRUCTIONS:
    - tradeoffs: alternatives considered and rejected, explicit reasoning, CAP theorem awareness
 
 2. For EACH key area listed above, note whether the candidate addressed it (even briefly).
-
+${diagram.trim() ? '\n2b. The candidate also drew an architecture diagram. Factor it into the architecture score: check that every component in the written answer appears in the diagram, connections make sense (direction, missing links), and mention any diagram-vs-text mismatch in gaps.\n' : ''}
 3. Strengths MUST quote or paraphrase the candidate's actual text.
 4. Gaps MUST name exactly what's missing and what a strong answer would include.
 5. The interviewerNote should reflect what a FAANG interviewer would actually think.

@@ -54,6 +54,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Too many requests. Wait ${retryAfterSec}s.` }, { status: 429 })
   }
 
+  const { enforceDailyAllowance } = await import('@/lib/daily-allowance')
+  const blocked = await enforceDailyAllowance(req, 'code-assist')
+  if (blocked) return blocked
+
   try {
     const { mode, code, problem_title, problem_description, failed_cases } = await req.json()
     if (!mode || !code) return NextResponse.json({ error: 'mode and code required' }, { status: 400 })

@@ -842,10 +842,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     }
     setReviewing(true); setReviewError(''); setReview(null)
     try {
-      const diagram = diagramTextRef.current.trim()
-      let d = design.trim()
-      if (diagram) d += `\n\n---\n\n## Architecture Diagram (visual canvas)\n${diagram}`
-
       const res = await fetch('/api/system-design/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -854,7 +850,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           problem:      problem.problem,
           category:     problem.category,
           keyAreas:     problem.keyAreas,
-          design:       d,
+          design:       design.trim(),
+          diagram:      diagramTextRef.current.trim(),
           codeSnippets: snips.filter(s => s.code.trim()).map(s => ({ name: s.name, language: s.language, code: s.code })),
         }),
       })
@@ -1682,9 +1679,21 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   </div>
                 </div>
                 <div className="min-w-0">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold ${GRADE_CONFIG[review.grade]?.color ?? ''} ${GRADE_CONFIG[review.grade]?.bg ?? ''}`}>
-                    <Award size={12} />Grade {review.grade} · {GRADE_CONFIG[review.grade]?.label ?? ''}
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold ${GRADE_CONFIG[review.grade]?.color ?? ''} ${GRADE_CONFIG[review.grade]?.bg ?? ''}`}>
+                      <Award size={12} />Grade {review.grade} · {GRADE_CONFIG[review.grade]?.label ?? ''}
+                    </span>
+                    {scoreHistory.length >= 2 && (() => {
+                      const prev  = scoreHistory[scoreHistory.length - 2].score
+                      const delta = review.overallScore - prev
+                      if (delta === 0) return null
+                      return (
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[11px] font-bold ${delta > 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-red-400 bg-red-500/10 border-red-500/30'}`}>
+                          {delta > 0 ? '↑' : '↓'} {prev} → {review.overallScore}
+                        </span>
+                      )
+                    })()}
+                  </div>
                   <p className="text-sm text-zinc-300 leading-relaxed mt-2.5">{review.summary}</p>
                 </div>
               </div>
