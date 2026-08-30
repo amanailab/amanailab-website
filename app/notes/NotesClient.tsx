@@ -297,17 +297,17 @@ export default function NotesClient({
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BUNDLES â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       {packages.length > 0 && (
-        <section className="px-4 pb-8">
+        <section className="px-4 pb-6">
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-5">
-              <div className="h-px flex-1 bg-zinc-800/70" />
-              <div className="flex items-center gap-2 px-3.5 py-1.5 bg-orange-500/10 border border-orange-500/25 rounded-full">
-                <PackageIcon className="w-3.5 h-3.5 text-orange-400" />
-                <span className="text-xs font-extrabold text-orange-400 uppercase tracking-wider">PDF Bundles â€” Best Value</span>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-px flex-1 bg-zinc-800" />
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
+                <PackageIcon className="w-3 h-3 text-orange-400" />
+                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">PDF Bundles â€” Best Value</span>
               </div>
-              <div className="h-px flex-1 bg-zinc-800/70" />
+              <div className="h-px flex-1 bg-zinc-800" />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {packages.map((pkg) => (
                 <PackageCard
                   key={pkg.id}
@@ -655,23 +655,21 @@ export default function NotesClient({
                     )}
 
                     {modal.type === 'download' && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-xl px-3.5 py-3">
-                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-                            className="w-9 h-9 bg-emerald-500/15 border border-emerald-500/30 rounded-xl flex items-center justify-center shrink-0">
-                            <CheckCircle className="w-5 h-5 text-emerald-400" />
-                          </motion.div>
-                          <div>
-                            <p className="text-sm font-bold text-emerald-300">You&apos;re all set!</p>
-                            <p className="text-[11px] text-zinc-500 mt-0.5 truncate max-w-[180px]">{modal.note.title}</p>
-                          </div>
+                      <div className="space-y-4 text-center">
+                        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+                          className="w-20 h-20 bg-emerald-500/10 border-2 border-emerald-500/25 rounded-2xl flex items-center justify-center mx-auto">
+                          <CheckCircle className="w-10 h-10 text-emerald-400" />
+                        </motion.div>
+                        <div>
+                          <p className="font-extrabold text-zinc-100 text-lg">You&apos;re all set!</p>
+                          <p className="text-xs text-zinc-500 mt-1">{modal.note.title}</p>
                         </div>
                         <a href={modal.url} download target="_blank" rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 w-full bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20">
-                          <Download className="w-5 h-5" /> Download PDF Now
+                          className="flex items-center justify-center gap-2 w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-500/15">
+                          <Download className="w-5 h-5" /> Download PDF
                         </a>
-                        <p className="text-xs text-zinc-700 text-center">Link expires in 1 hour &mdash; save your file now.</p>
+                        <p className="text-xs text-zinc-700">Link valid for 1 hour â€” save your file now.</p>
                       </div>
                     )}
                   </div>
@@ -822,30 +820,24 @@ export default function NotesClient({
                     </button>
                   </div>
                   <div className="px-5 pb-5 space-y-3">
-                    <div className="flex items-center gap-3 bg-emerald-500/8 border border-emerald-500/20 rounded-xl px-3.5 py-3">
+                    <div className="flex items-center gap-2 text-sm text-zinc-300">
                       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-                        className="w-9 h-9 bg-emerald-500/15 border border-emerald-500/30 rounded-xl flex items-center justify-center shrink-0">
-                        <CheckCircle className="w-5 h-5 text-emerald-400" />
+                        className="w-8 h-8 bg-emerald-500/10 border border-emerald-500/25 rounded-lg flex items-center justify-center shrink-0">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
                       </motion.div>
-                      <div>
-                        <p className="text-sm font-bold text-emerald-300">{modal.items.length} PDF{modal.items.length !== 1 ? 's' : ''} ready!</p>
-                        <p className="text-[11px] text-zinc-500 mt-0.5">Links expire in 1 hour &mdash; save all files now.</p>
-                      </div>
+                      <span className="font-bold">{modal.items.length} PDFs ready â€” download each below</span>
                     </div>
-                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                       {modal.items.map((item, i) => (
                         <a key={i} href={item.url} download target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-3 w-full bg-zinc-800/60 hover:bg-emerald-500/10 border border-zinc-700/60 hover:border-emerald-500/30 text-zinc-300 hover:text-emerald-300 font-semibold py-3 px-4 rounded-xl transition-all group">
-                          <Download className="w-4 h-4 shrink-0 text-emerald-400 group-hover:translate-y-0.5 transition-transform" />
-                          <span className="text-sm truncate flex-1">{item.title}</span>
-                          <span className="text-[10px] text-zinc-600 shrink-0 group-hover:text-emerald-600">PDF</span>
+                          className="flex items-center gap-3 w-full bg-emerald-500/8 hover:bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 font-semibold py-2.5 px-4 rounded-xl transition-all group">
+                          <Download className="w-4 h-4 shrink-0 group-hover:translate-y-0.5 transition-transform" />
+                          <span className="text-sm truncate">{item.title}</span>
                         </a>
                       ))}
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-700 justify-center pt-1">
-                      <Lock className="w-3 h-3" /> Secured via Razorpay
-                    </div>
+                    <p className="text-xs text-zinc-700 text-center pt-1">Links valid for 1 hour â€” save all files now.</p>
                   </div>
                 </div>
               </motion.div>
@@ -857,72 +849,67 @@ export default function NotesClient({
   )
 }
 
-/* -- Package Card -- */
+/* â”€â”€ Package Card â”€â”€ */
 function PackageCard({ pkg, allNotes, onBuy, onCode, isIndia }: {
   pkg: NotePackage; allNotes: Note[]; onBuy(): void; onCode(): void; isIndia: boolean
 }) {
   const pkgNotes        = allNotes.filter(n => pkg.note_ids.includes(n.id))
   const individualTotal = pkgNotes.reduce((s, n) => s + n.price, 0)
   const savings         = individualTotal - pkg.price
-  const totalPages      = pkgNotes.reduce((s, n) => s + (n.pages || 0), 0)
-  const showCount       = Math.min(pkgNotes.length, 5)
+  const showCount       = Math.min(pkgNotes.length, 4)
 
   return (
-    <div className="relative bg-zinc-900 border border-zinc-800 hover:border-orange-500/40 rounded-2xl overflow-hidden transition-all duration-300 group flex flex-col">
-      <div className={`h-1 bg-gradient-to-r ${pkg.gradient}`} />
-      {savings > 0 && (
-        <div className="absolute top-4 right-4 z-10">
-          <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-300 bg-emerald-500/15 border border-emerald-500/25 px-2.5 py-1 rounded-full whitespace-nowrap">
-            SAVE {fmt(savings, isIndia)}
-          </span>
-        </div>
-      )}
-      <div className="p-5 flex flex-col flex-1 gap-4">
-        <div className="flex items-start gap-3 pr-20">
-          <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${pkg.gradient} flex items-center justify-center text-2xl shrink-0 shadow-md`}>
-            {pkg.emoji}
-          </div>
-          <div className="min-w-0">
-            <h3 className="font-extrabold text-zinc-100 text-sm leading-snug">{pkg.title}</h3>
-            {pkg.description && <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed line-clamp-2">{pkg.description}</p>}
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[10px] text-zinc-600">{pkgNotes.length} PDFs</span>
-              {totalPages > 0 && <><span className="text-zinc-800">&middot;</span><span className="text-[10px] text-zinc-600">{totalPages} pages total</span></>}
+    <div className="bg-zinc-900 border border-zinc-800 hover:border-orange-500/30 rounded-2xl overflow-hidden transition-all group">
+      <div className={`h-1.5 bg-gradient-to-r ${pkg.gradient}`} />
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${pkg.gradient} flex items-center justify-center text-2xl shrink-0`}>
+              {pkg.emoji}
+            </div>
+            <div>
+              <h3 className="font-extrabold text-zinc-100 text-sm leading-snug">{pkg.title}</h3>
+              {pkg.description && <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">{pkg.description}</p>}
             </div>
           </div>
+          <div className="text-right shrink-0">
+            {savings > 0 && (
+              <div className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full mb-1 whitespace-nowrap">
+                SAVE {fmt(savings, isIndia)}
+              </div>
+            )}
+            <div className="text-xl font-extrabold text-orange-400">{fmt(pkg.price, isIndia)}</div>
+            {savings > 0 && (
+              <div className="text-[10px] text-zinc-600 line-through">{fmt(individualTotal, isIndia)}</div>
+            )}
+          </div>
         </div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-extrabold text-orange-400">{fmt(pkg.price, isIndia)}</span>
-          {savings > 0 && (
-            <span className="text-sm text-zinc-600 line-through">{fmt(individualTotal, isIndia)}</span>
-          )}
-          <span className="text-xs text-zinc-600 ml-auto">one-time</span>
-        </div>
+
         {pkgNotes.length > 0 && (
-          <div className="bg-zinc-950/60 border border-zinc-800/60 rounded-xl p-3 space-y-1.5">
-            <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-2">Includes</p>
+          <div className="grid grid-cols-1 gap-1 mb-4">
             {pkgNotes.slice(0, showCount).map(n => (
-              <div key={n.id} className="flex items-center gap-2">
-                <span className="text-base leading-none shrink-0">{n.emoji}</span>
-                <span className="text-[11px] text-zinc-300 truncate flex-1">{n.title}</span>
-                {n.pages > 0 && <span className="text-[10px] text-zinc-700 shrink-0">{n.pages}p</span>}
+              <div key={n.id} className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                <span className="text-orange-400 shrink-0 font-bold">âœ“</span>
+                <span className="truncate">{n.title}</span>
+                <span className="text-zinc-700 shrink-0 ml-auto">{n.pages}p</span>
               </div>
             ))}
             {pkgNotes.length > showCount && (
-              <div className="text-[11px] text-zinc-600 pt-0.5 pl-7">
+              <div className="text-[11px] text-zinc-600 pl-3.5">
                 +{pkgNotes.length - showCount} more PDFs included
               </div>
             )}
           </div>
         )}
-        <div className="flex gap-2 mt-auto">
+
+        <div className="flex gap-2 pt-3 border-t border-zinc-800">
           <button onClick={onCode}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500/8 hover:bg-orange-500/15 border border-orange-500/20 text-orange-400 text-xs font-bold py-2.5 rounded-xl transition-all">
+            className="flex-1 flex items-center justify-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/15 border border-orange-500/20 text-orange-400 text-xs font-bold py-2.5 rounded-xl transition-all">
             <Crown className="w-3.5 h-3.5" /> Member? Free
           </button>
           <button onClick={onBuy}
-            className="flex-[2] flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-lg shadow-orange-500/25">
-            <CreditCard className="w-3.5 h-3.5" /> Buy &mdash; {fmt(pkg.price, isIndia)}
+            className="flex-[2] flex items-center justify-center gap-1.5 bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-md shadow-orange-500/20">
+            <CreditCard className="w-3.5 h-3.5" /> Buy Bundle â€” {fmt(pkg.price, isIndia)}
           </button>
         </div>
       </div>
