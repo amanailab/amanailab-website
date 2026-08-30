@@ -4,7 +4,20 @@ import { SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
 import { SITE_STATS } from '@/lib/site-stats'
 import { PenLine, Clock, Building2, Sparkles, ListChecks, Cpu, LogIn } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import { getAdminSupabase } from '@/lib/admin'
 import SystemDesignClient, { type SDItem } from './SystemDesignClient'
+
+async function getDBProblems(): Promise<SDItem[]> {
+  try {
+    const supabase = getAdminSupabase()
+    const { data } = await supabase
+      .from('sd_problems')
+      .select('slug, title, difficulty, companies, category')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+    return (data as SDItem[] | null) ?? []
+  } catch { return [] }
+}
 
 export const metadata: Metadata = {
   title: `ML System Design Interview Practice — ${SITE_STATS.systemDesignProblems} Real Problems + AI Review | AmanAI Lab`,
@@ -30,7 +43,7 @@ const faqJsonLd = {
   mainEntity: [
     { '@type': 'Question', name: 'What ML system design topics are covered?', acceptedAnswer: { '@type': 'Answer', text: 'LLM serving at scale, RAG pipeline design, recommendation systems, fraud detection, search systems, real-time ML pipelines, computer vision systems, and more. All problems are based on real FAANG interview questions.' } },
     { '@type': 'Question', name: 'How does the AI review work for system design?', acceptedAnswer: { '@type': 'Answer', text: 'Write your design in the markdown editor, then click "Get AI Review". The AI grades 5 sections: problem framing, architecture, scalability, ML specifics, and trade-offs. You get a score, letter grade, specific strengths, gaps to fix, and an interviewer perspective note.' } },
-    { '@type': 'Question', name: 'How many free AI system design reviews do I get?', acceptedAnswer: { '@type': 'Answer', text: 'Every account gets 2 free AI reviews to start. SD Pro (₹799/30 days) gives you 15 reviews per day. The editor, timer, checklist, and components are always free.' } },
+    { '@type': 'Question', name: 'How many free AI system design reviews do I get?', acceptedAnswer: { '@type': 'Answer', text: 'Every account gets 2 free AI reviews to start. SD Pro (₹999/30 days) gives you 15 reviews per day. The editor, timer, checklist, and components are always free.' } },
     { '@type': 'Question', name: 'Is this suitable for FAANG-level system design interviews?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Problems are sourced from real ML engineer interviews at Google, Meta, Amazon, Microsoft, and OpenAI. The framework covers exactly the 5 areas interviewers evaluate.' } },
   ],
 };
@@ -46,9 +59,13 @@ export default async function SystemDesignPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const items: SDItem[] = SYSTEM_DESIGN_PROBLEMS.map(p => ({
+  const staticItems: SDItem[] = SYSTEM_DESIGN_PROBLEMS.map(p => ({
     slug: p.slug, title: p.title, difficulty: p.difficulty, companies: p.companies, category: p.category,
   }))
+  const dbItems = await getDBProblems()
+  const existingSlugs = new Set(staticItems.map(i => i.slug))
+  const newDbItems = dbItems.filter(i => !existingSlugs.has(i.slug))
+  const items: SDItem[] = [...staticItems, ...newDbItems]
 
   return (
     <div className="min-h-screen bg-zinc-950 pt-20 pb-20">

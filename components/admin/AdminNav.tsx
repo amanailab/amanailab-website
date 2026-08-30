@@ -19,6 +19,7 @@ import {
   Users,
   ShoppingCart,
   Zap,
+  PenLine,
 } from 'lucide-react'
 
 const navLinks = [
@@ -29,6 +30,7 @@ const navLinks = [
   { href: '/admin/company-questions', label: 'Company Q\'s',    icon: Library },
   { href: '/admin/companies',         label: 'Companies',       icon: Building2 },
   { href: '/admin/code-problems',     label: 'Code Lab',        icon: Code2 },
+  { href: '/admin/system-design',     label: 'System Design',   icon: PenLine },
   { href: '/admin/community',         label: 'Community',       icon: MessageSquare },
   { href: '/admin/resources',         label: 'Cheat Sheets',    icon: BookOpen },
   { href: '/admin/notes',             label: 'Notes & PDFs',    icon: FileText     },

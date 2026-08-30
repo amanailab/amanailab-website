@@ -1,8 +1,35 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { DESIGN_PROBLEM_MAP, SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
+import type { SDProblem } from '@/lib/system-design-problems'
 import { createClient } from '@/lib/supabase/server'
+import { getAdminSupabase } from '@/lib/admin'
 import DesignPad from './DesignPad'
+
+async function getDBProblem(slug: string): Promise<SDProblem | null> {
+  try {
+    const supabase = getAdminSupabase()
+    const { data } = await supabase
+      .from('sd_problems')
+      .select('*')
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .single()
+    if (!data) return null
+    return {
+      slug:                data.slug,
+      title:               data.title,
+      difficulty:          data.difficulty,
+      category:            data.category,
+      companies:           data.companies ?? [],
+      problem:             data.problem   ?? '',
+      constraints:         data.constraints ?? [],
+      keyAreas:            data.key_areas   ?? [],
+      hints:               data.hints       ?? [],
+      linkedSheetItemId:   data.linked_sheet_item_id ?? '',
+    }
+  } catch { return null }
+}
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -38,7 +65,7 @@ const breadcrumbJsonLd = (slug: string, title: string) => ({
 
 export default async function DesignPage({ params }: Props) {
   const { slug } = await params
-  const problem = DESIGN_PROBLEM_MAP[slug]
+  const problem: SDProblem | null = DESIGN_PROBLEM_MAP[slug] ?? await getDBProblem(slug)
   if (!problem) notFound()
 
   const supabase = await createClient()

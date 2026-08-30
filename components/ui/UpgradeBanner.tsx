@@ -43,7 +43,7 @@ export default function UpgradeBanner({ message, compact }: Props) {
           className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold transition-colors"
         >
           <Zap className="w-3 h-3" />
-          View plans — from ₹799
+          View plans — from ₹999
         </Link>
       </div>
       <button onClick={() => setDismissed(true)} className="text-zinc-600 hover:text-zinc-400 mt-0.5 shrink-0">

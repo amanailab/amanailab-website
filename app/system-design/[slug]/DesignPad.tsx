@@ -9,7 +9,7 @@ import {
   ListChecks, Cpu, Lightbulb, Target, Award, Bold, Heading2, Heading3,
   List, Minus, Plus, Code2, ChevronRight, ChevronLeft, GripVertical,
   Trophy, Hash, Maximize2, Crown, LogIn, ShieldCheck, Zap, Star, FileText, Briefcase,
-  Copy, ClipboardCheck, FlaskConical,
+  Copy, ClipboardCheck, FlaskConical, MessageSquare,
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 import type { SDProblem } from '@/lib/system-design-problems'
@@ -490,6 +490,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [purchasing, setPurchasing]       = useState(false)
   const [selectedPlan, setSelectedPlan]   = useState<'sd_pro' | 'full_bundle'>('full_bundle')
+  const [paywallError, setPaywallError]   = useState('')
+  const [showReset, setShowReset]         = useState(false)
 
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null)
@@ -545,19 +547,28 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   }, [])
 
   // ── Razorpay purchase ─────────────────────────────────────────────────────
+  const WA_PAYMENT_URL = (plan: 'sd_pro' | 'full_bundle') => {
+    const label = plan === 'full_bundle' ? 'Interview Prep Kit (₹1499)' : 'System Design Pro (₹999)'
+    return `https://wa.me/919997600372?text=${encodeURIComponent(`Hi Aman! I want to buy ${label} but payment isn't working. Can you help me complete the purchase?`)}`
+  }
+
   const handlePurchase = useCallback(async (plan: 'sd_pro' | 'full_bundle') => {
     setSelectedPlan(plan)
+    setPaywallError('')
     setPurchasing(true)
     try {
       const ok = await loadRazorpay()
-      if (!ok) { alert('Payment system failed to load. Please refresh and try again.'); return }
+      if (!ok) {
+        setPaywallError('Payment gateway failed to load. Use WhatsApp below to complete your purchase.')
+        return
+      }
 
       const endpoint    = plan === 'full_bundle' ? '/api/sd-pro/create-bundle-order' : '/api/sd-pro/create-order'
       const res         = await fetch(endpoint, { method: 'POST' })
       const od          = await res.json()
       if (!res.ok) {
         if (res.status === 401) { setShowPaywall(false); setShowLoginPrompt(true) }
-        else alert(od.error ?? 'Could not create order.')
+        else setPaywallError(od.error ?? 'Could not create order. Use WhatsApp below.')
         return
       }
 
@@ -585,13 +596,18 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           })
           const vd = await vr.json()
           if (vr.ok) { setShowPaywall(false); refreshStatus() }
-          else alert(vd.error ?? 'Payment verification failed. Contact support.')
+          else setPaywallError(vd.error ?? 'Payment received but activation failed. WhatsApp Aman with your payment ID.')
         },
         modal: { ondismiss: () => setPurchasing(false) },
       })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rzp.on('payment.failed', (resp: any) => {
+        setPaywallError(resp?.error?.description ?? 'Payment failed. Use WhatsApp below to complete your purchase.')
+        setPurchasing(false)
+      })
       rzp.open()
     } catch {
-      alert('Something went wrong. Please try again.')
+      setPaywallError('Something went wrong. Use WhatsApp below to complete your purchase.')
     } finally {
       setPurchasing(false)
     }
@@ -665,7 +681,13 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const persist = useCallback((d: string, cl: Record<string, boolean>, snips: CodeSnippet[], aid: string) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      try { localStorage.setItem(storageKey, JSON.stringify({ design: d, savedAt: new Date().toISOString(), checklist: cl })); localStorage.setItem(codeKey, JSON.stringify({ snippets: snips, activeId: aid })); setSavedAt(new Date()) } catch {}
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({ design: d, savedAt: new Date().toISOString(), checklist: cl }))
+        localStorage.setItem(codeKey, JSON.stringify({ snippets: snips, activeId: aid }))
+        setSavedAt(new Date())
+      } catch {
+        setReviewError('Could not save your work — storage is full or blocked. Your work is only in memory.')
+      }
     }, 700)
   }, [storageKey, codeKey])
 
@@ -721,6 +743,31 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     if (idx >= 0) { const linesBefore = el.value.substring(0, idx).split('\n').length; el.scrollTop = Math.max(0, (linesBefore - 2) * 22); el.focus(); el.setSelectionRange(idx + heading.length, idx + heading.length) }
     else insertAt('\n' + heading + '\n\n')
   }, [mobilePane, insertAt])
+
+  const handleResetSession = () => {
+    try { localStorage.removeItem(storageKey) } catch {}
+    try { localStorage.removeItem(codeKey) }    catch {}
+    try { localStorage.removeItem(canvasKey) }  catch {}
+    try { localStorage.removeItem(completionKey) } catch {}
+    try { localStorage.removeItem(historyKey) } catch {}
+    const fresh = makeSnippet()
+    setDesign(DESIGN_TEMPLATE)
+    setSnippets([fresh])
+    setActiveId(fresh.id)
+    setChecklist({})
+    setTimerSec(45 * 60)
+    setTimerOn(false)
+    setTimerStarted(false)
+    startedRef.current = false
+    setHintsRevealed(0)
+    setBestScore(null)
+    setScoreHistory([])
+    setReview(null)
+    setReviewError('')
+    setReviewOpen(false)
+    setShowReset(false)
+    monacoEditorRef.current?.setValue?.('')
+  }
 
   const fmt       = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
   const tClr      = timerSec <= 300 ? 'text-red-400' : timerSec <= 600 ? 'text-orange-400' : 'text-zinc-200'
@@ -861,7 +908,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     }
 
     const used  = proStatus.freeUsed  ?? 0
-    const limit = proStatus.freeLimit ?? 5
+    const limit = proStatus.freeLimit ?? 2
     const remaining = limit - used
     return (
       <div className="hidden md:flex items-center gap-1.5 text-[10px] flex-shrink-0">
@@ -940,6 +987,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
             </>
           )}
         </div>
+
+        <button onClick={() => setShowReset(true)} title="New Session — reset all work on this problem"
+          className="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0">
+          <Plus size={13} />
+        </button>
 
         <button onClick={downloadMd} title="Download as Markdown"
           className="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0">
@@ -1788,7 +1840,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       {/* ═══ PAYWALL MODAL ══════════════════════════════════════════════════ */}
       {showPaywall && (
         <>
-          <div onClick={() => setShowPaywall(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40" />
+          <div onClick={() => { setShowPaywall(false); setPaywallError('') }} className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40" />
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
 
             {/* Top accent */}
@@ -1802,9 +1854,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-zinc-100">Unlock AI Reviews</p>
-                  <p className="text-[11px] text-zinc-500">You&apos;ve used all 2 free reviews — pick a plan to continue</p>
+                  <p className="text-[11px] text-zinc-500">You&apos;ve used all {proStatus?.freeLimit ?? 2} free reviews — pick a plan to continue</p>
                 </div>
-                <button onClick={() => setShowPaywall(false)} className="ml-auto text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0">
+                <button onClick={() => { setShowPaywall(false); setPaywallError('') }} className="ml-auto text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0">
                   <X size={16} />
                 </button>
               </div>
@@ -1819,7 +1871,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                     <span className="text-sm font-bold text-zinc-100">System Design Pro</span>
                   </div>
                   <div className="flex items-baseline gap-1 mb-0.5">
-                    <span className="text-2xl font-extrabold text-zinc-100">₹799</span>
+                    <span className="text-2xl font-extrabold text-zinc-100">₹999</span>
                     <span className="text-zinc-500 text-xs">/ 30 days</span>
                   </div>
                   <p className="text-[10px] text-zinc-600 mb-4">One-time · No auto-renewal</p>
@@ -1844,7 +1896,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                     {purchasing && selectedPlan === 'sd_pro'
                       ? <Loader2 size={13} className="animate-spin" />
                       : <Crown size={13} />}
-                    {purchasing && selectedPlan === 'sd_pro' ? 'Opening payment…' : 'Get SD Pro — ₹799'}
+                    {purchasing && selectedPlan === 'sd_pro' ? 'Opening payment…' : 'Get SD Pro — ₹999'}
                   </button>
                 </div>
 
@@ -1858,7 +1910,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                     <span className="text-sm font-bold text-zinc-100">Interview Prep Kit</span>
                   </div>
                   <div className="flex items-baseline gap-1 mb-0.5">
-                    <span className="text-2xl font-extrabold text-orange-400">₹999</span>
+                    <span className="text-2xl font-extrabold text-orange-400">₹1499</span>
                     <span className="text-zinc-500 text-xs">/ 30 days</span>
                   </div>
                   <p className="text-[10px] text-zinc-600 mb-4">One-time · No auto-renewal</p>
@@ -1885,14 +1937,87 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                     {purchasing && selectedPlan === 'full_bundle'
                       ? <Loader2 size={13} className="animate-spin" />
                       : <Star size={13} />}
-                    {purchasing && selectedPlan === 'full_bundle' ? 'Opening payment…' : 'Get Interview Prep Kit — ₹999'}
+                    {purchasing && selectedPlan === 'full_bundle' ? 'Opening payment…' : 'Get Interview Prep Kit — ₹1499'}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-600">
-                <ShieldCheck size={10} className="text-zinc-700" />
-                <span>Secure payment via Razorpay · Instant activation · No hidden charges</span>
+              {paywallError && (
+                <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/25">
+                  <p className="text-[11px] text-red-300 mb-2.5">{paywallError}</p>
+                  <a
+                    href={WA_PAYMENT_URL(selectedPlan)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full py-2 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/25 transition-colors"
+                  >
+                    <MessageSquare size={13} /> Pay via WhatsApp instead
+                  </a>
+                </div>
+              )}
+
+              <div className="flex items-center justify-center gap-4 text-[10px] text-zinc-600">
+                <span className="flex items-center gap-1"><ShieldCheck size={10} className="text-zinc-700" /> Secure · Razorpay</span>
+                <span>·</span>
+                <span>Instant activation</span>
+                <span>·</span>
+                <a
+                  href="https://wa.me/919997600372?text=Hi%20Aman!%20I%20need%20help%20with%20a%20payment%20for%20the%20system%20design%20platform."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-500 hover:text-emerald-400 flex items-center gap-0.5"
+                >
+                  <MessageSquare size={10} /> Need help?
+                </a>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ═══ NEW SESSION CONFIRM MODAL ══════════════════════════════════════ */}
+      {showReset && (
+        <>
+          <div onClick={() => setShowReset(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-red-500 via-orange-500 to-yellow-400" />
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-red-500/15 border border-red-500/30 flex items-center justify-center flex-shrink-0">
+                  <RotateCcw size={18} className="text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-zinc-100">Start a New Session?</p>
+                  <p className="text-[11px] text-zinc-500">This will clear everything for this problem</p>
+                </div>
+                <button onClick={() => setShowReset(false)} className="ml-auto text-zinc-600 hover:text-zinc-300 transition-colors">
+                  <X size={15} />
+                </button>
+              </div>
+              <div className="space-y-1.5 mb-5 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700">
+                {[
+                  'Your written design answer',
+                  'Architecture diagram (canvas)',
+                  'All code snippets',
+                  'Checklist progress',
+                  'Timer & score history',
+                ].map(item => (
+                  <div key={item} className="flex items-center gap-2 text-[11px] text-zinc-400">
+                    <div className="w-1 h-1 rounded-full bg-red-400 flex-shrink-0" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-zinc-600 mb-4">This resets only this problem. Other problems are not affected.</p>
+              <div className="flex gap-2">
+                <button onClick={handleResetSession}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 font-bold text-sm transition-colors">
+                  Yes, reset everything
+                </button>
+                <button onClick={() => setShowReset(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-sm transition-colors">
+                  Keep my work
+                </button>
               </div>
             </div>
           </div>

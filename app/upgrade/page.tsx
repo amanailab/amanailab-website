@@ -5,9 +5,8 @@ import Link from 'next/link'
 import {
   Crown, Star, Zap, ShieldCheck, RefreshCw, Sparkles,
   FileText, Briefcase, Loader2, CheckCircle, ArrowLeft,
-  CalendarDays, Lock, LogIn,
+  CalendarDays, Lock, LogIn, MessageSquare,
 } from 'lucide-react'
-import type { Metadata } from 'next'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -80,6 +79,12 @@ export default function UpgradePage() {
   const [purchasing, setPurchasing] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<'sd_pro' | 'full_bundle'>('full_bundle')
   const [success, setSuccess]       = useState(false)
+  const [purchaseError, setPurchaseError] = useState('')
+
+  const WA_URL = (plan: 'sd_pro' | 'full_bundle') => {
+    const label = plan === 'full_bundle' ? 'Interview Prep Kit (₹1499)' : 'System Design Pro (₹999)'
+    return `https://wa.me/919997600372?text=${encodeURIComponent(`Hi Aman! I want to buy ${label} but payment isn't working. Can you help?`)}`
+  }
 
   useEffect(() => {
     fetch('/api/sd-pro/status')
@@ -94,10 +99,14 @@ export default function UpgradePage() {
       return
     }
     setSelectedPlan(plan)
+    setPurchaseError('')
     setPurchasing(true)
     try {
       const ok = await loadRazorpay()
-      if (!ok) { alert('Payment system failed to load. Please refresh and try again.'); return }
+      if (!ok) {
+        setPurchaseError('Payment gateway failed to load. Use WhatsApp below to complete your purchase.')
+        return
+      }
 
       const endpoint = plan === 'full_bundle' ? '/api/sd-pro/create-bundle-order' : '/api/sd-pro/create-order'
       const res      = await fetch(endpoint, { method: 'POST' })
@@ -105,7 +114,7 @@ export default function UpgradePage() {
 
       if (!res.ok) {
         if (res.status === 401) { window.location.href = '/login?next=/upgrade'; return }
-        alert(od.error ?? 'Could not create order.')
+        setPurchaseError(od.error ?? 'Could not create order. Use WhatsApp below.')
         return
       }
 
@@ -135,14 +144,19 @@ export default function UpgradePage() {
             setSuccess(true)
             setStatus(prev => prev ? { ...prev, isSubscribed: true, plan, subscribedUntil: vd.subscribedUntil } : prev)
           } else {
-            alert(vd.error ?? 'Payment verification failed. Contact support.')
+            setPurchaseError(vd.error ?? 'Payment received but activation failed. WhatsApp Aman with your payment ID.')
           }
         },
         modal: { ondismiss: () => setPurchasing(false) },
       })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      rzp.on('payment.failed', (resp: any) => {
+        setPurchaseError(resp?.error?.description ?? 'Payment failed. Use WhatsApp below to complete your purchase.')
+        setPurchasing(false)
+      })
       rzp.open()
     } catch {
-      alert('Something went wrong. Please try again.')
+      setPurchaseError('Something went wrong. Use WhatsApp below to complete your purchase.')
     } finally {
       setPurchasing(false)
     }
@@ -271,7 +285,7 @@ export default function UpgradePage() {
                 </div>
               </div>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-zinc-100">₹799</span>
+                <span className="text-4xl font-extrabold text-zinc-100">₹999</span>
                 <span className="text-zinc-500 text-sm">/ 30 days</span>
               </div>
               <p className="text-[11px] text-zinc-600 mb-5">One-time · No auto-renewal · No subscription trap</p>
@@ -297,7 +311,7 @@ export default function UpgradePage() {
                     ? <><Loader2 size={15} className="animate-spin" /> Opening payment…</>
                     : !status?.authenticated
                     ? <><Lock size={14} /> Sign in to purchase</>
-                    : <><Crown size={14} /> Get System Design Pro — ₹799</>}
+                    : <><Crown size={14} /> Get System Design Pro — ₹999</>}
                 </button>
               )}
             </div>
@@ -319,7 +333,7 @@ export default function UpgradePage() {
                 </div>
               </div>
               <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-extrabold text-orange-400">₹999</span>
+                <span className="text-4xl font-extrabold text-orange-400">₹1499</span>
                 <span className="text-zinc-500 text-sm">/ 30 days</span>
               </div>
               <p className="text-[11px] text-zinc-600 mb-5">One-time · No auto-renewal · No subscription trap</p>
@@ -345,7 +359,7 @@ export default function UpgradePage() {
                     ? <><Loader2 size={15} className="animate-spin" /> Opening payment…</>
                     : !status?.authenticated
                     ? <><Lock size={14} /> Sign in to purchase</>
-                    : <><Star size={14} /> Get Interview Prep Kit — ₹999</>}
+                    : <><Star size={14} /> Get Interview Prep Kit — ₹1499</>}
                 </button>
               )}
             </div>
@@ -356,6 +370,35 @@ export default function UpgradePage() {
         <div className="flex items-center justify-center gap-2 mt-8 text-[11px] text-zinc-600">
           <ShieldCheck size={12} className="text-zinc-700" />
           <span>Secure payment via Razorpay · Instant activation · No hidden charges</span>
+        </div>
+
+        {/* Payment error + WhatsApp fallback */}
+        {purchaseError && (
+          <div className="mt-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/25 max-w-lg mx-auto">
+            <p className="text-sm text-red-300 mb-3">{purchaseError}</p>
+            <a
+              href={WA_URL(selectedPlan)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/25 transition-colors"
+            >
+              <MessageSquare size={15} /> Pay via WhatsApp — Aman will activate your plan manually
+            </a>
+            <p className="text-[11px] text-zinc-600 text-center mt-2">Tell Aman which plan you want and he&apos;ll share payment details within a few hours.</p>
+          </div>
+        )}
+
+        {/* WhatsApp help link (always visible) */}
+        <div className="flex items-center justify-center gap-1.5 mt-4 text-[11px] text-zinc-600">
+          <span>Having trouble paying?</span>
+          <a
+            href="https://wa.me/919997600372?text=Hi%20Aman!%20I%20need%20help%20purchasing%20a%20plan%20on%20your%20platform."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
+          >
+            <MessageSquare size={11} /> WhatsApp Aman
+          </a>
         </div>
 
 

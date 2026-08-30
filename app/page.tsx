@@ -42,7 +42,7 @@ const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
   mainEntity: [
-    { '@type': 'Question', name: 'Is AmanAI Lab completely free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — the platform is free. All core tools work with a free account. No credit card ever required. Optional paid plans (₹799–₹999/month) unlock higher daily limits on AI-heavy tools.' } },
+    { '@type': 'Question', name: 'Is AmanAI Lab completely free?', acceptedAnswer: { '@type': 'Answer', text: 'Yes — the platform is free. All core tools work with a free account. No credit card ever required. Optional paid plans (₹999–₹1499/30 days) unlock higher daily limits on AI-heavy tools.' } },
     { '@type': 'Question', name: 'How should I prepare for an AI/ML engineer interview?', acceptedAnswer: { '@type': 'Answer', text: 'Start with the Skill Gap Analyzer — paste a job description and see exactly what you\'re missing. Then use the A-to-Z Interview Prep Sheet to fill gaps. Practice with the AI Mock Interview, run code problems in the Code Lab, and polish your resume before applying.' } },
     { '@type': 'Question', name: 'What AI/ML interview topics are covered?', acceptedAnswer: { '@type': 'Answer', text: '14 core topics: LLMs, RAG systems, AI Agents, LangGraph, Fine-Tuning, MLOps, Transformers, Embeddings, Vector Databases, Evaluation, Computer Vision, NLP, System Design, and Behavioral.' } },
     { '@type': 'Question', name: 'How does the AI mock interview work?', acceptedAnswer: { '@type': 'Answer', text: 'Select a topic and difficulty, then answer questions by typing or using voice. The AI scores your answer 0–10 with specific feedback on what you covered and what was missing. Each session is saved to your dashboard.' } },

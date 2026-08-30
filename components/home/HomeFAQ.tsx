@@ -7,7 +7,7 @@ import { ChevronDown, HelpCircle } from "lucide-react";
 const FAQS = [
   {
     q: "Is AmanAI Lab completely free?",
-    a: "Yes — the platform is free. All core tools (AI mock interview, 500+ questions, flashcards, code lab, skill-gap analyzer, daily challenge) work with a free account. No credit card ever required. Optional paid plans (₹799–₹999/month) unlock higher daily limits on AI-heavy tools like System Design review and Resume analysis.",
+    a: "Yes — the platform is free. All core tools (AI mock interview, 500+ questions, flashcards, code lab, skill-gap analyzer, daily challenge) work with a free account. No credit card ever required. Optional paid plans (₹999–₹1499, one-time for 30 days) unlock higher daily limits on AI-heavy tools like System Design review and Resume analysis.",
   },
   {
     q: "How should I prepare for an AI/ML engineer interview?",

@@ -588,7 +588,7 @@ export default function Navbar() {
 
               <Link href="/upgrade"
                 className="flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white text-sm font-bold px-4 py-3 rounded-xl transition-colors shadow-sm shadow-orange-500/30">
-                <Crown className="w-4 h-4" /> Get Pro — from ₹799
+                <Crown className="w-4 h-4" /> Get Pro — from ₹999
               </Link>
 
               <a

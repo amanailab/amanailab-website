@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { callAI } from '@/lib/ai-fallback'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export const runtime   = 'nodejs'
 export const maxDuration = 30
@@ -18,6 +19,9 @@ function extractJSON(raw: string): string {
 }
 
 export async function POST(req: Request) {
+  const rl = checkRateLimit(`check-code:${getClientIp(req)}`, 10, 60_000)
+  if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Wait a minute.' }, { status: 429 })
+
   try {
     const body     = await req.json()
     const problem  = typeof body?.problem  === 'string' ? body.problem.slice(0, 500)  : ''

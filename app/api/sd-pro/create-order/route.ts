@@ -4,7 +4,7 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 
-const PRICE_INR = 799
+const PRICE_INR = 999
 
 export async function POST(req: Request) {
   const rl = checkRateLimit(`sd-pro-order:${getClientIp(req)}`, 5, 60_000)

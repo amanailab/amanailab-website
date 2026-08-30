@@ -7,8 +7,8 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 export const runtime = 'nodejs'
 
 const PLAN_META = {
-  sd_pro:      { title: 'System Design Pro — 30 Days',   amount: 79900 },
-  full_bundle: { title: 'Interview Prep Kit — 30 Days',  amount: 99900 },
+  sd_pro:      { title: 'System Design Pro — 30 Days',   amount: 99900  },
+  full_bundle: { title: 'Interview Prep Kit — 30 Days',  amount: 149900 },
 } as const
 
 type Plan = keyof typeof PLAN_META

@@ -113,7 +113,7 @@ export default function CTASection() {
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-orange-400 shrink-0" />
-                    <span className="text-sm font-bold text-zinc-100">Pro — from ₹799/mo</span>
+                    <span className="text-sm font-bold text-zinc-100">Pro — from ₹999 / 30 days</span>
                   </div>
                   <Link href="/upgrade" className="flex items-center gap-1 text-[10px] font-bold text-orange-400 hover:text-orange-300 transition-colors">
                     <Crown className="w-3 h-3" /> See plans

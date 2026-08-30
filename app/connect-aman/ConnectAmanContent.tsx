@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { detectCountry } from '@/lib/geo'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -40,6 +41,7 @@ interface Session {
   emoji:     string
   name:      string
   price:     string
+  usdPrice:  string
   amount:    number
   duration:  string
   badge:     string | null
@@ -59,6 +61,7 @@ const SESSIONS: Session[] = [
     emoji:       '💬',
     name:        'Quick Chat',
     price:       '₹299',
+    usdPrice:    '$5',
     amount:      299,
     duration:    '30 min',
     badge:       null,
@@ -81,6 +84,7 @@ const SESSIONS: Session[] = [
     emoji:       '🎯',
     name:        'Mock Interview',
     price:       '₹999',
+    usdPrice:    '$15',
     amount:      999,
     duration:    '60 min',
     badge:       'Most Popular',
@@ -104,6 +108,7 @@ const SESSIONS: Session[] = [
     emoji:       '📋',
     name:        'Mock + Feedback Report',
     price:       '₹1,499',
+    usdPrice:    '$20',
     amount:      1499,
     duration:    '60 min + report',
     badge:       'Premium',
@@ -152,12 +157,13 @@ type BookingState =
 // ─── Session card ─────────────────────────────────────────────────────────────
 
 function SessionCard({
-  session, i, onBook, isActive,
+  session, i, onBook, isActive, isIndia,
 }: {
   session: Session
   i: number
   onBook: (s: Session) => void
   isActive: boolean
+  isIndia: boolean
 }) {
   const Icon = session.icon
   return (
@@ -193,7 +199,7 @@ function SessionCard({
 
         {/* Price */}
         <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-4xl font-extrabold text-zinc-100">{session.price}</span>
+          <span className="text-4xl font-extrabold text-zinc-100">{isIndia ? session.price : session.usdPrice}</span>
         </div>
         <div className="flex items-center gap-1.5 mb-5">
           <Clock className="w-3 h-3 text-zinc-600" />
@@ -230,7 +236,7 @@ function SessionCard({
         >
           {isActive
             ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening payment…</>
-            : <>Book Now — {session.price} <ArrowRight className="w-4 h-4" /></>}
+            : <>Book Now — {isIndia ? session.price : session.usdPrice} <ArrowRight className="w-4 h-4" /></>}
         </button>
       </div>
     </motion.div>
@@ -312,6 +318,7 @@ function SuccessOverlay({ state, onClose }: { state: { session: Session; payment
 export default function ConnectAmanContent() {
   const [booking, setBooking]   = useState<BookingState>({ type: 'idle' })
   const [rzpReady, setRzpReady] = useState(false)
+  const [isIndia, setIsIndia]   = useState(true)
   const [error, setError]       = useState('')
   const paymentSucceeded        = React.useRef(false)
   // Synchronous guard — prevents multiple handleBook calls before React re-renders the disabled state
@@ -323,6 +330,10 @@ export default function ConnectAmanContent() {
     s.src = 'https://checkout.razorpay.com/v1/checkout.js'
     s.async = true; s.onload = () => setRzpReady(true)
     document.body.appendChild(s)
+  }, [])
+
+  useEffect(() => {
+    detectCountry().then(c => setIsIndia(c === 'IN'))
   }, [])
 
   async function handleBook(session: Session) {
@@ -500,6 +511,7 @@ export default function ConnectAmanContent() {
               i={i}
               onBook={handleBook}
               isActive={booking.type === 'paying' && booking.session.id === s.id}
+              isIndia={isIndia}
             />
           ))}
         </div>
