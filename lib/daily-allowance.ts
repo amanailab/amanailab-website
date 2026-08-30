@@ -1,7 +1,7 @@
 // Daily usage allowance for paid-AI routes.
 //
 // Anonymous visitors get a small per-IP daily allowance per tool; signed-in
-// users get a generous one; Full Bundle subscribers get unlimited.
+// free users get slightly more; Full Bundle subscribers get unlimited.
 // Counters live in the `ai_usage` Supabase table (see supabase/ai_usage_schema.sql);
 // if the table/RPC is missing we degrade to in-memory rather than blocking.
 
@@ -11,8 +11,8 @@ import { createServerClient } from '@supabase/ssr'
 import { getAdminSupabase } from '@/lib/admin'
 import { getClientIp } from '@/lib/rate-limit'
 
-const ANON_DAILY_LIMIT   = 3
-const AUTH_DAILY_LIMIT   = 20
+const ANON_DAILY_LIMIT   = 2
+const AUTH_DAILY_LIMIT   = 3
 const BUNDLE_DAILY_LIMIT = 999   // effectively unlimited
 
 // In-memory fallback (per serverless instance)
@@ -56,9 +56,9 @@ async function getActivePlan(userId: string): Promise<ActivePlan> {
 }
 
 export interface AllowanceOptions {
-  /** Per-day limit for anonymous visitors (default 3). */
+  /** Per-day limit for anonymous visitors (default 2). */
   anonLimit?: number
-  /** Per-day limit for signed-in free users (default 20). */
+  /** Per-day limit for signed-in free users (default 3). */
   authLimit?: number
   /** Per-day limits by subscription plan. Defaults to unlimited for full_bundle only. */
   planLimits?: Partial<Record<Exclude<ActivePlan, 'free'>, number>>

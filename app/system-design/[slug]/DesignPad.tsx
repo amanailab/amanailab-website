@@ -1835,6 +1835,31 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   {reviewing ? 'Reviewing…' : 'Re-run Review'}
                 </button>
 
+                {/* ── Pro upsell — free users only, right when motivation is highest ── */}
+                {proStatus?.authenticated && !proStatus.isSubscribed && (
+                  <div className="bg-gradient-to-br from-orange-500/10 to-yellow-500/5 border border-orange-500/25 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Crown size={13} className="text-orange-400" />
+                      <p className="text-xs font-bold text-orange-300">
+                        {(proStatus.freeUsed ?? 0) >= (proStatus.freeLimit ?? 2)
+                          ? 'That was your last free review'
+                          : `${(proStatus.freeLimit ?? 2) - (proStatus.freeUsed ?? 0)} free review${(proStatus.freeLimit ?? 2) - (proStatus.freeUsed ?? 0) !== 1 ? 's' : ''} left`}
+                      </p>
+                    </div>
+                    <ul className="space-y-1 mb-3">
+                      {['15 AI reviews every day', 'Track score improvement across attempts', 'Fix gaps and re-run instantly'].map(t => (
+                        <li key={t} className="flex items-center gap-1.5 text-[11px] text-zinc-400">
+                          <CheckCircle size={10} className="text-emerald-400 shrink-0" /> {t}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link href="/upgrade"
+                      className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold transition-colors">
+                      <Zap size={12} /> Upgrade to Pro — ₹999/30 days
+                    </Link>
+                  </div>
+                )}
+
                 {/* ── Practice More recommendations ──────────────────────── */}
                 {(() => {
                   const related = SYSTEM_DESIGN_PROBLEMS

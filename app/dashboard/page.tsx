@@ -386,6 +386,90 @@ function PreparationToolkit() {
   )
 }
 
+// ─── Plan card ────────────────────────────────────────────────────────────────
+
+function PlanCard({ plan, daysLeft, reviewsUsed }: { plan: string; daysLeft: number; reviewsUsed: number }) {
+  if (plan === 'free') {
+    return (
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Star className="w-4 h-4 text-zinc-500" />
+            <p className="text-sm font-bold text-zinc-200">Free Plan</p>
+          </div>
+          <span className="text-[10px] font-bold text-zinc-500 bg-zinc-800 border border-zinc-700 px-2 py-0.5 rounded-full">FREE</span>
+        </div>
+        <ul className="space-y-1.5 mb-3">
+          <li className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-zinc-600 shrink-0" /> 3 uses/day per AI tool
+          </li>
+          <li className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-zinc-600 shrink-0" /> 2 free system design reviews
+          </li>
+        </ul>
+        <div className="bg-orange-500/5 border border-orange-500/15 rounded-xl p-2.5 mb-3">
+          <p className="text-[11px] text-zinc-400 leading-relaxed">
+            <span className="text-orange-400 font-bold">Interview Prep Kit:</span> unlimited resume, cover letter, LinkedIn, mock interviews + 15 SD reviews/day
+          </p>
+        </div>
+        <Link href="/upgrade"
+          className="flex items-center justify-center gap-1.5 w-full bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold py-2.5 rounded-xl transition-all shadow-md shadow-orange-500/15">
+          <Sparkles className="w-3.5 h-3.5" /> Upgrade — from ₹999
+        </Link>
+      </div>
+    )
+  }
+
+  const isBundle  = plan === 'full_bundle'
+  const planLabel = isBundle ? 'Interview Prep Kit' : 'System Design Pro'
+  const expiring  = daysLeft <= 5
+
+  return (
+    <div className={`rounded-2xl p-4 border ${expiring ? 'bg-orange-500/5 border-orange-500/30' : 'bg-zinc-900 border-emerald-500/25'}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Trophy className={`w-4 h-4 ${expiring ? 'text-orange-400' : 'text-emerald-400'}`} />
+          <p className="text-sm font-bold text-zinc-100">{planLabel}</p>
+        </div>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${expiring ? 'text-orange-300 bg-orange-500/10 border-orange-500/30' : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30'}`}>
+          {expiring ? `${daysLeft}d LEFT` : 'ACTIVE'}
+        </span>
+      </div>
+
+      <div className="space-y-2.5 mb-3">
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] text-zinc-500">AI reviews today</span>
+            <span className="text-[11px] font-bold text-zinc-300">{reviewsUsed}/15</span>
+          </div>
+          <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${reviewsUsed >= 15 ? 'bg-red-500' : 'bg-emerald-500'}`}
+              style={{ width: `${Math.min(100, (reviewsUsed / 15) * 100)}%` }} />
+          </div>
+        </div>
+        {isBundle && (
+          <p className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" /> Career tools: unlimited
+          </p>
+        )}
+        <p className="text-[11px] text-zinc-600">{daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining</p>
+      </div>
+
+      {expiring ? (
+        <Link href="/upgrade"
+          className="flex items-center justify-center gap-1.5 w-full bg-orange-500 hover:bg-orange-400 text-white text-xs font-bold py-2.5 rounded-xl transition-all">
+          <Sparkles className="w-3.5 h-3.5" /> Renew Now — Don&apos;t Lose Access
+        </Link>
+      ) : (
+        <Link href="/system-design"
+          className="flex items-center justify-center gap-1.5 w-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-xs font-bold py-2.5 rounded-xl transition-all">
+          Practice System Design <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      )}
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
@@ -400,7 +484,7 @@ export default async function DashboardPage() {
     return Promise.race([p, new Promise<T>(r => setTimeout(() => r(fallback), deadlineMs))])
   }
 
-  const [sessions, allSessions, codeStats] = await Promise.all([
+  const [sessions, allSessions, codeStats, subRow] = await Promise.all([
     raceWithTimeout(
       Promise.resolve(supabase.from('user_interview_sessions')
         .select('id,topic,level,question_count,avg_score,grade,created_at')
@@ -415,7 +499,35 @@ export default async function DashboardPage() {
       null as { user_id: string; avg_score: number }[] | null,
     ),
     raceWithTimeout(getCodeStats(user.id, adminSb), { solved: 0, easy_solved: 0, medium_solved: 0, hard_solved: 0, easy_total: 9, medium_total: 8, hard_total: 3, total_problems: 20, recent: [] } as CodeStats),
+    raceWithTimeout(
+      Promise.resolve(adminSb.from('sd_subscriptions')
+        .select('plan, subscribed_until')
+        .eq('user_id', user.id)
+        .maybeSingle()).then(r => r.data),
+      null as { plan: string; subscribed_until: string } | null,
+    ),
   ])
+
+  // ── Subscription status ───────────────────────────────────────────────────
+  const subActive  = !!subRow && new Date(subRow.subscribed_until) > new Date()
+  const subPlan    = subActive ? subRow!.plan : 'free'
+  const subDaysLeft = subActive
+    ? Math.max(1, Math.ceil((new Date(subRow!.subscribed_until).getTime() - Date.now()) / 86400000))
+    : 0
+
+  // Today's SD review usage (IST window — matches the review route)
+  let sdReviewsUsedToday = 0
+  if (subActive) {
+    const IST_MS   = 5.5 * 60 * 60 * 1000
+    const nowIst   = new Date(Date.now() + IST_MS)
+    const istStart = new Date(Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()) - IST_MS)
+    const { count } = await adminSb
+      .from('sd_review_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('used_at', istStart.toISOString())
+    sdReviewsUsedToday = count ?? 0
+  }
 
   const dataTimedOut  = sessions === null
   // Filter rows with valid numeric avg_score so Math.max/Math.min never get NaN/null.
@@ -811,6 +923,8 @@ export default async function DashboardPage() {
           {/* ──────── RIGHT: sticky sidebar ──────── */}
           <div className="w-full lg:w-[300px] shrink-0">
             <div className="flex flex-col gap-4 lg:sticky lg:top-20">
+              <PlanCard plan={subPlan} daysLeft={subDaysLeft} reviewsUsed={sdReviewsUsedToday} />
+
               <LeaderboardCard entries={displayedEntries} nameMap={nameMap} userRank={userRank} totalUsers={totalUsers} />
 
               {/* Sessions history card */}
