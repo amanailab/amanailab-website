@@ -458,7 +458,8 @@ export default function NotesClient({
         {modal.type !== 'none' && (
           <>
             <motion.div key="bd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={close} className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
+              onClick={() => { if (modal.type !== 'download' && modal.type !== 'download-pkg') close() }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50" />
 
             {/* â”€â”€ Note preview modal â”€â”€ */}
             {modal.type === 'preview' && (
