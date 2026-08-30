@@ -747,7 +747,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const handleResetSession = () => {
     try { localStorage.removeItem(storageKey) } catch {}
     try { localStorage.removeItem(codeKey) }    catch {}
-    try { localStorage.removeItem(canvasKey) }  catch {}
+    // canvas is NOT reset — user keeps their diagram
     try { localStorage.removeItem(completionKey) } catch {}
     try { localStorage.removeItem(historyKey) } catch {}
     const fresh = makeSnippet()
@@ -837,6 +837,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         body: JSON.stringify({
           slug:         problem.slug,
           problem:      problem.problem,
+          category:     problem.category,
+          keyAreas:     problem.keyAreas,
           design:       d,
           codeSnippets: snips.filter(s => s.code.trim()).map(s => ({ name: s.name, language: s.language, code: s.code })),
         }),
@@ -1445,13 +1447,13 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       tabSize: 4,
                       insertSpaces: true,
                       detectIndentation: false,
-                      autoIndent: 'full' as const,
-                      formatOnType: true,
+                      autoIndent: 'keep' as const,
+                      formatOnType: false,
                       formatOnPaste: true,
                       tabCompletion: 'on' as const,
                       suggestOnTriggerCharacters: true,
                       quickSuggestions: { other: true, comments: false, strings: false },
-                      acceptSuggestionOnEnter: 'on',
+                      acceptSuggestionOnEnter: 'smart' as const,
                       renderWhitespace: 'selection' as const,
                       bracketPairColorization: { enabled: true },
                       guides: { indentation: true, bracketPairs: true },
@@ -1988,7 +1990,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-zinc-100">Start a New Session?</p>
-                  <p className="text-[11px] text-zinc-500">This will clear everything for this problem</p>
+                  <p className="text-[11px] text-zinc-500">Clears writing, code &amp; progress — canvas stays</p>
                 </div>
                 <button onClick={() => setShowReset(false)} className="ml-auto text-zinc-600 hover:text-zinc-300 transition-colors">
                   <X size={15} />
@@ -1997,7 +1999,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               <div className="space-y-1.5 mb-5 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700">
                 {[
                   'Your written design answer',
-                  'Architecture diagram (canvas)',
                   'All code snippets',
                   'Checklist progress',
                   'Timer & score history',
@@ -2008,7 +2009,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-zinc-600 mb-4">This resets only this problem. Other problems are not affected.</p>
+              <p className="text-[11px] text-zinc-600 mb-4">Your diagram canvas is preserved. Only affects this problem.</p>
               <div className="flex gap-2">
                 <button onClick={handleResetSession}
                   className="flex-1 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 font-bold text-sm transition-colors">

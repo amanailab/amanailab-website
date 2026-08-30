@@ -68,6 +68,10 @@ function normalizeReview(raw: unknown) {
 }
 
 interface CodeSnippet { name: string; language: string; code: string }
+interface RequestBody {
+  slug?: unknown; problem?: unknown; category?: unknown; keyAreas?: unknown
+  design?: unknown; codeSnippets?: unknown
+}
 
 export async function POST(req: Request) {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -129,9 +133,13 @@ export async function POST(req: Request) {
 
   // ── Parse body ─────────────────────────────────────────────────────────────
   try {
-    const body        = await req.json()
-    const slug        = typeof body?.slug    === 'string' ? body.slug    : ''
-    const problem     = typeof body?.problem === 'string' ? body.problem : ''
+    const body        = await req.json() as RequestBody
+    const slug        = typeof body?.slug     === 'string' ? body.slug     : ''
+    const problem     = typeof body?.problem  === 'string' ? body.problem  : ''
+    const category    = typeof body?.category === 'string' ? body.category : ''
+    const keyAreas    = Array.isArray(body?.keyAreas)
+      ? (body.keyAreas as unknown[]).filter((x): x is string => typeof x === 'string').slice(0, 12)
+      : []
     let   design      = typeof body?.design  === 'string' ? body.design  : ''
     const codeSnippets: CodeSnippet[] = Array.isArray(body?.codeSnippets)
       ? body.codeSnippets.filter(
@@ -163,37 +171,50 @@ export async function POST(req: Request) {
 
     const hasCode = codeSnippets.length > 0
 
+    const keyAreasSection = keyAreas.length > 0
+      ? `\nMUST-COVER KEY AREAS FOR THIS PROBLEM (check if candidate addressed each):\n${keyAreas.map((a, i) => `${i + 1}. ${a}`).join('\n')}`
+      : ''
+
+    const categoryCtx = category ? ` (${category})` : ''
+
     const raw = await callAI({
       messages: [
         {
           role: 'system',
-          content: `You are a staff engineer at a top AI company who has run 300+ ML system design interviews. Be specific and honest — cite the candidate's actual words, not generic advice. Return ONLY valid JSON, no markdown fences.`,
+          content: `You are a staff ML engineer at a top AI company who has conducted 300+ system design interviews. Your reviews are specific to the question asked — you cite the candidate's actual words, note exactly which key areas were missed, and give actionable next steps. Return ONLY valid JSON, no markdown fences.`,
         },
         {
           role: 'user',
-          content: `Evaluate this ML system design interview answer.
+          content: `Evaluate this ${categoryCtx} system design interview answer.
 
-PROBLEM: ${trimmedProblem}
+INTERVIEW QUESTION:
+${trimmedProblem}
+${keyAreasSection}
 
-CANDIDATE ANSWER:
+CANDIDATE'S ANSWER:
 ${design}
 ${codeSection}
 
-Score each section 1-10 (null if not addressed at all):
-- requirements: functional+non-functional reqs, SLAs, scope clarity
-- architecture: component selection, data flow, service boundaries, justification
-- scalability: bottleneck analysis, caching, sharding, fault tolerance
-- dataModel: schema, storage choice justification, indexes, query patterns
-- tradeoffs: alternatives considered, deliberate choices explained with reasoning
+EVALUATION INSTRUCTIONS:
+1. Score each section 1-10 (null if completely unaddressed):
+   - requirements: functional+non-functional reqs, scale numbers, SLAs, scope — did they define what they're building?
+   - architecture: component selection, data flow, service boundaries, database choices — is it complete and justified?
+   - scalability: bottlenecks identified, caching strategy, sharding, fault tolerance, 10x growth plan
+   - dataModel: schema design, SQL vs NoSQL justification, indexes, query patterns, partition strategy
+   - tradeoffs: alternatives considered and rejected, explicit reasoning, CAP theorem awareness
 
-Strengths and gaps MUST reference specific content from the answer. Gaps must say exactly what is missing.
+2. For EACH key area listed above, note whether the candidate addressed it (even briefly).
 
-Return JSON only:
-{"overallScore":<1-10>,"grade":"<A|B|C|D>","summary":"<2-3 sentences: overall quality, key strength, critical gap>","strengths":["<specific citing answer>","<specific citing answer>"],"gaps":["<specific missing detail + what to add>","<specific missing detail + what to add>"],"sectionScores":{"requirements":<1-10|null>,"architecture":<1-10|null>,"scalability":<1-10|null>,"dataModel":<1-10|null>,"tradeoffs":<1-10|null>},"codeQuality":${hasCode ? '{"score":<1-10>,"notes":"<correctness, completeness, style>"}' : 'null'},"topSuggestion":"<single highest-impact specific improvement>","interviewerNote":"<what a real interviewer would think — honest, 1-2 sentences>"}`,
+3. Strengths MUST quote or paraphrase the candidate's actual text.
+4. Gaps MUST name exactly what's missing and what a strong answer would include.
+5. The interviewerNote should reflect what a FAANG interviewer would actually think.
+
+Return JSON only (no markdown fences):
+{"overallScore":<1-10>,"grade":"<A|B|C|D>","summary":"<2-3 sentences: overall quality + key strength + most critical gap>","strengths":["<quote/paraphrase from answer + why it's good>","<quote/paraphrase + why>"],"gaps":["<exactly what's missing + what to add>","<exactly what's missing + what to add>"],"sectionScores":{"requirements":<1-10|null>,"architecture":<1-10|null>,"scalability":<1-10|null>,"dataModel":<1-10|null>,"tradeoffs":<1-10|null>},"codeQuality":${hasCode ? '{"score":<1-10>,"notes":"<correctness, completeness, relevance to the problem>"}' : 'null'},"topSuggestion":"<single most impactful specific change the candidate should make>","interviewerNote":"<honest 1-2 sentence reaction from a real interviewer at this level>"}`,
         },
       ],
-      temperature: 0.3,
-      max_tokens:  1200,
+      temperature: 0.25,
+      max_tokens:  1400,
     })
 
     let parsed: unknown
