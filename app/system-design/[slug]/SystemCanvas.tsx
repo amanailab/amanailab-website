@@ -346,6 +346,7 @@ interface SavedCanvas { nodes: ArchNode[]; edges: ArchEdge[] }
 
 interface Props {
   storageKey: string
+  resetKey?: number
   onChange?: (diagramText: string, nodeCount: number) => void
   onInteract?: () => void
   heightClass?: string
@@ -361,7 +362,7 @@ const defaultEdgeOptions = {
 }
 
 // ── Inner canvas ──────────────────────────────────────────────────────────────
-function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(100vh-320px)] min-h-[460px]', fill = false }: Props) {
+function CanvasInner({ storageKey, resetKey, onChange, onInteract, heightClass = 'h-[calc(100vh-320px)] min-h-[460px]', fill = false }: Props) {
   const [nodes, setNodes, onNodesChange] = useNodesState<ArchNode>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<ArchEdge>([])
   const { screenToFlowPosition, fitView } = useReactFlow()
@@ -383,7 +384,8 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
   const nodeTypes = useMemo(() => ({ arch: ArchNodeComponent }), [])
   const edgeTypes = useMemo(() => ({ labeled: LabeledEdge }), [])
 
-  // Load saved canvas — also migrates old nodes to have explicit dimensions for SVG shapes
+  // Load saved canvas — also migrates old nodes to have explicit dimensions for SVG shapes.
+  // Re-runs when resetKey changes so the canvas clears after a session reset.
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKey)
@@ -402,10 +404,16 @@ function CanvasInner({ storageKey, onChange, onInteract, heightClass = 'h-[calc(
           setNodes(migrated)
         }
         if (Array.isArray(p.edges)) setEdges(p.edges)
+      } else {
+        setNodes([])
+        setEdges([])
       }
-    } catch {}
+    } catch {
+      setNodes([])
+      setEdges([])
+    }
     loaded.current = true
-  }, [storageKey, setNodes, setEdges])
+  }, [storageKey, setNodes, setEdges, resetKey])
 
   // Persist on change
   useEffect(() => {

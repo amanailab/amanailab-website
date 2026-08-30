@@ -492,6 +492,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [selectedPlan, setSelectedPlan]   = useState<'sd_pro' | 'full_bundle'>('full_bundle')
   const [paywallError, setPaywallError]   = useState('')
   const [showReset, setShowReset]         = useState(false)
+  const [canvasResetKey, setCanvasResetKey] = useState(0)
 
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null)
@@ -677,6 +678,14 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     if (timerInterval.current) clearInterval(timerInterval.current)
   }, [])
 
+  // Focus Monaco whenever user switches to the Code tab
+  useEffect(() => {
+    if (rightTab === 'code') {
+      const t = setTimeout(() => monacoEditorRef.current?.focus?.(), 80)
+      return () => clearTimeout(t)
+    }
+  }, [rightTab])
+
   // ── Persist ────────────────────────────────────────────────────────────────
   const persist = useCallback((d: string, cl: Record<string, boolean>, snips: CodeSnippet[], aid: string) => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
@@ -745,11 +754,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   }, [mobilePane, insertAt])
 
   const handleResetSession = () => {
-    try { localStorage.removeItem(storageKey) } catch {}
-    try { localStorage.removeItem(codeKey) }    catch {}
-    // canvas is NOT reset — user keeps their diagram
-    try { localStorage.removeItem(completionKey) } catch {}
-    try { localStorage.removeItem(historyKey) } catch {}
+    try { localStorage.removeItem(storageKey) }    catch {}
+    try { localStorage.removeItem(codeKey) }        catch {}
+    try { localStorage.removeItem(canvasKey) }      catch {}
+    try { localStorage.removeItem(completionKey) }  catch {}
+    try { localStorage.removeItem(historyKey) }     catch {}
     const fresh = makeSnippet()
     setDesign(DESIGN_TEMPLATE)
     setSnippets([fresh])
@@ -766,6 +775,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     setReviewError('')
     setReviewOpen(false)
     setShowReset(false)
+    setDiagramNodes(0)
+    diagramTextRef.current = ''
+    setCanvasResetKey(k => k + 1)   // signals SystemCanvas to reload (from empty storage)
     monacoEditorRef.current?.setValue?.('')
   }
 
@@ -1210,7 +1222,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
         {/* ═══ CANVAS ══════════════════════════════════════════════════════ */}
         <main className={`${mobilePane === 'canvas' ? 'flex' : 'hidden'} xl:flex flex-1 min-w-0 min-h-0 flex-col p-2`}>
-          <SystemCanvas fill storageKey={canvasKey} onChange={handleCanvasChange} onInteract={autoStartTimer} />
+          <SystemCanvas fill storageKey={canvasKey} resetKey={canvasResetKey} onChange={handleCanvasChange} onInteract={autoStartTimer} />
         </main>
 
         {/* Resize handle */}
@@ -1447,7 +1459,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       tabSize: 4,
                       insertSpaces: true,
                       detectIndentation: false,
-                      autoIndent: 'keep' as const,
+                      autoIndent: 'full' as const,
                       formatOnType: false,
                       formatOnPaste: true,
                       tabCompletion: 'on' as const,
@@ -1991,7 +2003,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 </div>
                 <div>
                   <p className="text-sm font-bold text-zinc-100">Start a New Session?</p>
-                  <p className="text-[11px] text-zinc-500">Clears writing, code &amp; progress — canvas stays</p>
+                  <p className="text-[11px] text-zinc-500">Clears everything for this problem — fresh start</p>
                 </div>
                 <button onClick={() => setShowReset(false)} className="ml-auto text-zinc-600 hover:text-zinc-300 transition-colors">
                   <X size={15} />
@@ -2000,6 +2012,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               <div className="space-y-1.5 mb-5 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700">
                 {[
                   'Your written design answer',
+                  'Architecture diagram (canvas)',
                   'All code snippets',
                   'Checklist progress',
                   'Timer & score history',
@@ -2010,7 +2023,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   </div>
                 ))}
               </div>
-              <p className="text-[11px] text-zinc-600 mb-4">Your diagram canvas is preserved. Only affects this problem.</p>
+              <p className="text-[11px] text-zinc-600 mb-4">Only resets this problem. Other problems are not affected.</p>
               <div className="flex gap-2">
                 <button onClick={handleResetSession}
                   className="flex-1 py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 font-bold text-sm transition-colors">
