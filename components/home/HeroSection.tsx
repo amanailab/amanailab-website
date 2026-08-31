@@ -12,7 +12,7 @@ const techPills = [
 
 export default function HeroSection() {
   return (
-    <section className="relative min-h-[82vh] flex items-center justify-center overflow-hidden">
+    <section className="relative overflow-x-hidden min-h-[auto] py-24 sm:py-0 sm:min-h-[82vh] flex items-center justify-center">
       {/* Background grid */}
       <div
         className="absolute inset-0 opacity-30"
@@ -56,16 +56,18 @@ export default function HeroSection() {
       {/* Bottom fade */}
       <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-zinc-950 to-transparent" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-16">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-0 sm:pt-16">
         {/* Badge */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-sm font-medium px-4 py-2 rounded-full mb-8"
+          className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-full mb-6 sm:mb-8"
         >
-          <Sparkles className="w-3.5 h-3.5" />
-          {SITE_STATS.tools} free AI tools · {SITE_STATS.questions} questions · {SITE_STATS.codeProblems}+ coding problems
+          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+          {/* Short on mobile, full on sm+ */}
+          <span className="sm:hidden">{SITE_STATS.tools} free tools · {SITE_STATS.questions} questions</span>
+          <span className="hidden sm:inline">{SITE_STATS.tools} free AI tools · {SITE_STATS.questions} questions · {SITE_STATS.codeProblems}+ coding problems</span>
         </motion.div>
 
         {/* Headline */}
@@ -73,7 +75,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.15] mb-6"
+          className="text-3xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.15] mb-5 sm:mb-6"
         >
           Land Your Dream{" "}
           <span
@@ -82,7 +84,6 @@ export default function HeroSection() {
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-              // Fallback for browsers that don't support background-clip:text
               color: "#f97316",
             }}
           >
@@ -97,7 +98,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed"
+          className="text-base sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed"
         >
           The complete free platform for AI/ML engineers — mock interviews, code practice, resume scoring, skill-gap analysis and more, all in one place.
         </motion.p>
@@ -107,18 +108,18 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col sm:flex-row gap-3 justify-center items-center"
+          className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center"
         >
           <Link
             href="/interview?tab=simulator"
-            className="inline-flex items-center gap-2.5 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/25 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+            className="inline-flex items-center justify-center gap-2.5 bg-orange-500 hover:bg-orange-400 text-white font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/25 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           >
             Start Interview Prep
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
             href="/code-lab"
-            className="inline-flex items-center gap-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-orange-500/40 text-zinc-100 font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+            className="inline-flex items-center justify-center gap-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-orange-500/40 text-zinc-100 font-semibold px-7 py-3.5 rounded-xl transition-all hover:-translate-y-0.5 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500/60 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
           >
             <Code2 className="w-4 h-4 text-orange-400" />
             Try the AI Code Lab
@@ -128,7 +129,7 @@ export default function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
-          className="mt-4 text-xs text-zinc-600"
+          className="mt-3 sm:mt-4 text-xs text-zinc-600"
         >
           Free forever · No credit card · Free account unlocks all tools in 30 seconds
         </motion.p>
@@ -138,10 +139,10 @@ export default function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.7 }}
-          className="relative mt-14 overflow-hidden"
+          className="relative mt-10 sm:mt-14 overflow-hidden"
         >
-          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-zinc-950 to-transparent z-10" />
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-zinc-950 to-transparent z-10" />
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-12 sm:w-20 bg-gradient-to-r from-zinc-950 to-transparent z-10" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 sm:w-20 bg-gradient-to-l from-zinc-950 to-transparent z-10" />
           <motion.div
             className="flex gap-3 w-max"
             animate={{ x: ["0%", "-50%"] }}
@@ -159,12 +160,12 @@ export default function HeroSection() {
         </motion.div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator — hidden on mobile to save space */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+        className="hidden sm:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-2"
       >
         <motion.div
           animate={{ y: [0, 8, 0] }}
