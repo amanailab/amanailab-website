@@ -20,7 +20,9 @@ import InterviewCountdown from '@/components/dashboard/InterviewCountdown'
 import AchievementAlert from '@/components/dashboard/AchievementAlert'
 import AchievementsPanel from '@/components/dashboard/AchievementsPanel'
 import RefreshButton from '@/components/dashboard/RefreshButton'
+import SetNamePrompt from '@/components/dashboard/SetNamePrompt'
 import { SITE_STATS } from '@/lib/site-stats'
+import { resolveUserNames, pseudonym } from '@/lib/user-names'
 
 export const metadata: Metadata = {
   title: 'My Dashboard | AmanAI Lab',
@@ -551,10 +553,16 @@ export default async function DashboardPage() {
   const thisWeekAvg = thisWeek.length ? thisWeek.reduce((a, b) => a + b.avg_score, 0) / thisWeek.length : 0
   const lastWeekAvg = lastWeek.length ? lastWeek.reduce((a, b) => a + b.avg_score, 0) / lastWeek.length : 0
   const weekDelta = thisWeek.length && lastWeek.length ? thisWeekAvg - lastWeekAvg : 0
-  // Prefer the display name set in profile; fall back to email prefix
-  const emailPrefix   = (user.user_metadata?.display_name as string | undefined)?.trim()
-                     || user.email?.split('@')[0]
-                     || 'there'
+  // Prefer the display name set in profile; fall back to Google name, then email
+  const meta          = user.user_metadata ?? {}
+  const displayName   = (
+    (meta.display_name as string | undefined)
+    ?? (meta.name as string | undefined)
+    ?? (meta.full_name as string | undefined)
+    ?? ''
+  ).trim()
+  const hasDisplayName = displayName.length >= 2
+  const emailPrefix   = displayName || user.email?.split('@')[0] || 'there'
   const lastPracticed = s[0] ? timeAgo(s[0].created_at) : null
 
   // Topic mastery
@@ -586,10 +594,13 @@ export default async function DashboardPage() {
     lbEntries.find(e => e.isYou) ?? { uid: user.id, avg: overallAvg, sessions: totalSessions, isYou: true },
   ]
 
-  // Anonymous display names — other users get a rank-based alias, never partial email
+  // Real display names for the users actually shown (top 5 + you), with a
+  // stable Learner#NNNN fallback for anyone who hasn't set a public name.
+  const shownUids = displayedEntries.map(e => e.uid)
+  const resolvedNames = await resolveUserNames(adminSb, shownUids)
   const nameMap: Record<string, string> = {}
-  lbEntries.forEach((e, i) => {
-    nameMap[e.uid] = e.isYou ? emailPrefix : `user_${i + 1}`
+  displayedEntries.forEach(e => {
+    nameMap[e.uid] = e.isYou ? emailPrefix : (resolvedNames.get(e.uid) ?? pseudonym(e.uid))
   })
 
   // Achievements
@@ -635,6 +646,9 @@ export default async function DashboardPage() {
           </div>
           <SignOutButton />
         </div>
+
+        {/* ── Set-your-name prompt (only when no public display name yet) ── */}
+        {!hasDisplayName && <SetNamePrompt />}
 
         {/* ── Partial-data banner (shown when session data timed out) ── */}
         {dataTimedOut && (

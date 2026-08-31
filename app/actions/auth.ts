@@ -18,10 +18,15 @@ export async function login(prevState: string | null, formData: FormData) {
 export async function signup(prevState: string | null, formData: FormData) {
   const supabase = await createClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://amanailab.com'
+  const rawName = (formData.get('name') as string | null)?.trim() ?? ''
+  const displayName = rawName.length >= 2 ? rawName.slice(0, 40) : undefined
   const { error } = await supabase.auth.signUp({
     email: formData.get('email') as string,
     password: formData.get('password') as string,
-    options: { emailRedirectTo: `${siteUrl}/auth/callback` },
+    options: {
+      emailRedirectTo: `${siteUrl}/auth/callback`,
+      data: displayName ? { display_name: displayName } : undefined,
+    },
   })
   if (error) return error.message
   return 'check_email'

@@ -236,6 +236,21 @@ export default function SignupPage() {
           <form action={handleFormAction} className="flex flex-col gap-4">
             <input type="hidden" name="next" value={nextPath} />
             <div className="flex flex-col gap-1.5">
+              <label htmlFor="name" className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
+                Your Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                maxLength={40}
+                placeholder="e.g. Aman C."
+                className="w-full bg-zinc-900 border border-zinc-800 focus:border-orange-500 focus:ring-1 focus:ring-orange-500/20 rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-all"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
               <label htmlFor="email" className="text-xs font-semibold text-zinc-400 uppercase tracking-wide">
                 Email
               </label>

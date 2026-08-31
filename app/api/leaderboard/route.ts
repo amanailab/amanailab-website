@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getAdminSupabase } from '@/lib/admin'
+import { resolveUserNames } from '@/lib/user-names'
 
 export const runtime = 'nodejs'
-
-function anonymize(email: string, name: string | null, uid: string): string {
-  if (name && name.trim().length > 1) return name.trim()
-  // Use last 6 chars of uid for a stable pseudonym that doesn't leak the email
-  return `User_${uid.slice(-6)}`
-}
 
 export async function GET() {
   try {
@@ -33,35 +28,6 @@ export async function GET() {
       }
     }
 
-    // Get display names for top users
-    const userIds = [...userMap.keys()]
-    const { data: users } = await sb.auth.admin.listUsers()
-    const userNameMap = new Map<string, { email: string; name: string | null }>()
-    for (const u of users?.users ?? []) {
-      userNameMap.set(u.id, {
-        email: u.email ?? '',
-        name: u.user_metadata?.display_name ?? null,
-      })
-    }
-
-    // Build leaderboard
-    const leaderboard = userIds
-      .map(uid => {
-        const { scores, latest } = userMap.get(uid)!
-        const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-        const info = userNameMap.get(uid)
-        return {
-          uid,
-          name: info ? anonymize(info.email, info.name, uid) : `User_${uid.slice(-6)}`,
-          avg: Math.round(avg * 10) / 10,
-          sessions: scores.length,
-          latest,
-        }
-      })
-      .filter(u => u.sessions >= 1)
-      .sort((a, b) => b.avg - a.avg || b.sessions - a.sessions)
-      .slice(0, 20)
-
     // Weekly (last 7 days)
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString()
     const weekMap = new Map<string, number[]>()
@@ -73,13 +39,32 @@ export async function GET() {
       }
     }
 
+    // Resolve real display names (with Learner#NNNN fallback) for everyone shown
+    const nameMap = await resolveUserNames(sb, [...userMap.keys()])
+
+    // Build leaderboard
+    const leaderboard = [...userMap.keys()]
+      .map(uid => {
+        const { scores, latest } = userMap.get(uid)!
+        const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+        return {
+          uid,
+          name: nameMap.get(uid)!,
+          avg: Math.round(avg * 10) / 10,
+          sessions: scores.length,
+          latest,
+        }
+      })
+      .filter(u => u.sessions >= 1)
+      .sort((a, b) => b.avg - a.avg || b.sessions - a.sessions)
+      .slice(0, 20)
+
     const weekly = [...weekMap.entries()]
       .map(([uid, scores]) => {
         const avg = scores.reduce((a, b) => a + b, 0) / scores.length
-        const info = userNameMap.get(uid)
         return {
           uid,
-          name: info ? anonymize(info.email, info.name, uid) : `User_${uid.slice(-6)}`,
+          name: nameMap.get(uid)!,
           avg: Math.round(avg * 10) / 10,
           sessions: scores.length,
         }
