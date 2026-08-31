@@ -205,7 +205,7 @@ export default function AdminNotesPage() {
             </div>
             {/* PDF Preview — 2 pages for admin */}
             <div className="p-4 max-h-[70vh] overflow-y-auto">
-              <PdfPreview noteId={previewNote.id} fade={false} pages={2} />
+              <PdfPreview noteId={previewNote.id} fade={false} pages={2} totalPages={previewNote.pages} />
             </div>
           </div>
         </div>

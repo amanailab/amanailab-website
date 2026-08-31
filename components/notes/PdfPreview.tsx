@@ -44,10 +44,10 @@ function ensurePdfJs(): Promise<void> {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-interface Props { noteId: string; fade?: boolean; pages?: number }
+interface Props { noteId: string; fade?: boolean; pages?: number; totalPages?: number }
 type Status = 'loading' | 'done' | 'error'
 
-export default function PdfPreview({ noteId, fade = true, pages: maxPages = 2 }: Props) {
+export default function PdfPreview({ noteId, fade = true, pages: maxPages = 2, totalPages }: Props) {
   const c1      = useRef<HTMLCanvasElement>(null)
   const c2      = useRef<HTMLCanvasElement>(null)
   const taskRef = useRef<PdfTask | null>(null)
@@ -83,58 +83,8 @@ export default function PdfPreview({ noteId, fade = true, pages: maxPages = 2 }:
 
     async function load() {
       try {
-        // ① Get a short-lived signed URL from the server (fast — just a DB lookup)
-        const urlRes  = await fetch(`/api/notes/preview-url/${noteId}`)
-        const urlData = await urlRes.json()
-        if (!urlRes.ok) throw new Error(urlData.error ?? 'Could not load preview')
-        const pdfUrl: string = urlData.url
-        if (cancelled) return
-
-        // ② Ensure PDF.js is loaded (local file, no CDN)
-        await ensurePdfJs()
-        if (cancelled) return
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER
-
-        // ③ Load PDF directly from Supabase CDN — fast, no server hop.
-        //    withCredentials: false so Supabase's ACAO: * header works.
-        //    disableRange: true avoids preflight on Range header (CORS safe).
-        const task = window.pdfjsLib.getDocument({
-          url: pdfUrl,
-          withCredentials: false,
-          disableRange: true,   // prevents CORS preflight on Range header
-        })
-        taskRef.current = task
-
-        const timer = new Promise<never>((_, rej) =>
-          setTimeout(() => rej(new Error('Preview timed out — please retry.')), 25_000)
-        )
-        const doc = await Promise.race([task.promise, timer])
-        if (cancelled) return
-
-        setTotal(doc.numPages)
-        if (c1.current) await drawPage(doc, 1, c1.current)
-        if (cancelled) return
-        setStatus('done')
-
-        if (maxPages >= 2 && doc.numPages >= 2 && c2.current) {
-          try { await drawPage(doc, 2, c2.current); if (!cancelled) setP2(true) }
-          catch { /* page 1 already showing */ }
-        }
-      } catch (e) {
-        if (cancelled) return
-        // If direct Supabase fetch failed (CORS or network), fall back to proxy
-        const msg = e instanceof Error ? e.message : ''
-        if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('cors') || msg.toLowerCase().includes('network')) {
-          await loadViaProxy(cancelled)
-        } else {
-          setStatus('error')
-          setErrMsg(msg || 'Preview failed — please retry.')
-        }
-      }
-    }
-
-    async function loadViaProxy(cancelled: boolean) {
-      try {
+        // Load ONLY the server-trimmed preview PDF (first 2 pages). The full
+        // paid PDF never reaches the browser, so the paywall can't be bypassed.
         await ensurePdfJs()
         if (cancelled) return
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = WORKER
@@ -209,7 +159,7 @@ export default function PdfPreview({ noteId, fade = true, pages: maxPages = 2 }:
       {status === 'done' && total > 0 && (
         <div className="absolute bottom-3 inset-x-0 flex justify-center z-20">
           <span className="text-[10px] font-bold text-zinc-400 bg-zinc-900/90 border border-zinc-800 px-2.5 py-1 rounded-full">
-            Preview: {p2 ? 'pages 1–2' : 'page 1'} of {total}{fade ? ' · Buy to unlock' : ''}
+            Preview: {p2 ? 'pages 1–2' : 'page 1'}{(totalPages ?? 0) > 0 ? ` of ${totalPages}` : ''}{fade ? ' · Buy to unlock' : ''}
           </span>
         </div>
       )}

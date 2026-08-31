@@ -524,7 +524,7 @@ export default function NotesClient({
 
                     <div>
                       <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Sample Page</p>
-                      <PdfPreview noteId={modal.note.id} fade={true} pages={2} />
+                      <PdfPreview noteId={modal.note.id} fade={true} pages={2} totalPages={modal.note.pages} />
                     </div>
 
                     <div className="border-t border-zinc-800 pt-4 space-y-2.5">
