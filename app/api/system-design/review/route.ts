@@ -47,6 +47,22 @@ function normalizeCodeQuality(v: unknown): { score: number; notes: string } | nu
   return { score, notes }
 }
 
+interface FollowUp { question: string; whatStrongAnswersCover: string }
+function normalizeFollowUps(v: unknown, max = 3): FollowUp[] {
+  if (!Array.isArray(v)) return []
+  return v
+    .map((x): FollowUp | null => {
+      if (!x || typeof x !== 'object') return null
+      const r = x as Record<string, unknown>
+      const question = typeof r.question === 'string' ? r.question.trim() : ''
+      const cover    = typeof r.whatStrongAnswersCover === 'string' ? r.whatStrongAnswersCover.trim() : ''
+      if (!question) return null
+      return { question, whatStrongAnswersCover: cover }
+    })
+    .filter((x): x is FollowUp => !!x)
+    .slice(0, max)
+}
+
 function normalizeReview(raw: unknown) {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const grade = typeof r.grade === 'string' && ['A', 'B', 'C', 'D'].includes(r.grade.toUpperCase())
@@ -64,6 +80,7 @@ function normalizeReview(raw: unknown) {
     codeQuality:     normalizeCodeQuality(r.codeQuality),
     topSuggestion:   typeof r.topSuggestion === 'string' ? r.topSuggestion : 'Add more detail on your trade-offs and bottlenecks.',
     interviewerNote: typeof r.interviewerNote === 'string' ? r.interviewerNote : '',
+    followUps:       normalizeFollowUps(r.followUps),
   }
 }
 
@@ -224,13 +241,14 @@ ${diagram.trim() ? '\n2b. The candidate also drew an architecture diagram. Facto
 3. Strengths MUST quote or paraphrase the candidate's actual text.
 4. Gaps MUST name exactly what's missing and what a strong answer would include.
 5. The interviewerNote should reflect what a FAANG interviewer would actually think.
+6. followUps: 3 pointed questions THIS interviewer would ask next to probe weak spots in the candidate's specific answer (e.g. "how does this handle a 10x traffic spike?", "what happens when the cache node fails?"). For each, whatStrongAnswersCover briefly names what a strong response should mention. Make them specific to what the candidate wrote, not generic.
 
 Return JSON only (no markdown fences):
-{"overallScore":<1-10>,"grade":"<A|B|C|D>","summary":"<2-3 sentences: overall quality + key strength + most critical gap>","strengths":["<quote/paraphrase from answer + why it's good>","<quote/paraphrase + why>"],"gaps":["<exactly what's missing + what to add>","<exactly what's missing + what to add>"],"sectionScores":{"requirements":<1-10|null>,"architecture":<1-10|null>,"scalability":<1-10|null>,"dataModel":<1-10|null>,"tradeoffs":<1-10|null>},"codeQuality":${hasCode ? '{"score":<1-10>,"notes":"<correctness, completeness, relevance to the problem>"}' : 'null'},"topSuggestion":"<single most impactful specific change the candidate should make>","interviewerNote":"<honest 1-2 sentence reaction from a real interviewer at this level>"}`,
+{"overallScore":<1-10>,"grade":"<A|B|C|D>","summary":"<2-3 sentences: overall quality + key strength + most critical gap>","strengths":["<quote/paraphrase from answer + why it's good>","<quote/paraphrase + why>"],"gaps":["<exactly what's missing + what to add>","<exactly what's missing + what to add>"],"sectionScores":{"requirements":<1-10|null>,"architecture":<1-10|null>,"scalability":<1-10|null>,"dataModel":<1-10|null>,"tradeoffs":<1-10|null>},"codeQuality":${hasCode ? '{"score":<1-10>,"notes":"<correctness, completeness, relevance to the problem>"}' : 'null'},"topSuggestion":"<single most impactful specific change the candidate should make>","interviewerNote":"<honest 1-2 sentence reaction from a real interviewer at this level>","followUps":[{"question":"<pointed follow-up question>","whatStrongAnswersCover":"<what a strong answer covers>"},{"question":"<...>","whatStrongAnswersCover":"<...>"},{"question":"<...>","whatStrongAnswersCover":"<...>"}]}`,
         },
       ],
       temperature: 0.25,
-      max_tokens:  1400,
+      max_tokens:  1800,
     })
 
     let parsed: unknown

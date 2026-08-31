@@ -9,9 +9,10 @@ import {
   ListChecks, Cpu, Lightbulb, Target, Award, Bold, Heading2, Heading3,
   List, Minus, Plus, Code2, ChevronRight, ChevronLeft, GripVertical,
   Trophy, Hash, Maximize2, Crown, LogIn, ShieldCheck, Zap, Star, FileText, Briefcase,
-  Copy, ClipboardCheck, FlaskConical, MessageSquare,
+  Copy, ClipboardCheck, FlaskConical, MessageSquare, Download,
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
+import { exportDesignPdf } from '@/lib/sd-pdf'
 import type { SDProblem } from '@/lib/system-design-problems'
 import { DESIGN_TEMPLATE, SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
 import LoginPromptModal from '@/components/ui/LoginPromptModal'
@@ -53,6 +54,7 @@ interface ReviewResult {
   codeQuality: { score: number; notes: string } | null
   topSuggestion: string
   interviewerNote: string
+  followUps?: { question: string; whatStrongAnswersCover: string }[]
 }
 
 type PlanType = 'free' | 'sd_pro' | 'full_bundle'
@@ -490,6 +492,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [refLoading, setRefLoading]     = useState(false)
   const [refOpen, setRefOpen]           = useState(false)
   const [refError, setRefError]         = useState('')
+  const [openFollowUp, setOpenFollowUp] = useState<number | null>(null)
+  const [exportingPdf, setExportingPdf] = useState(false)
 
   const [codeCheck, setCodeCheck]               = useState<CodeCheckResult | null>(null)
   const [checkingCode, setCheckingCode]         = useState(false)
@@ -992,6 +996,23 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     } catch (e: unknown) {
       setRefError((e instanceof Error ? e.message : '') || 'Could not load the reference solution.')
     } finally { setRefLoading(false) }
+  }
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true)
+    try {
+      const { snippets: snips } = snap.current
+      await exportDesignPdf({
+        problemTitle: problem.title,
+        category:     problem.category,
+        design:       snap.current.design,
+        diagramText:  diagramTextRef.current,
+        snippets:     snips.map(s => ({ name: s.name, language: s.language, code: s.code })),
+        review,
+      })
+    } catch (e) {
+      setReviewError((e instanceof Error ? e.message : '') || 'Could not export PDF.')
+    } finally { setExportingPdf(false) }
   }
 
   const phase        = getPhase(timerSec, timerStarted)
@@ -1777,7 +1798,15 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               <span className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
                 <Sparkles size={14} className="text-orange-400" />AI Review
               </span>
-              <button onClick={() => setReviewOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"><X size={15} /></button>
+              <div className="flex items-center gap-1.5">
+                <button onClick={handleExportPdf} disabled={exportingPdf}
+                  className="flex items-center gap-1.5 h-7 px-2.5 rounded-md text-xs font-semibold text-zinc-300 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors disabled:opacity-60"
+                  title="Download this graded design as a PDF">
+                  {exportingPdf ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                  PDF
+                </button>
+                <button onClick={() => setReviewOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"><X size={15} /></button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto min-h-0">
@@ -1903,6 +1932,35 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl px-4 py-3.5">
                     <p className="text-[10px] font-bold text-zinc-500 mb-2 flex items-center gap-1.5"><Building2 size={10} />What the interviewer would say</p>
                     <p className="text-sm text-zinc-400 italic leading-relaxed">&ldquo;{review.interviewerNote}&rdquo;</p>
+                  </div>
+                )}
+
+                {/* ── Interviewer follow-up questions ──────────────────────── */}
+                {review.followUps && review.followUps.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                      <MessageSquare size={11} />Interviewer would ask next
+                    </p>
+                    <div className="space-y-2">
+                      {review.followUps.map((f, i) => (
+                        <div key={i} className="bg-blue-500/5 border border-blue-500/20 rounded-xl overflow-hidden">
+                          <button onClick={() => setOpenFollowUp(openFollowUp === i ? null : i)}
+                            className="w-full flex items-start gap-2.5 px-3.5 py-3 text-left hover:bg-blue-500/5 transition-colors">
+                            <span className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-300 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">Q{i + 1}</span>
+                            <span className="flex-1 text-sm text-zinc-200 leading-snug font-medium">{f.question}</span>
+                            {f.whatStrongAnswersCover && (
+                              <ChevronRight size={13} className={`text-zinc-600 shrink-0 mt-0.5 transition-transform duration-200 ${openFollowUp === i ? 'rotate-90' : ''}`} />
+                            )}
+                          </button>
+                          {openFollowUp === i && f.whatStrongAnswersCover && (
+                            <div className="px-3.5 pb-3 pl-11">
+                              <p className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-wider mb-1">A strong answer covers</p>
+                              <p className="text-xs text-zinc-400 leading-relaxed">{f.whatStrongAnswersCover}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
