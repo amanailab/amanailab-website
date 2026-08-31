@@ -91,6 +91,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Could not generate download links. Contact support.' }, { status: 500 })
     }
 
+    // Optional: attach the logged-in user's id so purchases show on their dashboard
+    let buyerId: string | null = null
+    try {
+      const { createClient } = await import('@/lib/supabase/server')
+      const sb = await createClient()
+      buyerId = (await sb.auth.getUser()).data.user?.id ?? null
+    } catch { /* anonymous checkout */ }
+
     // Step 5: Save order (non-blocking, best-effort)
     void supabase.from('orders').insert({
       type:                 'package',
@@ -99,6 +107,7 @@ export async function POST(req: Request) {
       amount:               amountPaise,
       razorpay_payment_id:  paymentId,
       razorpay_order_id:    orderId,
+      user_id:              buyerId,
       customer_email:       customerEmail   || null,
       customer_name:        customerName    || null,
       customer_contact:     customerContact || null,
