@@ -30,11 +30,16 @@ export async function GET() {
       ? `user_id.eq.${user.id},customer_email.eq.${email}`
       : `user_id.eq.${user.id}`
 
+    // Only PAID purchases build a permanent re-download library. Free
+    // member-code redemptions (via='member_code', amount=0) still get their
+    // one-time link at redemption but must NOT grant lasting free access.
     const { data: orders } = await admin
       .from('orders')
       .select('type, item_id, item_title, created_at')
       .in('type', ['note', 'package'])
       .eq('status', 'completed')
+      .eq('via', 'payment')
+      .gt('amount', 0)
       .or(orFilter)
       .order('created_at', { ascending: false })
 
