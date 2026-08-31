@@ -66,6 +66,15 @@ interface CodeCheckResult {
   summary: string
 }
 
+interface ReferenceSolution {
+  overview: string
+  architecture: { title: string; detail: string }[]
+  dataModel: string
+  scaling: string[]
+  tradeoffs: { title: string; detail: string }[]
+  walkthrough: string
+}
+
 interface ProStatus {
   authenticated: boolean
   isSubscribed?: boolean
@@ -477,6 +486,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [showExpert, setShowExpert]     = useState(false)
   const [showHints, setShowHints]       = useState(false)
 
+  const [reference, setReference]       = useState<ReferenceSolution | null>(null)
+  const [refLoading, setRefLoading]     = useState(false)
+  const [refOpen, setRefOpen]           = useState(false)
+  const [refError, setRefError]         = useState('')
+
   const [codeCheck, setCodeCheck]               = useState<CodeCheckResult | null>(null)
   const [checkingCode, setCheckingCode]         = useState(false)
   const [codeCheckOpen, setCodeCheckOpen]       = useState(false)
@@ -878,6 +892,27 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     } catch (e: unknown) {
       setReviewError((e instanceof Error ? e.message : '') || 'Review failed. Try again.')
     } finally { setReviewing(false) }
+  }
+
+  // ── Reference solution (Pro) ────────────────────────────────────────────────
+  const loadReference = async () => {
+    if (reference) { setRefOpen(o => !o); return }
+    setRefLoading(true); setRefError('')
+    try {
+      const res  = await fetch('/api/system-design/reference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: problem.slug }),
+      })
+      const data = await res.json()
+      if (res.status === 401) { setShowLoginPrompt(true); return }
+      if (res.status === 402) { setShowPaywall(true); return }
+      if (!res.ok) throw new Error(data.error ?? 'Could not load the reference solution.')
+      setReference(data.reference)
+      setRefOpen(true)
+    } catch (e: unknown) {
+      setRefError((e instanceof Error ? e.message : '') || 'Could not load the reference solution.')
+    } finally { setRefLoading(false) }
   }
 
   const phase        = getPhase(timerSec, timerStarted)
@@ -1835,6 +1870,95 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   {reviewing ? 'Reviewing…' : 'Re-run Review'}
                 </button>
 
+                {/* ── Reference solution — Pro sees it, free users get a locked teaser ── */}
+                {proStatus?.isSubscribed ? (
+                  <div className="bg-zinc-900/50 border border-violet-500/25 rounded-xl overflow-hidden">
+                    <button onClick={loadReference} disabled={refLoading}
+                      className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-zinc-200 hover:bg-zinc-800/50 transition-colors disabled:opacity-60">
+                      <span className="flex items-center gap-2">
+                        {refLoading ? <Loader2 size={14} className="animate-spin text-violet-400" /> : <Award size={14} className="text-violet-400" />}
+                        {refLoading ? 'Generating model answer…' : reference ? 'Reference Solution' : 'View Reference Solution'}
+                      </span>
+                      {reference && <ChevronRight size={14} className={`transition-transform duration-200 text-zinc-600 ${refOpen ? 'rotate-90' : ''}`} />}
+                    </button>
+                    {refError && <p className="px-4 pb-3 text-xs text-red-400">{refError}</p>}
+                    {reference && refOpen && (
+                      <div className="px-4 pb-4 border-t border-zinc-800 space-y-4">
+                        <p className="text-[10px] text-violet-400/80 pt-3 font-bold uppercase tracking-wider">Staff-engineer model answer</p>
+
+                        {reference.overview && (
+                          <p className="text-sm text-zinc-300 leading-relaxed">{reference.overview}</p>
+                        )}
+
+                        {reference.architecture.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Architecture</p>
+                            <div className="space-y-2">
+                              {reference.architecture.map((a, i) => (
+                                <div key={i} className="flex items-start gap-2">
+                                  <span className="w-5 h-5 rounded-md bg-violet-500/15 text-violet-300 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                                  <p className="text-xs text-zinc-300 leading-relaxed"><span className="font-bold text-zinc-100">{a.title}</span>{a.detail ? ` — ${a.detail}` : ''}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {reference.dataModel && (
+                          <div>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Data Model</p>
+                            <p className="text-xs text-zinc-300 leading-relaxed">{reference.dataModel}</p>
+                          </div>
+                        )}
+
+                        {reference.scaling.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1.5">Scaling & Bottlenecks</p>
+                            <ul className="space-y-1.5">
+                              {reference.scaling.map((s, i) => (
+                                <li key={i} className="flex items-start gap-2 text-xs text-zinc-300 leading-snug">
+                                  <span className="text-emerald-400 font-bold shrink-0 mt-0.5">↑</span>{s}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {reference.tradeoffs.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Key Trade-offs</p>
+                            <div className="space-y-2">
+                              {reference.tradeoffs.map((t, i) => (
+                                <div key={i} className="bg-zinc-800/40 border border-zinc-700/50 rounded-lg px-3 py-2">
+                                  <p className="text-xs font-semibold text-zinc-200">{t.title}</p>
+                                  {t.detail && <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">{t.detail}</p>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {reference.walkthrough && (
+                          <div className="bg-violet-500/5 border border-violet-500/20 rounded-lg px-3 py-2.5">
+                            <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider mb-1.5">How to present it</p>
+                            <p className="text-xs text-zinc-300 leading-relaxed">{reference.walkthrough}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : proStatus?.authenticated ? (
+                  <button onClick={() => setShowPaywall(true)}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-zinc-900/50 border border-zinc-700 hover:border-violet-500/40 text-sm font-semibold text-zinc-300 transition-colors group">
+                    <span className="flex items-center gap-2">
+                      <Award size={14} className="text-violet-400" /> Reference Solution
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-violet-300 bg-violet-500/10 border border-violet-500/25 px-2 py-0.5 rounded-full">
+                      <Crown size={10} /> PRO
+                    </span>
+                  </button>
+                ) : null}
+
                 {/* ── Pro upsell — free users only, right when motivation is highest ── */}
                 {proStatus?.authenticated && !proStatus.isSubscribed && (
                   <div className="bg-gradient-to-br from-orange-500/10 to-yellow-500/5 border border-orange-500/25 rounded-xl p-4">
@@ -1847,7 +1971,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                       </p>
                     </div>
                     <ul className="space-y-1 mb-3">
-                      {['15 AI reviews every day', 'Track score improvement across attempts', 'Fix gaps and re-run instantly'].map(t => (
+                      {['15 AI reviews every day', 'Staff-engineer reference solution for every problem', 'Track score improvement across attempts'].map(t => (
                         <li key={t} className="flex items-center gap-1.5 text-[11px] text-zinc-400">
                           <CheckCircle size={10} className="text-emerald-400 shrink-0" /> {t}
                         </li>
