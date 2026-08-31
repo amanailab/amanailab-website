@@ -267,14 +267,14 @@ export default function UpgradePage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {[0,1].map(i => (
-              <div key={i} className="h-96 rounded-2xl bg-zinc-800/50 animate-pulse" />
+              <div key={i} className="h-[480px] rounded-2xl bg-zinc-800/50 animate-pulse" />
             ))}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
 
             {/* SD Pro */}
-            <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-6 flex flex-col">
+            <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-6 flex flex-col sm:mt-3.5">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center">
                   <Zap size={16} className="text-orange-400" />

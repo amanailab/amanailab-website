@@ -472,9 +472,10 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="lg:hidden overflow-y-auto bg-zinc-950 border-b border-zinc-800"
+            className="lg:hidden bg-zinc-950 border-b border-zinc-800"
           >
-            <div className="px-4 pt-3 pb-5 flex flex-col gap-1 max-h-[80vh] overflow-y-auto">
+            <div className="relative">
+            <div className="px-4 pt-3 pb-5 flex flex-col gap-1 max-h-[80vh] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-700 [&::-webkit-scrollbar-thumb]:rounded-full">
 
               {navItems.map((item) => {
                 if (item.kind === "link") {
@@ -600,6 +601,8 @@ export default function Navbar() {
                 <YoutubeIcon className="w-4 h-4" />
                 Subscribe on YouTube
               </a>
+            </div>
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-zinc-950 to-transparent" />
             </div>
           </motion.div>
         )}

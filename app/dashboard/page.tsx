@@ -847,10 +847,13 @@ export default async function DashboardPage() {
                       </div>
                       {uncoveredTopics.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-zinc-800">
-                          <p className="text-xs text-zinc-600 mb-2">Not yet practiced:</p>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs text-zinc-600">Not yet practiced:</p>
+                            <Link href="/interview" className="text-[10px] font-semibold text-orange-400 hover:text-orange-300 transition-colors">Practice now →</Link>
+                          </div>
                           <div className="flex flex-wrap gap-1.5">
                             {uncoveredTopics.map(t => (
-                              <span key={t} className="text-[10px] font-medium text-zinc-600 bg-zinc-800/50 border border-zinc-700/50 px-2 py-0.5 rounded-full">{t}</span>
+                              <Link key={t} href={`/interview?topic=${encodeURIComponent(t)}`} className="text-[10px] font-medium text-zinc-500 hover:text-orange-300 bg-zinc-800/50 hover:bg-orange-500/10 border border-zinc-700/50 hover:border-orange-500/30 px-2 py-0.5 rounded-full transition-colors">{t}</Link>
                             ))}
                           </div>
                         </div>

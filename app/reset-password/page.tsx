@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
     setLoading(false)
     if (err) { setError(err.message); return }
     setDone(true)
-    setTimeout(() => router.push('/dashboard'), 2500)
+    setTimeout(() => router.push('/dashboard'), 4000)
   }
 
   if (done) return (
@@ -46,7 +46,8 @@ export default function ResetPasswordPage() {
           <CheckCircle2 className="w-7 h-7 text-green-400" />
         </div>
         <h1 className="text-2xl font-extrabold text-zinc-100 mb-2">Password updated!</h1>
-        <p className="text-sm text-zinc-400">Redirecting you to your dashboard…</p>
+        <p className="text-sm text-zinc-400 mb-4">Redirecting you to your dashboard…</p>
+        <Link href="/dashboard" className="text-sm font-semibold text-orange-400 hover:text-orange-300 transition-colors">Go to dashboard →</Link>
       </div>
     </div>
   )
