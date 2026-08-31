@@ -519,6 +519,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const resizingRef    = useRef(false)
   const resizeStartX   = useRef(0)
   const resizeStartW   = useRef(0)
+  const authedRef      = useRef(false)
+  const cloudTimer     = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cloudPulledRef = useRef(false)
 
   const snap = useRef({ design, checklist, snippets, activeId })
   snap.current = { design, checklist, snippets, activeId }
@@ -560,6 +563,68 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       .then((d: ProStatus) => setProStatus(d))
       .catch(() => {})
   }, [])
+
+  // ── Cloud save (resume across devices for logged-in users) ─────────────────
+  const scheduleCloudSync = useCallback(() => {
+    if (!authedRef.current) return
+    if (cloudTimer.current) clearTimeout(cloudTimer.current)
+    cloudTimer.current = setTimeout(() => {
+      let canvas: unknown = {}
+      try { const raw = localStorage.getItem(canvasKey); if (raw) canvas = JSON.parse(raw) } catch {}
+      const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
+      void fetch('/api/system-design/design', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: problem.slug, design: d, checklist: cl, code: { snippets: snips, activeId: aid }, canvas }),
+      }).catch(() => {})
+    }, 1200)
+  }, [canvasKey, problem.slug])
+
+  // Pull the cloud copy once we know the user is authenticated; apply it only
+  // when it's newer than the local copy (last-write-wins across devices).
+  useEffect(() => {
+    authedRef.current = !!proStatus?.authenticated
+    if (!proStatus?.authenticated || cloudPulledRef.current) return
+    cloudPulledRef.current = true
+
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/system-design/design?slug=${encodeURIComponent(problem.slug)}`)
+        if (!res.ok) return
+        const { design: row } = await res.json()
+        if (!row) return
+
+        const cloudMs = row.updated_at ? new Date(row.updated_at).getTime() : 0
+        const localMs = savedAt ? savedAt.getTime() : 0
+        if (cloudMs <= localMs) return // local is newer or same — keep it
+
+        if (typeof row.design === 'string' && row.design.trim()) setDesign(row.design)
+        if (row.checklist && typeof row.checklist === 'object') setChecklist(row.checklist)
+
+        const snips = Array.isArray(row.code?.snippets) && row.code.snippets.length ? row.code.snippets as CodeSnippet[] : null
+        if (snips) {
+          setSnippets(snips)
+          const aid = typeof row.code?.activeId === 'string' ? row.code.activeId : snips[0].id
+          setActiveId(aid)
+          const active = snips.find(s => s.id === aid) ?? snips[0]
+          setTimeout(() => monacoEditorRef.current?.setValue?.(active.code ?? ''), 60)
+          try { localStorage.setItem(codeKey, JSON.stringify({ snippets: snips, activeId: aid })) } catch {}
+        }
+
+        if (row.canvas && Array.isArray(row.canvas.nodes)) {
+          try { localStorage.setItem(canvasKey, JSON.stringify(row.canvas)) } catch {}
+          diagramTextRef.current = serializeDiagram(row.canvas.nodes, row.canvas.edges ?? [])
+          setDiagramNodes(row.canvas.nodes.length)
+          setCanvasResetKey(k => k + 1)
+        }
+
+        if (typeof row.design === 'string') {
+          try { localStorage.setItem(storageKey, JSON.stringify({ design: row.design, savedAt: row.updated_at, checklist: row.checklist ?? {} })) } catch {}
+        }
+        setSavedAt(new Date(cloudMs))
+      } catch { /* offline / not-configured — local copy stays */ }
+    })()
+  }, [proStatus?.authenticated, problem.slug, savedAt, canvasKey, codeKey, storageKey])
 
   // ── Razorpay purchase ─────────────────────────────────────────────────────
   const WA_PAYMENT_URL = (plan: 'sd_pro' | 'full_bundle') => {
@@ -652,7 +717,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   const handleCanvasChange = useCallback((text: string, count: number) => {
     diagramTextRef.current = text; setDiagramNodes(count)
-  }, [])
+    scheduleCloudSync()
+  }, [scheduleCloudSync])
 
   // ── Load saved state ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -690,6 +756,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   useEffect(() => () => {
     if (saveTimer.current) clearTimeout(saveTimer.current)
     if (timerInterval.current) clearInterval(timerInterval.current)
+    if (cloudTimer.current) clearTimeout(cloudTimer.current)
   }, [])
 
   // Focus Monaco whenever user switches to the Code tab
@@ -711,8 +778,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       } catch {
         setReviewError('Could not save your work — storage is full or blocked. Your work is only in memory.')
       }
+      scheduleCloudSync()
     }, 700)
-  }, [storageKey, codeKey])
+  }, [storageKey, codeKey, scheduleCloudSync])
 
   const handleDesignChange = (val: string) => { autoStartTimer(); setDesign(val); const { checklist: cl, snippets: snips, activeId: aid } = snap.current; persist(val, cl, snips, aid) }
   const handleCodeChange   = (code: string) => { autoStartTimer(); const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current; const next = snips.map(s => s.id === aid ? { ...s, code } : s); setSnippets(next); persist(d, cl, next, aid) }
@@ -793,6 +861,17 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     diagramTextRef.current = ''
     setCanvasResetKey(k => k + 1)   // signals SystemCanvas to reload (from empty storage)
     monacoEditorRef.current?.setValue?.('')
+    setSavedAt(null)
+
+    // Also clear the cloud copy so the reset survives a reload on any device
+    if (authedRef.current) {
+      if (cloudTimer.current) clearTimeout(cloudTimer.current)
+      void fetch('/api/system-design/design', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: problem.slug, design: '', checklist: {}, code: { snippets: [fresh], activeId: fresh.id }, canvas: {} }),
+      }).catch(() => {})
+    }
   }
 
   const fmt       = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
@@ -1288,7 +1367,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
               ))}
             </div>
             {savedAt && (
-              <span className="ml-auto text-[10px] text-zinc-700 flex items-center gap-1"><Save size={9} />saved</span>
+              <span className="ml-auto text-[10px] text-zinc-700 flex items-center gap-1">
+                <Save size={9} />{proStatus?.authenticated ? 'saved to account' : 'saved'}
+              </span>
             )}
           </div>
 
