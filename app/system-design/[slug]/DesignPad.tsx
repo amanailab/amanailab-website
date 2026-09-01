@@ -505,6 +505,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   // ── Pro state ──────────────────────────────────────────────────────────────
   const [proStatus, setProStatus]         = useState<ProStatus | null>(null)
   const [showPaywall, setShowPaywall]     = useState(false)
+  const [showDailyLimit, setShowDailyLimit] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [purchasing, setPurchasing]       = useState(false)
   const [selectedPlan, setSelectedPlan]   = useState<'sd_pro' | 'full_bundle'>('full_bundle')
@@ -929,14 +930,21 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   // ── AI review ─────────────────────────────────────────────────────────────
   const handleReview = async () => {
-    // Gate 1: not signed in
-    if (proStatus && !proStatus.authenticated) { setShowLoginPrompt(true); return }
+    // Gate 1: not signed in → login prompt immediately
+    if (!proStatus?.authenticated) { setShowLoginPrompt(true); return }
 
-    // Gate 2: free user has used all reviews — show paywall immediately, no API round-trip
-    if (proStatus && !proStatus.isSubscribed) {
+    // Gate 2: free user exhausted lifetime limit → upgrade paywall immediately
+    if (!proStatus.isSubscribed) {
       const used  = proStatus.freeUsed  ?? 0
       const limit = proStatus.freeLimit ?? 2
       if (used >= limit) { setShowPaywall(true); return }
+    }
+
+    // Gate 3: paid user exhausted today's limit → daily limit modal immediately
+    if (proStatus.isSubscribed) {
+      const used  = proStatus.dailyUsed  ?? 0
+      const limit = proStatus.dailyLimit ?? 15
+      if (used >= limit) { setShowDailyLimit(true); return }
     }
 
     const { snippets: snips } = snap.current
@@ -966,12 +974,24 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
       if (res.status === 401) { setShowLoginPrompt(true); return }
       if (res.status === 402) { setShowPaywall(true); return }
-      if (res.status === 429) { setReviewError(data.error ?? "You've hit today's review limit. Resets at midnight IST."); return }
+      if (res.status === 429) {
+        // DAILY_LIMIT = paid user hit 15/day; anything else = parallel-click guard
+        if (data.code === 'DAILY_LIMIT') { setShowDailyLimit(true) }
+        else setReviewError(data.error ?? 'A review is already running — give it a few seconds.')
+        return
+      }
       if (!res.ok) throw new Error(data.error ?? 'Review failed')
 
       setReview(data.review)
       setReviewOpen(true)
-      refreshStatus()
+
+      // Optimistically increment local count so gates work instantly on next click
+      setProStatus(prev => {
+        if (!prev) return prev
+        if (prev.isSubscribed) return { ...prev, dailyUsed: (prev.dailyUsed ?? 0) + 1 }
+        return { ...prev, freeUsed: (prev.freeUsed ?? 0) + 1 }
+      })
+      refreshStatus() // sync accurate count from server in the background
 
       if (!bestScore || data.review.overallScore > bestScore.score) {
         const next = { score: data.review.overallScore, grade: data.review.grade }
@@ -2333,6 +2353,101 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           </div>
         </>
       )}
+
+      {/* ═══ DAILY LIMIT MODAL ══════════════════════════════════════════════ */}
+      {showDailyLimit && (() => {
+        const isFullBundle = proStatus?.plan === 'full_bundle'
+        // Compute time until midnight IST
+        const IST_MS     = 5.5 * 60 * 60 * 1000
+        const nowIST     = new Date(Date.now() + IST_MS)
+        const midnightIST = new Date(Date.UTC(nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate() + 1) - IST_MS)
+        const diffMs     = midnightIST.getTime() - Date.now()
+        const hrs        = Math.floor(diffMs / (3600 * 1000))
+        const mins       = Math.floor((diffMs % (3600 * 1000)) / (60 * 1000))
+        const countdown  = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`
+
+        return (
+          <>
+            <div onClick={() => setShowDailyLimit(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40" />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-blue-500 via-violet-500 to-orange-400" />
+              <div className="p-6">
+                <div className="flex items-start justify-between gap-3 mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                      <Crown size={18} className="text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-zinc-100">Daily Limit Reached</p>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        You&apos;ve used all 15 AI reviews today
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowDailyLimit(false)} className="text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0 mt-0.5">
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Countdown */}
+                <div className="flex items-center gap-3 mb-5 p-4 rounded-xl bg-zinc-800/60 border border-zinc-700">
+                  <div className="text-center min-w-[56px]">
+                    <p className="text-2xl font-extrabold text-zinc-100 tabular-nums leading-none">{countdown}</p>
+                    <p className="text-[10px] text-zinc-500 mt-1">until reset</p>
+                  </div>
+                  <div className="w-px h-10 bg-zinc-700 flex-shrink-0" />
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    Your 15 reviews reset every day at <span className="text-zinc-200 font-semibold">midnight IST (12:00 AM India time)</span>. Come back then for a fresh set.
+                  </p>
+                </div>
+
+                {isFullBundle ? (
+                  // Highest plan — no upgrade, just close
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25">
+                      <ShieldCheck size={14} className="text-emerald-400 flex-shrink-0" />
+                      <p className="text-[11px] text-emerald-300">You&apos;re on our best plan — Interview Prep Kit. Nothing to upgrade!</p>
+                    </div>
+                    <button onClick={() => setShowDailyLimit(false)}
+                      className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-sm transition-colors">
+                      Got it, see you tomorrow
+                    </button>
+                  </div>
+                ) : (
+                  // SD Pro — upsell to Interview Prep Kit for career tools
+                  <div className="space-y-3">
+                    <p className="text-[11px] text-zinc-500">
+                      While you wait, unlock all career tools with Interview Prep Kit:
+                    </p>
+                    <ul className="space-y-1.5">
+                      {[
+                        { icon: <FileText size={11} className="text-sky-400" />,        text: 'Resume Analyzer — unlimited' },
+                        { icon: <Sparkles size={11} className="text-violet-400" />,     text: 'Cover Letter Generator — unlimited' },
+                        { icon: <Briefcase size={11} className="text-emerald-400" />,   text: 'LinkedIn Optimizer — unlimited' },
+                        { icon: <Star size={11} className="text-yellow-400" />,         text: 'Mock Interviews — unlimited' },
+                      ].map(({ icon, text }) => (
+                        <li key={text} className="flex items-center gap-2 text-[11px] text-zinc-300">
+                          <span className="flex-shrink-0">{icon}</span>{text}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="flex gap-2 pt-1">
+                      <button onClick={() => { setShowDailyLimit(false); handlePurchase('full_bundle') }}
+                        className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-xs transition-colors shadow-lg shadow-orange-500/20 flex items-center justify-center gap-1.5">
+                        <Star size={12} /> Upgrade to Prep Kit — ₹1499
+                      </button>
+                      <button onClick={() => setShowDailyLimit(false)}
+                        className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-semibold text-xs transition-colors">
+                        Later
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )
+      })()}
 
       {/* ═══ NEW SESSION CONFIRM MODAL ══════════════════════════════════════ */}
       {showReset && (
