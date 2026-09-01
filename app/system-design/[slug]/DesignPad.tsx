@@ -929,6 +929,16 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   // ── AI review ─────────────────────────────────────────────────────────────
   const handleReview = async () => {
+    // Gate 1: not signed in
+    if (proStatus && !proStatus.authenticated) { setShowLoginPrompt(true); return }
+
+    // Gate 2: free user has used all reviews — show paywall immediately, no API round-trip
+    if (proStatus && !proStatus.isSubscribed) {
+      const used  = proStatus.freeUsed  ?? 0
+      const limit = proStatus.freeLimit ?? 2
+      if (used >= limit) { setShowPaywall(true); return }
+    }
+
     const { snippets: snips } = snap.current
     const hasText    = design.trim().length >= 100
     const hasDiagram = diagramNodes >= 2
@@ -1028,12 +1038,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     if (!proStatus) return null
 
     if (!proStatus.authenticated) {
-      // Nudge unauthenticated visitors to sign in
       return (
         <button onClick={() => setShowLoginPrompt(true)}
-          className="hidden md:flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0">
+          className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors flex-shrink-0">
           <LogIn size={10} />
-          <span>Sign in for free reviews</span>
+          <span className="hidden sm:inline">Sign in for free reviews</span>
         </button>
       )
     }
@@ -1044,25 +1053,25 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       const pct   = Math.round((used / limit) * 100)
       const planLabel = proStatus.plan === 'full_bundle' ? 'Prep Kit' : 'SD Pro'
       return (
-        <div className="hidden md:flex items-center gap-1.5 text-[10px] flex-shrink-0">
+        <div className="flex items-center gap-1.5 text-[10px] flex-shrink-0">
           <Crown size={10} className="text-orange-400" />
-          <span className="text-orange-400/70 font-semibold">{planLabel}</span>
+          <span className="text-orange-400/70 font-semibold hidden sm:inline">{planLabel}</span>
           <span className={`font-semibold tabular-nums ${used >= limit ? 'text-red-400' : 'text-zinc-300'}`}>{used}/{limit}</span>
-          <span className="text-zinc-600">today</span>
-          <div className="w-12 h-1 bg-zinc-800 rounded-full overflow-hidden">
+          <span className="text-zinc-600 hidden sm:inline">today</span>
+          <div className="hidden sm:block w-12 h-1 bg-zinc-800 rounded-full overflow-hidden">
             <div className={`h-full rounded-full transition-all ${pct >= 90 ? 'bg-red-500' : 'bg-orange-500'}`} style={{ width: `${pct}%` }} />
           </div>
         </div>
       )
     }
 
-    const used  = proStatus.freeUsed  ?? 0
-    const limit = proStatus.freeLimit ?? 2
+    const used      = proStatus.freeUsed  ?? 0
+    const limit     = proStatus.freeLimit ?? 2
     const remaining = limit - used
     return (
-      <div className="hidden md:flex items-center gap-1.5 text-[10px] flex-shrink-0">
+      <div className="flex items-center gap-1.5 text-[10px] flex-shrink-0">
         <span className={`tabular-nums font-semibold ${remaining <= 1 ? 'text-orange-400' : 'text-zinc-500'}`}>{used}/{limit}</span>
-        <span className="text-zinc-600">free reviews</span>
+        <span className="text-zinc-600 hidden sm:inline">free</span>
         <button onClick={() => setShowPaywall(true)}
           className={`font-semibold transition-colors ${remaining <= 2 ? 'text-orange-400 hover:text-orange-300' : 'text-zinc-600 hover:text-zinc-400'}`}>
           Upgrade
@@ -1147,12 +1156,24 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           <Save size={13} />
         </button>
 
-        <button onClick={handleReview} disabled={reviewing}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white text-xs font-semibold transition-all disabled:opacity-60 flex-shrink-0 shadow-lg shadow-orange-500/20">
-          {reviewing ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-          <span className="hidden sm:inline">{reviewing ? 'Reviewing…' : 'AI Review'}</span>
-          <span className="sm:hidden">{reviewing ? '…' : 'Review'}</span>
-        </button>
+        {(() => {
+          const atLimit = proStatus && !proStatus.isSubscribed &&
+            (proStatus.freeUsed ?? 0) >= (proStatus.freeLimit ?? 2)
+          return (
+            <button onClick={handleReview} disabled={reviewing}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-all disabled:opacity-60 flex-shrink-0 shadow-lg ${
+                atLimit
+                  ? 'bg-violet-600 hover:bg-violet-500 active:bg-violet-700 shadow-violet-500/20'
+                  : 'bg-orange-500 hover:bg-orange-400 active:bg-orange-600 shadow-orange-500/20'
+              }`}>
+              {reviewing ? <Loader2 size={13} className="animate-spin" /> : atLimit ? <Crown size={13} /> : <Sparkles size={13} />}
+              <span className="hidden sm:inline">
+                {reviewing ? 'Reviewing…' : atLimit ? 'Upgrade to Continue' : 'AI Review'}
+              </span>
+              <span className="sm:hidden">{reviewing ? '…' : atLimit ? 'Upgrade' : 'Review'}</span>
+            </button>
+          )
+        })()}
       </header>
 
       {/* Phase tip bar */}
@@ -1462,6 +1483,29 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   )
                 })}
               </div>
+
+              {/* ── Quick-start guide (auto-hides once user starts writing) ── */}
+              {wordCount < 20 && (
+                <div className="flex-shrink-0 border-b border-zinc-800/60 bg-zinc-900/30 px-3 py-2.5">
+                  <p className="text-[10px] text-zinc-500 mb-2 font-semibold uppercase tracking-wide">What to write in each section — click to jump</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {[
+                      { heading: '## 1. Requirements Clarification',         label: 'Requirements', hint: '3 functional reqs · latency SLA · scale · out-of-scope' },
+                      { heading: '## 2. Capacity Estimation',                label: 'Capacity',     hint: 'DAU → QPS (÷86,400) → storage/day → bandwidth' },
+                      { heading: '## 3. High-Level Architecture',            label: 'Architecture', hint: 'Components · data flow · DB choice · justification' },
+                      { heading: '## 4. Core Component Design',              label: 'Core Design',  hint: 'Deep dive 2-3 components · schemas · APIs · failure modes' },
+                      { heading: '## 7. Scalability & Performance',          label: 'Scalability',  hint: 'Bottlenecks · caching · sharding · 10× load plan' },
+                      { heading: '## 9. Trade-offs & Alternatives Considered', label: 'Trade-offs', hint: "Alternatives rejected · CAP trade-off · what you'd change" },
+                    ].map(s => (
+                      <button key={s.heading} onClick={() => jumpToSection(s.heading)}
+                        className="flex flex-col gap-0.5 px-2.5 py-2 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-zinc-600 rounded-lg text-left transition-all group">
+                        <span className="text-[10px] font-bold text-zinc-300 group-hover:text-zinc-100 transition-colors">{s.label}</span>
+                        <span className="text-[9px] text-zinc-600 leading-tight group-hover:text-zinc-500 transition-colors">{s.hint}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* ── Hints panel ───────────────────────────────────────────── */}
               {showHints && problem.hints && problem.hints.length > 0 && (

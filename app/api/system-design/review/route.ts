@@ -14,14 +14,26 @@ function extractJSON(raw: string): string {
   const openThink = s.search(/<think>/i)
   if (openThink !== -1) s = s.slice(0, openThink)
   s = s.trim()
+  // Strip any markdown code fences (```json ... ``` or ``` ... ```)
   const fenced = s.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
   if (fenced) {
     const inner = fenced[1].trim()
     if (inner.startsWith('{')) return inner
   }
+  // Find outermost { }
   const start = s.indexOf('{')
   const end   = s.lastIndexOf('}')
   if (start !== -1 && end > start) return s.slice(start, end + 1)
+  return s
+}
+
+function repairJSON(s: string): string {
+  // Remove trailing commas before } or ]
+  s = s.replace(/,(\s*[}\]])/g, '$1')
+  // Remove JS-style // comments
+  s = s.replace(/\/\/[^\n]*/g, '')
+  // Remove JS-style /* */ comments
+  s = s.replace(/\/\*[\s\S]*?\*\//g, '')
   return s
 }
 
@@ -248,15 +260,20 @@ Return JSON only (no markdown fences):
         },
       ],
       temperature: 0.25,
-      max_tokens:  1800,
+      max_tokens:  2600,
     })
 
     let parsed: unknown
     try {
       const cleaned = extractJSON(typeof raw === 'string' ? raw : JSON.stringify(raw))
-      parsed = JSON.parse(cleaned)
+      try {
+        parsed = JSON.parse(cleaned)
+      } catch {
+        // Second attempt: repair common JSON issues (trailing commas, comments)
+        parsed = JSON.parse(repairJSON(cleaned))
+      }
     } catch {
-      console.error('[system-design/review] JSON parse failed. Raw:', raw?.slice?.(0, 300))
+      console.error('[system-design/review] JSON parse failed. Raw:', raw?.slice?.(0, 500))
       return NextResponse.json({ error: 'Failed to parse AI review. Please try again.' }, { status: 500 })
     }
 

@@ -5,12 +5,16 @@
 -- 1. Subscription table (who has paid and until when)
 create table if not exists sd_subscriptions (
   user_id          uuid references auth.users on delete cascade primary key,
+  plan             text not null default 'sd_pro',
   subscribed_until timestamptz not null,
   razorpay_payment_id text,
   razorpay_order_id   text,
   created_at       timestamptz default now(),
   updated_at       timestamptz default now()
 );
+
+-- If the table already exists without the plan column, add it:
+alter table sd_subscriptions add column if not exists plan text not null default 'sd_pro';
 
 -- 2. Every AI review usage (one row per review run)
 create table if not exists sd_review_usage (

@@ -13,109 +13,21 @@ export interface SDProblem {
 
 const TEMPLATE = `## 1. Requirements Clarification
 
-### Functional Requirements
-- e.g. Users can upload and retrieve videos
-- e.g. System must support search by keyword
-- e.g. Users receive recommendations in real-time
-
-### Non-Functional Requirements
-- Latency target: e.g. P99 < 200ms for reads
-- Scale: e.g. 50M DAU, 1000 writes/sec peak
-- Availability SLA: e.g. 99.9% (< 9h downtime/year)
-- Consistency model: e.g. eventual consistency OK for feeds
-
----
-
 ## 2. Capacity Estimation
-
-- Daily Active Users: e.g. 50M
-- Read QPS: e.g. 50M × 10 reads / 86,400 ≈ 5,800 QPS
-- Write QPS: e.g. 50M × 1 write / 86,400 ≈ 580 QPS
-- Storage per day: e.g. 580 QPS × 1KB per record = ~50GB/day
-- Bandwidth: e.g. 5,800 QPS × 2KB avg response = ~11.6 MB/s
-
----
 
 ## 3. High-Level Architecture
 
-Key components:
-1. API Gateway → routes and authenticates all requests
-2. Core Service → handles business logic (stateless, horizontally scalable)
-3. Cache (Redis) → serves hot reads, reduces DB load
-4. Primary Database → source of truth for writes
-5. CDN → serves static assets at edge
-
-Data flow:
-- Client → CDN (static) or API Gateway (dynamic)
-- API Gateway → Core Service → Cache (read) or DB (write)
-- Writes fan out to → Message Queue → Worker → Downstream systems
-
----
-
 ## 4. Core Component Design
-
-### Component 1: (e.g. Recommendation Service)
-Describe the key algorithm, internal design, and why you chose it.
-
-### Component 2: (e.g. Storage Layer)
-How data is stored, partitioned, and accessed. Key schema decisions.
-
-### Component 3: (e.g. Queue / Async Processing)
-Why async? What guarantees? How consumers scale?
-
----
 
 ## 5. Data Model & Storage
 
-\`\`\`sql
--- Example: users table
-CREATE TABLE users (
-  id         UUID PRIMARY KEY,
-  email      TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
--- Add your actual schema here
-\`\`\`
-
-Storage choice justification:
-- SQL vs NoSQL: e.g. SQL for transactional data, NoSQL for high-write event logs
-- Key indexes: e.g. (user_id, created_at) for timeline queries
-
----
-
 ## 6. API Design
-
-\`\`\`
-POST /api/v1/items        → create item (body: {name, type})
-GET  /api/v1/items/:id    → get by ID
-GET  /api/v1/items?q=term → search / list with pagination
-DELETE /api/v1/items/:id  → soft delete
-\`\`\`
-
----
 
 ## 7. Scalability & Performance
 
-- Caching strategy: e.g. cache-aside with Redis, TTL = 60s, LRU eviction
-- Sharding approach: e.g. shard by user_id (consistent hashing)
-- Auto-scaling trigger: e.g. CPU > 70% for 2 min → add replica
-- CDN usage: e.g. CloudFront for static assets, cache-control: max-age=86400
-
----
-
 ## 8. Monitoring & Reliability
 
-- Key metrics: P99 API latency, error rate (< 0.1%), queue depth, DB replication lag
-- Alerting: page on-call if P99 > 500ms or error rate > 1% for 5 min
-- Failure modes: DB primary fails → promote replica (RTO < 30s), cache miss → DB fallback
-
----
-
 ## 9. Trade-offs & Alternatives Considered
-
-- Chose Kafka over SQS because: higher throughput, replay capability, better for fan-out
-- Chose eventual consistency because: strong consistency would add too much latency at our scale
-- Would change with more time: add service mesh (Istio) for better observability between services
 `
 
 export const SYSTEM_DESIGN_PROBLEMS: SDProblem[] = [
