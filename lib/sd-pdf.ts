@@ -31,13 +31,22 @@ const SECTION_LABELS: Record<string, string> = {
   tradeoffs:    'Trade-offs',
 }
 
-// Strip common markdown inline markers (bold, italic, code, strikethrough)
+const ORANGE: [number, number, number] = [234, 88, 12]
+const INK:    [number, number, number] = [24, 24, 27]
+const BODY:   [number, number, number] = [63, 63, 70]
+const MUTED:  [number, number, number] = [140, 140, 145]
+
+// Strip common markdown inline markers (bold, italic, code, strikethrough, links)
 function stripInline(text: string): string {
   return text
     .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/__(.+?)__/g,     '$1')
     .replace(/\*(.+?)\*/g,     '$1')
+    .replace(/_(.+?)_/g,       '$1')
     .replace(/`(.+?)`/g,       '$1')
     .replace(/~~(.+?)~~/g,     '$1')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '$1')
+    .trim()
 }
 
 export async function exportDesignPdf(data: SdPdfData): Promise<void> {
@@ -46,186 +55,220 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
 
   const pageW  = doc.internal.pageSize.getWidth()
   const pageH  = doc.internal.pageSize.getHeight()
-  const margin = 48
+  const margin = 52
   const maxW   = pageW - margin * 2
+  const bottom = pageH - margin
   let y = margin
 
-  const ensure = (space: number) => {
-    if (y + space > pageH - margin) { doc.addPage(); y = margin }
-  }
-  const gap = (h = 8) => { y += h }
+  const newPage = () => { doc.addPage(); y = margin }
+  const ensure  = (space: number) => { if (y + space > bottom) newPage() }
+  const gap     = (h = 8) => { y += h }
 
-  const write = (
-    text: string,
-    {
-      size   = 10,
-      style  = 'normal',
-      color  = [60, 60, 60] as [number, number, number],
-      font   = 'helvetica',
-      lh     = 15,
-      indent = 0,
-    } = {},
-  ) => {
+  type WriteOpts = {
+    size?: number; style?: string; color?: [number, number, number]
+    font?: string; lh?: number; indent?: number; width?: number
+  }
+
+  // Wrap + measure without drawing (used to keep cards on a single page).
+  const wrap = (text: string, size: number, font: string, style: string, width: number): string[] => {
     doc.setFont(font, style)
     doc.setFontSize(size)
+    return doc.splitTextToSize(text, width)
+  }
+
+  const write = (text: string, o: WriteOpts = {}) => {
+    const { size = 10, style = 'normal', color = BODY, font = 'helvetica', lh = 15, indent = 0 } = o
+    const width = (o.width ?? maxW) - indent
+    const lines = wrap(text, size, font, style, width)
     doc.setTextColor(color[0], color[1], color[2])
-    const lines = doc.splitTextToSize(text, maxW - indent)
     for (const ln of lines) {
-      ensure(lh + 2)
+      ensure(lh)
       doc.text(ln, margin + indent, y)
       y += lh
     }
   }
 
   const sectionHeading = (text: string) => {
-    ensure(36)
-    gap(12)
-    doc.setDrawColor(234, 88, 12)
-    doc.setLineWidth(2)
-    doc.line(margin, y, margin + 28, y)
-    y += 7
-    write(text, { size: 12, style: 'bold', color: [20, 20, 20], lh: 17 })
-    gap(4)
+    ensure(40)
+    gap(14)
+    doc.setFillColor(...ORANGE)
+    doc.rect(margin, y - 9, 4, 13, 'F')       // orange tab marker
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(13)
+    doc.setTextColor(...INK)
+    doc.text(text, margin + 12, y + 2)
+    y += 10
+    doc.setDrawColor(230, 230, 233)
+    doc.setLineWidth(0.75)
+    doc.line(margin, y, margin + maxW, y)
+    gap(10)
   }
 
-  // ── Orange top bar ──────────────────────────────────────────────────────────
-  doc.setFillColor(234, 88, 12)
-  doc.rect(0, 0, pageW, 5, 'F')
-  y = margin
+  // Draw a tinted rounded card sized to its wrapped text — never splits a page.
+  const card = (
+    text: string,
+    opts: { fill: [number, number, number]; border?: [number, number, number]; textColor: [number, number, number]; size?: number; font?: string; style?: string; lh?: number },
+  ) => {
+    const { fill, border, textColor, size = 10, font = 'helvetica', style = 'normal', lh = 15 } = opts
+    const padX = 14, padY = 12
+    const lines = wrap(text, size, font, style, maxW - padX * 2)
+    const boxH  = lines.length * lh + padY * 2 - (lh - size)
+    ensure(boxH + 4)
+    doc.setFillColor(...fill)
+    if (border) { doc.setDrawColor(...border); doc.setLineWidth(0.75); doc.roundedRect(margin, y, maxW, boxH, 5, 5, 'FD') }
+    else doc.roundedRect(margin, y, maxW, boxH, 5, 5, 'F')
+    doc.setFont(font, style)
+    doc.setFontSize(size)
+    doc.setTextColor(...textColor)
+    let ty = y + padY + size - 2
+    for (const ln of lines) { doc.text(ln, margin + padX, ty); ty += lh }
+    y += boxH
+  }
 
-  write('AmanAI Lab — System Design Practice', { size: 9, style: 'bold', color: [234, 88, 12], lh: 14 })
-  gap(5)
-  write(data.problemTitle, { size: 18, style: 'bold', color: [15, 15, 15], lh: 24 })
-  write(
-    `${data.category}  |  ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`,
-    { size: 9, color: [140, 140, 140], lh: 14 },
+  // ── Header band ─────────────────────────────────────────────────────────────
+  doc.setFillColor(...ORANGE)
+  doc.rect(0, 0, pageW, 6, 'F')
+  y = margin + 4
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...ORANGE)
+  doc.text('AMANAI LAB  ·  SYSTEM DESIGN PRACTICE', margin, y)
+  y += 20
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(19)
+  doc.setTextColor(...INK)
+  for (const ln of wrap(data.problemTitle, 19, 'helvetica', 'bold', maxW)) { doc.text(ln, margin, y); y += 24 }
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(...MUTED)
+  doc.text(
+    `${data.category}   ·   ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+    margin, y,
   )
-  gap(12)
+  y += 6
 
   const r = data.review
 
-  // ── Score box ───────────────────────────────────────────────────────────────
+  // ── Score banner ─────────────────────────────────────────────────────────────
   if (r) {
-    ensure(56)
-    doc.setFillColor(250, 250, 250)
-    doc.setDrawColor(220, 220, 220)
-    doc.setLineWidth(0.5)
-    doc.roundedRect(margin, y, maxW, 48, 5, 5, 'FD')
+    gap(14)
+    const boxH = 52
+    ensure(boxH)
+    doc.setFillColor(249, 250, 251)
+    doc.setDrawColor(228, 228, 231)
+    doc.setLineWidth(0.75)
+    doc.roundedRect(margin, y, maxW, boxH, 6, 6, 'FD')
 
     // Score badge
-    doc.setFillColor(234, 88, 12)
-    doc.roundedRect(margin + 12, y + 10, 68, 28, 4, 4, 'F')
+    doc.setFillColor(...ORANGE)
+    doc.roundedRect(margin + 14, y + 12, 74, 28, 5, 5, 'F')
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(15)
     doc.setTextColor(255, 255, 255)
-    doc.text(`${r.overallScore}/10`, margin + 46, y + 29, { align: 'center' })
+    doc.text(`${r.overallScore}/10`, margin + 51, y + 31, { align: 'center' })
 
-    // Grade
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(22)
-    doc.setTextColor(20, 20, 20)
-    doc.text(r.grade, margin + 96, y + 32)
-
-    // Sub-label
+    // Grade + label
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(140, 140, 140)
-    doc.text('Overall Score', margin + 96, y + 14)
+    doc.setFontSize(8.5)
+    doc.setTextColor(...MUTED)
+    doc.text('OVERALL GRADE', margin + 104, y + 20)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(24)
+    doc.setTextColor(...INK)
+    doc.text(r.grade, margin + 104, y + 42)
 
-    y += 58
+    y += boxH + 4
 
     if (r.summary) {
-      write(r.summary, { size: 10, color: [70, 70, 70], lh: 15 })
-      gap(6)
+      gap(10)
+      write(stripInline(r.summary), { size: 10.5, color: BODY, lh: 15.5 })
     }
 
-    // Section scores — one row per entry with a right-aligned score
-    const sectionEntries = Object.entries(r.sectionScores).filter(([, v]) => v !== null)
-    if (sectionEntries.length) {
+    // Section scores — compact two-column grid
+    const entries = Object.entries(r.sectionScores).filter(([, v]) => v !== null) as [string, number][]
+    if (entries.length) {
       sectionHeading('Section Scores')
-      for (const [key, val] of sectionEntries) {
-        const label = SECTION_LABELS[key] ?? key
-        const score = val as number
-
-        ensure(22)
-        doc.setFillColor(246, 246, 248)
-        doc.setDrawColor(235, 235, 240)
-        doc.setLineWidth(0.5)
-        doc.roundedRect(margin, y - 2, maxW, 20, 3, 3, 'FD')
-
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(10)
-        doc.setTextColor(70, 70, 70)
-        doc.text(label, margin + 10, y + 12)
-
-        const scoreColor: [number, number, number] =
-          score >= 7 ? [30, 120, 55] : score >= 5 ? [160, 100, 10] : [170, 45, 45]
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(10)
-        doc.setTextColor(...scoreColor)
-        doc.text(`${score} / 10`, margin + maxW - 10, y + 12, { align: 'right' })
-
-        y += 24
+      const colGap = 12
+      const colW   = (maxW - colGap) / 2
+      const rowH   = 26
+      for (let i = 0; i < entries.length; i += 2) {
+        ensure(rowH)
+        for (let c = 0; c < 2; c++) {
+          const e = entries[i + c]
+          if (!e) continue
+          const [key, score] = e
+          const x = margin + c * (colW + colGap)
+          doc.setFillColor(247, 247, 249)
+          doc.setDrawColor(233, 233, 237)
+          doc.setLineWidth(0.5)
+          doc.roundedRect(x, y, colW, rowH - 6, 4, 4, 'FD')
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(10)
+          doc.setTextColor(...BODY)
+          doc.text(SECTION_LABELS[key] ?? key, x + 12, y + 13)
+          const sc: [number, number, number] = score >= 7 ? [22, 122, 60] : score >= 5 ? [176, 110, 8] : [190, 45, 45]
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(...sc)
+          doc.text(`${score}/10`, x + colW - 12, y + 13, { align: 'right' })
+        }
+        y += rowH
       }
-      gap(2)
     }
 
     if (r.strengths.length) {
       sectionHeading('Strengths')
       for (const s of r.strengths) {
-        write(`(+)  ${stripInline(s)}`, { color: [30, 110, 55], lh: 15 })
-        gap(2)
+        ensure(15)
+        doc.setFillColor(22, 122, 60)
+        doc.circle(margin + 3, y - 3, 2, 'F')
+        write(stripInline(s), { color: [45, 90, 60], lh: 15, indent: 14 })
+        gap(3)
       }
     }
 
     if (r.gaps.length) {
       sectionHeading('Gaps to Fix')
       for (const g of r.gaps) {
-        write(`(!)  ${stripInline(g)}`, { color: [160, 40, 40], lh: 15 })
-        gap(2)
+        ensure(15)
+        doc.setFillColor(190, 45, 45)
+        doc.circle(margin + 3, y - 3, 2, 'F')
+        write(stripInline(g), { color: [130, 55, 55], lh: 15, indent: 14 })
+        gap(3)
       }
     }
 
     if (r.topSuggestion) {
       sectionHeading('Top Priority Improvement')
-      ensure(30)
-      doc.setFillColor(255, 247, 237)
-      doc.setDrawColor(234, 88, 12)
-      doc.setLineWidth(0.5)
-      const tLines = doc.splitTextToSize(stripInline(r.topSuggestion), maxW - 28)
-      const tH = tLines.length * 15 + 16
-      doc.roundedRect(margin, y, maxW, tH, 4, 4, 'FD')
-      y += 10
-      for (const ln of tLines) {
-        ensure(15)
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(10)
-        doc.setTextColor(120, 45, 0)
-        doc.text(ln, margin + 14, y)
-        y += 15
-      }
-      y += 6
+      card(stripInline(r.topSuggestion), {
+        fill: [255, 247, 237], border: ORANGE, textColor: [124, 45, 4], size: 10.5, lh: 15.5,
+      })
     }
 
     if (r.codeQuality) {
-      sectionHeading(`Code Quality  ${r.codeQuality.score}/10`)
-      write(stripInline(r.codeQuality.notes), { color: [60, 60, 60], lh: 15 })
+      sectionHeading(`Code Quality — ${r.codeQuality.score}/10`)
+      write(stripInline(r.codeQuality.notes), { color: BODY, lh: 15 })
     }
 
     if (r.interviewerNote) {
       sectionHeading('Interviewer Note')
-      write(`"${stripInline(r.interviewerNote)}"`, { style: 'italic', color: [80, 80, 100], lh: 15 })
+      card(`"${stripInline(r.interviewerNote)}"`, {
+        fill: [244, 244, 246], textColor: [82, 82, 95], size: 10, style: 'italic', lh: 15,
+      })
     }
 
     if (r.followUps && r.followUps.length) {
       sectionHeading('Interviewer Follow-up Questions')
       r.followUps.forEach((f, i) => {
-        gap(4)
-        write(`Q${i + 1}.  ${stripInline(f.question)}`, { size: 10, style: 'bold', color: [40, 60, 120], lh: 15 })
+        ensure(20)
+        write(`Q${i + 1}.  ${stripInline(f.question)}`, { size: 10.5, style: 'bold', color: [40, 55, 110], lh: 15 })
         if (f.whatStrongAnswersCover) {
-          write(`Strong answer covers: ${stripInline(f.whatStrongAnswersCover)}`, { size: 9, color: [100, 100, 110], lh: 13, indent: 18 })
+          gap(1)
+          write(`A strong answer covers: ${stripInline(f.whatStrongAnswersCover)}`, { size: 9, color: MUTED, lh: 13, indent: 16 })
         }
-        gap(4)
+        gap(6)
       })
     }
   }
@@ -238,26 +281,38 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
       const line = rawLine.replace(/\r$/, '')
 
       if (/^###\s/.test(line)) {
-        gap(4)
-        write(stripInline(line.replace(/^###\s+/, '')), { size: 10, style: 'bold', color: [40, 40, 40], lh: 14 })
-        gap(2)
+        gap(6)
+        write(stripInline(line.replace(/^###\s+/, '')), { size: 10.5, style: 'bold', color: [40, 40, 45], lh: 15 })
+        gap(1)
       } else if (/^##\s/.test(line)) {
-        gap(8)
-        write(stripInline(line.replace(/^##\s+/, '')), { size: 11, style: 'bold', color: [25, 25, 25], lh: 16 })
-        gap(3)
+        gap(9)
+        write(stripInline(line.replace(/^##\s+/, '')), { size: 12, style: 'bold', color: INK, lh: 16 })
+        gap(2)
       } else if (/^#\s/.test(line)) {
-        gap(10)
-        write(stripInline(line.replace(/^#\s+/, '')), { size: 13, style: 'bold', color: [15, 15, 15], lh: 18 })
-        gap(4)
-      } else if (/^[-*]\s/.test(line)) {
-        write('•  ' + stripInline(line.replace(/^[-*]\s+/, '')), { color: [60, 60, 60], lh: 14, indent: 14 })
+        gap(11)
+        write(stripInline(line.replace(/^#\s+/, '')), { size: 13.5, style: 'bold', color: INK, lh: 18 })
+        gap(3)
+      } else if (/^\s*[-*]\s/.test(line)) {
+        const depth = /^\s{2,}/.test(line) ? 1 : 0
+        const ind   = 12 + depth * 14
+        ensure(14)
+        doc.setFillColor(160, 160, 165)
+        doc.circle(margin + ind - 6, y - 3, 1.6, 'F')
+        write(stripInline(line.replace(/^\s*[-*]\s+/, '')), { color: BODY, lh: 14.5, indent: ind })
       } else if (/^\d+\.\s/.test(line)) {
-        const m = line.match(/^(\d+\.\s+)(.*)$/)
-        if (m) write(`${m[1]}${stripInline(m[2])}`, { color: [60, 60, 60], lh: 14, indent: 14 })
+        const m = line.match(/^(\d+)\.\s+(.*)$/)
+        if (m) {
+          ensure(14)
+          doc.setFont('helvetica', 'bold')
+          doc.setFontSize(10)
+          doc.setTextColor(...ORANGE)
+          doc.text(`${m[1]}.`, margin, y)
+          write(stripInline(m[2]), { color: BODY, lh: 14.5, indent: 20 })
+        }
       } else if (line.trim() === '') {
         gap(6)
       } else {
-        write(stripInline(line), { color: [60, 60, 60], lh: 15 })
+        write(stripInline(line), { color: BODY, lh: 15 })
       }
     }
   }
@@ -265,7 +320,7 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
   // ── Architecture diagram (plain text) ────────────────────────────────────────
   if (data.diagramText.trim()) {
     sectionHeading('Architecture Diagram')
-    write(data.diagramText, { size: 8.5, font: 'courier', color: [60, 60, 60], lh: 12 })
+    card(data.diagramText, { fill: [247, 247, 249], textColor: [70, 70, 78], size: 8.5, font: 'courier', lh: 12 })
   }
 
   // ── Code snippets ────────────────────────────────────────────────────────────
@@ -273,32 +328,25 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
   if (codeSnips.length) {
     sectionHeading('Code Snippets')
     for (const s of codeSnips) {
-      gap(4)
-      ensure(24)
-      doc.setFillColor(238, 238, 245)
-      const codeLines = doc.splitTextToSize(s.code, maxW - 24)
-      const cH = codeLines.length * 11 + 22
-      doc.roundedRect(margin, y, maxW, cH, 4, 4, 'F')
-      y += 6
-      write(`${s.name}  (${s.language})`, { size: 9, style: 'bold', color: [55, 55, 90], lh: 14, indent: 10 })
-      gap(2)
-      write(s.code, { size: 8, font: 'courier', color: [30, 30, 30], lh: 11, indent: 10 })
-      y += 6
       gap(6)
+      write(`${s.name}   (${s.language})`, { size: 9.5, style: 'bold', color: [55, 55, 85], lh: 14 })
+      gap(3)
+      card(s.code, { fill: [244, 244, 248], textColor: [30, 30, 35], size: 8, font: 'courier', lh: 11.5 })
     }
   }
 
-  // ── Page numbers ─────────────────────────────────────────────────────────────
+  // ── Footer on every page ─────────────────────────────────────────────────────
   const pages = doc.getNumberOfPages()
   for (let p = 1; p <= pages; p++) {
     doc.setPage(p)
-    doc.setDrawColor(220, 220, 220)
+    doc.setDrawColor(232, 232, 235)
     doc.setLineWidth(0.5)
-    doc.line(margin, pageH - 32, pageW - margin, pageH - 32)
+    doc.line(margin, pageH - 34, pageW - margin, pageH - 34)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
-    doc.setTextColor(170, 170, 170)
-    doc.text(`amanailab.com  |  page ${p} of ${pages}`, margin, pageH - 20)
+    doc.setTextColor(...MUTED)
+    doc.text('amanailab.com', margin, pageH - 20)
+    doc.text(`Page ${p} of ${pages}`, pageW - margin, pageH - 20, { align: 'right' })
   }
 
   const safe = data.problemTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'design'
