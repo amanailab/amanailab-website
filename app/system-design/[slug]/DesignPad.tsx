@@ -507,6 +507,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [showPaywall, setShowPaywall]     = useState(false)
   const [showDailyLimit, setShowDailyLimit] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
+  const [showCanvasNudge, setShowCanvasNudge] = useState(false)
   const [purchasing, setPurchasing]       = useState(false)
   const [selectedPlan, setSelectedPlan]   = useState<'sd_pro' | 'full_bundle'>('full_bundle')
   const [paywallError, setPaywallError]   = useState('')
@@ -968,7 +969,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   }
 
   // ── AI review ─────────────────────────────────────────────────────────────
-  const handleReview = async () => {
+  const handleReview = async (opts?: { skipCanvasNudge?: boolean }) => {
+    const skipCanvasNudge = opts?.skipCanvasNudge === true
     // Gate 0: status still loading — never allow through
     if (proStatus === null) return
 
@@ -997,6 +999,12 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       setReviewError('Add more content first — write a few paragraphs, draw 2+ diagram components, or add code.')
       return
     }
+    // Nudge: architecture is graded from the canvas — warn if it's empty but they have written content.
+    if (!hasDiagram && (hasText || hasCode) && skipCanvasNudge !== true) {
+      setShowCanvasNudge(true)
+      return
+    }
+    setShowCanvasNudge(false)
     setReviewing(true); setReviewError(''); setReview(null)
     try {
       const res = await fetch('/api/system-design/review', {
@@ -1223,7 +1231,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           const atLimit = !statusLoading && proStatus && !proStatus.isSubscribed &&
             (proStatus.freeUsed ?? 0) >= (proStatus.freeLimit ?? 2)
           return (
-            <button onClick={handleReview} disabled={reviewing || statusLoading}
+            <button onClick={() => handleReview()} disabled={reviewing || statusLoading}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-all disabled:opacity-60 flex-shrink-0 shadow-lg ${
                 atLimit
                   ? 'bg-violet-600 hover:bg-violet-500 active:bg-violet-700 shadow-violet-500/20'
@@ -2110,7 +2118,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   </div>
                 )}
 
-                <button onClick={handleReview} disabled={reviewing || proStatus === null}
+                <button onClick={() => handleReview()} disabled={reviewing || proStatus === null}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-semibold transition-colors disabled:opacity-60">
                   {reviewing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                   {reviewing ? 'Reviewing…' : 'Re-run Review'}
@@ -2482,6 +2490,45 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           </>
         )
       })()}
+
+      {/* ═══ EMPTY CANVAS NUDGE ═════════════════════════════════════════════ */}
+      {showCanvasNudge && (
+        <>
+          <div onClick={() => setShowCanvasNudge(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-orange-500 via-violet-500 to-blue-400" />
+            <div className="p-6">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
+                    <PenLine size={18} className="text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-zinc-100">Your architecture canvas is empty</p>
+                    <p className="text-[11px] text-zinc-500 mt-0.5">The AI grades architecture from your diagram</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowCanvasNudge(false)} className="text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0 mt-0.5">
+                  <X size={16} />
+                </button>
+              </div>
+              <p className="text-[12px] text-zinc-400 leading-relaxed mb-5">
+                Drag components onto the canvas and connect them to show your design&apos;s data flow. Without a diagram, your <span className="text-orange-300 font-semibold">Architecture</span> score will be blank and the review will be less useful.
+              </p>
+              <div className="flex gap-2">
+                <button onClick={() => setShowCanvasNudge(false)}
+                  className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-xs transition-colors shadow-lg shadow-orange-500/20 flex items-center justify-center gap-1.5">
+                  <PenLine size={12} /> Let me draw it first
+                </button>
+                <button onClick={() => handleReview({ skipCanvasNudge: true })}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-semibold text-xs transition-colors">
+                  Review anyway
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ═══ NEW SESSION CONFIRM MODAL ══════════════════════════════════════ */}
       {showReset && (
