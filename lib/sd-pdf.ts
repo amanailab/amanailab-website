@@ -88,6 +88,47 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
     }
   }
 
+  // Inline rich-text: renders **bold**, *italic* and `code` in-place with word wrap.
+  type Seg = { text: string; bold?: boolean; italic?: boolean; code?: boolean }
+  const parseRich = (s: string): Seg[] => {
+    const segs: Seg[] = []
+    const re = /(\*\*([^*]+)\*\*|__([^_]+)__|\*([^*\s][^*]*?)\*|_([^_\s][^_]*?)_|`([^`]+)`)/g
+    let last = 0, m: RegExpExecArray | null
+    while ((m = re.exec(s))) {
+      if (m.index > last) segs.push({ text: s.slice(last, m.index) })
+      if (m[2] !== undefined || m[3] !== undefined) segs.push({ text: (m[2] ?? m[3])!, bold: true })
+      else if (m[4] !== undefined || m[5] !== undefined) segs.push({ text: (m[4] ?? m[5])!, italic: true })
+      else if (m[6] !== undefined) segs.push({ text: m[6], code: true })
+      last = re.lastIndex
+    }
+    if (last < s.length) segs.push({ text: s.slice(last) })
+    return segs.length ? segs : [{ text: s }]
+  }
+
+  const writeRich = (text: string, o: WriteOpts = {}) => {
+    const { size = 10, color = BODY, lh = 15, indent = 0 } = o
+    const startX = margin + indent
+    const right  = margin + (o.width ?? maxW)
+    const words: { w: string; seg: Seg }[] = []
+    for (const seg of parseRich(text)) {
+      for (const part of seg.text.split(/(\s+)/)) if (part.length) words.push({ w: part, seg })
+    }
+    ensure(lh)
+    let cx = startX
+    for (const { w, seg } of words) {
+      const font  = seg.code ? 'courier' : 'helvetica'
+      const style = seg.bold ? 'bold' : seg.italic ? 'italic' : 'normal'
+      doc.setFont(font, style); doc.setFontSize(size)
+      const ww = doc.getTextWidth(w)
+      if (cx + ww > right && cx > startX && w.trim() !== '') { y += lh; ensure(lh); cx = startX }
+      if (cx === startX && w.trim() === '') continue   // drop leading space after wrap
+      doc.setTextColor(...(seg.code ? [82, 82, 110] as [number, number, number] : color))
+      doc.text(w, cx, y)
+      cx += ww
+    }
+    y += lh
+  }
+
   const sectionHeading = (text: string) => {
     ensure(40)
     gap(14)
@@ -184,36 +225,37 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
 
     if (r.summary) {
       gap(10)
-      write(stripInline(r.summary), { size: 10.5, color: BODY, lh: 15.5 })
+      writeRich(r.summary, { size: 10.5, color: BODY, lh: 15.5 })
     }
 
-    // Section scores — compact two-column grid
+    // Section scores — labelled progress bars
     const entries = Object.entries(r.sectionScores).filter(([, v]) => v !== null) as [string, number][]
     if (entries.length) {
       sectionHeading('Section Scores')
-      const colGap = 12
-      const colW   = (maxW - colGap) / 2
-      const rowH   = 26
-      for (let i = 0; i < entries.length; i += 2) {
+      const labelW = 118
+      const scoreW = 40
+      const barX   = margin + labelW
+      const barW   = maxW - labelW - scoreW
+      const rowH   = 22
+      for (const [key, score] of entries) {
         ensure(rowH)
-        for (let c = 0; c < 2; c++) {
-          const e = entries[i + c]
-          if (!e) continue
-          const [key, score] = e
-          const x = margin + c * (colW + colGap)
-          doc.setFillColor(247, 247, 249)
-          doc.setDrawColor(233, 233, 237)
-          doc.setLineWidth(0.5)
-          doc.roundedRect(x, y, colW, rowH - 6, 4, 4, 'FD')
-          doc.setFont('helvetica', 'normal')
-          doc.setFontSize(10)
-          doc.setTextColor(...BODY)
-          doc.text(SECTION_LABELS[key] ?? key, x + 12, y + 13)
-          const sc: [number, number, number] = score >= 7 ? [22, 122, 60] : score >= 5 ? [176, 110, 8] : [190, 45, 45]
-          doc.setFont('helvetica', 'bold')
-          doc.setTextColor(...sc)
-          doc.text(`${score}/10`, x + colW - 12, y + 13, { align: 'right' })
-        }
+        const midY = y + 8
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(9.5)
+        doc.setTextColor(...BODY)
+        doc.text(SECTION_LABELS[key] ?? key, margin, midY + 3)
+        // track
+        doc.setFillColor(235, 235, 238)
+        doc.roundedRect(barX, midY - 3, barW, 7, 3.5, 3.5, 'F')
+        // fill
+        const sc: [number, number, number] = score >= 7 ? [34, 160, 84] : score >= 5 ? [201, 130, 20] : [214, 69, 69]
+        doc.setFillColor(...sc)
+        doc.roundedRect(barX, midY - 3, Math.max(7, barW * (score / 10)), 7, 3.5, 3.5, 'F')
+        // score
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(9.5)
+        doc.setTextColor(...sc)
+        doc.text(`${score}/10`, margin + maxW, midY + 3, { align: 'right' })
         y += rowH
       }
     }
@@ -222,10 +264,10 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
       sectionHeading('Strengths')
       for (const s of r.strengths) {
         ensure(15)
-        doc.setFillColor(22, 122, 60)
+        doc.setFillColor(34, 160, 84)
         doc.circle(margin + 3, y - 3, 2, 'F')
-        write(stripInline(s), { color: [45, 90, 60], lh: 15, indent: 14 })
-        gap(3)
+        writeRich(s, { color: [52, 96, 66], lh: 15, indent: 14 })
+        gap(4)
       }
     }
 
@@ -233,10 +275,10 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
       sectionHeading('Gaps to Fix')
       for (const g of r.gaps) {
         ensure(15)
-        doc.setFillColor(190, 45, 45)
+        doc.setFillColor(214, 69, 69)
         doc.circle(margin + 3, y - 3, 2, 'F')
-        write(stripInline(g), { color: [130, 55, 55], lh: 15, indent: 14 })
-        gap(3)
+        writeRich(g, { color: [140, 60, 60], lh: 15, indent: 14 })
+        gap(4)
       }
     }
 
@@ -249,7 +291,7 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
 
     if (r.codeQuality) {
       sectionHeading(`Code Quality — ${r.codeQuality.score}/10`)
-      write(stripInline(r.codeQuality.notes), { color: BODY, lh: 15 })
+      writeRich(r.codeQuality.notes, { color: BODY, lh: 15 })
     }
 
     if (r.interviewerNote) {
@@ -298,7 +340,7 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
         ensure(14)
         doc.setFillColor(160, 160, 165)
         doc.circle(margin + ind - 6, y - 3, 1.6, 'F')
-        write(stripInline(line.replace(/^\s*[-*]\s+/, '')), { color: BODY, lh: 14.5, indent: ind })
+        writeRich(line.replace(/^\s*[-*]\s+/, ''), { color: BODY, lh: 14.5, indent: ind })
       } else if (/^\d+\.\s/.test(line)) {
         const m = line.match(/^(\d+)\.\s+(.*)$/)
         if (m) {
@@ -307,12 +349,12 @@ export async function exportDesignPdf(data: SdPdfData): Promise<void> {
           doc.setFontSize(10)
           doc.setTextColor(...ORANGE)
           doc.text(`${m[1]}.`, margin, y)
-          write(stripInline(m[2]), { color: BODY, lh: 14.5, indent: 20 })
+          writeRich(m[2], { color: BODY, lh: 14.5, indent: 20 })
         }
       } else if (line.trim() === '') {
         gap(6)
       } else {
-        write(stripInline(line), { color: BODY, lh: 15 })
+        writeRich(line, { color: BODY, lh: 15 })
       }
     }
   }
