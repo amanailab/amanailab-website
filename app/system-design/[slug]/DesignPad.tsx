@@ -881,6 +881,26 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     requestAnimationFrame(() => { if (el) { el.focus(); const p = next.length; el.setSelectionRange(p, p) } })
   }, [persist])
 
+  // Global Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y for the writing editor, so undo works
+  // even if focus drifted off the textarea (onto the canvas, a button, etc.).
+  // Skips when a different text field / Monaco code editor is focused.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return
+      const k = e.key.toLowerCase()
+      if (k !== 'z' && k !== 'y') return
+      const ae = document.activeElement as HTMLElement | null
+      if (ae && ae !== textareaRef.current) {
+        const tag = ae.tagName.toLowerCase()
+        if (tag === 'input' || tag === 'textarea' || ae.isContentEditable || ae.closest('.monaco-editor')) return
+      }
+      e.preventDefault()
+      if (k === 'y' || e.shiftKey) redoEdit(); else undoEdit()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [undoEdit, redoEdit])
+
   const insertAt = useCallback((text: string) => {
     const el = textareaRef.current; if (!el) return
     autoStartTimer()
@@ -906,15 +926,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   const handleWriteKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const el = e.currentTarget
-    // Undo / redo — our own history, since a controlled textarea breaks the native one
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
-      e.preventDefault()
-      if (e.shiftKey) redoEdit(); else undoEdit()
-      return
-    }
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
-      e.preventDefault(); redoEdit(); return
-    }
+    // Undo / redo (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y) are handled by the global
+    // window listener above so they work regardless of focus.
     if (e.key === 'Tab') {
       e.preventDefault()
       const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
@@ -926,7 +939,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     }
     if (e.key === 'b' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); wrap('**', '**') }
     if (e.key === 'i' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); wrap('*', '*') }
-  }, [wrap, persist, undoEdit, redoEdit, recordUndo])
+  }, [wrap, persist, recordUndo])
 
   const jumpToSection = useCallback((heading: string) => {
     const el = textareaRef.current; if (!el) return
