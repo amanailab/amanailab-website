@@ -34,8 +34,27 @@ function nodeName(n: DiagramNodeLike): string {
 /** Serialize a node/edge graph into a plain-text description for the AI reviewer. */
 export function serializeDiagram(nodes: DiagramNodeLike[], edges: DiagramEdgeLike[]): string {
   if (!nodes.length) return ''
-  const byId  = Object.fromEntries(nodes.map(n => [n.id, nodeName(n)]))
-  const comps = nodes.map(n => `- ${nodeName(n)}`).join('\n')
+
+  // Build a UNIQUE display name per node. When several nodes share the same
+  // name (e.g. two un-renamed "Cache" boxes) we suffix "#1, #2, ..." so the AI
+  // treats them as separate components and connections stay unambiguous —
+  // otherwise identical labels read as accidental duplicates.
+  const baseName = new Map<string, string>()
+  const total: Record<string, number> = {}
+  for (const n of nodes) {
+    const b = nodeName(n)
+    baseName.set(n.id, b)
+    total[b] = (total[b] ?? 0) + 1
+  }
+  const running: Record<string, number> = {}
+  const byId: Record<string, string> = {}
+  for (const n of nodes) {
+    const b = baseName.get(n.id) as string
+    if (total[b] > 1) { running[b] = (running[b] ?? 0) + 1; byId[n.id] = `${b} #${running[b]}` }
+    else byId[n.id] = b
+  }
+
+  const comps = nodes.map(n => `- ${byId[n.id]}`).join('\n')
 
   const conns = edges.length
     ? edges.map(e => {
@@ -47,10 +66,10 @@ export function serializeDiagram(nodes: DiagramNodeLike[], edges: DiagramEdgeLik
   // Flag components that aren't wired to anything — useful signal for the reviewer.
   const connected = new Set<string>()
   for (const e of edges) { connected.add(e.source); connected.add(e.target) }
-  const orphans = nodes.filter(n => !connected.has(n.id)).map(nodeName)
+  const orphans = nodes.filter(n => !connected.has(n.id)).map(n => byId[n.id])
   const orphanNote = edges.length && orphans.length
     ? `\n\nComponents with no connections (possible gaps): ${orphans.join(', ')}`
     : ''
 
-  return `Components on the canvas (${nodes.length}):\n${comps}\n\nData flow / connections (${edges.length}):\n${conns}${orphanNote}`
+  return `Components on the canvas (${nodes.length}):\n${comps}\n\nData flow / connections (${edges.length}):\n${conns}${orphanNote}\n\nNote: components of the same type (e.g. "Cache #1" and "Cache #2") are SEPARATE instances the candidate placed on purpose — they are not duplicates; judge them by how they are wired and what role they play.`
 }
