@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { callAI } from '@/lib/ai-fallback'
 import { getAdminSupabase } from '@/lib/admin'
+import { isSdAdmin } from '@/lib/sd-admins'
 import { DESIGN_PROBLEM_MAP } from '@/lib/system-design-problems'
 
 export const runtime = 'nodejs'
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
     .select('subscribed_until')
     .eq('user_id', user.id)
     .maybeSingle()
-  const isSubscribed = !!sub && new Date(sub.subscribed_until) > new Date()
+  const isSubscribed = (!!sub && new Date(sub.subscribed_until) > new Date()) || isSdAdmin(user.email)
   if (!isSubscribed) {
     return NextResponse.json(
       { error: 'Reference solutions are a Pro feature.', code: 'PAYWALL' },

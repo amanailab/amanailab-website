@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { callAI } from '@/lib/ai-fallback'
 import { getAdminSupabase } from '@/lib/admin'
+import { isSdAdmin } from '@/lib/sd-admins'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -132,8 +133,11 @@ export async function POST(req: Request) {
     .maybeSingle()
 
   const isSubscribed = !!sub && new Date(sub.subscribed_until) > new Date()
+  const isAdmin      = isSdAdmin(user.email)
 
-  if (isSubscribed) {
+  if (isAdmin) {
+    // Owner/admin accounts skip all usage limits.
+  } else if (isSubscribed) {
     // Use IST (UTC+5:30) for daily window — Indian users get midnight IST reset
     const IST_MS    = 5.5 * 60 * 60 * 1000
     const nowIst    = new Date(Date.now() + IST_MS)

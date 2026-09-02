@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/admin'
+import { isSdAdmin } from '@/lib/sd-admins'
 
 export const runtime = 'nodejs'
 
@@ -12,6 +13,17 @@ export async function GET() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ authenticated: false })
+
+    // Owner/admin accounts: unlimited reviews, treated as subscribed in the UI.
+    if (isSdAdmin(user.email)) {
+      return NextResponse.json({
+        authenticated: true,
+        isSubscribed:  true,
+        plan:          'admin',
+        dailyUsed:     0,
+        dailyLimit:    999999,
+      })
+    }
 
     const admin = getAdminSupabase()
 
