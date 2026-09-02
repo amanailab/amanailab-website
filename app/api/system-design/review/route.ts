@@ -278,11 +278,12 @@ Return JSON only (no markdown fences):
     }
 
     // ── Log usage ────────────────────────────────────────────────────────────
-    void admin.from('sd_review_usage').insert({
+    const { error: usageErr } = await admin.from('sd_review_usage').insert({
       user_id:      user.id,
       problem_slug: slug,
       used_at:      new Date().toISOString(),
     })
+    if (usageErr) console.error('[sd-review] usage insert failed:', usageErr)
 
     return NextResponse.json({ review: normalizeReview(parsed) })
   } catch (err) {

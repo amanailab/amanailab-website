@@ -969,8 +969,11 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   // ── AI review ─────────────────────────────────────────────────────────────
   const handleReview = async () => {
+    // Gate 0: status still loading — never allow through
+    if (proStatus === null) return
+
     // Gate 1: not signed in → login prompt immediately
-    if (!proStatus?.authenticated) { setShowLoginPrompt(true); return }
+    if (!proStatus.authenticated) { setShowLoginPrompt(true); return }
 
     // Gate 2: free user exhausted lifetime limit → upgrade paywall immediately
     if (!proStatus.isSubscribed) {
@@ -1216,20 +1219,21 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         </button>
 
         {(() => {
-          const atLimit = proStatus && !proStatus.isSubscribed &&
+          const statusLoading = proStatus === null
+          const atLimit = !statusLoading && proStatus && !proStatus.isSubscribed &&
             (proStatus.freeUsed ?? 0) >= (proStatus.freeLimit ?? 2)
           return (
-            <button onClick={handleReview} disabled={reviewing}
+            <button onClick={handleReview} disabled={reviewing || statusLoading}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-all disabled:opacity-60 flex-shrink-0 shadow-lg ${
                 atLimit
                   ? 'bg-violet-600 hover:bg-violet-500 active:bg-violet-700 shadow-violet-500/20'
                   : 'bg-orange-500 hover:bg-orange-400 active:bg-orange-600 shadow-orange-500/20'
               }`}>
-              {reviewing ? <Loader2 size={13} className="animate-spin" /> : atLimit ? <Crown size={13} /> : <Sparkles size={13} />}
+              {reviewing || statusLoading ? <Loader2 size={13} className="animate-spin" /> : atLimit ? <Crown size={13} /> : <Sparkles size={13} />}
               <span className="hidden sm:inline">
-                {reviewing ? 'Reviewing…' : atLimit ? 'Upgrade to Continue' : 'AI Review'}
+                {reviewing ? 'Reviewing…' : statusLoading ? 'Loading…' : atLimit ? 'Upgrade to Continue' : 'AI Review'}
               </span>
-              <span className="sm:hidden">{reviewing ? '…' : atLimit ? 'Upgrade' : 'Review'}</span>
+              <span className="sm:hidden">{reviewing ? '…' : statusLoading ? '…' : atLimit ? 'Upgrade' : 'Review'}</span>
             </button>
           )
         })()}
@@ -2106,7 +2110,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   </div>
                 )}
 
-                <button onClick={handleReview} disabled={reviewing}
+                <button onClick={handleReview} disabled={reviewing || proStatus === null}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-semibold transition-colors disabled:opacity-60">
                   {reviewing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                   {reviewing ? 'Reviewing…' : 'Re-run Review'}
