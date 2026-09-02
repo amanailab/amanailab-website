@@ -512,6 +512,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [paywallError, setPaywallError]   = useState('')
   const [showReset, setShowReset]         = useState(false)
   const [canvasResetKey, setCanvasResetKey] = useState(0)
+  const [isDesktop, setIsDesktop]         = useState(false)
+  const [dailyCountdown, setDailyCountdown] = useState('')
 
 
   const textareaRef    = useRef<HTMLTextAreaElement>(null)
@@ -559,7 +561,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     fetch('/api/sd-pro/status')
       .then(r => r.json())
       .then((d: ProStatus) => setProStatus(d))
-      .catch(() => {})
+      .catch(() => setProStatus({ authenticated: false })) // fail-safe: treat as logged out
   }, [])
 
   const refreshStatus = useCallback(() => {
@@ -568,6 +570,31 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       .then((d: ProStatus) => setProStatus(d))
       .catch(() => {})
   }, [])
+
+  // ── Desktop breakpoint detector (for right-panel inline width) ────────────
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1280)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  // ── Live countdown for daily-limit modal ──────────────────────────────────
+  useEffect(() => {
+    if (!showDailyLimit) return
+    const compute = () => {
+      const IST_MS      = 5.5 * 60 * 60 * 1000
+      const nowIST      = new Date(Date.now() + IST_MS)
+      const midnightIST = new Date(Date.UTC(nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate() + 1) - IST_MS)
+      const diff        = midnightIST.getTime() - Date.now()
+      const hrs         = Math.floor(diff / (3_600_000))
+      const mins        = Math.floor((diff % 3_600_000) / 60_000)
+      setDailyCountdown(hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`)
+    }
+    compute()
+    const id = setInterval(compute, 60_000)
+    return () => clearInterval(id)
+  }, [showDailyLimit])
 
   // ── Cloud save (resume across devices for logged-in users) ─────────────────
   const scheduleCloudSync = useCallback(() => {
@@ -680,8 +707,20 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
             }),
           })
           const vd = await vr.json()
-          if (vr.ok) { setShowPaywall(false); setPurchasing(false); refreshStatus() }
-          else setPaywallError(vd.error ?? 'Payment received but activation failed. WhatsApp Aman with your payment ID.')
+          if (vr.ok) {
+            setShowPaywall(false)
+            setPaywallError('')
+            setPurchasing(false)
+            // Optimistically mark as subscribed so the Crown badge appears instantly
+            setProStatus(prev => prev ? {
+              ...prev, isSubscribed: true,
+              plan: (vd.plan ?? plan) as PlanType,
+              dailyUsed: 0, dailyLimit: 15,
+            } : prev)
+            refreshStatus()
+          } else {
+            setPaywallError(vd.error ?? 'Payment received but activation failed. WhatsApp Aman with your payment ID.')
+          }
         },
         modal: { ondismiss: () => setPurchasing(false) },
       })
@@ -937,7 +976,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     if (!proStatus.isSubscribed) {
       const used  = proStatus.freeUsed  ?? 0
       const limit = proStatus.freeLimit ?? 2
-      if (used >= limit) { setShowPaywall(true); return }
+      if (used >= limit) { setPaywallError(''); setShowPaywall(true); return }
     }
 
     // Gate 3: paid user exhausted today's limit → daily limit modal immediately
@@ -1092,8 +1131,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       <div className="flex items-center gap-1.5 text-[10px] flex-shrink-0">
         <span className={`tabular-nums font-semibold ${remaining <= 1 ? 'text-orange-400' : 'text-zinc-500'}`}>{used}/{limit}</span>
         <span className="text-zinc-600 hidden sm:inline">free</span>
-        <button onClick={() => setShowPaywall(true)}
-          className={`font-semibold transition-colors ${remaining <= 2 ? 'text-orange-400 hover:text-orange-300' : 'text-zinc-600 hover:text-zinc-400'}`}>
+        <button onClick={() => { setPaywallError(''); setShowPaywall(true) }}
+          className={`font-semibold transition-colors ${remaining <= 1 ? 'text-orange-400 hover:text-orange-300' : 'text-zinc-600 hover:text-zinc-400'}`}>
           Upgrade
         </button>
       </div>
@@ -1409,7 +1448,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         </div>
 
         {/* ═══ RIGHT PANEL ═════════════════════════════════════════════════ */}
-        <aside style={{ width: rightWidth }}
+        <aside style={isDesktop ? { width: rightWidth } : {}}
           className={`${mobilePane === 'answer' ? 'flex' : 'hidden'} xl:flex flex-col w-full xl:flex-shrink-0 border-l border-zinc-800 bg-zinc-950 min-h-0`}>
 
           {/* Tab bar */}
@@ -2357,15 +2396,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       {/* ═══ DAILY LIMIT MODAL ══════════════════════════════════════════════ */}
       {showDailyLimit && (() => {
         const isFullBundle = proStatus?.plan === 'full_bundle'
-        // Compute time until midnight IST
-        const IST_MS     = 5.5 * 60 * 60 * 1000
-        const nowIST     = new Date(Date.now() + IST_MS)
-        const midnightIST = new Date(Date.UTC(nowIST.getUTCFullYear(), nowIST.getUTCMonth(), nowIST.getUTCDate() + 1) - IST_MS)
-        const diffMs     = midnightIST.getTime() - Date.now()
-        const hrs        = Math.floor(diffMs / (3600 * 1000))
-        const mins       = Math.floor((diffMs % (3600 * 1000)) / (60 * 1000))
-        const countdown  = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`
-
         return (
           <>
             <div onClick={() => setShowDailyLimit(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40" />
@@ -2392,7 +2422,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                 {/* Countdown */}
                 <div className="flex items-center gap-3 mb-5 p-4 rounded-xl bg-zinc-800/60 border border-zinc-700">
                   <div className="text-center min-w-[56px]">
-                    <p className="text-2xl font-extrabold text-zinc-100 tabular-nums leading-none">{countdown}</p>
+                    <p className="text-2xl font-extrabold text-zinc-100 tabular-nums leading-none">{dailyCountdown}</p>
                     <p className="text-[10px] text-zinc-500 mt-1">until reset</p>
                   </div>
                   <div className="w-px h-10 bg-zinc-700 flex-shrink-0" />
