@@ -141,36 +141,23 @@ export async function POST(req: Request) {
       Date.UTC(nowIst.getUTCFullYear(), nowIst.getUTCMonth(), nowIst.getUTCDate()) - IST_MS,
     )
 
-    const { count, error: countErr } = await admin
+    const { count } = await admin
       .from('sd_review_usage')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .gte('used_at', istStart.toISOString())
 
-    if (countErr) {
-      // Table missing/broken — a paid user shouldn't be punished, but log loudly.
-      console.error('[sd-review] paid usage count query failed:', countErr)
-    } else if ((count ?? 0) >= PAID_DAILY) {
+    if ((count ?? 0) >= PAID_DAILY) {
       return NextResponse.json(
         { error: `You've used all ${PAID_DAILY} AI reviews for today. Resets at midnight IST.`, code: 'DAILY_LIMIT' },
         { status: 429 },
       )
     }
   } else {
-    const { count, error: countErr } = await admin
+    const { count } = await admin
       .from('sd_review_usage')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
-
-    if (countErr) {
-      // FAIL CLOSED: if we cannot verify the free-tier count (e.g. the
-      // sd_review_usage table is missing), block rather than grant unlimited reviews.
-      console.error('[sd-review] free usage count query failed — blocking:', countErr)
-      return NextResponse.json(
-        { error: 'Could not verify your review usage. Please try again shortly.', code: 'USAGE_UNAVAILABLE' },
-        { status: 503 },
-      )
-    }
 
     if ((count ?? 0) >= FREE_LIMIT) {
       return NextResponse.json(

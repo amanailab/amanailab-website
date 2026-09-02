@@ -1016,7 +1016,6 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
       if (res.status === 401) { setShowLoginPrompt(true); return }
       if (res.status === 402) { setShowPaywall(true); return }
-      if (res.status === 503) { setReviewError(data.error ?? 'Could not verify your review usage. Please try again shortly.'); return }
       if (res.status === 429) {
         // DAILY_LIMIT = paid user hit 15/day; anything else = parallel-click guard
         if (data.code === 'DAILY_LIMIT') { setShowDailyLimit(true) }
