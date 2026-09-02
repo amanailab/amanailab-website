@@ -39,20 +39,32 @@ interface Palette { kind: string; label: string; icon: string; color: Color }
 
 const CANVAS_COMPONENTS: Palette[] = [
   { kind: 'client',       label: 'Client / User',    icon: '📱', color: 'zinc'    },
+  { kind: 'dns',          label: 'DNS',              icon: '🧭', color: 'cyan'    },
   { kind: 'cdn',          label: 'CDN',              icon: '🌐', color: 'cyan'    },
   { kind: 'lb',           label: 'Load Balancer',    icon: '⚖️', color: 'blue'    },
   { kind: 'gateway',      label: 'API Gateway',      icon: '🚪', color: 'blue'    },
+  { kind: 'ratelimit',    label: 'Rate Limiter',     icon: '🚦', color: 'orange'  },
+  { kind: 'auth',         label: 'Auth Service',     icon: '🔐', color: 'blue'    },
   { kind: 'service',      label: 'Service',          icon: '⚙️', color: 'orange'  },
+  { kind: 'worker',       label: 'Worker / GPU',     icon: '🖥️', color: 'violet'  },
+  { kind: 'scheduler',    label: 'Scheduler / Cron', icon: '⏰', color: 'orange'  },
   { kind: 'cache',        label: 'Cache (Redis)',    icon: '⚡', color: 'yellow'  },
   { kind: 'sql',          label: 'SQL Database',     icon: '🗄️', color: 'emerald' },
   { kind: 'nosql',        label: 'NoSQL Database',   icon: '📦', color: 'emerald' },
+  { kind: 'replica',      label: 'Read Replica',     icon: '🗃️', color: 'emerald' },
+  { kind: 'search',       label: 'Search (ES)',      icon: '🔍', color: 'yellow'  },
   { kind: 'queue',        label: 'Message Queue',    icon: '📨', color: 'violet'  },
+  { kind: 'kafka',        label: 'Kafka / Event Bus',icon: '🔀', color: 'violet'  },
   { kind: 'stream',       label: 'Stream Processor', icon: '🌊', color: 'cyan'    },
   { kind: 'blob',         label: 'Object Storage',   icon: '🗂️', color: 'zinc'    },
+  { kind: 'warehouse',    label: 'Data Warehouse',   icon: '🏢', color: 'emerald' },
+  { kind: 'analytics',    label: 'Analytics',        icon: '📈', color: 'cyan'    },
   { kind: 'vector',       label: 'Vector DB',        icon: '🔢', color: 'pink'    },
   { kind: 'llm',          label: 'LLM / Model',      icon: '🤖', color: 'pink'    },
   { kind: 'featurestore', label: 'Feature Store',    icon: '🏪', color: 'orange'  },
-  { kind: 'worker',       label: 'Worker / GPU',     icon: '🖥️', color: 'violet'  },
+  { kind: 'notify',       label: 'Notification',     icon: '🔔', color: 'violet'  },
+  { kind: 'websocket',    label: 'WebSocket Server', icon: '🔌', color: 'blue'    },
+  { kind: 'coordinator',  label: 'Coordination (ZK)',icon: '🗂️', color: 'zinc'    },
   { kind: 'monitor',      label: 'Monitoring',       icon: '📊', color: 'yellow'  },
 ]
 
@@ -71,35 +83,47 @@ const SHAPE_MIN: Record<NodeShape, { w: number; h: number }> = {
 // Distinct shape per component kind
 const KIND_SHAPE: Partial<Record<string, NodeShape>> = {
   client:       'pill',
+  dns:          'pill',
   cdn:          'pill',
   lb:           'diamond',
   gateway:      'hexagon',
+  auth:         'hexagon',
   llm:          'hexagon',
   vector:       'hexagon',
   cache:        'cylinder',
   sql:          'cylinder',
   nosql:        'cylinder',
+  replica:      'cylinder',
   featurestore: 'cylinder',
   blob:         'cylinder',
+  warehouse:    'cylinder',
+  search:       'cylinder',
   queue:        'parallelogram',
+  kafka:        'parallelogram',
   stream:       'parallelogram',
-  // service, worker, monitor → 'rect'
+  // service, worker, monitor, ratelimit, scheduler, analytics, notify, websocket, coordinator → 'rect'
 }
 
 // Initial dimensions for SVG-shaped nodes (react flow reads these via style prop)
 const SHAPE_INIT_STYLE: Partial<Record<string, React.CSSProperties>> = {
   lb:           { width: 104, height: 104 },
   gateway:      { width: 128, height: 72 },
+  auth:         { width: 128, height: 72 },
   llm:          { width: 128, height: 72 },
   vector:       { width: 128, height: 72 },
   cache:        { width: 106, height: 92 },
   sql:          { width: 106, height: 92 },
   nosql:        { width: 106, height: 92 },
+  replica:      { width: 106, height: 92 },
   featurestore: { width: 106, height: 92 },
   blob:         { width: 106, height: 92 },
+  warehouse:    { width: 106, height: 92 },
+  search:       { width: 106, height: 92 },
   queue:        { width: 140, height: 62 },
+  kafka:        { width: 140, height: 62 },
   stream:       { width: 140, height: 62 },
   client:       { width: 128, height: 48 },
+  dns:          { width: 128, height: 48 },
   cdn:          { width: 128, height: 48 },
 }
 
