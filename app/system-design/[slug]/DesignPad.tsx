@@ -9,7 +9,7 @@ import {
   ListChecks, Cpu, Lightbulb, Target, Award, Bold, Heading2, Heading3,
   List, Minus, Plus, Code2, ChevronRight, ChevronLeft, GripVertical,
   Trophy, Hash, Maximize2, Crown, LogIn, ShieldCheck, Zap, Star, FileText, Briefcase,
-  Copy, ClipboardCheck, FlaskConical, MessageSquare, Download,
+  Copy, ClipboardCheck, FlaskConical, MessageSquare, Download, Undo2, Redo2,
 } from 'lucide-react'
 import { serializeDiagram } from './diagram-utils'
 import { exportDesignPdf } from '@/lib/sd-pdf'
@@ -832,7 +832,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     }, 700)
   }, [storageKey, codeKey, scheduleCloudSync])
 
-  const handleDesignChange = (val: string) => { autoStartTimer(); setDesign(val); const { checklist: cl, snippets: snips, activeId: aid } = snap.current; persist(val, cl, snips, aid) }
+  const handleDesignChange = (val: string) => { autoStartTimer(); recordUndo(snap.current.design); setDesign(val); const { checklist: cl, snippets: snips, activeId: aid } = snap.current; persist(val, cl, snips, aid) }
   const handleCodeChange   = (code: string) => { autoStartTimer(); const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current; const next = snips.map(s => s.id === aid ? { ...s, code } : s); setSnippets(next); persist(d, cl, next, aid) }
   const handleLangChange   = (lang: CodeLang) => { const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current; const next = snips.map(s => s.id === aid ? { ...s, language: lang } : s); setSnippets(next); persist(d, cl, next, aid) }
 
@@ -841,32 +841,84 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const commitRename  = (id: string) => { if (!renameVal.trim()) { setRenamingId(null); return } const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current; const next = snips.map(s => s.id === id ? { ...s, name: renameVal.trim() } : s); setSnippets(next); setRenamingId(null); persist(d, cl, next, aid) }
   const toggleCheck   = (area: string) => { const { design: d, snippets: snips, activeId: aid } = snap.current; const next = { ...checklist, [area]: !checklist[area] }; setChecklist(next); persist(d, next, snips, aid) }
 
+  // ── Undo / redo history for the writing editor ────────────────────────────
+  // A controlled <textarea> loses the browser's native undo stack on every
+  // React re-render, so we keep our own snapshot history of the design text.
+  const undoStack = useRef<string[]>([])
+  const redoStack = useRef<string[]>([])
+  const lastPushTs = useRef(0)
+
+  const recordUndo = useCallback((prev: string, force = false) => {
+    const now = Date.now()
+    if (!force && now - lastPushTs.current < 600 && undoStack.current.length) return
+    undoStack.current.push(prev)
+    if (undoStack.current.length > 300) undoStack.current.shift()
+    redoStack.current = []
+    lastPushTs.current = now
+  }, [])
+
+  const undoEdit = useCallback(() => {
+    if (!undoStack.current.length) return
+    const cur = snap.current.design
+    const prev = undoStack.current.pop() as string
+    redoStack.current.push(cur)
+    lastPushTs.current = 0
+    const { checklist: cl, snippets: snips, activeId: aid } = snap.current
+    setDesign(prev); persist(prev, cl, snips, aid)
+    const el = textareaRef.current
+    requestAnimationFrame(() => { if (el) { el.focus(); const p = prev.length; el.setSelectionRange(p, p) } })
+  }, [persist])
+
+  const redoEdit = useCallback(() => {
+    if (!redoStack.current.length) return
+    const cur = snap.current.design
+    const next = redoStack.current.pop() as string
+    undoStack.current.push(cur)
+    lastPushTs.current = 0
+    const { checklist: cl, snippets: snips, activeId: aid } = snap.current
+    setDesign(next); persist(next, cl, snips, aid)
+    const el = textareaRef.current
+    requestAnimationFrame(() => { if (el) { el.focus(); const p = next.length; el.setSelectionRange(p, p) } })
+  }, [persist])
+
   const insertAt = useCallback((text: string) => {
     const el = textareaRef.current; if (!el) return
     autoStartTimer()
     const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
+    recordUndo(d, true)
     const s = el.selectionStart, e = el.selectionEnd
     const next = d.slice(0, s) + text + d.slice(e)
     setDesign(next); persist(next, cl, snips, aid)
     requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + text.length; el.focus() })
-  }, [persist, autoStartTimer])
+  }, [persist, autoStartTimer, recordUndo])
 
   const wrap = useCallback((before: string, after = '') => {
     const el = textareaRef.current; if (!el) return
     autoStartTimer()
     const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
+    recordUndo(d, true)
     const s = el.selectionStart, e = el.selectionEnd
     const sel = d.slice(s, e)
     const next = d.slice(0, s) + before + sel + after + d.slice(e)
     setDesign(next); persist(next, cl, snips, aid)
     requestAnimationFrame(() => { el.selectionStart = s + before.length; el.selectionEnd = s + before.length + sel.length; el.focus() })
-  }, [persist, autoStartTimer])
+  }, [persist, autoStartTimer, recordUndo])
 
   const handleWriteKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const el = e.currentTarget
+    // Undo / redo — our own history, since a controlled textarea breaks the native one
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault()
+      if (e.shiftKey) redoEdit(); else undoEdit()
+      return
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+      e.preventDefault(); redoEdit(); return
+    }
     if (e.key === 'Tab') {
       e.preventDefault()
       const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
+      recordUndo(d, true)
       const s = el.selectionStart, end = el.selectionEnd
       const next = d.slice(0, s) + '  ' + d.slice(end)
       setDesign(next); persist(next, cl, snips, aid)
@@ -874,7 +926,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     }
     if (e.key === 'b' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); wrap('**', '**') }
     if (e.key === 'i' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); wrap('*', '*') }
-  }, [wrap, persist])
+  }, [wrap, persist, undoEdit, redoEdit, recordUndo])
 
   const jumpToSection = useCallback((heading: string) => {
     const el = textareaRef.current; if (!el) return
@@ -1513,6 +1565,16 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
             <>
               {/* Toolbar */}
               <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-zinc-800 flex-shrink-0 bg-zinc-900/60 overflow-x-auto">
+                <div className="flex items-center gap-0.5 border-r border-zinc-800 pr-2 mr-1">
+                  <button onClick={undoEdit} title="Undo (Ctrl+Z)"
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all flex-shrink-0">
+                    <Undo2 size={12} />
+                  </button>
+                  <button onClick={redoEdit} title="Redo (Ctrl+Shift+Z)"
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all flex-shrink-0">
+                    <Redo2 size={12} />
+                  </button>
+                </div>
                 <div className="flex items-center gap-0.5 border-r border-zinc-800 pr-2 mr-1">
                   {[
                     { icon: <Heading2 size={12} />, label: 'H2',      action: () => insertAt('\n## ')          },
