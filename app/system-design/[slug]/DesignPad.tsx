@@ -846,15 +846,15 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   // React re-render, so we keep our own snapshot history of the design text.
   const undoStack = useRef<string[]>([])
   const redoStack = useRef<string[]>([])
-  const lastPushTs = useRef(0)
 
-  const recordUndo = useCallback((prev: string, force = false) => {
-    const now = Date.now()
-    if (!force && now - lastPushTs.current < 600 && undoStack.current.length) return
-    undoStack.current.push(prev)
-    if (undoStack.current.length > 300) undoStack.current.shift()
+  // Record the value BEFORE a change. No time-coalescing — every distinct value
+  // is a step, so a bulk delete is always a single, reliable undo.
+  const recordUndo = useCallback((prev: string) => {
+    const stack = undoStack.current
+    if (stack.length && stack[stack.length - 1] === prev) return  // skip no-op
+    stack.push(prev)
+    if (stack.length > 500) stack.shift()
     redoStack.current = []
-    lastPushTs.current = now
   }, [])
 
   const undoEdit = useCallback(() => {
@@ -862,11 +862,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     const cur = snap.current.design
     const prev = undoStack.current.pop() as string
     redoStack.current.push(cur)
-    lastPushTs.current = 0
     const { checklist: cl, snippets: snips, activeId: aid } = snap.current
     setDesign(prev); persist(prev, cl, snips, aid)
     const el = textareaRef.current
-    requestAnimationFrame(() => { if (el) { el.focus(); const p = prev.length; el.setSelectionRange(p, p) } })
+    requestAnimationFrame(() => { if (el) { el.focus(); const p = Math.min(el.selectionStart || prev.length, prev.length); el.setSelectionRange(p, p) } })
   }, [persist])
 
   const redoEdit = useCallback(() => {
@@ -874,11 +873,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     const cur = snap.current.design
     const next = redoStack.current.pop() as string
     undoStack.current.push(cur)
-    lastPushTs.current = 0
     const { checklist: cl, snippets: snips, activeId: aid } = snap.current
     setDesign(next); persist(next, cl, snips, aid)
     const el = textareaRef.current
-    requestAnimationFrame(() => { if (el) { el.focus(); const p = next.length; el.setSelectionRange(p, p) } })
+    requestAnimationFrame(() => { if (el) { el.focus(); const p = Math.min(el.selectionStart || next.length, next.length); el.setSelectionRange(p, p) } })
   }, [persist])
 
   // Global Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y for the writing editor, so undo works
@@ -890,7 +888,10 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
       const k = e.key.toLowerCase()
       if (k !== 'z' && k !== 'y') return
       const ae = document.activeElement as HTMLElement | null
-      if (ae && ae !== textareaRef.current) {
+      // Textarea focused → its own onKeyDown handles it (avoid double-undo).
+      if (ae === textareaRef.current) return
+      // Don't hijack undo inside other inputs / the Monaco code editor.
+      if (ae) {
         const tag = ae.tagName.toLowerCase()
         if (tag === 'input' || tag === 'textarea' || ae.isContentEditable || ae.closest('.monaco-editor')) return
       }
@@ -905,7 +906,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     const el = textareaRef.current; if (!el) return
     autoStartTimer()
     const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
-    recordUndo(d, true)
+    recordUndo(d)
     const s = el.selectionStart, e = el.selectionEnd
     const next = d.slice(0, s) + text + d.slice(e)
     setDesign(next); persist(next, cl, snips, aid)
@@ -916,7 +917,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     const el = textareaRef.current; if (!el) return
     autoStartTimer()
     const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
-    recordUndo(d, true)
+    recordUndo(d)
     const s = el.selectionStart, e = el.selectionEnd
     const sel = d.slice(s, e)
     const next = d.slice(0, s) + before + sel + after + d.slice(e)
@@ -926,12 +927,17 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   const handleWriteKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const el = e.currentTarget
-    // Undo / redo (Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y) are handled by the global
-    // window listener above so they work regardless of focus.
+    // Undo / redo — primary handler (fires while the textarea is focused).
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+      e.preventDefault(); if (e.shiftKey) redoEdit(); else undoEdit(); return
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
+      e.preventDefault(); redoEdit(); return
+    }
     if (e.key === 'Tab') {
       e.preventDefault()
       const { design: d, checklist: cl, snippets: snips, activeId: aid } = snap.current
-      recordUndo(d, true)
+      recordUndo(d)
       const s = el.selectionStart, end = el.selectionEnd
       const next = d.slice(0, s) + '  ' + d.slice(end)
       setDesign(next); persist(next, cl, snips, aid)
@@ -939,7 +945,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     }
     if (e.key === 'b' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); wrap('**', '**') }
     if (e.key === 'i' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); wrap('*', '*') }
-  }, [wrap, persist, recordUndo])
+  }, [wrap, persist, recordUndo, undoEdit, redoEdit])
 
   const jumpToSection = useCallback((heading: string) => {
     const el = textareaRef.current; if (!el) return
