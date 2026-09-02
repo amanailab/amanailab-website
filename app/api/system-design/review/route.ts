@@ -205,7 +205,7 @@ export async function POST(req: Request) {
     if (diagram.length > MAX_DIAGRAM_CHARS) diagram = diagram.slice(0, MAX_DIAGRAM_CHARS)
 
     const diagramSection = diagram.trim()
-      ? `\nCANDIDATE'S ARCHITECTURE DIAGRAM (drawn on visual canvas — components and connections):\n${diagram.trim()}`
+      ? `\n=== (B) ARCHITECTURE DIAGRAM (drawn on the visual canvas) ===\n${diagram.trim()}`
       : ''
 
     const codeSection = codeSnippets.length > 0
@@ -239,25 +239,29 @@ INTERVIEW QUESTION:
 ${trimmedProblem}
 ${keyAreasSection}
 
-CANDIDATE'S ANSWER:
-${design}
-${diagramSection}
+The candidate answers in TWO places, and you MUST review BOTH:
+ (A) WRITTEN ANSWER — typed in the text editor (requirements, capacity, data model, APIs, scalability, trade-offs, monitoring).
+ (B) ARCHITECTURE DIAGRAM — drawn on the visual canvas (components + how they connect). This is where architecture lives, NOT the written text.
+
+=== (A) WRITTEN ANSWER (from the text editor) ===
+${design || '(the candidate wrote nothing in the editor)'}
+${diagramSection || '\n=== (B) ARCHITECTURE DIAGRAM ===\n(the candidate drew nothing on the canvas)'}
 ${codeSection}
 
 EVALUATION INSTRUCTIONS:
 1. Score each section 1-10 (null if completely unaddressed):
-   - requirements: functional+non-functional reqs, scale numbers, SLAs, scope — did they define what they're building?
-   - architecture: JUDGE THIS FROM THE ARCHITECTURE DIAGRAM the candidate drew on the visual canvas (component selection, data flow, service boundaries, connections) — NOT from the written text. The candidate draws architecture on the canvas, not in the editor, so do NOT penalize the written answer for lacking an architecture section. ${diagram.trim() ? 'Score based on the diagram below.' : 'If no diagram was provided, set architecture to null and tell them in gaps to draw their architecture on the canvas.'}
-   - scalability: bottlenecks identified, caching strategy, sharding, fault tolerance, 10x growth plan
-   - dataModel: schema design, SQL vs NoSQL justification, indexes, query patterns, partition strategy
-   - tradeoffs: alternatives considered and rejected, explicit reasoning, CAP theorem awareness
+   - requirements: (from WRITTEN) functional+non-functional reqs, scale numbers, SLAs, scope — did they define what they're building?
+   - architecture: (from the DIAGRAM in section B, NOT the written text) Judge component selection, data-flow direction, service boundaries and connections. Do NOT penalize the written answer for lacking an architecture section — architecture is the diagram. ${diagram.trim() ? 'Check: are the right components present for THIS problem, are connections sensible and directional, are key pieces missing (load balancer, cache, queue, DB, CDN, etc.), are any components left unconnected?' : 'No diagram was drawn — set architecture to null and tell them in gaps to draw their architecture on the canvas.'}
+   - scalability: (from WRITTEN) bottlenecks identified, caching strategy, sharding, fault tolerance, 10x growth plan
+   - dataModel: (from WRITTEN) schema design, SQL vs NoSQL justification, indexes, query patterns, partition strategy
+   - tradeoffs: (from WRITTEN) alternatives considered and rejected, explicit reasoning, CAP theorem awareness
 
-2. For EACH key area listed above, note whether the candidate addressed it (even briefly).
-${diagram.trim() ? '\n2b. The architecture diagram below IS the candidate\'s architecture answer (drawn on the canvas). Base the architecture score on it: are the right components present, are connections/data-flow directions sensible, are key pieces (load balancer, cache, queue, DB, etc.) missing? Point out missing components or connections in gaps.\n' : ''}
-3. Strengths MUST quote or paraphrase the candidate's actual text.
-4. Gaps MUST name exactly what's missing and what a strong answer would include.
-5. The interviewerNote should reflect what a FAANG interviewer would actually think.
-6. followUps: 3 pointed questions THIS interviewer would ask next to probe weak spots in the candidate's specific answer (e.g. "how does this handle a 10x traffic spike?", "what happens when the cache node fails?"). For each, whatStrongAnswersCover briefly names what a strong response should mention. Make them specific to what the candidate wrote, not generic.
+2. For EACH key area listed above, note whether the candidate addressed it (even briefly) in EITHER the writing or the diagram.
+${diagram.trim() && design.trim() ? '\n2b. CROSS-CHECK the writing against the diagram: do the components they drew actually support what they wrote (e.g. they mention caching in text — is there a cache in the diagram)? Call out any mismatch, and any component in the diagram they never explain in the text, in gaps.\n' : ''}
+3. Strengths MUST be specific — quote/paraphrase the written text AND cite concrete parts of the diagram (name the components/connections that are good).
+4. Gaps MUST name exactly what's missing and what a strong answer would include — cover BOTH weak writing AND missing/incorrect architecture components or connections.
+5. The interviewerNote should reflect what a FAANG interviewer would actually think about the answer as a whole (writing + diagram).
+6. followUps: 3 pointed questions THIS interviewer would ask next to probe weak spots in the candidate's specific answer (e.g. "how does this handle a 10x traffic spike?", "what happens when the cache node fails?"). For each, whatStrongAnswersCover briefly names what a strong response should mention. Make them specific to what the candidate wrote/drew, not generic.
 
 Return JSON only (no markdown fences):
 {"overallScore":<1-10>,"grade":"<A|B|C|D>","summary":"<2-3 sentences: overall quality + key strength + most critical gap>","strengths":["<quote/paraphrase from answer + why it's good>","<quote/paraphrase + why>"],"gaps":["<exactly what's missing + what to add>","<exactly what's missing + what to add>"],"sectionScores":{"requirements":<1-10|null>,"architecture":<1-10|null>,"scalability":<1-10|null>,"dataModel":<1-10|null>,"tradeoffs":<1-10|null>},"codeQuality":${hasCode ? '{"score":<1-10>,"notes":"<correctness, completeness, relevance to the problem>"}' : 'null'},"topSuggestion":"<single most impactful specific change the candidate should make>","interviewerNote":"<honest 1-2 sentence reaction from a real interviewer at this level>","followUps":[{"question":"<pointed follow-up question>","whatStrongAnswersCover":"<what a strong answer covers>"},{"question":"<...>","whatStrongAnswersCover":"<...>"},{"question":"<...>","whatStrongAnswersCover":"<...>"}]}`,

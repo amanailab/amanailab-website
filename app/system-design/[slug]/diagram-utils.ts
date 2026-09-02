@@ -11,16 +11,46 @@ interface DiagramEdgeLike {
   data?: { label?: string }
 }
 
+// Friendly names for component kinds — so the AI still knows what a box is
+// even after the user renames it (e.g. "User DB" is still a SQL Database).
+const KIND_NAME: Record<string, string> = {
+  client: 'Client', dns: 'DNS', cdn: 'CDN', lb: 'Load Balancer', gateway: 'API Gateway',
+  ratelimit: 'Rate Limiter', auth: 'Auth Service', service: 'Service', worker: 'Worker/GPU',
+  scheduler: 'Scheduler/Cron', cache: 'Cache', sql: 'SQL Database', nosql: 'NoSQL Database',
+  replica: 'Read Replica', search: 'Search Index', queue: 'Message Queue', kafka: 'Kafka/Event Bus',
+  stream: 'Stream Processor', blob: 'Object Storage', warehouse: 'Data Warehouse', analytics: 'Analytics',
+  vector: 'Vector DB', llm: 'LLM/Model', featurestore: 'Feature Store', notify: 'Notification Service',
+  websocket: 'WebSocket Server', coordinator: 'Coordination (ZooKeeper)', monitor: 'Monitoring',
+}
+
+function nodeName(n: DiagramNodeLike): string {
+  const label = n.data?.label?.trim()
+  const kind  = n.data?.kind
+  const type  = kind ? (KIND_NAME[kind] ?? kind) : ''
+  if (label && type && label.toLowerCase() !== type.toLowerCase()) return `${label} (${type})`
+  return label || type || 'node'
+}
+
 /** Serialize a node/edge graph into a plain-text description for the AI reviewer. */
 export function serializeDiagram(nodes: DiagramNodeLike[], edges: DiagramEdgeLike[]): string {
   if (!nodes.length) return ''
-  const byId = Object.fromEntries(nodes.map(n => [n.id, n.data?.label || n.data?.kind || 'node']))
-  const comps = nodes.map(n => `- ${n.data?.label || n.data?.kind || 'node'}`).join('\n')
+  const byId  = Object.fromEntries(nodes.map(n => [n.id, nodeName(n)]))
+  const comps = nodes.map(n => `- ${nodeName(n)}`).join('\n')
+
   const conns = edges.length
     ? edges.map(e => {
         const label = e.data?.label ? ` [${e.data.label}]` : ''
-        return `- ${byId[e.source] ?? '?'} →${label} ${byId[e.target] ?? '?'}`
+        return `- ${byId[e.source] ?? '?'} -->${label} ${byId[e.target] ?? '?'}`
       }).join('\n')
-    : '- (components placed but no connections drawn yet)'
-  return `Components on the canvas:\n${comps}\n\nData flow / connections:\n${conns}`
+    : '- (components placed but NO connections drawn yet)'
+
+  // Flag components that aren't wired to anything — useful signal for the reviewer.
+  const connected = new Set<string>()
+  for (const e of edges) { connected.add(e.source); connected.add(e.target) }
+  const orphans = nodes.filter(n => !connected.has(n.id)).map(nodeName)
+  const orphanNote = edges.length && orphans.length
+    ? `\n\nComponents with no connections (possible gaps): ${orphans.join(', ')}`
+    : ''
+
+  return `Components on the canvas (${nodes.length}):\n${comps}\n\nData flow / connections (${edges.length}):\n${conns}${orphanNote}`
 }
