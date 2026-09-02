@@ -16,6 +16,7 @@ const TEMPLATE = `## 1. Requirements Clarification
 ## 2. Capacity Estimation
 
 ## 3. High-Level Architecture
+> Draw this on the visual canvas — the AI review reads your diagram for architecture. No need to write it here.
 
 ## 4. Core Component Design
 

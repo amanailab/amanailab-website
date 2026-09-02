@@ -247,13 +247,13 @@ ${codeSection}
 EVALUATION INSTRUCTIONS:
 1. Score each section 1-10 (null if completely unaddressed):
    - requirements: functional+non-functional reqs, scale numbers, SLAs, scope — did they define what they're building?
-   - architecture: component selection, data flow, service boundaries, database choices — is it complete and justified?
+   - architecture: JUDGE THIS FROM THE ARCHITECTURE DIAGRAM the candidate drew on the visual canvas (component selection, data flow, service boundaries, connections) — NOT from the written text. The candidate draws architecture on the canvas, not in the editor, so do NOT penalize the written answer for lacking an architecture section. ${diagram.trim() ? 'Score based on the diagram below.' : 'If no diagram was provided, set architecture to null and tell them in gaps to draw their architecture on the canvas.'}
    - scalability: bottlenecks identified, caching strategy, sharding, fault tolerance, 10x growth plan
    - dataModel: schema design, SQL vs NoSQL justification, indexes, query patterns, partition strategy
    - tradeoffs: alternatives considered and rejected, explicit reasoning, CAP theorem awareness
 
 2. For EACH key area listed above, note whether the candidate addressed it (even briefly).
-${diagram.trim() ? '\n2b. The candidate also drew an architecture diagram. Factor it into the architecture score: check that every component in the written answer appears in the diagram, connections make sense (direction, missing links), and mention any diagram-vs-text mismatch in gaps.\n' : ''}
+${diagram.trim() ? '\n2b. The architecture diagram below IS the candidate\'s architecture answer (drawn on the canvas). Base the architecture score on it: are the right components present, are connections/data-flow directions sensible, are key pieces (load balancer, cache, queue, DB, etc.) missing? Point out missing components or connections in gaps.\n' : ''}
 3. Strengths MUST quote or paraphrase the candidate's actual text.
 4. Gaps MUST name exactly what's missing and what a strong answer would include.
 5. The interviewerNote should reflect what a FAANG interviewer would actually think.
