@@ -100,16 +100,7 @@ export async function POST(req: Request) {
   const rl = checkRateLimit(`sd-reference:${user.id}`, 5, 60_000)
   if (!rl.allowed) return NextResponse.json({ error: 'Please wait a moment and try again.' }, { status: 429 })
 
-  try {
-    const raw = await callAI({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a staff ML systems engineer writing the model answer for a system design interview question. Be concrete and senior-level. Return ONLY valid JSON, no markdown fences.',
-        },
-        {
-          role: 'user',
-          content: `Write the ideal reference solution for this system design interview question.
+  const userPrompt = `Write the ideal reference solution for this system design interview question.
 
 QUESTION: ${problem.problem}
 CATEGORY: ${problem.category}
@@ -119,24 +110,32 @@ ${problem.keyAreas.map((a, i) => `${i + 1}. ${a}`).join('\n')}
 Return JSON only:
 {"overview":"<2-3 sentences framing the problem, scale assumptions, and the core approach>","architecture":[{"component":"<name>","purpose":"<why it's here + key choice>"}],"dataModel":"<schema/storage choices and why (SQL vs NoSQL, partitioning, indexes)>","scaling":["<specific scaling/bottleneck decision>","<caching/sharding/fault-tolerance decision>"],"tradeoffs":[{"choice":"<decision made>","why":"<alternative rejected and reasoning>"}],"walkthrough":"<how a strong candidate would present this end-to-end in the interview, 4-6 sentences>"}
 
-Make architecture 5-7 components, scaling 3-5 items, tradeoffs 3-4 items. Be specific to THIS question, not generic.`,
-        },
+Make architecture 5-7 components, scaling 3-5 items, tradeoffs 3-4 items. Be specific to THIS question, not generic.`
+
+  // Try to get parseable JSON. json_object mode suppresses the reasoning
+  // model's <think> output; the larger token budget avoids truncation.
+  const tryGenerate = async (): Promise<unknown | null> => {
+    const raw = await callAI({
+      messages: [
+        { role: 'system', content: 'You are a staff ML systems engineer writing the model answer for a system design interview question. Be concrete and senior-level. Return ONLY a valid JSON object, no prose, no markdown fences.' },
+        { role: 'user', content: userPrompt },
       ],
       temperature: 0.3,
-      max_tokens:  2600,
+      max_tokens:  4000,
+      response_format: { type: 'json_object' },
     })
-
-    let parsed: unknown
     const cleaned = extractJSON(typeof raw === 'string' ? raw : JSON.stringify(raw))
-    try {
-      parsed = JSON.parse(cleaned)
-    } catch {
-      try {
-        parsed = JSON.parse(repairJSON(cleaned))   // second pass: fix trailing commas/comments
-      } catch {
-        console.error('[system-design/reference] parse failed:', typeof raw === 'string' ? raw.slice(0, 400) : raw)
-        return NextResponse.json({ error: 'Could not generate the reference solution. Please retry.' }, { status: 500 })
-      }
+    try { return JSON.parse(cleaned) } catch {}
+    try { return JSON.parse(repairJSON(cleaned)) } catch {}
+    console.error('[system-design/reference] parse failed:', typeof raw === 'string' ? raw.slice(0, 500) : raw)
+    return null
+  }
+
+  try {
+    let parsed = await tryGenerate()
+    if (parsed === null) parsed = await tryGenerate()   // one retry
+    if (parsed === null) {
+      return NextResponse.json({ error: 'Could not generate the reference solution. Please retry.' }, { status: 500 })
     }
 
     const reference = normalize(parsed)
