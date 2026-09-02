@@ -27,7 +27,9 @@ import {
   type EdgeProps,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Trash2, Grid3x3, MousePointerClick, Tag, Maximize2, Undo2 } from 'lucide-react'
+import { Trash2, Grid3x3, MousePointerClick, Tag, Maximize2, Undo2, Download } from 'lucide-react'
+import { toPng } from 'html-to-image'
+import { getNodesBounds, getViewportForBounds } from '@xyflow/react'
 import { serializeDiagram } from './diagram-utils'
 import type React from 'react'
 
@@ -499,6 +501,39 @@ function CanvasInner({ storageKey, resetKey, onChange, onInteract, heightClass =
     setNodes([]); setEdges([])
   }, [nodes.length, setNodes, setEdges])
 
+  const [downloading, setDownloading] = useState(false)
+  const downloadImage = useCallback(async () => {
+    const viewport = wrapperRef.current?.querySelector('.react-flow__viewport') as HTMLElement | null
+    if (!viewport || !nodes.length) return
+    setDownloading(true)
+    try {
+      // Frame the whole diagram (with padding) regardless of the current zoom/pan.
+      const bounds = getNodesBounds(nodes)
+      const imgW = Math.min(2600, Math.max(640, Math.ceil(bounds.width)  + 160))
+      const imgH = Math.min(2000, Math.max(480, Math.ceil(bounds.height) + 160))
+      const vp = getViewportForBounds(bounds, imgW, imgH, 0.5, 2, 0.12)
+      const dataUrl = await toPng(viewport, {
+        backgroundColor: '#09090b',
+        width: imgW,
+        height: imgH,
+        pixelRatio: 2,
+        style: {
+          width: `${imgW}px`,
+          height: `${imgH}px`,
+          transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
+        },
+      })
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = 'architecture-diagram.png'
+      a.click()
+    } catch {
+      // best-effort — nothing to surface if capture fails
+    } finally {
+      setDownloading(false)
+    }
+  }, [nodes])
+
   return (
     <div className={fill ? 'flex flex-col gap-2 h-full min-h-0' : 'flex flex-col gap-2'}>
       {/* Component palette */}
@@ -596,6 +631,14 @@ function CanvasInner({ storageKey, resetKey, onChange, onInteract, heightClass =
                 className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-zinc-500 hover:text-orange-400 hover:border-orange-500/40 transition-colors"
               >
                 <Maximize2 size={11} />Fit
+              </button>
+              <button
+                onClick={downloadImage}
+                disabled={downloading}
+                title="Download diagram as PNG image"
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-zinc-900/90 border border-zinc-800 text-zinc-500 hover:text-orange-400 hover:border-orange-500/40 transition-colors disabled:opacity-50"
+              >
+                <Download size={11} />{downloading ? '…' : 'PNG'}
               </button>
               <button
                 onClick={undo}
