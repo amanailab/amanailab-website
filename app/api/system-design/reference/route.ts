@@ -19,6 +19,13 @@ function extractJSON(raw: string): string {
   return s
 }
 
+function repairJSON(s: string): string {
+  return s
+    .replace(/,(\s*[}\]])/g, '$1')     // trailing commas
+    .replace(/\/\/[^\n]*/g, '')          // // comments
+    .replace(/\/\*[\s\S]*?\*\//g, '')    // /* */ comments
+}
+
 function strArr(v: unknown, max = 8): string[] {
   if (!Array.isArray(v)) return []
   return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).slice(0, max)
@@ -116,15 +123,20 @@ Make architecture 5-7 components, scaling 3-5 items, tradeoffs 3-4 items. Be spe
         },
       ],
       temperature: 0.3,
-      max_tokens:  1600,
+      max_tokens:  2600,
     })
 
     let parsed: unknown
+    const cleaned = extractJSON(typeof raw === 'string' ? raw : JSON.stringify(raw))
     try {
-      parsed = JSON.parse(extractJSON(typeof raw === 'string' ? raw : JSON.stringify(raw)))
+      parsed = JSON.parse(cleaned)
     } catch {
-      console.error('[system-design/reference] parse failed:', typeof raw === 'string' ? raw.slice(0, 300) : raw)
-      return NextResponse.json({ error: 'Could not generate the reference solution. Please retry.' }, { status: 500 })
+      try {
+        parsed = JSON.parse(repairJSON(cleaned))   // second pass: fix trailing commas/comments
+      } catch {
+        console.error('[system-design/reference] parse failed:', typeof raw === 'string' ? raw.slice(0, 400) : raw)
+        return NextResponse.json({ error: 'Could not generate the reference solution. Please retry.' }, { status: 500 })
+      }
     }
 
     const reference = normalize(parsed)
