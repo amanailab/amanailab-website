@@ -94,6 +94,7 @@ const CANVAS_PREFIX     = 'sd_canvas_v1_'
 const CODE_PREFIX       = 'sd_code_v1_'
 const COMPLETION_PREFIX = 'sd_best_v1_'
 const HISTORY_PREFIX    = 'sd_history_v2_'
+const REVIEWLOG_PREFIX  = 'sd_reviewlog_v1_'   // full past AI reviews (last 5)
 
 const CODE_LANGS: { id: CodeLang; label: string }[] = [
   { id: 'sql',        label: 'SQL'        },
@@ -485,6 +486,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const [hintsRevealed, setHintsRevealed] = useState(0)
   const [bestScore, setBestScore] = useState<{ score: number; grade: string } | null>(null)
   const [scoreHistory, setScoreHistory] = useState<{ score: number; grade: string; ts: number }[]>([])
+  const [reviewLog, setReviewLog]   = useState<{ ts: number; review: ReviewResult }[]>([])
+  const [showHistory, setShowHistory] = useState(false)
   const [showExpert, setShowExpert]     = useState(false)
   const [showHints, setShowHints]       = useState(false)
 
@@ -539,6 +542,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const codeKey       = CODE_PREFIX       + problem.slug
   const completionKey = COMPLETION_PREFIX + problem.slug
   const historyKey    = HISTORY_PREFIX    + problem.slug
+  const reviewLogKey  = REVIEWLOG_PREFIX  + problem.slug
 
   // ── Per-section word counts for write-tab progress strip ─────────────────────
   const sectionWords = useMemo(() => {
@@ -786,7 +790,8 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
     try { const raw = localStorage.getItem(completionKey); if (raw) setBestScore(JSON.parse(raw)) } catch {}
     try { const raw = localStorage.getItem(historyKey);    if (raw) setScoreHistory(JSON.parse(raw)) } catch {}
-  }, [storageKey, codeKey, canvasKey, completionKey, historyKey])
+    try { const raw = localStorage.getItem(reviewLogKey);  if (raw) setReviewLog(JSON.parse(raw)) } catch {}
+  }, [storageKey, codeKey, canvasKey, completionKey, historyKey, reviewLogKey])
 
   // ── Timer tick ─────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -886,6 +891,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     try { localStorage.removeItem(canvasKey) }      catch {}
     try { localStorage.removeItem(completionKey) }  catch {}
     try { localStorage.removeItem(historyKey) }     catch {}
+    try { localStorage.removeItem(reviewLogKey) }   catch {}
     const fresh = makeSnippet()
     setDesign(DESIGN_TEMPLATE)
     setSnippets([fresh])
@@ -898,6 +904,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     setHintsRevealed(0)
     setBestScore(null)
     setScoreHistory([])
+    setReviewLog([])
     setReview(null)
     setReviewError('')
     setReviewOpen(false)
@@ -1048,10 +1055,16 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
         setBestScore(next)
         try { localStorage.setItem(completionKey, JSON.stringify(next)) } catch {}
       }
-      const entry      = { score: data.review.overallScore, grade: data.review.grade, ts: Date.now() }
+      const ts         = Date.now()
+      const entry      = { score: data.review.overallScore, grade: data.review.grade, ts }
       const nextHistory = [...scoreHistory, entry].slice(-5)
       setScoreHistory(nextHistory)
       try { localStorage.setItem(historyKey, JSON.stringify(nextHistory)) } catch {}
+
+      // Keep the full text of the last 5 reviews so they can be reopened later
+      const nextLog = [{ ts, review: data.review }, ...reviewLog].slice(0, 5)
+      setReviewLog(nextLog)
+      try { localStorage.setItem(reviewLogKey, JSON.stringify(nextLog)) } catch {}
     } catch (e: unknown) {
       setReviewError((e instanceof Error ? e.message : '') || 'Review failed. Try again.')
     } finally { setReviewing(false) }
@@ -1225,6 +1238,15 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
           className="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0">
           <Save size={13} />
         </button>
+
+        {reviewLog.length > 0 && (
+          <button onClick={() => setShowHistory(true)} title="Past AI reviews"
+            className="flex items-center gap-1 px-2 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors flex-shrink-0 text-[11px] font-semibold">
+            <BookOpen size={13} />
+            <span className="hidden md:inline">Past reviews</span>
+            <span className="px-1 rounded bg-zinc-700 text-zinc-300 text-[10px]">{reviewLog.length}</span>
+          </button>
+        )}
 
         {(() => {
           const statusLoading = proStatus === null
@@ -2524,6 +2546,54 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
                   className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-semibold text-xs transition-colors">
                   Review anyway
                 </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ═══ PAST REVIEWS HISTORY ═══════════════════════════════════════════ */}
+      {showHistory && (
+        <>
+          <div onClick={() => setShowHistory(false)} className="absolute inset-0 bg-black/70 backdrop-blur-sm z-40" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-orange-500 via-violet-500 to-blue-400" />
+            <div className="p-5">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center flex-shrink-0">
+                    <BookOpen size={16} className="text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-zinc-100">Past AI Reviews</p>
+                    <p className="text-[11px] text-zinc-500">Your last {reviewLog.length} review{reviewLog.length === 1 ? '' : 's'} for this problem</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowHistory(false)} className="text-zinc-600 hover:text-zinc-300 transition-colors flex-shrink-0"><X size={16} /></button>
+              </div>
+              <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                {reviewLog.map((entry, i) => {
+                  const gc = GRADE_CONFIG[entry.review.grade]
+                  return (
+                    <button key={entry.ts}
+                      onClick={() => { setReview(entry.review); setReviewOpen(true); setShowHistory(false) }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-zinc-800/70 hover:bg-zinc-800 border border-zinc-700/60 hover:border-zinc-600 transition-colors text-left">
+                      <div className={`w-11 h-11 rounded-lg flex flex-col items-center justify-center flex-shrink-0 border ${gc?.bg ?? 'bg-zinc-800 border-zinc-700'}`}>
+                        <span className={`text-sm font-bold leading-none ${gc?.color ?? 'text-zinc-300'}`}>{entry.review.overallScore}</span>
+                        <span className="text-[8px] text-zinc-500 leading-none mt-0.5">/10</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold ${gc?.color ?? 'text-zinc-300'}`}>Grade {entry.review.grade}</span>
+                          {i === 0 && <span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-300 text-[9px] font-semibold">Latest</span>}
+                        </div>
+                        <p className="text-[11px] text-zinc-500 truncate mt-0.5">{entry.review.summary}</p>
+                        <p className="text-[10px] text-zinc-600 mt-0.5">{new Date(entry.ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</p>
+                      </div>
+                      <ChevronRight size={15} className="text-zinc-600 flex-shrink-0" />
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
