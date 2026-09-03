@@ -10,7 +10,7 @@ import {
   BarChart2,
   BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
   User, LogOut, LayoutDashboard, Briefcase, Layers, Library, Flame, Code2, PenLine,
-  Terminal, ScrollText, Crown,
+  Terminal, ScrollText, Crown, Rocket,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -100,7 +100,15 @@ const navItems: NavItem[] = [
     ],
   },
   { kind: "link", href: "/notes",         label: "Notes",         badge: "Members Free" },
-  { kind: "link", href: "/services",      label: "Services" },
+  {
+    kind: "dropdown",
+    label: "Services",
+    columns: 1,
+    items: [
+      { href: "/consulting", label: "Consulting — Build My Idea ✨", description: "I build your POC, MVP or AI feature", icon: <Rocket className="w-4 h-4" /> },
+      { href: "/services",   label: "Coaching & Development",        description: "AI career coaching + custom AI websites", icon: <Briefcase className="w-4 h-4" /> },
+    ],
+  },
   { kind: "link", href: "/connect-aman",  label: "Book a Session", badge: "1:1" },
   { kind: "link", href: "/about",         label: "About"    },
 ];
