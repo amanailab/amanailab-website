@@ -18,6 +18,7 @@ export async function GET() {
     if (isSdAdmin(user.email)) {
       return NextResponse.json({
         authenticated: true,
+        userId:        user.id,
         isSubscribed:  true,
         plan:          'admin',
         dailyUsed:     0,
@@ -52,6 +53,7 @@ export async function GET() {
 
       return NextResponse.json({
         authenticated:   true,
+        userId:          user.id,
         isSubscribed:    true,
         plan,
         subscribedUntil: sub!.subscribed_until,
@@ -67,6 +69,7 @@ export async function GET() {
 
     return NextResponse.json({
       authenticated: true,
+      userId:        user.id,
       isSubscribed:  false,
       plan:          'free',
       freeUsed:      count ?? 0,

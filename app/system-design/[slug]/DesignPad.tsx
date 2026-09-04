@@ -79,6 +79,7 @@ interface ReferenceSolution {
 
 interface ProStatus {
   authenticated: boolean
+  userId?: string
   isSubscribed?: boolean
   plan?: PlanType
   subscribedUntil?: string
@@ -537,12 +538,20 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
   const snap = useRef({ design, checklist, snippets, activeId })
   snap.current = { design, checklist, snippets, activeId }
 
-  const storageKey    = STORAGE_PREFIX    + problem.slug
-  const canvasKey     = CANVAS_PREFIX     + problem.slug
-  const codeKey       = CODE_PREFIX       + problem.slug
-  const completionKey = COMPLETION_PREFIX + problem.slug
-  const historyKey    = HISTORY_PREFIX    + problem.slug
-  const reviewLogKey  = REVIEWLOG_PREFIX  + problem.slug
+  // Storage is scoped PER USER so different accounts on the same browser never
+  // see each other's work. Keys stay empty until we know who is logged in
+  // (proStatus resolved) — this prevents loading the wrong account's data during
+  // the brief auth-loading window. Signed-out users keep the legacy slug-only keys.
+  const storageReady = proStatus !== null
+  const keySuffix    = proStatus?.authenticated && proStatus.userId
+    ? `${proStatus.userId}_${problem.slug}`
+    : problem.slug
+  const storageKey    = storageReady ? STORAGE_PREFIX    + keySuffix : ''
+  const canvasKey     = storageReady ? CANVAS_PREFIX     + keySuffix : ''
+  const codeKey       = storageReady ? CODE_PREFIX       + keySuffix : ''
+  const completionKey = storageReady ? COMPLETION_PREFIX + keySuffix : ''
+  const historyKey    = storageReady ? HISTORY_PREFIX    + keySuffix : ''
+  const reviewLogKey  = storageReady ? REVIEWLOG_PREFIX  + keySuffix : ''
 
   // ── Per-section word counts for write-tab progress strip ─────────────────────
   const sectionWords = useMemo(() => {
@@ -769,8 +778,9 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
     scheduleCloudSync()
   }, [scheduleCloudSync])
 
-  // ── Load saved state ───────────────────────────────────────────────────────
+  // ── Load saved state (only once we know which account is active) ─────────────
   useEffect(() => {
+    if (!storageKey) return
     try {
       const raw = localStorage.getItem(storageKey)
       if (raw) { const p = JSON.parse(raw); setDesign(p.design ?? DESIGN_TEMPLATE); setSavedAt(p.savedAt ? new Date(p.savedAt) : null); setChecklist(p.checklist ?? {}) }
@@ -819,6 +829,7 @@ export default function DesignPad({ problem }: { problem: SDProblem }) {
 
   // ── Persist ────────────────────────────────────────────────────────────────
   const persist = useCallback((d: string, cl: Record<string, boolean>, snips: CodeSnippet[], aid: string) => {
+    if (!storageKey) return
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
       try {

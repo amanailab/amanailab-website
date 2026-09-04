@@ -51,24 +51,37 @@ export default function SystemDesignClient({ problems }: { problems: SDItem[] })
   const [query, setQuery]     = useState('')
 
   useEffect(() => {
-    const w: Record<string, number> = {}
-    const s: Record<string, { score: number; grade: string }> = {}
-    for (const p of problems) {
+    let cancelled = false
+    ;(async () => {
+      // Progress is stored PER USER — resolve who's logged in first, then read
+      // that account's scoped keys (matches DesignPad). Signed-out = legacy keys.
+      let suffix = ''
       try {
-        const raw = localStorage.getItem(STORAGE_PREFIX + p.slug)
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          w[p.slug] = (parsed.design ?? '').split(/\s+/).filter(Boolean).length
-        }
+        const d = await fetch('/api/sd-pro/status').then(r => r.json())
+        if (d?.authenticated && d.userId) suffix = `${d.userId}_`
       } catch {}
-      try {
-        const raw = localStorage.getItem(COMPLETION_PREFIX + p.slug)
-        if (raw) s[p.slug] = JSON.parse(raw)
-      } catch {}
-    }
-    setWords(w)
-    setScores(s)
-    setMounted(true)
+      if (cancelled) return
+
+      const w: Record<string, number> = {}
+      const s: Record<string, { score: number; grade: string }> = {}
+      for (const p of problems) {
+        try {
+          const raw = localStorage.getItem(STORAGE_PREFIX + suffix + p.slug)
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            w[p.slug] = (parsed.design ?? '').split(/\s+/).filter(Boolean).length
+          }
+        } catch {}
+        try {
+          const raw = localStorage.getItem(COMPLETION_PREFIX + suffix + p.slug)
+          if (raw) s[p.slug] = JSON.parse(raw)
+        } catch {}
+      }
+      setWords(w)
+      setScores(s)
+      setMounted(true)
+    })()
+    return () => { cancelled = true }
   }, [problems])
 
   const started      = (slug: string) => (words[slug] ?? 0) > TEMPLATE_WORDS + 15

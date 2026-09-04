@@ -411,8 +411,10 @@ function CanvasInner({ storageKey, resetKey, onChange, onInteract, heightClass =
   const edgeTypes = useMemo(() => ({ labeled: LabeledEdge }), [])
 
   // Load saved canvas — also migrates old nodes to have explicit dimensions for SVG shapes.
-  // Re-runs when resetKey changes so the canvas clears after a session reset.
+  // Re-runs when resetKey or storageKey changes (e.g. after a session reset or when
+  // the per-user storage scope becomes known / the account switches).
   useEffect(() => {
+    if (!storageKey) return   // wait until the per-user key is known
     try {
       const raw = localStorage.getItem(storageKey)
       if (raw) {
@@ -443,7 +445,7 @@ function CanvasInner({ storageKey, resetKey, onChange, onInteract, heightClass =
 
   // Persist on change
   useEffect(() => {
-    if (!loaded.current) return
+    if (!loaded.current || !storageKey) return
     if (saveTimer.current) clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
       try { localStorage.setItem(storageKey, JSON.stringify({ nodes, edges })) } catch {}
