@@ -158,10 +158,20 @@ export async function POST(req: Request) {
       )
     }
   } else {
-    const { count } = await admin
+    const { count, error: countErr } = await admin
       .from('sd_review_usage')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
+
+    if (countErr) {
+      // FAIL CLOSED: if we can't verify the free-tier count (e.g. the
+      // sd_review_usage table is missing) do NOT grant unlimited reviews.
+      console.error('[sd-review] free usage count failed — blocking:', countErr)
+      return NextResponse.json(
+        { error: 'Could not verify your review usage. Please try again shortly.', code: 'USAGE_UNAVAILABLE' },
+        { status: 503 },
+      )
+    }
 
     if ((count ?? 0) >= FREE_LIMIT) {
       return NextResponse.json(

@@ -3,7 +3,6 @@
 const SD_ADMIN_EMAILS = new Set(
   [
     'amanchauhan7172@gmail.com',
-    'aman.chauhan.ai71@gmail.com',
   ].map(e => e.toLowerCase()),
 )
 
