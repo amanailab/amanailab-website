@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Download, Crown, CreditCard, X, CheckCircle,
   FileText, Loader2, Lock, Sparkles, Eye,
-  BookOpen, Package as PackageIcon, LayoutGrid, LayoutList, MessageSquare,
+  BookOpen, Package as PackageIcon, LayoutGrid, LayoutList, MessageSquare, Flame,
 } from 'lucide-react'
 import type { Note, NotePackage } from '@/lib/notes-data'
 import PdfPreview from '@/components/notes/PdfPreview'
@@ -45,11 +45,12 @@ type ModalState =
   | { type: 'download-pkg'; pkg: NotePackage; items: DownloadItem[] }
 
 export default function NotesClient({
-  notes, allNotes, packages,
+  notes, allNotes, packages, popularNoteIds,
 }: {
   notes: Note[]
   allNotes: Note[]
   packages: NotePackage[]
+  popularNoteIds: string[]
 }) {
   const [filter, setFilter]       = useState('All')
   const [viewMode, setViewMode]   = useState<'grid' | 'list'>('grid')
@@ -381,6 +382,43 @@ export default function NotesClient({
         </div>
       </div>
 
+      {/* ════════════════ TRENDING / POPULAR ════════════════ */}
+      {popularNoteIds.length > 0 && (() => {
+        const trendingNotes = popularNoteIds
+          .map(id => notes.find(n => n.id === id))
+          .filter((n): n is Note => !!n)
+          .slice(0, 5)
+        if (trendingNotes.length === 0) return null
+        return (
+          <section className="px-4 pb-8">
+            <div className="max-w-5xl mx-auto">
+              <div className="flex items-center gap-3 mb-4">
+                <Flame className="w-4 h-4 text-orange-400 shrink-0" />
+                <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Students also bought</h2>
+                <div className="h-px flex-1 bg-zinc-800/60" />
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+                {trendingNotes.map(note => (
+                  <button key={note.id} onClick={() => openPreview(note)}
+                    className="flex-shrink-0 w-44 bg-zinc-900 border border-zinc-800 hover:border-orange-500/40 rounded-xl overflow-hidden transition-all group text-left">
+                    <div className={`h-16 bg-gradient-to-br ${note.gradient} flex items-center justify-center text-3xl relative`}>
+                      <div className="absolute inset-0 opacity-[0.07]"
+                        style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+                      <span className="relative z-10">{note.emoji}</span>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-[11px] font-extrabold text-zinc-100 leading-snug line-clamp-2 mb-1 group-hover:text-white transition-colors">{note.title}</p>
+                      <p className="text-[10px] text-zinc-600 mb-2">{note.pages}p · {note.topic}</p>
+                      <span className="text-xs font-black text-orange-400">{fmt(note.price, isIndia)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )
+      })()}
+
       {/* ════════════════ NOTES GRID / LIST ════════════════ */}
       <section className="px-4 py-6 pb-24">
         <div className="max-w-5xl mx-auto">
@@ -541,6 +579,41 @@ export default function NotesClient({
                         <CreditCard className="w-4 h-4" /> Buy for {fmt(modal.note.price, isIndia)} — Instant Download
                       </button>
                     </div>
+
+                    {/* Students also bought */}
+                    {(() => {
+                      const related = notes
+                        .filter(n => n.id !== modal.note.id && n.topic === modal.note.topic)
+                        .sort((a, b) => {
+                          const ai = popularNoteIds.indexOf(a.id)
+                          const bi = popularNoteIds.indexOf(b.id)
+                          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi)
+                        })
+                        .slice(0, 3)
+                      if (related.length === 0) return null
+                      return (
+                        <div className="border-t border-zinc-800 pt-4">
+                          <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                            <Flame className="w-3 h-3 text-orange-400" /> Students also bought
+                          </p>
+                          <div className="space-y-2">
+                            {related.map(n => (
+                              <button key={n.id} onClick={() => openPreview(n)}
+                                className="w-full flex items-center gap-3 bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 hover:border-orange-500/30 rounded-xl px-3 py-2.5 transition-all text-left group">
+                                <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${n.gradient} flex items-center justify-center text-lg shrink-0`}>
+                                  {n.emoji}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-zinc-200 truncate group-hover:text-white transition-colors">{n.title}</p>
+                                  <p className="text-[10px] text-zinc-600">{n.pages} pages · {n.topic}</p>
+                                </div>
+                                <span className="text-xs font-extrabold text-orange-400 shrink-0">{fmt(n.price, isIndia)}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </div>
               </motion.div>

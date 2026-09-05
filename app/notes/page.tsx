@@ -3,7 +3,7 @@ import { getAdminSupabase } from '@/lib/admin'
 import type { Note, NotePackage } from '@/lib/notes-data'
 import NotesClient from './NotesClient'
 
-export const revalidate = 30
+export const revalidate = 60
 
 export const metadata: Metadata = {
   title: 'Notes & Study Guides | AmanAI Lab',
@@ -51,6 +51,26 @@ async function getAllNotes(): Promise<Note[]> {
   }
 }
 
+async function getPopularNoteIds(): Promise<string[]> {
+  try {
+    const supabase = getAdminSupabase()
+    const { data } = await supabase
+      .from('orders')
+      .select('item_id')
+      .eq('type', 'note')
+      .eq('status', 'completed')
+    if (!data) return []
+    const counts: Record<string, number> = {}
+    for (const row of data) {
+      if (row.item_id) counts[row.item_id] = (counts[row.item_id] ?? 0) + 1
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => id)
+      .slice(0, 8)
+  } catch { return [] }
+}
+
 async function getPackages(): Promise<NotePackage[]> {
   try {
     const supabase = getAdminSupabase()
@@ -67,10 +87,12 @@ async function getPackages(): Promise<NotePackage[]> {
 }
 
 export default async function NotesPage() {
-  const [notes, allNotes, packages] = await Promise.all([getNotes(), getAllNotes(), getPackages()])
+  const [notes, allNotes, packages, popularNoteIds] = await Promise.all([
+    getNotes(), getAllNotes(), getPackages(), getPopularNoteIds(),
+  ])
   return (
     <div className="pt-20">
-      <NotesClient notes={notes} allNotes={allNotes} packages={packages} />
+      <NotesClient notes={notes} allNotes={allNotes} packages={packages} popularNoteIds={popularNoteIds} />
     </div>
   )
 }
