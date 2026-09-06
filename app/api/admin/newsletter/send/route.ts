@@ -53,31 +53,38 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { subject, body, previewText } = await req.json()
+    const { subject, body, previewText, testEmail } = await req.json()
 
     if (!subject?.trim() || !body?.trim()) {
       return NextResponse.json({ error: 'Subject and body are required.' }, { status: 400 })
     }
 
-    const supabase = getAdminSupabase()
-    const [{ data: subscribers, error: subErr }, { data: waitlist, error: wlErr }] = await Promise.all([
-      supabase.from('newsletter_subscribers').select('email'),
-      supabase.from('course_waitlist').select('email'),
-    ])
+    let emails: string[]
 
-    if (subErr) console.error('[newsletter/send] subscribers error:', subErr.message)
-    if (wlErr)  console.error('[newsletter/send] waitlist error:', wlErr.message)
+    if (testEmail?.trim()) {
+      // Test mode — send only to the specified email
+      emails = [testEmail.trim().toLowerCase()]
+    } else {
+      const supabase = getAdminSupabase()
+      const [{ data: subscribers, error: subErr }, { data: waitlist, error: wlErr }] = await Promise.all([
+        supabase.from('newsletter_subscribers').select('email'),
+        supabase.from('course_waitlist').select('email'),
+      ])
 
-    // Merge + deduplicate both lists
-    const allEmails = new Set<string>()
-    for (const s of subscribers ?? []) if (s.email) allEmails.add(s.email.toLowerCase())
-    for (const w of waitlist ?? [])    if (w.email) allEmails.add(w.email.toLowerCase())
+      if (subErr) console.error('[newsletter/send] subscribers error:', subErr.message)
+      if (wlErr)  console.error('[newsletter/send] waitlist error:', wlErr.message)
 
-    if (allEmails.size === 0) {
-      return NextResponse.json({ error: 'No subscribers or waitlist entries found.' }, { status: 400 })
+      // Merge + deduplicate both lists
+      const allEmails = new Set<string>()
+      for (const s of subscribers ?? []) if (s.email) allEmails.add(s.email.toLowerCase())
+      for (const w of waitlist ?? [])    if (w.email) allEmails.add(w.email.toLowerCase())
+
+      if (allEmails.size === 0) {
+        return NextResponse.json({ error: 'No subscribers or waitlist entries found.' }, { status: 400 })
+      }
+
+      emails = [...allEmails]
     }
-
-    const emails = [...allEmails]
 
     const htmlBody = body
       .split('\n')

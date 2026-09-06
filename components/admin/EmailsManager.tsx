@@ -336,14 +336,15 @@ function NewsletterComposer({ recipientCount }: { recipientCount: number }) {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [previewText, setPreviewText] = useState('')
+  const [testEmail, setTestEmail] = useState('aman.chauhan.ai71@gmail.com')
   const [sending, setSending] = useState(false)
-  const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null)
+  const [result, setResult] = useState<{ sent: number; failed: number; total: number; test?: boolean } | null>(null)
   const [error, setError] = useState('')
   const [confirmed, setConfirmed] = useState(false)
 
-  async function send() {
+  async function sendTo(opts: { test: boolean }) {
     if (!subject.trim() || !body.trim()) { setError('Subject and body are required.'); return }
-    if (!confirmed) { setError('Please confirm you want to send to all subscribers.'); return }
+    if (!opts.test && !confirmed) { setError('Please confirm you want to send to all subscribers.'); return }
     setError('')
     setSending(true)
     setResult(null)
@@ -351,12 +352,12 @@ function NewsletterComposer({ recipientCount }: { recipientCount: number }) {
       const res = await fetch('/api/admin/newsletter/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, body, previewText }),
+        body: JSON.stringify({ subject, body, previewText, testEmail: opts.test ? testEmail : undefined }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to send.')
-      setResult(data)
-      setConfirmed(false)
+      setResult({ ...data, test: opts.test })
+      if (!opts.test) setConfirmed(false)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Something went wrong.')
     } finally {
@@ -411,6 +412,25 @@ function NewsletterComposer({ recipientCount }: { recipientCount: number }) {
         <span className="text-sm text-zinc-400">I confirm I want to send this email to all <strong className="text-zinc-200">{recipientCount}</strong> newsletter subscribers.</span>
       </label>
 
+      {/* Test send row */}
+      <div className="flex gap-2 items-center">
+        <input
+          type="email"
+          value={testEmail}
+          onChange={e => setTestEmail(e.target.value)}
+          placeholder="test@email.com"
+          className="flex-1 bg-zinc-800 border border-zinc-700 focus:border-orange-500 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors"
+        />
+        <button
+          onClick={() => sendTo({ test: true })}
+          disabled={sending || !subject.trim() || !body.trim() || !testEmail.trim()}
+          className="flex items-center gap-2 bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all whitespace-nowrap"
+        >
+          {sending ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
+          Send Test
+        </button>
+      </div>
+
       {error && (
         <div className="flex items-start gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
@@ -420,18 +440,21 @@ function NewsletterComposer({ recipientCount }: { recipientCount: number }) {
       {result && (
         <div className="flex items-start gap-2 text-green-400 text-sm bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3">
           <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-          Sent to {result.sent} of {result.total} subscribers.{result.failed > 0 ? ` (${result.failed} failed)` : ''}
+          {result.test
+            ? `Test email sent to ${testEmail}!`
+            : `Sent to ${result.sent} of ${result.total} subscribers.${result.failed > 0 ? ` (${result.failed} failed)` : ''}`
+          }
         </div>
       )}
 
       <button
-        onClick={send}
+        onClick={() => sendTo({ test: false })}
         disabled={sending || !subject.trim() || !body.trim() || !confirmed}
         className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-400 disabled:bg-orange-500/40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-3 rounded-xl transition-all"
       >
         {sending
           ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</>
-          : <><Send className="w-4 h-4" /> Send Newsletter</>
+          : <><Send className="w-4 h-4" /> Send to All Subscribers</>
         }
       </button>
     </div>
