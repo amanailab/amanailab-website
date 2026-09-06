@@ -180,7 +180,6 @@ export default function MasterclassPage() {
   const [formData, setFormData]       = useState({ name: '', email: '', whatsapp: '', tier: 'early' })
   const [formState, setFormState]     = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
   const [payState, setPayState]       = useState<'idle' | 'loading'>('idle')
-  const [payTier, setPayTier]         = useState<'early' | 'regular'>('early')
   const [successMsg, setSuccessMsg]   = useState('')
 
   useEffect(() => {
@@ -207,7 +206,6 @@ export default function MasterclassPage() {
 
   async function pay(tier: 'early' | 'regular') {
     if (!rzpReady) { alert('Payment is loading, please try again in a moment.'); return }
-    setPayTier(tier)
     setPayState('loading')
     try {
       const res  = await fetch('/api/masterclass/create-order', {
@@ -280,12 +278,8 @@ export default function MasterclassPage() {
           {/* CTA row */}
           <div className="flex flex-wrap justify-center gap-3">
             <button onClick={() => pay('early')}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-orange-500/25">
-              <CreditCard className="w-4 h-4" /> Early Bird — ₹7,999 <span className="text-orange-200 text-xs">(First 15)</span>
-            </button>
-            <button onClick={() => pay('regular')}
-              className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-bold px-6 py-3 rounded-xl transition-all">
-              <CreditCard className="w-4 h-4" /> Regular — ₹9,999
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/25 hover:-translate-y-0.5">
+              <CreditCard className="w-4 h-4" /> Reserve My Seat — ₹7,999
             </button>
             <a href="/pdfs/masterclass-syllabus.pdf"
               download target="_blank" rel="noopener noreferrer"
@@ -440,55 +434,66 @@ export default function MasterclassPage() {
 
       {/* ── Pricing ── */}
       <section id="pricing" className="px-4 py-12 border-t border-zinc-800/60">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-lg mx-auto">
           <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest text-center mb-2">Reserve Your Seat</p>
-          <h2 className="text-2xl font-black text-center mb-2">24 live sessions, 4 days a week</h2>
-          <p className="text-zinc-500 text-sm text-center mb-8">Early Bird includes everything, including your free mock interview</p>
+          <h2 className="text-2xl font-black text-center mb-2">24 live sessions · 4 days a week</h2>
+          <p className="text-zinc-500 text-sm text-center mb-8">Everything included — mock interview, resume review, PDF notes & more</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {/* Early Bird */}
-            <div className="relative bg-zinc-900 border-2 border-orange-500/50 rounded-2xl p-6 overflow-hidden">
-              <div className="absolute top-3 right-3 bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">First 15 seats</div>
-              <div className="h-1 bg-gradient-to-r from-orange-500 to-amber-400 rounded-full mb-5 -mx-6 -mt-6" />
-              <p className="text-xs font-black text-orange-400 uppercase tracking-widest mb-1">Early Bird</p>
-              <p className="text-4xl font-black text-white mb-1">₹7,999</p>
-              <p className="text-xs text-zinc-500 mb-5">Save ₹2,000 vs regular price</p>
-              <ul className="space-y-2 mb-6">
-                {['24 Live Sessions (90 min each)', 'Session recordings — 30 days', 'Complete PDF Notes Bundle', 'WhatsApp doubt-solving group', 'Free 1-on-1 Resume Review', 'Free 1-on-1 Mock Interview', '1-on-1 Personal Discussion', 'Job Referral Support'].map(item => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-zinc-300">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {item}
-                  </li>
-                ))}
-              </ul>
-              <button onClick={() => pay('early')} disabled={payState === 'loading' && payTier === 'early'}
-                className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-orange-500/20">
-                {payState === 'loading' && payTier === 'early' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-                Pay ₹7,999 — Book Seat
-              </button>
-            </div>
+          {/* Single pricing card */}
+          <div className="relative bg-zinc-900 border-2 border-orange-500/40 rounded-2xl overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-500" />
 
-            {/* Regular */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-              <p className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-1">Regular</p>
-              <p className="text-4xl font-black text-white mb-1">₹9,999</p>
-              <p className="text-xs text-zinc-600 mb-5">Open enrollment</p>
-              <ul className="space-y-2 mb-6">
-                {['24 Live Sessions (90 min each)', 'Session recordings — 30 days', 'Complete PDF Notes Bundle', 'WhatsApp doubt-solving group', 'Free 1-on-1 Resume Review', 'Free 1-on-1 Mock Interview', '1-on-1 Personal Discussion', 'Job Referral Support'].map(item => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-zinc-300">
+            <div className="p-7">
+              {/* Badge */}
+              <div className="flex items-center gap-2 mb-5">
+                <span className="bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                  Early Bird — Limited Seats
+                </span>
+              </div>
+
+              {/* Price */}
+              <div className="flex items-end gap-3 mb-1">
+                <span className="text-5xl font-black text-white">₹7,999</span>
+                <span className="text-zinc-600 text-sm line-through mb-2">₹9,999</span>
+                <span className="text-emerald-400 text-xs font-bold mb-2">Save ₹2,000</span>
+              </div>
+              <p className="text-xs text-zinc-500 mb-7">One-time payment · Instant seat confirmation</p>
+
+              {/* Included list — 2 cols */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-7">
+                {[
+                  '24 Live Sessions (90 min each)',
+                  'Session recordings — 30 days',
+                  'Complete PDF Notes Bundle',
+                  'WhatsApp doubt-solving group',
+                  'Free 1-on-1 Resume Review',
+                  'Free 1-on-1 Mock Interview',
+                  '1-on-1 Personal Discussion',
+                  'Job Referral Support',
+                ].map(item => (
+                  <div key={item} className="flex items-center gap-2 text-xs text-zinc-300">
                     <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> {item}
-                  </li>
+                  </div>
                 ))}
-              </ul>
-              <button onClick={() => pay('regular')} disabled={payState === 'loading' && payTier === 'regular'}
-                className="w-full flex items-center justify-center gap-2 bg-zinc-700 hover:bg-zinc-600 border border-zinc-600 text-white font-bold py-3 rounded-xl transition-all">
-                {payState === 'loading' && payTier === 'regular' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-                Pay ₹9,999 — Book Seat
+              </div>
+
+              {/* Single pay button */}
+              <button onClick={() => pay('early')} disabled={payState === 'loading'}
+                className="w-full flex items-center justify-center gap-2.5 bg-orange-500 hover:bg-orange-400 text-white text-base font-black py-4 rounded-xl transition-all shadow-xl shadow-orange-500/25 hover:-translate-y-0.5">
+                {payState === 'loading'
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <CreditCard className="w-5 h-5" />}
+                Pay ₹7,999 — Reserve My Seat
               </button>
+
+              <p className="text-center text-xs text-zinc-600 mt-3">
+                Secure payment via Razorpay · UPI, cards, netbanking accepted
+              </p>
             </div>
           </div>
 
-          {/* Download syllabus CTA */}
-          <div className="flex justify-center">
+          {/* Download syllabus */}
+          <div className="flex justify-center mt-5">
             <a href="/pdfs/masterclass-syllabus.pdf"
               download target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
@@ -531,14 +536,6 @@ export default function MasterclassPage() {
                 <input type="tel" value={formData.whatsapp} onChange={e => setFormData(p => ({ ...p, whatsapp: e.target.value }))}
                   placeholder="+91 98765 43210"
                   className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 text-sm px-4 py-2.5 rounded-xl outline-none focus:border-orange-500/50 transition-colors placeholder:text-zinc-600" />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-zinc-400 mb-1.5 block">Interested In</label>
-                <select value={formData.tier} onChange={e => setFormData(p => ({ ...p, tier: e.target.value }))}
-                  className="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm px-4 py-2.5 rounded-xl outline-none focus:border-orange-500/50 transition-colors cursor-pointer">
-                  <option value="early">Early Bird — ₹7,999 (First 15 seats)</option>
-                  <option value="regular">Regular — ₹9,999</option>
-                </select>
               </div>
               {formState === 'error' && (
                 <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-2 rounded-lg">Something went wrong. Please try WhatsApp instead.</p>
