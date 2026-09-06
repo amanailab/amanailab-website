@@ -238,8 +238,9 @@ export default function MasterclassPage() {
             body: JSON.stringify({ ...response, tier, name: formData.name, email: formData.email, whatsapp: formData.whatsapp }),
           })
           if (vRes.ok) {
+            setEnrolled(true)
             setFormState('done')
-            setSuccessMsg('Payment confirmed! Your seat is reserved. Aman will reach out within 24 hours.')
+            setSuccessMsg('🎉 Payment confirmed! Your seat is reserved.')
           } else {
             alert('Payment verification failed. Please contact Aman on WhatsApp.')
           }
@@ -544,8 +545,15 @@ export default function MasterclassPage() {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
               className="bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-8 text-center">
               <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
-              <p className="font-bold text-emerald-300 mb-1">You&apos;re on the list!</p>
-              <p className="text-sm text-zinc-400">{successMsg}</p>
+              <p className="font-bold text-emerald-300 mb-1">{enrolled ? 'Seat Confirmed!' : "You're on the list!"}</p>
+              <p className="text-sm text-zinc-400 mb-4">{successMsg}</p>
+              {enrolled && (
+                <a href="https://chat.whatsapp.com/DjiaMTHaWDrG3mmZdDlbxN"
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20bb5a] text-white font-bold px-6 py-3 rounded-xl transition-all">
+                  <MessageCircle className="w-4 h-4" /> Join WhatsApp Group Now
+                </a>
+              )}
             </motion.div>
           ) : (
             <form onSubmit={submitInterest} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
