@@ -214,6 +214,11 @@ export default function MasterclassPage() {
 
   async function pay(tier: 'early' | 'regular') {
     if (!rzpReady) { alert('Payment is loading, please try again in a moment.'); return }
+    if (!formData.name.trim() || !formData.email.trim()) {
+      document.getElementById('interest-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      alert('Please enter your name and email in the form below before paying — we need it to confirm your seat.')
+      return
+    }
     setPayState('loading')
     try {
       const res  = await fetch('/api/masterclass/create-order', {
@@ -535,7 +540,7 @@ export default function MasterclassPage() {
       </section>
 
       {/* ── Interest / Waitlist Form ── */}
-      <section className="px-4 py-12 border-t border-zinc-800/60">
+      <section id="interest-form" className="px-4 py-12 border-t border-zinc-800/60">
         <div className="max-w-lg mx-auto">
           <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest text-center mb-2">Register Interest</p>
           <h2 className="text-2xl font-black text-center mb-2">Not ready to pay yet?</h2>
