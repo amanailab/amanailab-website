@@ -43,41 +43,60 @@ export async function POST(req: Request) {
 
     const admin = getAdminSupabase()
 
-    const paymentFields = {
+    // Base fields (no user_id — works even if migration not run)
+    const baseFields = {
       via:                 'payment',
       status:              'paid',
       amount:              amountPaise,
       razorpay_payment_id,
       razorpay_order_id,
-      // update name/whatsapp only if provided
       ...(name?.trim()     ? { name: name.trim() }         : {}),
       ...(whatsapp?.trim() ? { whatsapp: whatsapp.trim() } : {}),
-      ...(userId           ? { user_id: userId }           : {}),
     }
+    // Fields with user_id (requires migration)
+    const fieldsWithUser = userId ? { ...baseFields, user_id: userId } : baseFields
 
-    if (finalEmail) {
-      // Update existing row (interest_form or prior payment) for this email
-      const { data: updated, error: updateErr } = await admin
-        .from('masterclass_registrations')
-        .update(paymentFields)
-        .eq('email', finalEmail)
-        .select('id')
+    async function savePayment(fields: typeof baseFields) {
+      if (finalEmail) {
+        // Try to update existing row first (covers interest_form → paid upgrade)
+        const { data: updated, error: updateErr } = await admin
+          .from('masterclass_registrations')
+          .update(fields)
+          .eq('email', finalEmail)
+          .select('id')
 
-      if (updateErr) console.error('[masterclass/verify-payment] update error:', updateErr.message)
+        if (updateErr) {
+          console.error('[masterclass/verify-payment] update error:', updateErr.message)
+          return false
+        }
 
-      // No existing row → insert fresh
-      if (!updateErr && (!updated || updated.length === 0)) {
+        // No existing row — insert fresh
+        if (!updated || updated.length === 0) {
+          const { error: insertErr } = await admin
+            .from('masterclass_registrations')
+            .insert({ email: finalEmail, tier, ...fields })
+          if (insertErr) {
+            console.error('[masterclass/verify-payment] insert error:', insertErr.message)
+            return false
+          }
+        }
+      } else {
         const { error: insertErr } = await admin
           .from('masterclass_registrations')
-          .insert({ email: finalEmail, tier, ...paymentFields })
-        if (insertErr) console.error('[masterclass/verify-payment] insert error:', insertErr.message)
+          .insert({ tier, ...fields })
+        if (insertErr) {
+          console.error('[masterclass/verify-payment] no-email insert error:', insertErr.message)
+          return false
+        }
       }
-    } else {
-      // No email (rare) — insert without email
-      const { error: insertErr } = await admin
-        .from('masterclass_registrations')
-        .insert({ tier, ...paymentFields })
-      if (insertErr) console.error('[masterclass/verify-payment] no-email insert error:', insertErr.message)
+      return true
+    }
+
+    // Try with user_id first; if column missing fall back to base fields
+    const ok = await savePayment(fieldsWithUser)
+    if (!ok && userId) {
+      console.warn('[masterclass/verify-payment] retrying without user_id (migration pending)')
+      await savePayment(baseFields)
     }
 
     return NextResponse.json({ ok: true })
