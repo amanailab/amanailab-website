@@ -104,7 +104,7 @@ export default function EmailsManager({
       )}
 
       {tab === 'send' && (
-        <NewsletterComposer recipientCount={newsletter.length} />
+        <NewsletterComposer recipientCount={newsletter.length + waitlist.length} />
       )}
 
       {/* Contact message modal */}

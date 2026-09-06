@@ -60,20 +60,24 @@ export async function POST(req: Request) {
     }
 
     const supabase = getAdminSupabase()
-    const { data: subscribers, error } = await supabase
-      .from('newsletter_subscribers')
-      .select('email')
-      .eq('verified', true)   // only send to verified emails
+    const [{ data: subscribers, error: subErr }, { data: waitlist, error: wlErr }] = await Promise.all([
+      supabase.from('newsletter_subscribers').select('email'),
+      supabase.from('course_waitlist').select('email'),
+    ])
 
-    if (error) {
-      return NextResponse.json({ error: 'Failed to fetch subscribers.' }, { status: 500 })
+    if (subErr) console.error('[newsletter/send] subscribers error:', subErr.message)
+    if (wlErr)  console.error('[newsletter/send] waitlist error:', wlErr.message)
+
+    // Merge + deduplicate both lists
+    const allEmails = new Set<string>()
+    for (const s of subscribers ?? []) if (s.email) allEmails.add(s.email.toLowerCase())
+    for (const w of waitlist ?? [])    if (w.email) allEmails.add(w.email.toLowerCase())
+
+    if (allEmails.size === 0) {
+      return NextResponse.json({ error: 'No subscribers or waitlist entries found.' }, { status: 400 })
     }
 
-    if (!subscribers || subscribers.length === 0) {
-      return NextResponse.json({ error: 'No verified subscribers found.' }, { status: 400 })
-    }
-
-    const emails = subscribers.map((s: { email: string }) => s.email)
+    const emails = [...allEmails]
 
     const htmlBody = body
       .split('\n')
