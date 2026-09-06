@@ -16,6 +16,7 @@ import {
   IndianRupee,
   Zap,
   ShoppingBag,
+  GraduationCap,
 } from 'lucide-react'
 
 async function safeCount(table: string): Promise<number> {
@@ -42,6 +43,18 @@ async function getCounts() {
       safeCount('code_problems'),
       safeCount('community_posts'),
     ])
+
+  // Masterclass paid seats count
+  let masterclassPaid = 0
+  try {
+    const supabase = getAdminSupabase()
+    const { count } = await supabase
+      .from('masterclass_registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('via', 'payment')
+    masterclassPaid = count ?? 0
+  } catch { /* table may not exist yet */ }
+
   return {
     blog,
     questions,
@@ -51,20 +64,23 @@ async function getCounts() {
     sessions,
     codeProblems,
     communityPosts,
+    masterclassPaid,
   }
 }
 
 async function getRevenueStats(): Promise<{ totalRevenuePaise: number; activeSubscriptions: number; totalOrders: number }> {
   try {
     const supabase = getAdminSupabase()
-    const [ordersRes, subsRes] = await Promise.all([
+    const [ordersRes, subsRes, mcRes] = await Promise.all([
       supabase.from('orders').select('amount, via'),
       supabase.from('sd_subscriptions').select('subscribed_until', { count: 'exact' }).gt('subscribed_until', new Date().toISOString()),
+      supabase.from('masterclass_registrations').select('amount').eq('via', 'payment'),
     ])
     const orders = ordersRes.data ?? []
-    const revenue = orders.filter((o: { via: string }) => o.via !== 'member_code').reduce((s: number, o: { amount: number }) => s + (o.amount ?? 0), 0)
+    const ordersRevenue = orders.filter((o: { via: string }) => o.via !== 'member_code').reduce((s: number, o: { amount: number }) => s + (o.amount ?? 0), 0)
+    const mcRevenue = (mcRes.data ?? []).reduce((s: number, r: { amount?: number }) => s + (r.amount ?? 0), 0)
     return {
-      totalRevenuePaise: revenue,
+      totalRevenuePaise: ordersRevenue + mcRevenue,
       activeSubscriptions: subsRes.count ?? 0,
       totalOrders: orders.length,
     }
@@ -166,7 +182,8 @@ export default async function DashboardPage() {
     { title: 'Users',              description: 'Registered users and activity',              Icon: Users,       href: '/admin/users',          count: totalUsers              },
     { title: 'Code Problems',      description: 'Code Lab problem bank',                      Icon: Code2,       href: '/admin/code-problems',  count: counts.codeProblems     },
     { title: 'Community',          description: 'Pending and approved posts',                 Icon: MessageSquare,href: '/admin/community',     count: counts.communityPosts   },
-    { title: 'Orders',             description: 'Purchases, subscriptions, and revenue',      Icon: ShoppingBag, href: '/admin/orders',         count: revenue.totalOrders     },
+    { title: 'Orders',             description: 'Purchases, subscriptions, and revenue',      Icon: ShoppingBag,     href: '/admin/orders',         count: revenue.totalOrders          },
+    { title: 'Masterclass',        description: 'Paid seats, interest leads & WhatsApp group', Icon: GraduationCap,   href: '/admin/masterclass',    count: counts.masterclassPaid       },
   ]
 
   // Stat bar at top

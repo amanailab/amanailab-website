@@ -20,11 +20,13 @@ import {
   ShoppingCart,
   Zap,
   PenLine,
+  GraduationCap,
 } from 'lucide-react'
 
 const navLinks = [
   { href: '/admin/dashboard',         label: 'Dashboard',       icon: LayoutDashboard },
   { href: '/admin/users',             label: 'Users',           icon: Users },
+  { href: '/admin/masterclass',       label: 'Masterclass',     icon: GraduationCap },
   { href: '/admin/blog',              label: 'Blog Posts',      icon: FileText },
   { href: '/admin/questions',         label: "Interview Q's",   icon: HelpCircle },
   { href: '/admin/company-questions', label: 'Company Q\'s',    icon: Library },
