@@ -1,10 +1,7 @@
 import { getAdminSupabase } from '@/lib/admin'
 import AdminNav from '@/components/admin/AdminNav'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
-const ADMIN_EMAIL = 'amanchauhan7172@gmail.com'
-const WA_GROUP    = 'https://chat.whatsapp.com/DjiaMTHaWDrG3mmZdDlbxN'
+const WA_GROUP = 'https://chat.whatsapp.com/DjiaMTHaWDrG3mmZdDlbxN'
 
 async function getRegistrations() {
   try {
@@ -25,10 +22,6 @@ async function getRegistrations() {
 }
 
 export default async function MasterclassAdminPage() {
-  const cookieStore = await cookies()
-  const email = cookieStore.get('admin_email')?.value
-  if (email !== ADMIN_EMAIL) redirect('/admin')
-
   const { rows, dbError } = await getRegistrations()
 
   const paid      = rows.filter(r => r.status === 'paid')
