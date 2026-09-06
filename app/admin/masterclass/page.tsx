@@ -7,12 +7,21 @@ const ADMIN_EMAIL = 'amanchauhan7172@gmail.com'
 const WA_GROUP    = 'https://chat.whatsapp.com/DjiaMTHaWDrG3mmZdDlbxN'
 
 async function getRegistrations() {
-  const supabase = getAdminSupabase()
-  const { data } = await supabase
-    .from('masterclass_registrations')
-    .select('*')
-    .order('created_at', { ascending: false })
-  return data ?? []
+  try {
+    const supabase = getAdminSupabase()
+    const { data, error } = await supabase
+      .from('masterclass_registrations')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) {
+      console.error('[admin/masterclass] fetch error:', error.message)
+      return { rows: [], dbError: error.message }
+    }
+    return { rows: data ?? [], dbError: null }
+  } catch (e) {
+    console.error('[admin/masterclass] unexpected error:', e)
+    return { rows: [], dbError: String(e) }
+  }
 }
 
 export default async function MasterclassAdminPage() {
@@ -20,7 +29,7 @@ export default async function MasterclassAdminPage() {
   const email = cookieStore.get('admin_email')?.value
   if (email !== ADMIN_EMAIL) redirect('/admin')
 
-  const rows = await getRegistrations()
+  const { rows, dbError } = await getRegistrations()
 
   const paid      = rows.filter(r => r.via === 'payment')
   const interest  = rows.filter(r => r.via === 'interest_form')
@@ -45,6 +54,15 @@ export default async function MasterclassAdminPage() {
             📲 Open WhatsApp Group
           </a>
         </div>
+
+        {/* DB error banner */}
+        {dbError && (
+          <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-xl px-5 py-4">
+            <p className="text-red-400 font-bold text-sm mb-1">Database Error</p>
+            <p className="text-red-300 text-xs font-mono">{dbError}</p>
+            <p className="text-zinc-400 text-xs mt-2">Run <code className="bg-zinc-800 px-1 rounded">supabase/masterclass_schema.sql</code> in your Supabase SQL Editor to create the table.</p>
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">

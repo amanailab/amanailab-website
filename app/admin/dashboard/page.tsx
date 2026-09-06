@@ -71,14 +71,22 @@ async function getCounts() {
 async function getRevenueStats(): Promise<{ totalRevenuePaise: number; activeSubscriptions: number; totalOrders: number }> {
   try {
     const supabase = getAdminSupabase()
-    const [ordersRes, subsRes] = await Promise.all([
-      supabase.from('orders').select('amount, via'),
+    const [ordersRes, subsRes, mcRes] = await Promise.all([
+      supabase.from('orders').select('amount, via, razorpay_order_id'),
       supabase.from('sd_subscriptions').select('subscribed_until', { count: 'exact' }).gt('subscribed_until', new Date().toISOString()),
+      supabase.from('masterclass_registrations').select('amount, razorpay_order_id').eq('via', 'payment').not('razorpay_order_id', 'is', null),
     ])
     const orders = ordersRes.data ?? []
-    const revenue = orders.filter((o: { via: string }) => o.via !== 'member_code').reduce((s: number, o: { amount: number }) => s + (o.amount ?? 0), 0)
+    const ordersRevenue = orders.filter((o: { via: string }) => o.via !== 'member_code').reduce((s: number, o: { amount: number }) => s + (o.amount ?? 0), 0)
+
+    // Only add MC payments NOT already present in orders (avoid double-count for manual inserts)
+    const orderIds = new Set(orders.map((o: { razorpay_order_id?: string }) => o.razorpay_order_id).filter(Boolean))
+    const mcRevenue = (mcRes.data ?? [])
+      .filter((r: { razorpay_order_id?: string }) => !orderIds.has(r.razorpay_order_id))
+      .reduce((s: number, r: { amount?: number }) => s + (r.amount ?? 0), 0)
+
     return {
-      totalRevenuePaise: revenue,
+      totalRevenuePaise: ordersRevenue + mcRevenue,
       activeSubscriptions: subsRes.count ?? 0,
       totalOrders: orders.length,
     }
