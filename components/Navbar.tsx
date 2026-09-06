@@ -100,12 +100,12 @@ const navItems: NavItem[] = [
     ],
   },
   { kind: "link", href: "/notes",         label: "Notes",         badge: "Members Free" },
+  { kind: "link", href: "/masterclass", label: "Live Class", badge: "New 🔥" },
   {
     kind: "dropdown",
     label: "Services",
     columns: 1,
     items: [
-      { href: "/masterclass", label: "Live Masterclass 🔥",           description: "GenAI & Agentic AI Interview — 24 live sessions", icon: <Flame className="w-4 h-4" /> },
       { href: "/consulting",  label: "Consulting — Build My Idea ✨", description: "I build your POC, MVP or AI feature",              icon: <Rocket className="w-4 h-4" /> },
       { href: "/services",    label: "Coaching & Development",         description: "AI career coaching + custom AI websites",          icon: <Briefcase className="w-4 h-4" /> },
     ],
@@ -248,7 +248,11 @@ export default function Navbar() {
                   >
                     {item.label}
                     {item.badge && (
-                      <span className="text-[9px] font-black uppercase tracking-wide text-orange-400 bg-orange-500/15 border border-orange-500/25 px-1.5 py-0.5 rounded-full leading-none">
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none ${
+                        item.badge.includes('🔥')
+                          ? 'text-white bg-orange-500 border border-orange-400'
+                          : 'text-orange-400 bg-orange-500/15 border border-orange-500/25 uppercase tracking-wide'
+                      }`}>
                         {item.badge}
                       </span>
                     )}
@@ -501,7 +505,11 @@ export default function Navbar() {
                     >
                       {item.label}
                       {item.badge && (
-                        <span className="text-[9px] font-black uppercase tracking-wide text-orange-400 bg-orange-500/15 border border-orange-500/25 px-1.5 py-0.5 rounded-full leading-none">
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none ${
+                          item.badge.includes('🔥')
+                            ? 'text-white bg-orange-500 border border-orange-400'
+                            : 'text-orange-400 bg-orange-500/15 border border-orange-500/25 uppercase tracking-wide'
+                        }`}>
                           {item.badge}
                         </span>
                       )}

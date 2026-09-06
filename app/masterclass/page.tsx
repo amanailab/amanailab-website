@@ -287,7 +287,7 @@ export default function MasterclassPage() {
               className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-bold px-6 py-3 rounded-xl transition-all">
               <CreditCard className="w-4 h-4" /> Regular — ₹9,999
             </button>
-            <a href="/pdfs/AmanAI_Lab_GenAI_Agentic_AI_Interview_Masterclass_Syllabus (1).pdf"
+            <a href="/pdfs/masterclass-syllabus.pdf"
               download target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200 font-bold px-6 py-3 rounded-xl transition-all">
               <Download className="w-4 h-4" /> Download Syllabus PDF
@@ -489,7 +489,7 @@ export default function MasterclassPage() {
 
           {/* Download syllabus CTA */}
           <div className="flex justify-center">
-            <a href="/pdfs/AmanAI_Lab_GenAI_Agentic_AI_Interview_Masterclass_Syllabus (1).pdf"
+            <a href="/pdfs/masterclass-syllabus.pdf"
               download target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 text-sm transition-colors">
               <Download className="w-4 h-4" /> Download detailed syllabus PDF
