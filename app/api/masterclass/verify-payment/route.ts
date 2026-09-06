@@ -30,15 +30,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payment signature.' }, { status: 400 })
     }
 
-    // Get logged-in user if any — links purchase to account
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    // Get logged-in user if any
+    let userId: string | null = null
+    try {
+      const supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      userId = user?.id ?? null
+    } catch { /* not logged in — fine */ }
 
     const amountPaise = tier === 'early' ? 799900 : 999900
-    const finalEmail  = email?.trim().toLowerCase() || user?.email?.toLowerCase()
+    const finalEmail  = email?.trim().toLowerCase() || null
 
     const admin = getAdminSupabase()
-    const { error } = await admin.from('masterclass_registrations').upsert({
+
+    const record = {
       email:               finalEmail,
       name:                name?.trim() || null,
       whatsapp:            whatsapp?.trim() || null,
@@ -48,10 +53,21 @@ export async function POST(req: Request) {
       razorpay_payment_id,
       razorpay_order_id,
       status:              'paid',
-      user_id:             user?.id ?? null,
-    }, { onConflict: 'email' })
+    }
 
-    if (error) console.error('[masterclass/verify-payment] db error:', error)
+    // Try with user_id first (requires SQL migration); fall back without it
+    const { error } = await admin
+      .from('masterclass_registrations')
+      .upsert({ ...record, user_id: userId }, { onConflict: 'email' })
+
+    if (error) {
+      console.error('[masterclass/verify-payment] upsert error:', error.message)
+      // If user_id column missing (migration not run), save without it
+      const { error: e2 } = await admin
+        .from('masterclass_registrations')
+        .upsert(record, { onConflict: 'email' })
+      if (e2) console.error('[masterclass/verify-payment] fallback error:', e2.message)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (e) {
