@@ -1,4 +1,5 @@
 import { getAdminSupabase } from '@/lib/admin'
+import AdminNav from '@/components/admin/AdminNav'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
@@ -28,8 +29,10 @@ export default async function MasterclassAdminPage() {
   const earlyBird = paid.filter(r => r.tier === 'early').length
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="flex min-h-screen bg-zinc-950">
+      <AdminNav />
+      <main className="flex-1 overflow-auto p-6 text-zinc-100">
+      <div className="max-w-6xl mx-auto">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
@@ -170,6 +173,7 @@ export default async function MasterclassAdminPage() {
         </div>
 
       </div>
+      </main>
     </div>
   )
 }
