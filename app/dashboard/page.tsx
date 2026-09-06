@@ -22,6 +22,7 @@ import AchievementsPanel from '@/components/dashboard/AchievementsPanel'
 import RefreshButton from '@/components/dashboard/RefreshButton'
 import SetNamePrompt from '@/components/dashboard/SetNamePrompt'
 import MyPurchases from '@/components/dashboard/MyPurchases'
+import MasterclassCard from '@/components/dashboard/MasterclassCard'
 import { SITE_STATS } from '@/lib/site-stats'
 import { resolveUserNames, pseudonym } from '@/lib/user-names'
 
@@ -943,6 +944,7 @@ export default async function DashboardPage() {
             <div className="flex flex-col gap-4 lg:sticky lg:top-20">
               <PlanCard plan={subPlan} daysLeft={subDaysLeft} reviewsUsed={sdReviewsUsedToday} />
 
+              <MasterclassCard />
               <MyPurchases />
 
               <LeaderboardCard entries={displayedEntries} nameMap={nameMap} userRank={userRank} totalUsers={totalUsers} />

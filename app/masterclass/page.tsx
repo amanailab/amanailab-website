@@ -174,7 +174,8 @@ const TAG_COLORS: Record<string, string> = {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function MasterclassPage() {
-  const [rzpReady, setRzpReady] = useState(false)
+  const [rzpReady, setRzpReady]   = useState(false)
+  const [enrolled, setEnrolled]   = useState(false)
   const [openModule, setOpenModule]   = useState<number | null>(null)
   const [openTopic, setOpenTopic]     = useState<string | null>(null)
   const [formData, setFormData]       = useState({ name: '', email: '', whatsapp: '', tier: 'early' })
@@ -188,6 +189,13 @@ export default function MasterclassPage() {
     s.src = 'https://checkout.razorpay.com/v1/checkout.js'
     s.async = true; s.onload = () => setRzpReady(true)
     document.body.appendChild(s)
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/masterclass/my-enrollment')
+      .then(r => r.json())
+      .then(d => { if (d.enrolled) setEnrolled(true) })
+      .catch(() => {})
   }, [])
 
   async function submitInterest(e: React.FormEvent) {
@@ -277,10 +285,18 @@ export default function MasterclassPage() {
 
           {/* CTA row */}
           <div className="flex flex-wrap justify-center gap-3">
-            <button onClick={() => pay('early')}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/25 hover:-translate-y-0.5">
-              <CreditCard className="w-4 h-4" /> Reserve My Seat — ₹7,999
-            </button>
+            {enrolled ? (
+              <a href="https://chat.whatsapp.com/DjiaMTHaWDrG3mmZdDlbxN"
+                target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-[#25D366] hover:bg-[#20bb5a] text-white font-bold px-7 py-3.5 rounded-xl transition-all shadow-lg">
+                <CheckCircle className="w-4 h-4" /> You&apos;re Enrolled — Join WhatsApp Group
+              </a>
+            ) : (
+              <button onClick={() => pay('early')}
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-7 py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/25 hover:-translate-y-0.5">
+                <CreditCard className="w-4 h-4" /> Reserve My Seat — ₹7,999
+              </button>
+            )}
             <a href="/pdfs/masterclass-syllabus.pdf"
               download target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-zinc-200 font-bold px-6 py-3 rounded-xl transition-all">
@@ -477,18 +493,32 @@ export default function MasterclassPage() {
                 ))}
               </div>
 
-              {/* Single pay button */}
-              <button onClick={() => pay('early')} disabled={payState === 'loading'}
-                className="w-full flex items-center justify-center gap-2.5 bg-orange-500 hover:bg-orange-400 text-white text-base font-black py-4 rounded-xl transition-all shadow-xl shadow-orange-500/25 hover:-translate-y-0.5">
-                {payState === 'loading'
-                  ? <Loader2 className="w-5 h-5 animate-spin" />
-                  : <CreditCard className="w-5 h-5" />}
-                Pay ₹7,999 — Reserve My Seat
-              </button>
-
-              <p className="text-center text-xs text-zinc-600 mt-3">
-                Secure payment via Razorpay · UPI, cards, netbanking accepted
-              </p>
+              {/* CTA — enrolled vs not enrolled */}
+              {enrolled ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold py-3.5 rounded-xl">
+                    <CheckCircle className="w-5 h-5" /> You&apos;re Enrolled — Seat Confirmed
+                  </div>
+                  <a href="https://chat.whatsapp.com/DjiaMTHaWDrG3mmZdDlbxN"
+                    target="_blank" rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#20bb5a] text-white text-sm font-black py-3.5 rounded-xl transition-all">
+                    <MessageCircle className="w-5 h-5" /> Join WhatsApp Group
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <button onClick={() => pay('early')} disabled={payState === 'loading'}
+                    className="w-full flex items-center justify-center gap-2.5 bg-orange-500 hover:bg-orange-400 text-white text-base font-black py-4 rounded-xl transition-all shadow-xl shadow-orange-500/25 hover:-translate-y-0.5">
+                    {payState === 'loading'
+                      ? <Loader2 className="w-5 h-5 animate-spin" />
+                      : <CreditCard className="w-5 h-5" />}
+                    Pay ₹7,999 — Reserve My Seat
+                  </button>
+                  <p className="text-center text-xs text-zinc-600 mt-3">
+                    Secure payment via Razorpay · UPI, cards, netbanking accepted
+                  </p>
+                </>
+              )}
             </div>
           </div>
 

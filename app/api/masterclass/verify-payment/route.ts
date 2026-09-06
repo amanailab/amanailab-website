@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createHmac } from 'crypto'
+import { createClient } from '@/lib/supabase/server'
 import { getAdminSupabase } from '@/lib/admin'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
@@ -29,11 +30,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid payment signature.' }, { status: 400 })
     }
 
-    const amountPaise = tier === 'early' ? 799900 : 999900
+    // Get logged-in user if any — links purchase to account
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    const supabase = getAdminSupabase()
-    const { error } = await supabase.from('masterclass_registrations').upsert({
-      email:               email?.trim().toLowerCase(),
+    const amountPaise = tier === 'early' ? 799900 : 999900
+    const finalEmail  = email?.trim().toLowerCase() || user?.email?.toLowerCase()
+
+    const admin = getAdminSupabase()
+    const { error } = await admin.from('masterclass_registrations').upsert({
+      email:               finalEmail,
       name:                name?.trim() || null,
       whatsapp:            whatsapp?.trim() || null,
       tier,
@@ -42,12 +48,10 @@ export async function POST(req: Request) {
       razorpay_payment_id,
       razorpay_order_id,
       status:              'paid',
+      user_id:             user?.id ?? null,
     }, { onConflict: 'email' })
 
-    if (error) {
-      console.error('[masterclass/verify-payment] db error:', error)
-      // Don't fail the user — payment was captured, just log it
-    }
+    if (error) console.error('[masterclass/verify-payment] db error:', error)
 
     return NextResponse.json({ ok: true })
   } catch (e) {
