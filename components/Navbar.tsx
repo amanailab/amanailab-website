@@ -105,8 +105,9 @@ const navItems: NavItem[] = [
     label: "Services",
     columns: 1,
     items: [
-      { href: "/consulting", label: "Consulting — Build My Idea ✨", description: "I build your POC, MVP or AI feature", icon: <Rocket className="w-4 h-4" /> },
-      { href: "/services",   label: "Coaching & Development",        description: "AI career coaching + custom AI websites", icon: <Briefcase className="w-4 h-4" /> },
+      { href: "/masterclass", label: "Live Masterclass 🔥",           description: "GenAI & Agentic AI Interview — 24 live sessions", icon: <Flame className="w-4 h-4" /> },
+      { href: "/consulting",  label: "Consulting — Build My Idea ✨", description: "I build your POC, MVP or AI feature",              icon: <Rocket className="w-4 h-4" /> },
+      { href: "/services",    label: "Coaching & Development",         description: "AI career coaching + custom AI websites",          icon: <Briefcase className="w-4 h-4" /> },
     ],
   },
   { kind: "link", href: "/connect-aman",  label: "Book a Session", badge: "1:1" },
