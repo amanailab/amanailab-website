@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       const results = await Promise.allSettled(
         batch.map(async (email: string) =>
           resend.emails.send({
-            from: 'AmanAI Lab <newsletter@amanailab.com>',
+            from: 'AmanAI Lab <onboarding@resend.dev>',
             to: email,
             subject,
             html: buildHtml(subject, htmlBody, previewText ?? '', email, await signEmailToken(email)),
