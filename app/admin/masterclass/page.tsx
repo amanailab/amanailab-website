@@ -31,8 +31,8 @@ export default async function MasterclassAdminPage() {
 
   const { rows, dbError } = await getRegistrations()
 
-  const paid      = rows.filter(r => r.via === 'payment')
-  const interest  = rows.filter(r => r.via === 'interest_form')
+  const paid      = rows.filter(r => r.status === 'paid')
+  const interest  = rows.filter(r => r.status !== 'paid')
   const revenue   = paid.reduce((s: number, r: { amount?: number }) => s + (r.amount ?? 0), 0)
   const linked    = paid.filter(r => r.user_id).length
   const earlyBird = paid.filter(r => r.tier === 'early').length

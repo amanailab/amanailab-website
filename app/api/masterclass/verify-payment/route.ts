@@ -43,30 +43,41 @@ export async function POST(req: Request) {
 
     const admin = getAdminSupabase()
 
-    const record = {
-      email:               finalEmail,
-      name:                name?.trim() || null,
-      whatsapp:            whatsapp?.trim() || null,
-      tier,
+    const paymentFields = {
       via:                 'payment',
+      status:              'paid',
       amount:              amountPaise,
       razorpay_payment_id,
       razorpay_order_id,
-      status:              'paid',
+      // update name/whatsapp only if provided
+      ...(name?.trim()     ? { name: name.trim() }         : {}),
+      ...(whatsapp?.trim() ? { whatsapp: whatsapp.trim() } : {}),
+      ...(userId           ? { user_id: userId }           : {}),
     }
 
-    // Try with user_id first (requires SQL migration); fall back without it
-    const { error } = await admin
-      .from('masterclass_registrations')
-      .upsert({ ...record, user_id: userId }, { onConflict: 'email' })
-
-    if (error) {
-      console.error('[masterclass/verify-payment] upsert error:', error.message)
-      // If user_id column missing (migration not run), save without it
-      const { error: e2 } = await admin
+    if (finalEmail) {
+      // Update existing row (interest_form or prior payment) for this email
+      const { data: updated, error: updateErr } = await admin
         .from('masterclass_registrations')
-        .upsert(record, { onConflict: 'email' })
-      if (e2) console.error('[masterclass/verify-payment] fallback error:', e2.message)
+        .update(paymentFields)
+        .eq('email', finalEmail)
+        .select('id')
+
+      if (updateErr) console.error('[masterclass/verify-payment] update error:', updateErr.message)
+
+      // No existing row → insert fresh
+      if (!updateErr && (!updated || updated.length === 0)) {
+        const { error: insertErr } = await admin
+          .from('masterclass_registrations')
+          .insert({ email: finalEmail, tier, ...paymentFields })
+        if (insertErr) console.error('[masterclass/verify-payment] insert error:', insertErr.message)
+      }
+    } else {
+      // No email (rare) — insert without email
+      const { error: insertErr } = await admin
+        .from('masterclass_registrations')
+        .insert({ tier, ...paymentFields })
+      if (insertErr) console.error('[masterclass/verify-payment] no-email insert error:', insertErr.message)
     }
 
     return NextResponse.json({ ok: true })
