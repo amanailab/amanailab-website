@@ -100,7 +100,6 @@ const navItems: NavItem[] = [
     ],
   },
   { kind: "link", href: "/notes",         label: "Notes",         badge: "Members Free" },
-  { kind: "link", href: "/masterclass", label: "Live Class", badge: "New 🔥" },
   {
     kind: "dropdown",
     label: "Services",
