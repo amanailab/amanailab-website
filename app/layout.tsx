@@ -6,7 +6,6 @@ import Footer from "@/components/Footer";
 import PageTransition from "@/components/ui/PageTransition";
 import CommandPalette from "@/components/ui/CommandPalette";
 import BackToTop from "@/components/ui/BackToTop";
-import MasterclassBanner from "@/components/ui/MasterclassBanner";
 import { ToastProvider } from "@/components/ui/Toast";
 import NavigationProgress from "@/components/ui/NavigationProgress";
 import { GoogleAnalytics } from '@next/third-parties/google'
@@ -126,7 +125,6 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
-        {!isAdmin && <MasterclassBanner />}
         {!isAdmin && <Navbar />}
         <NavigationProgress />
         <ToastProvider>
