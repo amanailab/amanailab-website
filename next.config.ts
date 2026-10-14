@@ -41,6 +41,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   compress: true,
   serverExternalPackages: ["pdf-parse"],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '52mb',
+    },
+  },
 
   // Old tool URLs that may be indexed or bookmarked
   async redirects() {

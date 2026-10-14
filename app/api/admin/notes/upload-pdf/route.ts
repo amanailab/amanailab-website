@@ -4,6 +4,7 @@ import { createClient }  from '@supabase/supabase-js'
 import { verifyAdminSession } from '@/lib/auth-tokens'
 
 export const runtime = 'nodejs'
+export const maxDuration = 60
 
 const BUCKET = 'notes'
 
