@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { detectCountry } from '@/lib/geo'
@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Download, Crown, CreditCard, X, CheckCircle,
   FileText, Loader2, Lock, Sparkles, Eye,
-  BookOpen, Package as PackageIcon, LayoutGrid, LayoutList, MessageSquare, Flame,
+  BookOpen, Package as PackageIcon, LayoutGrid, LayoutList, MessageSquare, Flame, Search,
 } from 'lucide-react'
 import type { Note, NotePackage } from '@/lib/notes-data'
 import PdfPreview from '@/components/notes/PdfPreview'
@@ -53,6 +53,7 @@ export default function NotesClient({
   popularNoteIds: string[]
 }) {
   const [filter, setFilter]       = useState('All')
+  const [search, setSearch]       = useState('')
   const [viewMode, setViewMode]   = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy]       = useState<'default' | 'price-asc' | 'price-desc' | 'newest'>('default')
   const [modal, setModal]         = useState<ModalState>({ type: 'none' })
@@ -64,13 +65,18 @@ export default function NotesClient({
   const isBuying         = useRef(false)
   const paymentSucceeded = useRef(false)
 
-
   const topicCounts = notes.reduce<Record<string, number>>((acc, n) => {
     acc[n.topic] = (acc[n.topic] ?? 0) + 1
     return acc
   }, {})
   const topics   = ['All', ...Object.keys(topicCounts)]
-  const filtered = filter === 'All' ? notes : notes.filter((n) => n.topic === filter)
+
+  const searchFiltered = notes.filter(n => {
+    const q = search.toLowerCase()
+    if (!q) return true
+    return n.title.toLowerCase().includes(q) || n.topic.toLowerCase().includes(q) || n.description?.toLowerCase().includes(q)
+  })
+  const filtered = filter === 'All' ? searchFiltered : searchFiltered.filter(n => n.topic === filter)
   const sorted   = [...filtered].sort((a, b) => {
     if (sortBy === 'price-asc')  return a.price - b.price
     if (sortBy === 'price-desc') return b.price - a.price
@@ -250,9 +256,9 @@ export default function NotesClient({
     <div className="min-h-screen">
 
       {/* ════════════════ HERO ════════════════ */}
-      <section className="relative pt-10 pb-6 px-4 overflow-hidden">
+      <section className="relative pt-10 pb-8 px-4 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[200px] bg-orange-500/6 rounded-full blur-3xl" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[240px] bg-orange-500/5 rounded-full blur-3xl" />
         </div>
         <div className="relative max-w-5xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
@@ -270,14 +276,14 @@ export default function NotesClient({
               </p>
             </div>
 
-            <div className="flex flex-col gap-2 shrink-0 sm:w-68">
+            <div className="flex flex-col gap-2 shrink-0 sm:w-64">
               <div className="flex items-center gap-3 bg-orange-500/8 border border-orange-500/25 rounded-xl px-4 py-3">
                 <div className="w-8 h-8 bg-orange-500/15 rounded-lg flex items-center justify-center shrink-0">
                   <Crown className="w-4 h-4 text-orange-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-zinc-200">YouTube Member</p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">Enter monthly code → all notes free</p>
+                  <p className="text-[10px] text-zinc-500 mt-0.5">Enter monthly code → all notes free</p>
                 </div>
                 <span className="text-[10px] font-black text-orange-400 bg-orange-500/15 px-2 py-0.5 rounded-full border border-orange-500/20 shrink-0">FREE</span>
               </div>
@@ -287,7 +293,7 @@ export default function NotesClient({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-zinc-300">Non-Member</p>
-                  <p className="text-[10px] text-zinc-600 mt-0.5">Pay once · instant download · no login</p>
+                  <p className="text-[10px] text-zinc-500 mt-0.5">Pay once · instant download · no login</p>
                 </div>
                 <span className="text-[10px] font-black text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700 shrink-0">from {fmt(minPrice, isIndia)}</span>
               </div>
@@ -298,9 +304,9 @@ export default function NotesClient({
 
       {/* ════════════════ BUNDLES ════════════════ */}
       {packages.length > 0 && (
-        <section className="px-4 pb-6">
+        <section className="px-4 pb-8">
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-5">
               <div className="h-px flex-1 bg-zinc-800" />
               <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full">
                 <PackageIcon className="w-3 h-3 text-orange-400" />
@@ -324,92 +330,101 @@ export default function NotesClient({
         </section>
       )}
 
-      {/* ════════════════ FILTER TABS ════════════════ */}
-      <div className="sticky top-0 z-20 bg-[#09090b]/90 backdrop-blur-lg border-b border-zinc-900">
-        <div className="max-w-5xl mx-auto">
-          {/* Topic filter row */}
-          <div className="relative px-4 pt-2">
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-2 pr-4">
+      {/* ════════════════ STICKY TOOLBAR ════════════════ */}
+      <div className="sticky top-0 z-20 bg-[#09090b]/95 backdrop-blur-lg border-b border-zinc-800/60">
+        <div className="max-w-5xl mx-auto px-4">
+
+          {/* Search + controls row */}
+          <div className="flex items-center gap-3 py-3">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search notes…"
+                className="w-full bg-zinc-900 border border-zinc-800 focus:border-zinc-600 text-zinc-300 placeholder-zinc-600 rounded-xl pl-9 pr-3 py-2 text-[13px] outline-none transition-colors"
+              />
+              {search && (
+                <button onClick={() => setSearch('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <select value={sortBy} onChange={e => setSortBy(e.target.value as 'default' | 'price-asc' | 'price-desc' | 'newest')}
+              className="bg-zinc-900 border border-zinc-800 text-zinc-500 text-[12px] rounded-xl px-3 py-2 outline-none cursor-pointer hover:border-zinc-700 transition-colors hidden sm:block">
+              <option value="default">Sort: Default</option>
+              <option value="price-asc">Price ↑</option>
+              <option value="price-desc">Price ↓</option>
+              <option value="newest">Newest first</option>
+            </select>
+
+            <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-xl p-1 ml-auto">
+              <button onClick={() => setViewMode('grid')} title="Grid view"
+                className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => setViewMode('list')} title="List view"
+                className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                <LayoutList className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Topic filter pills */}
+          <div className="relative">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-3 pr-10">
               {topics.map((t) => {
                 const count  = t === 'All' ? notes.length : topicCounts[t]
                 const active = filter === t
                 return (
                   <button key={t} onClick={() => setFilter(t)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all shrink-0 ${
                       active
-                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/25'
-                        : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                        ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
+                        : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-zinc-200 hover:border-zinc-700'
                     }`}>
                     {t}
                     <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                      active ? 'bg-white/20' : 'bg-zinc-800 text-zinc-500'
+                      active ? 'bg-white/20' : 'bg-zinc-800 text-zinc-600'
                     }`}>{count}</span>
                   </button>
                 )
               })}
-              {filter !== 'All' && (
-                <button onClick={() => setFilter('All')}
-                  className="shrink-0 flex items-center gap-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors">
-                  <X className="w-3 h-3" /> Clear
-                </button>
-              )}
             </div>
-            <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-[#09090b]/90 to-transparent" />
+            <div className="pointer-events-none absolute right-0 top-0 bottom-3 w-10 bg-gradient-to-l from-[#09090b]/95 to-transparent" />
           </div>
-          {/* Sort + view controls row */}
-          <div className="flex items-center justify-between px-4 py-1.5 border-t border-zinc-900/60">
-            <p className="text-[10px] text-zinc-700 tabular-nums">{sorted.length} note{sorted.length !== 1 ? 's' : ''}</p>
-            <div className="flex items-center gap-2">
-              <select value={sortBy} onChange={e => setSortBy(e.target.value as 'default' | 'price-asc' | 'price-desc' | 'newest')}
-                className="bg-zinc-900 border border-zinc-800 text-zinc-500 text-[11px] rounded-lg px-2 py-1 outline-none cursor-pointer hover:border-zinc-700 transition-colors">
-                <option value="default">Sort: Default</option>
-                <option value="price-asc">Price ↑</option>
-                <option value="price-desc">Price ↓</option>
-                <option value="newest">Newest first</option>
-              </select>
-              <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
-                <button onClick={() => setViewMode('grid')} title="Grid view"
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => setViewMode('list')} title="List view"
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                  <LayoutList className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
+
         </div>
       </div>
 
-      {/* ════════════════ TRENDING / POPULAR ════════════════ */}
-      {popularNoteIds.length > 0 && (() => {
+      {/* ════════════════ TRENDING ════════════════ */}
+      {!search && popularNoteIds.length > 0 && (() => {
         const trendingNotes = popularNoteIds
           .map(id => notes.find(n => n.id === id))
           .filter((n): n is Note => !!n)
           .slice(0, 5)
         if (trendingNotes.length === 0) return null
         return (
-          <section className="px-4 pb-8">
+          <section className="px-4 pt-6 pb-2">
             <div className="max-w-5xl mx-auto">
-              <div className="flex items-center gap-3 mb-4">
-                <Flame className="w-4 h-4 text-orange-400 shrink-0" />
-                <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Students also bought</h2>
+              <div className="flex items-center gap-2 mb-3">
+                <Flame className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                <h2 className="text-[11px] font-black text-zinc-500 uppercase tracking-widest">Popular with students</h2>
                 <div className="h-px flex-1 bg-zinc-800/60" />
               </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+              <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-none">
                 {trendingNotes.map(note => (
                   <button key={note.id} onClick={() => openPreview(note)}
-                    className="flex-shrink-0 w-44 bg-zinc-900 border border-zinc-800 hover:border-orange-500/40 rounded-xl overflow-hidden transition-all group text-left">
-                    <div className={`h-16 bg-gradient-to-br ${note.gradient} flex items-center justify-center text-3xl relative`}>
-                      <div className="absolute inset-0 opacity-[0.07]"
-                        style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-                      <span className="relative z-10">{note.emoji}</span>
+                    className="flex-shrink-0 flex items-center gap-3 bg-zinc-900/80 border border-zinc-800 hover:border-orange-500/30 rounded-xl px-3.5 py-2.5 transition-all group text-left">
+                    <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${note.gradient} flex items-center justify-center text-lg shrink-0`}>
+                      {note.emoji}
                     </div>
-                    <div className="p-3">
-                      <p className="text-[11px] font-extrabold text-zinc-100 leading-snug line-clamp-2 mb-1 group-hover:text-white transition-colors">{note.title}</p>
-                      <p className="text-[10px] text-zinc-600 mb-2">{note.pages}p · {note.topic}</p>
-                      <span className="text-xs font-black text-orange-400">{fmt(note.price, isIndia)}</span>
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-bold text-zinc-200 group-hover:text-white transition-colors truncate max-w-[120px]">{note.title}</p>
+                      <p className="text-[10px] text-zinc-600 mt-0.5">{note.pages}p · <span className="text-orange-400 font-bold">{fmt(note.price, isIndia)}</span></p>
                     </div>
                   </button>
                 ))}
@@ -420,12 +435,30 @@ export default function NotesClient({
       })()}
 
       {/* ════════════════ NOTES GRID / LIST ════════════════ */}
-      <section className="px-4 py-6 pb-24">
+      <section className="px-4 pt-6 pb-24">
         <div className="max-w-5xl mx-auto">
+
+          {/* Result count / search feedback */}
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-[11px] text-zinc-600">
+              {search
+                ? <>{sorted.length} result{sorted.length !== 1 ? 's' : ''} for &quot;{search}&quot;</>
+                : filter !== 'All'
+                  ? <>{filter} · {sorted.length} note{sorted.length !== 1 ? 's' : ''}</>
+                  : <>{sorted.length} note{sorted.length !== 1 ? 's' : ''}</>
+              }
+            </p>
+            {filter !== 'All' && (
+              <p className="text-[10px] text-zinc-700 flex items-center gap-1"><Eye className="w-3 h-3" /> Click any card to preview</p>
+            )}
+          </div>
+
           {sorted.length === 0 ? (
-            <div className="text-center py-16 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
-              <p className="text-zinc-400 font-bold">No {filter} notes yet</p>
-              <p className="text-zinc-600 text-sm mt-1">More coming soon!</p>
+            <div className="text-center py-20 bg-zinc-900/40 border border-zinc-800 rounded-2xl">
+              {search
+                ? <><p className="text-zinc-400 font-bold mb-1">No notes match &quot;{search}&quot;</p><p className="text-zinc-600 text-sm">Try a different keyword or clear the search.</p></>
+                : <><p className="text-zinc-400 font-bold">No {filter} notes yet</p><p className="text-zinc-600 text-sm mt-1">More coming soon!</p></>
+              }
             </div>
           ) : viewMode === 'list' ? (
             /* ── List view ── */
@@ -440,41 +473,39 @@ export default function NotesClient({
                 ))}
               </AnimatePresence>
             </div>
-          ) : filter !== 'All' ? (
-            /* ── Single topic grid ── */
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-bold text-zinc-600 uppercase tracking-wider">
-                  {filter} · {sorted.length} note{sorted.length !== 1 ? 's' : ''}
-                </p>
-                <p className="text-[10px] text-zinc-700 flex items-center gap-1"><Eye className="w-3 h-3" /> Click any card to preview</p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <AnimatePresence mode="popLayout">
-                  {sorted.map((note, i) => (
-                    <NoteCard key={note.id} note={note} index={i}
-                      onPreview={() => openPreview(note)}
-                      onCode   ={() => openCode(note)}
-                      onBuy    ={() => openPay(note)}
-                      isIndia  ={isIndia} />
-                  ))}
-                </AnimatePresence>
-              </div>
-            </>
+          ) : (filter !== 'All' || search) ? (
+            /* ── Single topic or search results grid ── */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <AnimatePresence mode="popLayout">
+                {sorted.map((note, i) => (
+                  <NoteCard key={note.id} note={note} index={i}
+                    onPreview={() => openPreview(note)}
+                    onCode   ={() => openCode(note)}
+                    onBuy    ={() => openPay(note)}
+                    isIndia  ={isIndia} />
+                ))}
+              </AnimatePresence>
+            </div>
           ) : (
             /* ── All topics grouped ── */
-            <div className="space-y-10">
+            <div className="space-y-12">
               {Object.keys(topicCounts).map(topic => {
                 const topicNotes = sorted.filter(n => n.topic === topic)
                 if (topicNotes.length === 0) return null
                 return (
                   <div key={topic}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-widest whitespace-nowrap">{topic}</h2>
-                      <div className="h-px flex-1 bg-zinc-800/60" />
-                      <span className="text-[10px] text-zinc-700 tabular-nums whitespace-nowrap">{topicNotes.length} note{topicNotes.length !== 1 ? 's' : ''}</span>
+                    {/* Section header */}
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-1 h-5 bg-orange-500 rounded-full" />
+                        <h2 className="text-sm font-extrabold text-zinc-200 tracking-tight">{topic}</h2>
+                        <span className="text-[10px] font-bold text-zinc-600 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-full tabular-nums">
+                          {topicNotes.length}
+                        </span>
+                      </div>
+                      <div className="h-px flex-1 bg-zinc-800/50" />
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                       {topicNotes.map((note, i) => (
                         <NoteCard key={note.id} note={note} index={i}
                           onPreview={() => openPreview(note)}
@@ -702,7 +733,7 @@ export default function NotesClient({
                             <span className="font-extrabold text-orange-400 text-2xl">{fmt(modal.note.price, isIndia)}</span>
                           </div>
                         </div>
-<div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-800/40 rounded-xl px-3 py-2.5">
+                        <div className="flex items-center gap-2 text-xs text-zinc-600 bg-zinc-800/40 rounded-xl px-3 py-2.5">
                           <Lock className="w-3.5 h-3.5 shrink-0" /> UPI · PhonePe · GPay · Cards · Netbanking
                         </div>
                         {error && (
@@ -922,14 +953,16 @@ export default function NotesClient({
   )
 }
 
-/* ── Package Card ── */
+/* ══════════════════════════════════════════════════════
+   Package Card
+══════════════════════════════════════════════════════ */
 function PackageCard({ pkg, allNotes, onBuy, onCode, isIndia }: {
   pkg: NotePackage; allNotes: Note[]; onBuy(): void; onCode(): void; isIndia: boolean
 }) {
   const pkgNotes        = allNotes.filter(n => pkg.note_ids.includes(n.id))
   const individualTotal = pkgNotes.reduce((s, n) => s + n.price, 0)
   const savings         = individualTotal - pkg.price
-  const showCount       = Math.min(pkgNotes.length, 4)
+  const showCount       = Math.min(pkgNotes.length, 5)
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 hover:border-orange-500/30 rounded-2xl overflow-hidden transition-all group">
@@ -990,80 +1023,76 @@ function PackageCard({ pkg, allNotes, onBuy, onCode, isIndia }: {
   )
 }
 
-/* ── Note Card ── */
+/* ══════════════════════════════════════════════════════
+   Note Card  —  clean, spacious, emoji-forward
+══════════════════════════════════════════════════════ */
 function NoteCard({ note, index, onPreview, onCode, onBuy, isIndia }: {
   note: Note; index: number; onPreview(): void; onCode(): void; onBuy(): void; isIndia: boolean
 }) {
-  const [hovered, setHovered] = useState(false)
   return (
     <motion.article layout
       initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: index * 0.04, duration: 0.25 }}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      className="bg-zinc-900 border rounded-2xl overflow-hidden flex flex-col transition-all duration-300 h-full"
-      style={{
-        borderColor: hovered ? 'rgb(249 115 22 / 0.4)' : 'rgb(39 39 42)',
-        transform:   hovered ? 'translateY(-3px)' : 'none',
-        boxShadow:   hovered ? '0 16px 32px -8px rgb(0 0 0 / 0.6)' : 'none',
-      }}
+      exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: index * 0.03, duration: 0.22 }}
+      className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-2xl overflow-hidden flex flex-col transition-all duration-200 group"
     >
-      <button onClick={onPreview} className="w-full text-left" aria-label={`Preview ${note.title}`}>
-        <div className={`h-28 bg-gradient-to-br ${note.gradient} relative overflow-hidden flex items-end px-4 pb-3`}>
-          <div className="absolute inset-0 bg-black/20" />
-          <div className="absolute inset-0 opacity-[0.08]"
-            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '18px 18px' }} />
-          <span className="text-4xl relative z-10 drop-shadow">{note.emoji}</span>
-          <div className="ml-auto relative z-10 flex flex-col items-end gap-1">
+      {/* Banner */}
+      <button onClick={onPreview} className="w-full text-left block relative" aria-label={`Preview ${note.title}`}>
+        <div className={`h-36 bg-gradient-to-br ${note.gradient} relative overflow-hidden flex items-center justify-center`}>
+          {/* Subtle noise texture */}
+          <div className="absolute inset-0 opacity-[0.06]"
+            style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+          {/* Large centered emoji */}
+          <span className="text-5xl drop-shadow-lg relative z-10 group-hover:scale-110 transition-transform duration-300">{note.emoji}</span>
+          {/* Badges */}
+          <div className="absolute top-2.5 right-2.5 flex flex-col items-end gap-1 z-10">
             {note.is_new && (
-              <span className="text-[9px] font-black text-white bg-white/20 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full uppercase tracking-widest">New</span>
+              <span className="text-[9px] font-black text-white bg-emerald-500/80 backdrop-blur-sm px-2 py-0.5 rounded-full uppercase tracking-wider">New</span>
             )}
-            <span className="text-[10px] font-bold text-white/70 bg-black/20 backdrop-blur-sm px-2 py-0.5 rounded-full">{note.pages}p</span>
+            <span className="text-[10px] font-semibold text-white/80 bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-full">{note.pages}p</span>
           </div>
-          <div className={`absolute top-2 left-2 flex items-center gap-1 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-full transition-opacity duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}>
-            <Eye className="w-2.5 h-2.5 text-white/80" />
-            <span className="text-[9px] font-bold text-white/80">Preview</span>
+          {/* Hover overlay */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100">
+            <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full">
+              <Eye className="w-3 h-3" />
+              <span className="text-[11px] font-bold">Preview</span>
+            </div>
           </div>
         </div>
       </button>
 
+      {/* Card body */}
       <div className="p-4 flex flex-col flex-1">
-        <span className="self-start text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700/60 text-zinc-500 mb-2">{note.topic}</span>
-        <h3 className="text-sm font-extrabold text-zinc-100 leading-snug mb-1.5 line-clamp-2">{note.title}</h3>
-        <p className="text-xs text-zinc-600 leading-relaxed line-clamp-2 mb-3">{note.description}</p>
+        {/* Topic + title */}
+        <div className="mb-3">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{note.topic}</span>
+          <h3 className="text-sm font-extrabold text-zinc-100 leading-snug mt-0.5 line-clamp-2 group-hover:text-white transition-colors">{note.title}</h3>
+        </div>
 
-        {note.preview_points.length > 0 && (
-          <ul className="space-y-1 mb-4 flex-1">
-            {note.preview_points.slice(0, 3).map((pt, i) => (
-              <li key={i} className="flex items-start gap-1.5 text-[11px] text-zinc-500">
-                <span className="text-emerald-500 shrink-0 mt-0.5 text-[10px]">✓</span>
-                <span className="line-clamp-1">{pt}</span>
-              </li>
-            ))}
-            {note.preview_points.length > 3 && (
-              <li className="text-[11px] text-orange-400/80 pl-4">
-                +{note.preview_points.length - 3} more topics →
-              </li>
-            )}
-          </ul>
+        {/* Description — one line, muted */}
+        {note.description && (
+          <p className="text-[12px] text-zinc-600 leading-relaxed line-clamp-2 mb-3">{note.description}</p>
         )}
 
-        <div className="mt-auto border-t border-zinc-800 pt-3">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[10px] text-zinc-600 flex items-center gap-1"><FileText className="w-3 h-3" /> {note.pages} pages</span>
-            <span className="text-sm font-extrabold text-orange-400">{fmt(note.price, isIndia)}</span>
+        {/* Spacer to push footer to bottom */}
+        <div className="flex-1" />
+
+        {/* Footer: price + actions */}
+        <div className="pt-3 border-t border-zinc-800/80">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] text-zinc-600 flex items-center gap-1">
+              <FileText className="w-3 h-3" /> {note.pages} pages
+            </span>
+            <span className="text-base font-extrabold text-orange-400">{fmt(note.price, isIndia)}</span>
           </div>
-          <div className="flex gap-1.5">
-            <button onClick={onPreview}
-              className="flex-1 flex items-center justify-center gap-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-400 text-[11px] font-bold py-2 rounded-lg transition-all">
-              <Eye className="w-3 h-3" /> Preview
-            </button>
+          <div className="flex gap-2">
             <button onClick={onCode}
-              className="flex items-center justify-center gap-1 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 text-orange-400 text-[11px] font-bold py-2 px-2.5 rounded-lg transition-all" title="Free for YouTube members">
-              <Crown className="w-3 h-3" />
+              className="flex items-center justify-center gap-1.5 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/20 hover:border-orange-500/40 text-orange-400 text-[11px] font-bold py-2 px-3 rounded-xl transition-all"
+              title="Free for YouTube members">
+              <Crown className="w-3.5 h-3.5" /> Free
             </button>
             <button onClick={onBuy}
-              className="flex items-center justify-center gap-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-[11px] font-bold py-2 px-2.5 rounded-lg transition-all" title={`Buy ${fmt(note.price, isIndia)}`}>
-              <CreditCard className="w-3 h-3" />
+              className="flex-1 flex items-center justify-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 text-zinc-200 text-[11px] font-bold py-2 rounded-xl transition-all">
+              <CreditCard className="w-3.5 h-3.5" /> Buy — {fmt(note.price, isIndia)}
             </button>
           </div>
         </div>
@@ -1072,33 +1101,35 @@ function NoteCard({ note, index, onPreview, onCode, onBuy, isIndia }: {
   )
 }
 
-/* ── Note Row (list view) ── */
+/* ══════════════════════════════════════════════════════
+   Note Row  —  compact list view
+══════════════════════════════════════════════════════ */
 function NoteRow({ note, index, onPreview, onCode, onBuy, isIndia }: {
   note: Note; index: number; onPreview(): void; onCode(): void; onBuy(): void; isIndia: boolean
 }) {
   return (
     <motion.div layout
       initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -8 }} transition={{ delay: index * 0.02, duration: 0.2 }}
-      className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 hover:border-orange-500/25 rounded-xl px-4 py-3 group transition-all"
+      exit={{ opacity: 0, x: -8 }} transition={{ delay: index * 0.015, duration: 0.18 }}
+      className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl px-4 py-3 group transition-all"
     >
       <button onClick={onPreview} className="shrink-0" aria-label={`Preview ${note.title}`}>
-        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${note.gradient} flex items-center justify-center text-xl hover:scale-105 transition-transform`}>
+        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${note.gradient} flex items-center justify-center text-xl hover:scale-105 transition-transform`}>
           {note.emoji}
         </div>
       </button>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-bold text-zinc-100 truncate">{note.title}</p>
+          <p className="text-sm font-bold text-zinc-100 truncate group-hover:text-white transition-colors">{note.title}</p>
           {note.is_new && <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full uppercase shrink-0">New</span>}
         </div>
         <p className="text-[11px] text-zinc-600 mt-0.5">{note.topic} · {note.pages} pages</p>
       </div>
       {note.description && (
-        <p className="hidden md:block text-xs text-zinc-600 max-w-xs truncate flex-1">{note.description}</p>
+        <p className="hidden md:block text-xs text-zinc-600 max-w-xs truncate">{note.description}</p>
       )}
       <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-sm font-extrabold text-orange-400 tabular-nums w-14 text-right">{fmt(note.price, isIndia)}</span>
+        <span className="text-sm font-extrabold text-orange-400 tabular-nums min-w-[3rem] text-right">{fmt(note.price, isIndia)}</span>
         <button onClick={onPreview} title="Preview"
           className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-500 hover:text-zinc-200 transition-all">
           <Eye className="w-3.5 h-3.5" />
@@ -1108,7 +1139,7 @@ function NoteRow({ note, index, onPreview, onCode, onBuy, isIndia }: {
           <Crown className="w-3.5 h-3.5" />
         </button>
         <button onClick={onBuy}
-          className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-bold transition-all shadow-md shadow-orange-500/15">
+          className="flex items-center gap-1.5 px-3 h-8 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-bold transition-all shadow-sm shadow-orange-500/20">
           <CreditCard className="w-3 h-3" /> Buy
         </button>
       </div>

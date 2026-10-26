@@ -50,8 +50,10 @@ const nextConfig: NextConfig = {
   // Old tool URLs that may be indexed or bookmarked
   async redirects() {
     return [
-      { source: '/job-prep', destination: '/career?tab=job-questions', permanent: true },
-      { source: '/prompt',   destination: '/',                         permanent: true },
+      // statusCode: 301 explicitly — permanent:true generates 308 which some crawlers flag as redirect error
+      { source: '/job-prep', destination: '/career?tab=job-questions', statusCode: 301 },
+      { source: '/prompt',   destination: '/',                         statusCode: 301 },
+      { source: '/sheet',    destination: '/questions',                statusCode: 301 },
     ]
   },
 

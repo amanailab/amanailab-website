@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { DESIGN_PROBLEM_MAP, SYSTEM_DESIGN_PROBLEMS } from '@/lib/system-design-problems'
 import type { SDProblem } from '@/lib/system-design-problems'
 import { createClient } from '@/lib/supabase/server'
@@ -70,7 +70,34 @@ export default async function DesignPage({ params }: Props) {
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect(`/login?next=/system-design/${slug}`)
+
+  if (!user) {
+    return (
+      <>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd(slug, problem.title)) }} />
+        <div className="flex flex-col items-center justify-center h-full gap-6 px-4 text-center bg-zinc-950">
+          <div className="max-w-lg">
+            <p className="text-xs font-semibold uppercase tracking-widest text-orange-400 mb-3">
+              {problem.difficulty} · {problem.category}
+            </p>
+            <h1 className="text-2xl font-bold text-white mb-3">{problem.title} — System Design Practice</h1>
+            <p className="text-zinc-400 mb-2">
+              Practice this system design question with an interactive editor, key-area checklist, diagram canvas, and AI review.
+            </p>
+            {problem.companies.length > 0 && (
+              <p className="text-zinc-500 text-sm mb-6">Asked at: {problem.companies.join(', ')}</p>
+            )}
+            <a
+              href={`/login?next=/system-design/${slug}`}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-400 text-white font-semibold rounded-xl transition-colors"
+            >
+              Sign in to Practice
+            </a>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
