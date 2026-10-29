@@ -4,6 +4,7 @@ import SocialProofBar from "@/components/home/SocialProofBar";
 import FeaturedTools  from "@/components/home/FeaturedTools";
 import DailyChallengeWidget from "@/components/home/DailyChallengeWidget";
 import HowItWorks     from "@/components/home/HowItWorks";
+import CoursesSection from "@/components/home/CoursesSection";
 import MoreTools      from "@/components/home/MoreTools";
 import FeaturedSeries from "@/components/home/FeaturedSeries";
 import LatestVideos   from "@/components/home/LatestVideos";
@@ -89,7 +90,10 @@ export default async function HomePage() {
       {/* 4. Start Here — 4-step guided path */}
       <HowItWorks />
 
-      {/* 5. Core 4 tools — spotlight */}
+      {/* 5. Courses — sell & learn */}
+      <CoursesSection />
+
+      {/* 6. Core 4 tools — spotlight */}
       <FeaturedTools />
 
       {/* 6. All remaining tools — grouped grid */}

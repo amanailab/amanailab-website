@@ -84,8 +84,8 @@ const footerLinks = {
     { href: "/skill-gap",             label: "Skill Gap Analyzer" },
   ],
   Learn: [
+    { href: "/courses",   label: "Courses"         },
     { href: "/series",    label: "YouTube Series"  },
-    { href: "/blog",      label: "Blog"            },
     { href: "/news",      label: "AI News"         },
     { href: "/resources", label: "Free Resources"  },
     { href: "/notes",     label: "Notes & PDFs"    },
