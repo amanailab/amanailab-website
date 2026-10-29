@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -37,6 +37,7 @@ export default function ClassroomPage() {
   const [tab, setTab]              = useState<Tab>('Video')
   const [notes, setNotes]          = useState<Record<string, string>>({})
   const [notesSaved, setNotesSaved] = useState(false)
+  const saveTimer                  = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!courseId) return
@@ -67,11 +68,24 @@ export default function ClassroomPage() {
       const { data: prog } = await sb.from('lecture_progress').select('lecture_id').eq('user_id', user.id)
       setCompleted(new Set((prog ?? []).map((p: { lecture_id: string }) => p.lecture_id)))
 
-      // Load notes from localStorage
+      // Load notes — from the account (synced), falling back to the local cache
+      let loaded: Record<string, string> = {}
       try {
-        const saved = JSON.parse(localStorage.getItem(`notes-${courseId}`) ?? '{}')
-        setNotes(saved)
+        loaded = JSON.parse(localStorage.getItem(`notes-${courseId}`) ?? '{}')
       } catch { /* ignore */ }
+
+      const lectureIds = norm.flatMap(s => s.lectures.map(l => l.id))
+      if (lectureIds.length) {
+        const { data: savedNotes } = await sb
+          .from('course_notes')
+          .select('lecture_id,content')
+          .eq('user_id', user.id)
+          .in('lecture_id', lectureIds)
+        for (const n of (savedNotes ?? []) as { lecture_id: string; content: string }[]) {
+          loaded[n.lecture_id] = n.content
+        }
+      }
+      setNotes(loaded)
 
       setLoading(false)
     }
@@ -88,9 +102,20 @@ export default function ClassroomPage() {
   function saveNote(lectureId: string, text: string) {
     const updated = { ...notes, [lectureId]: text }
     setNotes(updated)
+    // Instant local cache so nothing is ever lost
     localStorage.setItem(`notes-${courseId}`, JSON.stringify(updated))
-    setNotesSaved(true)
-    setTimeout(() => setNotesSaved(false), 2000)
+    // Debounced sync to the account (so it follows the user across devices)
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(async () => {
+      if (!userId) return
+      const sb = createClient()
+      await sb.from('course_notes').upsert(
+        { user_id: userId, lecture_id: lectureId, content: text },
+        { onConflict: 'user_id,lecture_id' }
+      )
+      setNotesSaved(true)
+      setTimeout(() => setNotesSaved(false), 2000)
+    }, 700)
   }
 
   const allLectures  = sections.flatMap(s => s.lectures)
@@ -297,7 +322,7 @@ export default function ClassroomPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h2 className="text-base font-bold text-zinc-100">My Notes</h2>
-                        <p className="text-xs text-zinc-600 mt-0.5">Notes are saved locally on your device</p>
+                        <p className="text-xs text-zinc-600 mt-0.5">Saved to your account — synced across devices</p>
                       </div>
                       {notesSaved && (
                         <span className="flex items-center gap-1.5 text-xs text-emerald-400">

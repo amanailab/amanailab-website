@@ -7,7 +7,7 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, Loader2, GraduationCap,
   ChevronDown, ChevronUp, PlayCircle, X, CheckCircle2, Users,
   UploadCloud, Link2, AlertCircle, GripVertical, BookOpen,
-  Zap, TrendingUp,
+  Zap, TrendingUp, ListVideo, Sparkles,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -131,6 +131,12 @@ export default function AdminCoursesPage() {
   const [isNew, setIsNew]           = useState(false)
   const [activeTab, setActiveTab]   = useState<'info' | 'media' | 'settings'>('info')
 
+  // YouTube playlist import
+  const [importOpen, setImportOpen] = useState(false)
+  const [importing, setImporting]   = useState(false)
+  const [importErr, setImportErr]   = useState<string | null>(null)
+  const [imp, setImp] = useState({ playlistUrl: '', title: '', price: '999', level: 'beginner', is_free: false, is_published: false })
+
   // Curriculum
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null)
   const [sections, setSections]       = useState<Section[]>([])
@@ -150,6 +156,34 @@ export default function AdminCoursesPage() {
     setLoading(false)
   }
   useEffect(() => { loadCourses() }, [])
+
+  async function importPlaylist() {
+    if (!imp.playlistUrl.trim()) { setImportErr('Paste a YouTube playlist link first.'); return }
+    setImporting(true); setImportErr(null)
+    try {
+      const res = await fetch('/api/admin/courses/import-playlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playlistUrl: imp.playlistUrl.trim(),
+          title: imp.title.trim() || undefined,
+          price: parseFloat(imp.price) || 0,
+          level: imp.level,
+          is_free: imp.is_free,
+          is_published: imp.is_published,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setImportErr(data.error ?? 'Import failed.'); setImporting(false); return }
+      setImportOpen(false)
+      setImp({ playlistUrl: '', title: '', price: '999', level: 'beginner', is_free: false, is_published: false })
+      showToast(`Imported "${data.course.title}" — ${data.lectureCount} lectures created!`)
+      await loadCourses()
+    } catch (e) {
+      setImportErr(String(e))
+    }
+    setImporting(false)
+  }
 
   async function loadSections(courseId: string) {
     setSectLoading(true)
@@ -245,10 +279,16 @@ export default function AdminCoursesPage() {
             <h1 className="text-2xl font-black text-zinc-100">Courses</h1>
             <p className="text-zinc-500 text-sm mt-1">Manage your course catalog and curriculum</p>
           </div>
-          <button onClick={() => { setEditing({ ...EMPTY }); setIsNew(true); setActiveTab('info') }}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm shadow-lg shadow-orange-500/20">
-            <Plus className="w-4 h-4" /> New Course
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => { setImportErr(null); setImportOpen(true) }}
+              className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-100 font-bold px-5 py-2.5 rounded-xl transition-colors text-sm">
+              <ListVideo className="w-4 h-4 text-red-500" /> Import YouTube Playlist
+            </button>
+            <button onClick={() => { setEditing({ ...EMPTY }); setIsNew(true); setActiveTab('info') }}
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm shadow-lg shadow-orange-500/20">
+              <Plus className="w-4 h-4" /> New Course
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -436,6 +476,86 @@ export default function AdminCoursesPage() {
           </div>
         )}
       </main>
+
+      {/* ── Import YouTube Playlist Modal ── */}
+      {importOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                  <ListVideo className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-zinc-100">Import YouTube Playlist</h2>
+                  <p className="text-xs text-zinc-600 mt-0.5">Creates a full course — one lecture per video</p>
+                </div>
+              </div>
+              <button onClick={() => !importing && setImportOpen(false)} className="text-zinc-500 hover:text-zinc-300 transition-colors"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Playlist Link *</label>
+                <input value={imp.playlistUrl} onChange={e => setImp(p => ({ ...p, playlistUrl: e.target.value }))}
+                  placeholder="https://www.youtube.com/playlist?list=PL…" className={INPUT} autoFocus />
+                <p className="text-xs text-zinc-600 mt-1.5 flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-orange-500/60 shrink-0" />
+                  Paste any public playlist URL. We fetch every video, title and duration automatically.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Course Title (optional)</label>
+                <input value={imp.title} onChange={e => setImp(p => ({ ...p, title: e.target.value }))}
+                  placeholder="Leave blank to use the playlist title" className={INPUT} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Level</label>
+                  <select value={imp.level} onChange={e => setImp(p => ({ ...p, level: e.target.value }))} className={INPUT}>
+                    <option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Price (₹)</label>
+                  <input type="number" value={imp.price} disabled={imp.is_free}
+                    onChange={e => setImp(p => ({ ...p, price: e.target.value }))} className={`${INPUT} disabled:opacity-50`} />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center justify-between p-3.5 bg-zinc-950 border border-zinc-800 rounded-xl cursor-pointer hover:border-zinc-700 transition-colors">
+                  <span className="text-sm font-semibold text-zinc-200">Free course</span>
+                  <input type="checkbox" checked={imp.is_free} onChange={e => setImp(p => ({ ...p, is_free: e.target.checked }))} className="w-4 h-4 accent-orange-500" />
+                </label>
+                <label className="flex items-center justify-between p-3.5 bg-zinc-950 border border-zinc-800 rounded-xl cursor-pointer hover:border-zinc-700 transition-colors">
+                  <div>
+                    <p className="text-sm font-semibold text-zinc-200">Publish immediately</p>
+                    <p className="text-xs text-zinc-600 mt-0.5">Show on the public courses page right away</p>
+                  </div>
+                  <input type="checkbox" checked={imp.is_published} onChange={e => setImp(p => ({ ...p, is_published: e.target.checked }))} className="w-4 h-4 accent-orange-500" />
+                </label>
+              </div>
+
+              {importErr && (
+                <div className="flex items-start gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3.5 py-3">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" /> {importErr}
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-5 border-t border-zinc-800 flex gap-3">
+              <button onClick={importPlaylist} disabled={importing}
+                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-orange-500/20">
+                {importing ? <><Loader2 className="w-4 h-4 animate-spin" /> Importing playlist…</> : <><ListVideo className="w-4 h-4" /> Import & Create Course</>}
+              </button>
+              <button onClick={() => !importing && setImportOpen(false)} className="px-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-3 rounded-xl transition-colors">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Create / Edit Modal ── */}
       {editing && (

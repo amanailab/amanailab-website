@@ -269,6 +269,126 @@ export async function getPlaylistVideos(playlistId: string, limit = 30): Promise
     });
 }
 
+// ── Playlist → Course import ──────────────────────────────────────────────────
+// Used by the admin importer. Unlike ytFetch above, this only needs the API key
+// (not the channel id) so ANY public playlist can be imported.
+
+async function ytImportFetch<T>(endpoint: string): Promise<T | null> {
+  if (!API_KEY) return null;
+  try {
+    const res = await fetch(`${BASE}/${endpoint}&key=${API_KEY}`, { cache: "no-store" });
+    if (!res.ok) {
+      console.error(`[YouTube import] ${res.status} — ${endpoint.split("?")[0]}`);
+      return null;
+    }
+    return res.json() as Promise<T>;
+  } catch (err) {
+    console.error("[YouTube import] fetch error", err);
+    return null;
+  }
+}
+
+/** Pull a playlist id out of a full URL, a watch?v=…&list=… link, or a raw id. */
+export function extractPlaylistId(input: string): string | null {
+  const s = (input ?? "").trim();
+  if (!s) return null;
+  // Raw id (PL…, UU… uploads, FL…, LL…, OL…)
+  if (/^(PL|UU|FL|LL|OL|RD)[\w-]{10,}$/.test(s)) return s;
+  try {
+    const list = new URL(s).searchParams.get("list");
+    if (list) return list;
+  } catch { /* not a URL — fall through */ }
+  const m = s.match(/[?&]list=([\w-]+)/);
+  return m ? m[1] : null;
+}
+
+export type ImportedVideo = {
+  videoId: string;
+  title: string;
+  description: string;
+  durationMinutes: number | null;
+  position: number;
+};
+
+export type ImportedPlaylist = {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail: string;
+  videos: ImportedVideo[];
+};
+
+/** Fetch a playlist's metadata + every video (with durations) for course import. */
+export async function fetchPlaylistForImport(playlistId: string): Promise<ImportedPlaylist | null> {
+  const meta = await ytImportFetch<YT>(`playlists?part=snippet&id=${playlistId}`);
+  const pl = meta?.items?.[0];
+  if (!pl) return null;
+  const snippet = pl.snippet ?? {};
+
+  // Page through every playlist item (cap at 300 to stay sane).
+  const items: Record<string, unknown>[] = [];
+  let pageToken = "";
+  do {
+    const data = await ytImportFetch<YT>(
+      `playlistItems?part=snippet,contentDetails&playlistId=${playlistId}&maxResults=50${pageToken ? `&pageToken=${pageToken}` : ""}`
+    );
+    if (!data?.items?.length) break;
+    items.push(...data.items);
+    pageToken = data.nextPageToken ?? "";
+  } while (pageToken && items.length < 300);
+
+  const getVid = (it: Record<string, unknown>): string | null => {
+    const cd = it.contentDetails as { videoId?: string } | undefined;
+    const sn = it.snippet as { resourceId?: { videoId?: string } } | undefined;
+    return cd?.videoId ?? sn?.resourceId?.videoId ?? null;
+  };
+
+  const valid = items.filter((it) => getVid(it));
+  const videoIds = valid.map((it) => getVid(it) as string);
+
+  // Fetch durations in batches of 50.
+  const durations = new Map<string, number>();
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const batch = videoIds.slice(i, i + 50);
+    const det = await ytImportFetch<YT>(`videos?part=contentDetails&id=${batch.join(",")}&maxResults=50`);
+    for (const v of det?.items ?? []) {
+      durations.set(v.id as string, parseISO8601Duration(v.contentDetails?.duration ?? ""));
+    }
+  }
+
+  const videos: ImportedVideo[] = valid
+    .map((it, i) => {
+      const vid = getVid(it) as string;
+      const sn = it.snippet as { title?: string; description?: string };
+      const secs = durations.get(vid) ?? 0;
+      return {
+        videoId: vid,
+        title: sn?.title ?? "Untitled",
+        description: (sn?.description ?? "").slice(0, 500),
+        durationMinutes: secs > 0 ? Math.round((secs / 60) * 10) / 10 : null,
+        position: i,
+      };
+    })
+    .filter((v) => v.title !== "Deleted video" && v.title !== "Private video")
+    .map((v, i) => ({ ...v, position: i }));
+
+  const thumb =
+    snippet.thumbnails?.maxres?.url ??
+    snippet.thumbnails?.standard?.url ??
+    snippet.thumbnails?.high?.url ??
+    snippet.thumbnails?.medium?.url ??
+    snippet.thumbnails?.default?.url ??
+    (videos[0] ? `https://img.youtube.com/vi/${videos[0].videoId}/maxresdefault.jpg` : "");
+
+  return {
+    id: playlistId,
+    title: snippet.title ?? "Untitled Course",
+    description: snippet.description ?? "",
+    thumbnail: thumb,
+    videos,
+  };
+}
+
 // ── Duration helpers (for Shorts filtering) ──────────────────────────────────
 
 function parseISO8601Duration(duration: string): number {

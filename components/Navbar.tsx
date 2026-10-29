@@ -45,12 +45,12 @@ interface NavLink {
 type NavItem = NavLink | NavDropdown
 
 const navItems: NavItem[] = [
+  { kind: "link", href: "/courses", label: "Courses", badge: "New" },
   {
     kind: "dropdown",
     label: "Learn",
     columns: 1,
     items: [
-      { href: "/courses",   label: "Courses 🎓",  description: "Structured video courses — buy once, learn forever", icon: <BookOpen className="w-4 h-4" /> },
       { href: "/series",    label: "Series",      description: "Structured AI/ML YouTube series",      icon: <YoutubeIcon className="w-4 h-4" /> },
       { href: "/news",      label: "AI News",     description: "Daily curated AI & ML news",           icon: <Newspaper className="w-4 h-4" /> },
       { href: "/resources", label: "Resources",   description: "Free cheat sheets & PDFs",             icon: <BookOpen className="w-4 h-4" /> },

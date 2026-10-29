@@ -163,7 +163,19 @@
       "Bash(awk 'NR==251')",
       "Bash(xxd)",
       "Bash(cat app/robots.ts)",
-      "Bash(ls app/robots.txt public/robots.txt)"
+      "Bash(ls app/robots.txt public/robots.txt)",
+      "PowerShell(cd \"E:\\\\amanailab-website\\\\amanailab-website\"; npx tsc --noEmit --pretty 2>&1 | Where-Object { $_ -match \"dashboard|reset-password|profile|upgrade|Navbar\" })",
+      "Bash(xargs grep -l \"system.design\\\\|systemDesign\\\\|system-design\")",
+      "Bash(xargs grep -l \"sd_attempts\\\\|sd_submissions\\\\|design_attempts\\\\|design_submissions\")",
+      "Bash(xargs grep -l \"Design\\\\|system\")",
+      "Bash(xargs grep -l \"system.design\\\\|systemDesign\")",
+      "Bash(grep -v \"^$\")",
+      "Bash(xargs grep -l \"CREATE TABLE.*notes\\\\|CREATE TABLE.*orders\")",
+      "Bash(xargs grep -l \"packages/create-order\")",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(NEXT_DISABLE_TURBOPACK=1 npx next dev --port 3334)",
+      "PowerShell(taskkill *)",
+      "PowerShell(cd \"E:\\\\amanailab-website\\\\amanailab-website\"; $env:NEXT_DISABLE_TURBOPACK=\"1\"; Start-Process -NoNewWindow -FilePath \"npx\" -ArgumentList \"next\",\"dev\",\"--port\",\"3335\" -RedirectStandardOutput \".next\\\\dev-out.log\" -RedirectStandardError \".next\\\\dev-err.log\"; Start-Sleep 18; $code = \\(Invoke-WebRequest -Uri \"http://localhost:3335/masterclass\" -UseBasicParsing -ErrorAction SilentlyContinue\\).StatusCode; Write-Output \"HTTP $code\")"
     ]
   }
 }
