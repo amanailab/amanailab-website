@@ -1,296 +1,430 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import AdminNav from '@/components/admin/AdminNav'
+import Image from 'next/image'
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, Loader2, GraduationCap,
-  ChevronDown, ChevronUp, PlayCircle, X, CheckCircle2, Users, BookOpen,
+  ChevronDown, ChevronUp, PlayCircle, X, CheckCircle2, Users,
+  UploadCloud, Link2, AlertCircle, GripVertical, BookOpen,
+  Zap, TrendingUp,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 type Course = {
   id: string; slug: string; title: string; short_description: string | null
-  price: number; currency: string; level: string; duration_hours: number | null
+  description: string | null; price: number; level: string; duration_hours: number | null
   is_published: boolean; is_free: boolean; students_count: number
   stripe_price_id: string | null; thumbnail_url: string | null; preview_video_url: string | null
-  description: string | null
 }
-
 type Section = { id: string; title: string; position: number; lectures: Lecture[] }
 type Lecture = {
   id: string; title: string; description: string | null; video_url: string | null
   duration_minutes: number | null; is_preview: boolean; position: number
 }
 
-const LEVELS = ['beginner', 'intermediate', 'advanced']
-const INPUT  = 'w-full bg-zinc-950 border border-zinc-800 focus:border-orange-500/60 text-zinc-100 placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all'
-const LABEL  = 'block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5'
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div><label className={LABEL}>{label}</label>{children}</div>
-}
-
-const EMPTY_COURSE: Omit<Course, 'id' | 'students_count'> = {
+const INPUT = 'w-full bg-zinc-950 border border-zinc-800 focus:border-orange-500/60 text-zinc-100 placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all'
+const EMPTY: Omit<Course, 'id' | 'students_count'> = {
   slug: '', title: '', short_description: '', description: '', thumbnail_url: '',
-  preview_video_url: '', price: 999, currency: 'INR', level: 'beginner',
+  preview_video_url: '', price: 999, level: 'beginner',
   duration_hours: null, is_published: false, is_free: false, stripe_price_id: '',
 }
 
+// ── Video Upload Component ─────────────────────────────────────────────────
+function VideoUpload({ onUrl }: { onUrl: (url: string) => void }) {
+  const [mode, setMode]         = useState<'url' | 'upload'>('url')
+  const [urlInput, setUrlInput] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [progress, setProgress]  = useState(0)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleFile(file: File) {
+    if (!file) return
+    setUploading(true); setProgress(0); setUploadError(null)
+
+    const sb       = createClient()
+    const ext      = file.name.split('.').pop()
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+    // Simulate progress while uploading
+    const timer = setInterval(() => setProgress(p => Math.min(p + 8, 90)), 300)
+
+    try {
+      const { data, error } = await sb.storage.from('course-videos').upload(fileName, file, { upsert: false })
+      clearInterval(timer)
+      if (error) { setUploadError(error.message); setUploading(false); return }
+      setProgress(100)
+      const { data: { publicUrl } } = sb.storage.from('course-videos').getPublicUrl(data.path)
+      onUrl(publicUrl)
+      setTimeout(() => { setUploading(false); setProgress(0) }, 800)
+    } catch (e) {
+      clearInterval(timer)
+      setUploadError(String(e))
+      setUploading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <button onClick={() => setMode('url')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${mode === 'url' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'}`}>
+          <Link2 className="w-3.5 h-3.5" /> URL
+        </button>
+        <button onClick={() => setMode('upload')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${mode === 'upload' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'}`}>
+          <UploadCloud className="w-3.5 h-3.5" /> Upload
+        </button>
+      </div>
+
+      {mode === 'url' ? (
+        <div className="flex gap-2">
+          <input value={urlInput} onChange={e => setUrlInput(e.target.value)} placeholder="YouTube URL or direct video link…" className={`${INPUT} flex-1`} />
+          <button onClick={() => { if (urlInput.trim()) { onUrl(urlInput.trim()); setUrlInput('') } }} className="px-4 py-2.5 bg-orange-500 hover:bg-orange-400 text-white rounded-xl text-sm font-bold transition-colors shrink-0">
+            Use
+          </button>
+        </div>
+      ) : (
+        <div>
+          <input ref={fileRef} type="file" accept="video/mp4,video/webm,video/quicktime,video/*" className="hidden"
+            onChange={e => { if (e.target.files?.[0]) handleFile(e.target.files[0]) }} />
+          <div
+            onClick={() => !uploading && fileRef.current?.click()}
+            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${uploading ? 'border-orange-500/40 cursor-default' : 'border-zinc-700 hover:border-orange-500/50 hover:bg-orange-500/3'}`}
+          >
+            {uploading ? (
+              <div className="space-y-3">
+                <Loader2 className="w-8 h-8 text-orange-500 animate-spin mx-auto" />
+                <p className="text-sm text-zinc-400 font-semibold">Uploading… {progress}%</p>
+                <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden max-w-xs mx-auto">
+                  <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <UploadCloud className="w-10 h-10 text-zinc-600 mx-auto" />
+                <p className="text-sm font-semibold text-zinc-300">Drop video here or click to browse</p>
+                <p className="text-xs text-zinc-600">MP4, MOV, WebM · Max 500MB</p>
+                <p className="text-xs text-zinc-700 mt-1">Requires <span className="text-orange-500/70">course-videos</span> bucket in Supabase Storage</p>
+              </div>
+            )}
+          </div>
+          {uploadError && (
+            <div className="flex items-center gap-2 mt-2 text-xs text-red-400">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" /> {uploadError}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Main page ──────────────────────────────────────────────────────────────
 export default function AdminCoursesPage() {
-  const supabase = createClient()
+  const sb = createClient()
 
-  const [courses, setCourses]     = useState<Course[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [saving, setSaving]       = useState(false)
-  const [toast, setToast]         = useState<string | null>(null)
-  const [editingCourse, setEditing] = useState<Partial<Course> | null>(null)
-  const [isNew, setIsNew]         = useState(false)
+  const [courses, setCourses]       = useState<Course[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [saving, setSaving]         = useState(false)
+  const [toast, setToast]           = useState<string | null>(null)
+  const [editing, setEditing]       = useState<Partial<Course> | null>(null)
+  const [isNew, setIsNew]           = useState(false)
+  const [activeTab, setActiveTab]   = useState<'info' | 'media' | 'settings'>('info')
 
-  // Curriculum state
+  // Curriculum
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null)
-  const [sections, setSections]   = useState<Section[]>([])
+  const [sections, setSections]       = useState<Section[]>([])
   const [sectLoading, setSectLoading] = useState(false)
-  const [expandedSect, setExpandedSect] = useState<Set<string>>(new Set())
+  const [expandedSects, setExpSects]  = useState<Set<string>>(new Set())
 
-  // New section / lecture forms
-  const [newSectTitle, setNewSectTitle] = useState('')
-  const [addingLectureFor, setAddingLectureFor] = useState<string | null>(null)
-  const [newLecture, setNewLecture] = useState({ title: '', video_url: '', duration_minutes: '', is_preview: false })
+  // Forms
+  const [newSectTitle, setNewSectTitle]     = useState('')
+  const [addingLecFor, setAddingLecFor]     = useState<string | null>(null)
+  const [newLec, setNewLec] = useState({ title: '', description: '', video_url: '', duration_minutes: '', is_preview: false })
 
-  function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 3000) }
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
 
   async function loadCourses() {
-    const { data } = await supabase.from('courses').select('*').order('created_at', { ascending: false })
+    const { data } = await sb.from('courses').select('*').order('created_at', { ascending: false })
     setCourses((data as Course[]) ?? [])
     setLoading(false)
   }
-
   useEffect(() => { loadCourses() }, [])
 
   async function loadSections(courseId: string) {
     setSectLoading(true)
-    const { data } = await supabase
+    const { data } = await sb
       .from('course_sections')
       .select('id,title,position,course_lectures(id,title,description,video_url,duration_minutes,is_preview,position)')
-      .eq('course_id', courseId)
-      .order('position')
-    const normalized = (data ?? []).map((s: Record<string, unknown>) => ({
-      ...s,
-      lectures: ((s.course_lectures as Lecture[]) ?? []).sort((a, b) => a.position - b.position),
+      .eq('course_id', courseId).order('position')
+    const norm = (data ?? []).map((s: Record<string, unknown>) => ({
+      ...s, lectures: ((s.course_lectures as Lecture[]) ?? []).sort((a, b) => a.position - b.position),
     })) as Section[]
-    setSections(normalized)
-    setExpandedSect(new Set(normalized.map(s => s.id)))
+    setSections(norm)
+    setExpSects(new Set(norm.map(s => s.id)))
     setSectLoading(false)
   }
 
   async function saveCourse() {
-    if (!editingCourse?.title || !editingCourse?.slug) { showToast('Title and slug are required'); return }
+    if (!editing?.title || !editing?.slug) { showToast('Title and slug are required'); return }
     setSaving(true)
-    const payload = { ...editingCourse }
-    delete (payload as Record<string, unknown>).id
-
-    if (isNew) {
-      const { error } = await supabase.from('courses').insert({ ...payload, students_count: 0 })
-      if (error) { showToast('Error: ' + error.message); setSaving(false); return }
-    } else {
-      const { error } = await supabase.from('courses').update(payload).eq('id', editingCourse.id!)
-      if (error) { showToast('Error: ' + error.message); setSaving(false); return }
-    }
-    showToast(isNew ? 'Course created!' : 'Course updated!')
-    setEditing(null)
-    loadCourses()
-    setSaving(false)
+    const payload = { ...editing } as Record<string, unknown>
+    delete payload.id
+    const op = isNew
+      ? await sb.from('courses').insert({ ...payload, students_count: 0 })
+      : await sb.from('courses').update(payload).eq('id', editing.id!)
+    if (op.error) { showToast('Error: ' + op.error.message); setSaving(false); return }
+    showToast(isNew ? 'Course created!' : 'Saved!')
+    setEditing(null); loadCourses(); setSaving(false)
   }
 
-  async function togglePublish(course: Course) {
-    await supabase.from('courses').update({ is_published: !course.is_published }).eq('id', course.id)
-    showToast(course.is_published ? 'Course unpublished' : 'Course published!')
+  async function togglePublish(c: Course) {
+    await sb.from('courses').update({ is_published: !c.is_published }).eq('id', c.id)
+    showToast(c.is_published ? 'Unpublished' : 'Published!')
     loadCourses()
   }
 
   async function deleteCourse(id: string) {
-    if (!confirm('Delete this course and all its content?')) return
-    await supabase.from('courses').delete().eq('id', id)
-    showToast('Course deleted')
-    loadCourses()
+    if (!confirm('Delete this course and all content?')) return
+    await sb.from('courses').delete().eq('id', id)
+    showToast('Deleted'); loadCourses()
+    if (activeCourseId === id) setActiveCourseId(null)
   }
 
   async function addSection() {
     if (!newSectTitle.trim() || !activeCourseId) return
-    const position = sections.length
-    await supabase.from('course_sections').insert({ course_id: activeCourseId, title: newSectTitle.trim(), position })
-    setNewSectTitle('')
-    loadSections(activeCourseId)
+    await sb.from('course_sections').insert({ course_id: activeCourseId, title: newSectTitle.trim(), position: sections.length })
+    setNewSectTitle(''); loadSections(activeCourseId)
   }
 
   async function deleteSection(id: string) {
-    if (!confirm('Delete this section and all its lectures?')) return
-    await supabase.from('course_sections').delete().eq('id', id)
+    if (!confirm('Delete section and all its lectures?')) return
+    await sb.from('course_sections').delete().eq('id', id)
     if (activeCourseId) loadSections(activeCourseId)
   }
 
   async function addLecture(sectionId: string) {
-    if (!newLecture.title.trim()) return
-    const section = sections.find(s => s.id === sectionId)
-    const position = section?.lectures.length ?? 0
-    await supabase.from('course_lectures').insert({
-      section_id: sectionId,
-      title: newLecture.title.trim(),
-      video_url: newLecture.video_url.trim() || null,
-      duration_minutes: newLecture.duration_minutes ? parseFloat(newLecture.duration_minutes) : null,
-      is_preview: newLecture.is_preview,
-      position,
+    if (!newLec.title.trim()) return
+    const sec = sections.find(s => s.id === sectionId)
+    await sb.from('course_lectures').insert({
+      section_id: sectionId, title: newLec.title.trim(),
+      description: newLec.description.trim() || null,
+      video_url: newLec.video_url.trim() || null,
+      duration_minutes: newLec.duration_minutes ? parseFloat(newLec.duration_minutes) : null,
+      is_preview: newLec.is_preview, position: sec?.lectures.length ?? 0,
     })
-    setNewLecture({ title: '', video_url: '', duration_minutes: '', is_preview: false })
-    setAddingLectureFor(null)
+    setNewLec({ title: '', description: '', video_url: '', duration_minutes: '', is_preview: false })
+    setAddingLecFor(null)
     if (activeCourseId) loadSections(activeCourseId)
   }
 
   async function deleteLecture(id: string) {
-    await supabase.from('course_lectures').delete().eq('id', id)
+    await sb.from('course_lectures').delete().eq('id', id)
     if (activeCourseId) loadSections(activeCourseId)
   }
+
+  const totalStudents = courses.reduce((a, c) => a + c.students_count, 0)
+  const published     = courses.filter(c => c.is_published).length
 
   return (
     <div className="flex min-h-screen bg-zinc-950 text-zinc-100">
       <AdminNav />
 
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+
         {/* Toast */}
         {toast && (
-          <div className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-zinc-800 border border-zinc-700 text-zinc-100 px-4 py-3 rounded-xl shadow-xl text-sm">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {toast}
+          <div className="fixed top-6 right-6 z-50 flex items-center gap-2 bg-zinc-800 border border-zinc-700 text-zinc-100 px-4 py-3 rounded-2xl shadow-2xl text-sm animate-slide-up">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> {toast}
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-8">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-2xl font-black text-zinc-100">Courses</h1>
-            <p className="text-zinc-500 text-sm mt-1">{courses.length} course{courses.length !== 1 ? 's' : ''} total</p>
+            <p className="text-zinc-500 text-sm mt-1">Manage your course catalog and curriculum</p>
           </div>
-          <button onClick={() => { setEditing({ ...EMPTY_COURSE }); setIsNew(true) }}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm">
+          <button onClick={() => { setEditing({ ...EMPTY }); setIsNew(true); setActiveTab('info') }}
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-5 py-2.5 rounded-xl transition-colors text-sm shadow-lg shadow-orange-500/20">
             <Plus className="w-4 h-4" /> New Course
           </button>
         </div>
 
+        {/* Stats */}
+        {courses.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+            {[
+              { icon: GraduationCap, label: 'Total Courses',   val: courses.length.toString(), color: 'text-orange-400' },
+              { icon: Eye,           label: 'Published',       val: published.toString(),       color: 'text-emerald-400' },
+              { icon: Users,         label: 'Total Students',  val: totalStudents.toLocaleString('en-IN'), color: 'text-blue-400' },
+              { icon: TrendingUp,    label: 'Draft',           val: (courses.length - published).toString(), color: 'text-zinc-400' },
+            ].map(({ icon: Icon, label, val, color }) => (
+              <div key={label} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs text-zinc-500">{label}</p>
+                  <Icon className={`w-4 h-4 ${color}`} />
+                </div>
+                <p className={`text-2xl font-black ${color}`}>{val}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
         {loading ? (
-          <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-orange-500 animate-spin" /></div>
+          <div className="flex items-center justify-center py-24"><Loader2 className="w-8 h-8 text-orange-500 animate-spin" /></div>
         ) : courses.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <GraduationCap className="w-16 h-16 text-zinc-700" />
-            <p className="text-zinc-400">No courses yet. Create your first one.</p>
+          <div className="flex flex-col items-center justify-center py-24 gap-5">
+            <div className="w-24 h-24 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+              <GraduationCap className="w-12 h-12 text-zinc-700" />
+            </div>
+            <p className="text-zinc-400 font-semibold">No courses yet</p>
+            <button onClick={() => { setEditing({ ...EMPTY }); setIsNew(true) }}
+              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 text-white font-bold px-6 py-3 rounded-xl transition-colors">
+              <Plus className="w-4 h-4" /> Create First Course
+            </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {courses.map(course => (
               <div key={course.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+
+                {/* Course row */}
                 <div className="flex items-center gap-4 p-5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-                    <GraduationCap className="w-5 h-5 text-orange-400" />
+                  {/* Thumbnail */}
+                  <div className="w-20 h-14 rounded-xl overflow-hidden bg-zinc-800 shrink-0">
+                    {course.thumbnail_url
+                      ? <Image src={course.thumbnail_url} alt={course.title} width={80} height={56} className="w-full h-full object-cover" />
+                      : <div className="w-full h-full flex items-center justify-center"><GraduationCap className="w-7 h-7 text-zinc-600" /></div>}
                   </div>
+
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-zinc-100 truncate">{course.title}</p>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${course.is_published ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-zinc-500 bg-zinc-800 border-zinc-700'}`}>
-                        {course.is_published ? 'Published' : 'Draft'}
-                      </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400">
-                        {course.level}
-                      </span>
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <p className="font-bold text-zinc-100 truncate">{course.title}</p>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border shrink-0 ${
+                        course.is_published ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-zinc-500 bg-zinc-800 border-zinc-700'
+                      }`}>{course.is_published ? 'Published' : 'Draft'}</span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-500 shrink-0 capitalize">{course.level}</span>
                     </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="text-sm text-orange-400 font-bold">{course.is_free ? 'Free' : `₹${course.price}`}</span>
-                      <span className="flex items-center gap-1 text-xs text-zinc-500"><Users className="w-3 h-3" /> {course.students_count}</span>
-                      <span className="text-xs text-zinc-600">/{course.slug}</span>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span className="text-sm font-bold text-orange-400">{course.is_free ? 'Free' : `₹${course.price.toLocaleString('en-IN')}`}</span>
+                      <span className="flex items-center gap-1 text-xs text-zinc-600"><Users className="w-3 h-3" />{course.students_count} students</span>
+                      {course.duration_hours && <span className="text-xs text-zinc-600">{course.duration_hours}h</span>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button onClick={() => { setActiveCourseId(course.id); loadSections(course.id) }}
-                      className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-orange-400 bg-zinc-800 hover:bg-zinc-700 px-3 py-2 rounded-lg transition-colors">
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button onClick={() => { setActiveCourseId(activeCourseId === course.id ? null : course.id); if (activeCourseId !== course.id) loadSections(course.id) }}
+                      className={`flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-semibold transition-colors ${activeCourseId === course.id ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200'}`}>
                       <BookOpen className="w-3.5 h-3.5" /> Curriculum
                     </button>
                     <button onClick={() => togglePublish(course)}
-                      className={`p-2 rounded-lg transition-colors ${course.is_published ? 'text-emerald-400 hover:text-red-400 hover:bg-red-500/10' : 'text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10'}`}>
+                      className={`p-2 rounded-xl transition-colors ${course.is_published ? 'text-emerald-400 hover:bg-red-500/10 hover:text-red-400' : 'text-zinc-600 hover:bg-emerald-500/10 hover:text-emerald-400'}`}
+                      title={course.is_published ? 'Unpublish' : 'Publish'}>
                       {course.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </button>
-                    <button onClick={() => { setEditing({ ...course }); setIsNew(false) }}
-                      className="p-2 text-zinc-500 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors">
+                    <button onClick={() => { setEditing({ ...course }); setIsNew(false); setActiveTab('info') }}
+                      className="p-2 rounded-xl text-zinc-600 hover:text-orange-400 hover:bg-orange-500/10 transition-colors" title="Edit">
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button onClick={() => deleteCourse(course.id)}
-                      className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                      className="p-2 rounded-xl text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* Curriculum panel */}
+                {/* ── Curriculum panel ── */}
                 {activeCourseId === course.id && (
-                  <div className="border-t border-zinc-800 bg-zinc-950 p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-bold text-zinc-300">Curriculum</h3>
-                      <button onClick={() => setActiveCourseId(null)} className="text-zinc-500 hover:text-zinc-300"><X className="w-4 h-4" /></button>
-                    </div>
+                  <div className="border-t border-zinc-800 bg-zinc-950/60 p-5">
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Curriculum Builder</p>
 
-                    {sectLoading ? <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div> : (
+                    {sectLoading ? (
+                      <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 text-orange-500 animate-spin" /></div>
+                    ) : (
                       <div className="space-y-3">
-                        {sections.map(section => (
-                          <div key={section.id} className="border border-zinc-800 rounded-xl overflow-hidden">
-                            <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900">
-                              <button onClick={() => setExpandedSect(prev => { const n = new Set(prev); n.has(section.id) ? n.delete(section.id) : n.add(section.id); return n })}>
-                                {expandedSect.has(section.id) ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
-                              </button>
-                              <span className="flex-1 font-semibold text-zinc-200 text-sm">{section.title}</span>
-                              <span className="text-xs text-zinc-600">{section.lectures.length} lectures</span>
-                              <button onClick={() => deleteSection(section.id)} className="p-1 text-zinc-600 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
-                            </div>
+                        {sections.length === 0 && (
+                          <p className="text-center text-zinc-600 text-sm py-6">No sections yet. Add your first section below.</p>
+                        )}
 
-                            {expandedSect.has(section.id) && (
-                              <div className="divide-y divide-zinc-800/60">
-                                {section.lectures.map(lecture => (
-                                  <div key={lecture.id} className="flex items-center gap-3 px-4 py-3">
-                                    <PlayCircle className="w-4 h-4 text-zinc-600 shrink-0" />
-                                    <span className="flex-1 text-sm text-zinc-400">{lecture.title}</span>
-                                    {lecture.is_preview && <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">Preview</span>}
-                                    {lecture.duration_minutes && <span className="text-xs text-zinc-600">{lecture.duration_minutes}m</span>}
-                                    <button onClick={() => deleteLecture(lecture.id)} className="p-1 text-zinc-700 hover:text-red-400 transition-colors"><Trash2 className="w-3 h-3" /></button>
-                                  </div>
-                                ))}
-
-                                {addingLectureFor === section.id ? (
-                                  <div className="p-4 space-y-3 bg-zinc-900/50">
-                                    <input value={newLecture.title} onChange={e => setNewLecture(p => ({ ...p, title: e.target.value }))} placeholder="Lecture title *" className={INPUT} />
-                                    <input value={newLecture.video_url} onChange={e => setNewLecture(p => ({ ...p, video_url: e.target.value }))} placeholder="YouTube URL (e.g. https://youtube.com/watch?v=...)" className={INPUT} />
-                                    <div className="flex gap-2">
-                                      <input value={newLecture.duration_minutes} onChange={e => setNewLecture(p => ({ ...p, duration_minutes: e.target.value }))} placeholder="Duration (min)" type="number" className={INPUT} />
-                                      <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer shrink-0">
-                                        <input type="checkbox" checked={newLecture.is_preview} onChange={e => setNewLecture(p => ({ ...p, is_preview: e.target.checked }))} className="accent-orange-500" />
-                                        Free preview
-                                      </label>
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <button onClick={() => addLecture(section.id)} className="flex-1 bg-orange-500 hover:bg-orange-400 text-white font-bold py-2 rounded-xl text-sm transition-colors">Add Lecture</button>
-                                      <button onClick={() => setAddingLectureFor(null)} className="px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold py-2 rounded-xl text-sm transition-colors">Cancel</button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <button onClick={() => setAddingLectureFor(section.id)}
-                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-500 hover:text-orange-400 hover:bg-orange-500/5 transition-colors">
-                                    <Plus className="w-4 h-4" /> Add lecture
-                                  </button>
-                                )}
+                        {sections.map((sec, si) => {
+                          const isOpen = expandedSects.has(sec.id)
+                          return (
+                            <div key={sec.id} className="border border-zinc-800 rounded-xl overflow-hidden">
+                              <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900">
+                                <GripVertical className="w-4 h-4 text-zinc-700 shrink-0" />
+                                <button onClick={() => setExpSects(prev => { const n = new Set(prev); n.has(sec.id) ? n.delete(sec.id) : n.add(sec.id); return n })} className="shrink-0">
+                                  {isOpen ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+                                </button>
+                                <span className="text-xs text-zinc-600 shrink-0">Section {si + 1}</span>
+                                <span className="flex-1 font-semibold text-zinc-200 text-sm">{sec.title}</span>
+                                <span className="text-xs text-zinc-600 shrink-0">{sec.lectures.length} lectures</span>
+                                <button onClick={() => deleteSection(sec.id)} className="p-1 text-zinc-700 hover:text-red-400 transition-colors shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                               </div>
-                            )}
-                          </div>
-                        ))}
+
+                              {isOpen && (
+                                <div className="divide-y divide-zinc-800/60">
+                                  {sec.lectures.map((l, li) => (
+                                    <div key={l.id} className="flex items-center gap-3 px-4 py-3 bg-zinc-950/50">
+                                      <GripVertical className="w-3.5 h-3.5 text-zinc-700 shrink-0" />
+                                      <PlayCircle className="w-4 h-4 text-zinc-600 shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm text-zinc-300 truncate">{li + 1}. {l.title}</p>
+                                        {l.video_url && <p className="text-xs text-zinc-600 truncate">{l.video_url.length > 50 ? l.video_url.slice(0, 50) + '…' : l.video_url}</p>}
+                                      </div>
+                                      {l.is_preview && <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full shrink-0">Preview</span>}
+                                      {l.duration_minutes && <span className="text-xs text-zinc-600 shrink-0">{l.duration_minutes}m</span>}
+                                      <button onClick={() => deleteLecture(l.id)} className="p-1 text-zinc-700 hover:text-red-400 transition-colors shrink-0"><Trash2 className="w-3 h-3" /></button>
+                                    </div>
+                                  ))}
+
+                                  {/* Add lecture form */}
+                                  {addingLecFor === sec.id ? (
+                                    <div className="p-4 bg-zinc-900/60 space-y-3">
+                                      <input value={newLec.title} onChange={e => setNewLec(p => ({ ...p, title: e.target.value }))} placeholder="Lecture title *" className={INPUT} />
+                                      <input value={newLec.description} onChange={e => setNewLec(p => ({ ...p, description: e.target.value }))} placeholder="Description (optional)" className={INPUT} />
+
+                                      <div>
+                                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Video</p>
+                                        <VideoUpload onUrl={url => setNewLec(p => ({ ...p, video_url: url }))} />
+                                        {newLec.video_url && (
+                                          <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                                            <span className="truncate">{newLec.video_url}</span>
+                                            <button onClick={() => setNewLec(p => ({ ...p, video_url: '' }))} className="shrink-0 text-zinc-500 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="flex gap-2">
+                                        <input value={newLec.duration_minutes} onChange={e => setNewLec(p => ({ ...p, duration_minutes: e.target.value }))} placeholder="Duration (min)" type="number" className={`${INPUT} w-36`} />
+                                        <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                                          <input type="checkbox" checked={newLec.is_preview} onChange={e => setNewLec(p => ({ ...p, is_preview: e.target.checked }))} className="w-4 h-4 accent-orange-500" />
+                                          Free preview
+                                        </label>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button onClick={() => addLecture(sec.id)} className="flex-1 bg-orange-500 hover:bg-orange-400 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">Add Lecture</button>
+                                        <button onClick={() => setAddingLecFor(null)} className="px-5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold py-2.5 rounded-xl text-sm transition-colors">Cancel</button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <button onClick={() => setAddingLecFor(sec.id)}
+                                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-600 hover:text-orange-400 hover:bg-orange-500/5 transition-colors">
+                                      <Plus className="w-4 h-4" /> Add lecture
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
 
                         {/* Add section */}
-                        <div className="flex gap-2">
-                          <input value={newSectTitle} onChange={e => setNewSectTitle(e.target.value)} placeholder="New section title…" className={`${INPUT} flex-1`}
-                            onKeyDown={e => e.key === 'Enter' && addSection()} />
-                          <button onClick={addSection} className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors">
-                            <Plus className="w-4 h-4" /> Section
+                        <div className="flex gap-2 pt-1">
+                          <input value={newSectTitle} onChange={e => setNewSectTitle(e.target.value)} placeholder="New section title…" className={`${INPUT} flex-1`} onKeyDown={e => e.key === 'Enter' && addSection()} />
+                          <button onClick={addSection} className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold px-4 py-2.5 rounded-xl text-sm transition-colors shrink-0">
+                            <Plus className="w-4 h-4" /> Add Section
                           </button>
                         </div>
                       </div>
@@ -303,76 +437,119 @@ export default function AdminCoursesPage() {
         )}
       </main>
 
-      {/* Edit / Create modal */}
-      {editingCourse && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-zinc-800 sticky top-0 bg-zinc-900 z-10">
-              <h2 className="text-lg font-bold text-zinc-100">{isNew ? 'Create Course' : 'Edit Course'}</h2>
-              <button onClick={() => setEditing(null)} className="text-zinc-500 hover:text-zinc-300"><X className="w-5 h-5" /></button>
+      {/* ── Create / Edit Modal ── */}
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl">
+
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-zinc-800 shrink-0">
+              <div>
+                <h2 className="text-lg font-black text-zinc-100">{isNew ? 'Create New Course' : 'Edit Course'}</h2>
+                <p className="text-xs text-zinc-600 mt-0.5">Fill in course details and add curriculum after saving</p>
+              </div>
+              <button onClick={() => setEditing(null)} className="text-zinc-500 hover:text-zinc-300 transition-colors"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Title *">
-                  <input value={editingCourse.title ?? ''} onChange={e => setEditing(p => ({ ...p, title: e.target.value }))} className={INPUT} placeholder="Course title" />
-                </Field>
-                <Field label="Slug *">
-                  <input value={editingCourse.slug ?? ''} onChange={e => setEditing(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') }))} className={INPUT} placeholder="url-friendly-slug" />
-                </Field>
-              </div>
-
-              <Field label="Short Description">
-                <input value={editingCourse.short_description ?? ''} onChange={e => setEditing(p => ({ ...p, short_description: e.target.value }))} className={INPUT} placeholder="One-line tagline" />
-              </Field>
-
-              <Field label="Full Description">
-                <textarea rows={4} value={editingCourse.description ?? ''} onChange={e => setEditing(p => ({ ...p, description: e.target.value }))} className={`${INPUT} resize-none`} placeholder="Detailed description…" />
-              </Field>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Thumbnail URL">
-                  <input value={editingCourse.thumbnail_url ?? ''} onChange={e => setEditing(p => ({ ...p, thumbnail_url: e.target.value }))} className={INPUT} placeholder="https://…" />
-                </Field>
-                <Field label="Preview Video URL">
-                  <input value={editingCourse.preview_video_url ?? ''} onChange={e => setEditing(p => ({ ...p, preview_video_url: e.target.value }))} className={INPUT} placeholder="YouTube URL" />
-                </Field>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <Field label="Price (INR)">
-                  <input type="number" value={editingCourse.price ?? 999} onChange={e => setEditing(p => ({ ...p, price: parseFloat(e.target.value) }))} className={INPUT} />
-                </Field>
-                <Field label="Level">
-                  <select value={editingCourse.level ?? 'beginner'} onChange={e => setEditing(p => ({ ...p, level: e.target.value }))} className={INPUT}>
-                    {LEVELS.map(l => <option key={l} value={l}>{l.charAt(0).toUpperCase() + l.slice(1)}</option>)}
-                  </select>
-                </Field>
-                <Field label="Duration (hours)">
-                  <input type="number" value={editingCourse.duration_hours ?? ''} onChange={e => setEditing(p => ({ ...p, duration_hours: e.target.value ? parseFloat(e.target.value) : null }))} className={INPUT} placeholder="e.g. 4.5" />
-                </Field>
-              </div>
-
-              <Field label="Stripe Price ID">
-                <input value={editingCourse.stripe_price_id ?? ''} onChange={e => setEditing(p => ({ ...p, stripe_price_id: e.target.value }))} className={INPUT} placeholder="price_xxxx (from Stripe dashboard)" />
-              </Field>
-
-              <div className="flex gap-6">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox" checked={editingCourse.is_free ?? false} onChange={e => setEditing(p => ({ ...p, is_free: e.target.checked }))} className="w-4 h-4 accent-orange-500" />
-                  <span className="text-sm text-zinc-300">Free course</span>
-                </label>
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox" checked={editingCourse.is_published ?? false} onChange={e => setEditing(p => ({ ...p, is_published: e.target.checked }))} className="w-4 h-4 accent-orange-500" />
-                  <span className="text-sm text-zinc-300">Published</span>
-                </label>
-              </div>
+            {/* Tabs */}
+            <div className="flex border-b border-zinc-800 px-6 shrink-0">
+              {(['info', 'media', 'settings'] as const).map(t => (
+                <button key={t} onClick={() => setActiveTab(t)}
+                  className={`px-4 py-3 text-sm font-semibold capitalize border-b-2 transition-colors ${activeTab === t ? 'text-orange-400 border-orange-500' : 'text-zinc-500 border-transparent hover:text-zinc-300'}`}>
+                  {t === 'info' ? 'Course Info' : t === 'media' ? 'Media' : 'Settings'}
+                </button>
+              ))}
             </div>
 
-            <div className="p-6 border-t border-zinc-800 flex gap-3">
+            <div className="overflow-y-auto flex-1 px-6 py-5">
+              {activeTab === 'info' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Title *</label>
+                      <input value={editing.title ?? ''} onChange={e => setEditing(p => ({ ...p, title: e.target.value }))} className={INPUT} placeholder="e.g. Complete LLM Engineer Bootcamp" /></div>
+                    <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Slug *</label>
+                      <input value={editing.slug ?? ''} onChange={e => setEditing(p => ({ ...p, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') }))} className={INPUT} placeholder="complete-llm-bootcamp" /></div>
+                  </div>
+                  <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Short Description</label>
+                    <input value={editing.short_description ?? ''} onChange={e => setEditing(p => ({ ...p, short_description: e.target.value }))} className={INPUT} placeholder="One-line tagline shown on course cards" /></div>
+                  <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Full Description</label>
+                    <textarea rows={5} value={editing.description ?? ''} onChange={e => setEditing(p => ({ ...p, description: e.target.value }))} className={`${INPUT} resize-none`} placeholder="Detailed course description…" /></div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Level</label>
+                      <select value={editing.level ?? 'beginner'} onChange={e => setEditing(p => ({ ...p, level: e.target.value }))} className={INPUT}>
+                        <option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option>
+                      </select></div>
+                    <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Price (₹)</label>
+                      <input type="number" value={editing.price ?? 999} onChange={e => setEditing(p => ({ ...p, price: parseFloat(e.target.value) || 0 }))} className={INPUT} /></div>
+                    <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Duration (hours)</label>
+                      <input type="number" step="0.5" value={editing.duration_hours ?? ''} onChange={e => setEditing(p => ({ ...p, duration_hours: e.target.value ? parseFloat(e.target.value) : null }))} className={INPUT} placeholder="e.g. 4.5" /></div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'media' && (
+                <div className="space-y-5">
+                  <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Thumbnail URL</label>
+                    <input value={editing.thumbnail_url ?? ''} onChange={e => setEditing(p => ({ ...p, thumbnail_url: e.target.value }))} className={INPUT} placeholder="https://… (course cover image)" />
+                    {editing.thumbnail_url && (
+                      <div className="mt-3 aspect-video w-full max-w-xs rounded-xl overflow-hidden border border-zinc-800">
+                        <Image src={editing.thumbnail_url} alt="thumbnail" width={320} height={180} className="w-full h-full object-cover" onError={() => {}} />
+                      </div>
+                    )}</div>
+                  <div>
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Preview Video</label>
+                    <p className="text-xs text-zinc-600 mb-2">Shown on the course detail page before purchase</p>
+                    <VideoUpload onUrl={url => setEditing(p => ({ ...p, preview_video_url: url }))} />
+                    {editing.preview_video_url && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">{editing.preview_video_url}</span>
+                        <button onClick={() => setEditing(p => ({ ...p, preview_video_url: '' }))} className="shrink-0 text-zinc-500 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'settings' && (
+                <div className="space-y-5">
+                  <div className="flex flex-col gap-4">
+                    <label className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800 rounded-xl cursor-pointer hover:border-zinc-700 transition-colors">
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-200">Free Course</p>
+                        <p className="text-xs text-zinc-600 mt-0.5">Students can enroll without payment</p>
+                      </div>
+                      <input type="checkbox" checked={editing.is_free ?? false} onChange={e => setEditing(p => ({ ...p, is_free: e.target.checked }))} className="w-4 h-4 accent-orange-500" />
+                    </label>
+                    <label className="flex items-center justify-between p-4 bg-zinc-950 border border-zinc-800 rounded-xl cursor-pointer hover:border-zinc-700 transition-colors">
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-200">Published</p>
+                        <p className="text-xs text-zinc-600 mt-0.5">Visible on the public courses page</p>
+                      </div>
+                      <input type="checkbox" checked={editing.is_published ?? false} onChange={e => setEditing(p => ({ ...p, is_published: e.target.checked }))} className="w-4 h-4 accent-orange-500" />
+                    </label>
+                  </div>
+                  <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Razorpay Price ID</label>
+                    <input value={editing.stripe_price_id ?? ''} onChange={e => setEditing(p => ({ ...p, stripe_price_id: e.target.value }))} className={INPUT} placeholder="price_xxxx (optional)" /></div>
+                  <div className="p-4 bg-zinc-950 border border-orange-500/20 rounded-xl">
+                    <div className="flex items-start gap-2">
+                      <Zap className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                      <div className="text-xs text-zinc-500 space-y-1">
+                        <p className="text-zinc-300 font-semibold">To enable video upload:</p>
+                        <p>1. Go to Supabase → Storage → Create bucket named <span className="text-orange-400 font-mono">course-videos</span></p>
+                        <p>2. Set bucket to <span className="text-orange-400">Public</span></p>
+                        <p>3. Add RLS policy: allow authenticated users to insert</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-5 border-t border-zinc-800 flex gap-3 shrink-0">
               <button onClick={saveCourse} disabled={saving}
-                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors">
-                {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : isNew ? 'Create Course' : 'Save Changes'}
+                className="flex-1 flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-orange-500/20">
+                {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : isNew ? 'Create Course' : 'Save Changes'}
               </button>
               <button onClick={() => setEditing(null)} className="px-6 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-3 rounded-xl transition-colors">Cancel</button>
             </div>
