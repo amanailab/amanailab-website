@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
@@ -50,7 +50,7 @@ function CourseCard({ course, i }: { course: Course; i: number }) {
         {/* Thumbnail */}
         <div className="relative aspect-video bg-zinc-800 overflow-hidden shrink-0">
           {course.thumbnail_url ? (
-            <Image src={course.thumbnail_url} alt={course.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+            <Image src={course.thumbnail_url} alt={course.title} fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-500" />
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 via-zinc-900 to-zinc-950 flex items-center justify-center">
               <GraduationCap className="w-16 h-16 text-orange-500/25" />
@@ -105,7 +105,7 @@ function CourseCard({ course, i }: { course: Course; i: number }) {
               {course.students_count.toLocaleString()} students
             </span>
             <span className={`font-black text-xl leading-none ${course.is_free ? 'text-emerald-400' : 'text-orange-400'}`}>
-              {course.is_free ? 'Free' : `₹${course.price.toLocaleString('en-IN')}`}
+              {course.is_free ? 'Free' : `â‚¹${course.price.toLocaleString('en-IN')}`}
             </span>
           </div>
         </div>
@@ -164,7 +164,7 @@ export default function CoursesPage() {
   return (
     <main className="min-h-screen bg-zinc-950 pt-16">
 
-      {/* ── Hero ── */}
+      {/* â”€â”€ Hero â”€â”€ */}
       <section className="relative overflow-hidden">
         {/* Grid bg */}
         <div className="absolute inset-0 opacity-[0.15]" style={{ backgroundImage: 'linear-gradient(to right,#27272a 1px,transparent 1px),linear-gradient(to bottom,#27272a 1px,transparent 1px)', backgroundSize: '48px 48px' }} />
@@ -191,7 +191,7 @@ export default function CoursesPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
               <input
                 type="text"
-                placeholder="Search courses, topics…"
+                placeholder="Search courses, topicsâ€¦"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full bg-zinc-900/90 border border-zinc-700 focus:border-orange-500/70 rounded-2xl pl-12 pr-12 py-4 text-zinc-200 placeholder:text-zinc-600 outline-none transition-all text-base shadow-xl shadow-black/30 backdrop-blur-sm"
@@ -206,15 +206,15 @@ export default function CoursesPage() {
         </div>
       </section>
 
-      {/* ── Stats bar ── */}
+      {/* â”€â”€ Stats bar â”€â”€ */}
       {!loading && courses.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="border-y border-zinc-800/60 bg-zinc-900/40 backdrop-blur-sm">
           <div className="max-w-5xl mx-auto px-4 py-5 flex items-center justify-center gap-10 sm:gap-16 flex-wrap">
             {[
               { icon: GraduationCap, val: courses.length.toString(),  label: 'Courses' },
-              { icon: Users,         val: totalStudents > 0 ? totalStudents.toLocaleString('en-IN') + '+' : '—', label: 'Students' },
-              { icon: Star,          val: avgR > 0 ? avgR.toFixed(1) : '—', label: 'Avg Rating' },
-              { icon: Award,         val: '∞',   label: 'Lifetime Access' },
+              { icon: Users,         val: totalStudents > 0 ? totalStudents.toLocaleString('en-IN') + '+' : 'â€”', label: 'Students' },
+              { icon: Star,          val: avgR > 0 ? avgR.toFixed(1) : 'â€”', label: 'Avg Rating' },
+              { icon: Award,         val: 'âˆž',   label: 'Lifetime Access' },
             ].map(({ icon: Icon, val, label }) => (
               <div key={label} className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
@@ -230,7 +230,7 @@ export default function CoursesPage() {
         </motion.div>
       )}
 
-      {/* ── Filters ── */}
+      {/* â”€â”€ Filters â”€â”€ */}
       <div className="sticky top-16 z-30 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center gap-3 flex-wrap">
           <span className="text-xs font-bold text-zinc-600 uppercase tracking-widest shrink-0">Level:</span>
@@ -257,7 +257,7 @@ export default function CoursesPage() {
         </div>
       </div>
 
-      {/* ── Grid ── */}
+      {/* â”€â”€ Grid â”€â”€ */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

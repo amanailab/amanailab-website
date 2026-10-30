@@ -7,7 +7,7 @@ import {
   Plus, Pencil, Trash2, Eye, EyeOff, Loader2, GraduationCap,
   ChevronDown, ChevronUp, PlayCircle, X, CheckCircle2, Users,
   UploadCloud, Link2, AlertCircle, GripVertical, BookOpen,
-  Zap, TrendingUp, ListVideo, Sparkles,
+  Zap, TrendingUp, ListVideo, Sparkles, ArrowUp, ArrowDown, RefreshCw, ExternalLink,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -21,6 +21,21 @@ type Section = { id: string; title: string; position: number; lectures: Lecture[
 type Lecture = {
   id: string; title: string; description: string | null; video_url: string | null
   duration_minutes: number | null; is_preview: boolean; position: number
+}
+
+type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string }
+async function api<T = Record<string, never>>(action: string, payload: Record<string, unknown> = {}): Promise<ApiResult<T>> {
+  try {
+    const res = await fetch('/api/admin/lms', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...payload }),
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, error: data.error ?? `Request failed (${res.status})` }
+    return { ok: true, data: data as T }
+  } catch {
+    return { ok: false, error: 'Network error' }
+  }
 }
 
 const INPUT = 'w-full bg-zinc-950 border border-zinc-800 focus:border-orange-500/60 text-zinc-100 placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all'
@@ -43,20 +58,16 @@ function VideoUpload({ onUrl }: { onUrl: (url: string) => void }) {
     if (!file) return
     setUploading(true); setProgress(0); setUploadError(null)
 
-    const sb       = createClient()
-    const ext      = file.name.split('.').pop()
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-
-    // Simulate progress while uploading
-    const timer = setInterval(() => setProgress(p => Math.min(p + 8, 90)), 300)
+    const timer = setInterval(() => setProgress(p => Math.min(p + 4, 90)), 400)
 
     try {
-      const { data, error } = await sb.storage.from('course-videos').upload(fileName, file, { upsert: false })
+      const signed = await api<{ path: string; token: string; bucket: string; ref: string }>('upload.sign', { filename: file.name })
+      if (!signed.ok) { clearInterval(timer); setUploadError(signed.error); setUploading(false); return }
+      const { error } = await createClient().storage.from(signed.data.bucket).uploadToSignedUrl(signed.data.path, signed.data.token, file)
       clearInterval(timer)
       if (error) { setUploadError(error.message); setUploading(false); return }
       setProgress(100)
-      const { data: { publicUrl } } = sb.storage.from('course-videos').getPublicUrl(data.path)
-      onUrl(publicUrl)
+      onUrl(signed.data.ref) // stored as storage:<bucket>/<path>; served to students via short-lived signed URLs
       setTimeout(() => { setUploading(false); setProgress(0) }, 800)
     } catch (e) {
       clearInterval(timer)
@@ -103,8 +114,8 @@ function VideoUpload({ onUrl }: { onUrl: (url: string) => void }) {
               <div className="space-y-2">
                 <UploadCloud className="w-10 h-10 text-zinc-600 mx-auto" />
                 <p className="text-sm font-semibold text-zinc-300">Drop video here or click to browse</p>
-                <p className="text-xs text-zinc-600">MP4, MOV, WebM · Max 500MB</p>
-                <p className="text-xs text-zinc-700 mt-1">Requires <span className="text-orange-500/70">course-videos</span> bucket in Supabase Storage</p>
+                <p className="text-xs text-zinc-600">MP4 / WebM · size limit follows your Supabase plan (50MB free)</p>
+                <p className="text-xs text-zinc-700 mt-1">Needs a <span className="text-orange-500/70">private</span> <span className="text-orange-500/70">course-videos</span> bucket. For long lectures, paste a YouTube-unlisted / Vimeo / Bunny link instead.</p>
               </div>
             )}
           </div>
@@ -146,13 +157,19 @@ export default function AdminCoursesPage() {
   // Forms
   const [newSectTitle, setNewSectTitle]     = useState('')
   const [addingLecFor, setAddingLecFor]     = useState<string | null>(null)
+  const [editingLecId, setEditingLecId] = useState<string | null>(null)
+  const [appendOpen, setAppendOpen]   = useState(false)
+  const [appendUrl, setAppendUrl]     = useState('')
+  const [appendSection, setAppendSection] = useState('')
+  const [appending, setAppending]      = useState(false)
   const [newLec, setNewLec] = useState({ title: '', description: '', video_url: '', duration_minutes: '', is_preview: false })
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 3000) }
 
   async function loadCourses() {
-    const { data } = await sb.from('courses').select('*').order('created_at', { ascending: false })
-    setCourses((data as Course[]) ?? [])
+    const r = await api<{ courses: Course[] }>('courses.list')
+    if (r.ok) setCourses(r.data.courses)
+    else showToast(r.error)
     setLoading(false)
   }
   useEffect(() => { loadCourses() }, [])
@@ -187,74 +204,106 @@ export default function AdminCoursesPage() {
 
   async function loadSections(courseId: string) {
     setSectLoading(true)
-    const { data } = await sb
-      .from('course_sections')
-      .select('id,title,position,course_lectures(id,title,description,video_url,duration_minutes,is_preview,position)')
-      .eq('course_id', courseId).order('position')
-    const norm = (data ?? []).map((s: Record<string, unknown>) => ({
-      ...s, lectures: ((s.course_lectures as Lecture[]) ?? []).sort((a, b) => a.position - b.position),
-    })) as Section[]
-    setSections(norm)
-    setExpSects(new Set(norm.map(s => s.id)))
+    const r = await api<{ sections: Section[] }>('curriculum.get', { courseId })
+    if (r.ok) {
+      setSections(r.data.sections)
+      setExpSects(prev => (prev.size ? prev : new Set(r.data.sections.map(s => s.id))))
+    } else showToast(r.error)
     setSectLoading(false)
   }
 
   async function saveCourse() {
     if (!editing?.title || !editing?.slug) { showToast('Title and slug are required'); return }
     setSaving(true)
-    const payload = { ...editing } as Record<string, unknown>
-    delete payload.id
-    const op = isNew
-      ? await sb.from('courses').insert({ ...payload, students_count: 0 })
-      : await sb.from('courses').update(payload).eq('id', editing.id!)
-    if (op.error) { showToast('Error: ' + op.error.message); setSaving(false); return }
+    const r = await api('course.save', { course: editing })
+    setSaving(false)
+    if (!r.ok) { showToast('Error: ' + r.error); return }
     showToast(isNew ? 'Course created!' : 'Saved!')
-    setEditing(null); loadCourses(); setSaving(false)
+    setEditing(null); loadCourses()
   }
 
   async function togglePublish(c: Course) {
-    await sb.from('courses').update({ is_published: !c.is_published }).eq('id', c.id)
+    const r = await api('course.save', { course: { id: c.id, is_published: !c.is_published } })
+    if (!r.ok) { showToast('Error: ' + r.error); return }
     showToast(c.is_published ? 'Unpublished' : 'Published!')
     loadCourses()
   }
 
   async function deleteCourse(id: string) {
-    if (!confirm('Delete this course and all content?')) return
-    await sb.from('courses').delete().eq('id', id)
+    if (!confirm('Delete this course, its curriculum AND all student enrollments/progress? This cannot be undone.')) return
+    const r = await api('course.delete', { id })
+    if (!r.ok) { showToast('Error: ' + r.error); return }
     showToast('Deleted'); loadCourses()
     if (activeCourseId === id) setActiveCourseId(null)
   }
 
+  const refresh = () => { if (activeCourseId) { loadSections(activeCourseId); loadCourses() } }
+
   async function addSection() {
     if (!newSectTitle.trim() || !activeCourseId) return
-    await sb.from('course_sections').insert({ course_id: activeCourseId, title: newSectTitle.trim(), position: sections.length })
-    setNewSectTitle(''); loadSections(activeCourseId)
+    const r = await api('section.add', { courseId: activeCourseId, title: newSectTitle })
+    if (!r.ok) { showToast('Error: ' + r.error); return }
+    setNewSectTitle(''); refresh()
+  }
+
+  async function renameSection(sec: Section) {
+    const title = prompt('Section title', sec.title)
+    if (!title || title.trim() === sec.title) return
+    const r = await api('section.rename', { id: sec.id, title })
+    if (!r.ok) showToast('Error: ' + r.error)
+    refresh()
   }
 
   async function deleteSection(id: string) {
     if (!confirm('Delete section and all its lectures?')) return
-    await sb.from('course_sections').delete().eq('id', id)
+    const r = await api('section.delete', { id })
+    if (!r.ok) showToast('Error: ' + r.error)
+    refresh()
+  }
+
+  async function moveItem(kind: 'section' | 'lecture', id: string, dir: 'up' | 'down') {
+    const r = await api(`${kind}.move`, { id, dir })
+    if (!r.ok) showToast('Error: ' + r.error)
     if (activeCourseId) loadSections(activeCourseId)
   }
 
-  async function addLecture(sectionId: string) {
-    if (!newLec.title.trim()) return
-    const sec = sections.find(s => s.id === sectionId)
-    await sb.from('course_lectures').insert({
-      section_id: sectionId, title: newLec.title.trim(),
-      description: newLec.description.trim() || null,
-      video_url: newLec.video_url.trim() || null,
-      duration_minutes: newLec.duration_minutes ? parseFloat(newLec.duration_minutes) : null,
-      is_preview: newLec.is_preview, position: sec?.lectures.length ?? 0,
+  function startEditLecture(sectionId: string, l: Lecture) {
+    setEditingLecId(l.id)
+    setNewLec({
+      title: l.title, description: l.description ?? '', video_url: l.video_url ?? '',
+      duration_minutes: l.duration_minutes != null ? String(l.duration_minutes) : '', is_preview: l.is_preview,
     })
+    setAddingLecFor(sectionId)
+  }
+
+  function closeLectureForm() {
+    setAddingLecFor(null); setEditingLecId(null)
     setNewLec({ title: '', description: '', video_url: '', duration_minutes: '', is_preview: false })
-    setAddingLecFor(null)
-    if (activeCourseId) loadSections(activeCourseId)
+  }
+
+  async function saveLecture(sectionId: string) {
+    if (!newLec.title.trim()) { showToast('Lecture title is required'); return }
+    const lecture = { ...newLec, section_id: sectionId, id: editingLecId ?? undefined }
+    const r = await api(editingLecId ? 'lecture.update' : 'lecture.add', { lecture })
+    if (!r.ok) { showToast('Error: ' + r.error); return }
+    closeLectureForm(); refresh()
   }
 
   async function deleteLecture(id: string) {
-    await sb.from('course_lectures').delete().eq('id', id)
-    if (activeCourseId) loadSections(activeCourseId)
+    if (!confirm('Delete this lecture?')) return
+    const r = await api('lecture.delete', { id })
+    if (!r.ok) showToast('Error: ' + r.error)
+    refresh()
+  }
+
+  async function appendPlaylist() {
+    if (!activeCourseId || !appendUrl.trim()) return
+    setAppending(true)
+    const r = await api<{ added: number }>('playlist.append', { courseId: activeCourseId, playlistUrl: appendUrl, sectionId: appendSection || undefined })
+    setAppending(false)
+    if (!r.ok) { showToast('Error: ' + r.error); return }
+    showToast(r.data.added ? `Added ${r.data.added} new videos` : 'Already up to date — no new videos')
+    setAppendUrl(''); setAppendOpen(false); refresh()
   }
 
   const totalStudents = courses.reduce((a, c) => a + c.students_count, 0)
@@ -334,7 +383,7 @@ export default function AdminCoursesPage() {
                   {/* Thumbnail */}
                   <div className="w-20 h-14 rounded-xl overflow-hidden bg-zinc-800 shrink-0">
                     {course.thumbnail_url
-                      ? <Image src={course.thumbnail_url} alt={course.title} width={80} height={56} className="w-full h-full object-cover" />
+                      ? <Image src={course.thumbnail_url} alt={course.title} width={80} height={56} unoptimized className="w-full h-full object-cover" />
                       : <div className="w-full h-full flex items-center justify-center"><GraduationCap className="w-7 h-7 text-zinc-600" /></div>}
                   </div>
 
@@ -363,6 +412,8 @@ export default function AdminCoursesPage() {
                       title={course.is_published ? 'Unpublish' : 'Publish'}>
                       {course.is_published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     </button>
+                    <a href={`/courses/${course.slug}`} target="_blank" rel="noreferrer" title="View on site"
+                      className="p-2 rounded-xl text-zinc-600 hover:text-blue-400 hover:bg-blue-500/10 transition-colors"><ExternalLink className="w-4 h-4" /></a>
                     <button onClick={() => { setEditing({ ...course }); setIsNew(false); setActiveTab('info') }}
                       className="p-2 rounded-xl text-zinc-600 hover:text-orange-400 hover:bg-orange-500/10 transition-colors" title="Edit">
                       <Pencil className="w-4 h-4" />
@@ -392,13 +443,15 @@ export default function AdminCoursesPage() {
                           return (
                             <div key={sec.id} className="border border-zinc-800 rounded-xl overflow-hidden">
                               <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900">
-                                <GripVertical className="w-4 h-4 text-zinc-700 shrink-0" />
                                 <button onClick={() => setExpSects(prev => { const n = new Set(prev); n.has(sec.id) ? n.delete(sec.id) : n.add(sec.id); return n })} className="shrink-0">
                                   {isOpen ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
                                 </button>
                                 <span className="text-xs text-zinc-600 shrink-0">Section {si + 1}</span>
                                 <span className="flex-1 font-semibold text-zinc-200 text-sm">{sec.title}</span>
                                 <span className="text-xs text-zinc-600 shrink-0">{sec.lectures.length} lectures</span>
+                                <button disabled={si === 0} onClick={() => moveItem('section', sec.id, 'up')} title="Move up" className="p-1 text-zinc-600 hover:text-zinc-200 disabled:opacity-20 shrink-0"><ArrowUp className="w-3.5 h-3.5" /></button>
+                                <button disabled={si === sections.length - 1} onClick={() => moveItem('section', sec.id, 'down')} title="Move down" className="p-1 text-zinc-600 hover:text-zinc-200 disabled:opacity-20 shrink-0"><ArrowDown className="w-3.5 h-3.5" /></button>
+                                <button onClick={() => renameSection(sec)} title="Rename" className="p-1 text-zinc-600 hover:text-orange-400 transition-colors shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
                                 <button onClick={() => deleteSection(sec.id)} className="p-1 text-zinc-700 hover:text-red-400 transition-colors shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                               </div>
 
@@ -406,7 +459,6 @@ export default function AdminCoursesPage() {
                                 <div className="divide-y divide-zinc-800/60">
                                   {sec.lectures.map((l, li) => (
                                     <div key={l.id} className="flex items-center gap-3 px-4 py-3 bg-zinc-950/50">
-                                      <GripVertical className="w-3.5 h-3.5 text-zinc-700 shrink-0" />
                                       <PlayCircle className="w-4 h-4 text-zinc-600 shrink-0" />
                                       <div className="flex-1 min-w-0">
                                         <p className="text-sm text-zinc-300 truncate">{li + 1}. {l.title}</p>
@@ -414,7 +466,11 @@ export default function AdminCoursesPage() {
                                       </div>
                                       {l.is_preview && <span className="text-[10px] font-bold text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full shrink-0">Preview</span>}
                                       {l.duration_minutes && <span className="text-xs text-zinc-600 shrink-0">{l.duration_minutes}m</span>}
-                                      <button onClick={() => deleteLecture(l.id)} className="p-1 text-zinc-700 hover:text-red-400 transition-colors shrink-0"><Trash2 className="w-3 h-3" /></button>
+                                      {!l.video_url && <span className="text-[10px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full shrink-0">No video</span>}
+                                      <button disabled={li === 0} onClick={() => moveItem('lecture', l.id, 'up')} title="Move up" className="p-1 text-zinc-600 hover:text-zinc-200 disabled:opacity-20 shrink-0"><ArrowUp className="w-3.5 h-3.5" /></button>
+                                      <button disabled={li === sec.lectures.length - 1} onClick={() => moveItem('lecture', l.id, 'down')} title="Move down" className="p-1 text-zinc-600 hover:text-zinc-200 disabled:opacity-20 shrink-0"><ArrowDown className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => startEditLecture(sec.id, l)} title="Edit" className="p-1 text-zinc-600 hover:text-orange-400 transition-colors shrink-0"><Pencil className="w-3.5 h-3.5" /></button>
+                                      <button onClick={() => deleteLecture(l.id)} className="p-1 text-zinc-700 hover:text-red-400 transition-colors shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
                                     </div>
                                   ))}
 
@@ -444,12 +500,12 @@ export default function AdminCoursesPage() {
                                         </label>
                                       </div>
                                       <div className="flex gap-2">
-                                        <button onClick={() => addLecture(sec.id)} className="flex-1 bg-orange-500 hover:bg-orange-400 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">Add Lecture</button>
-                                        <button onClick={() => setAddingLecFor(null)} className="px-5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold py-2.5 rounded-xl text-sm transition-colors">Cancel</button>
+                                        <button onClick={() => saveLecture(sec.id)} className="flex-1 bg-orange-500 hover:bg-orange-400 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">{editingLecId ? 'Save lecture' : 'Add Lecture'}</button>
+                                        <button onClick={closeLectureForm} className="px-5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 font-bold py-2.5 rounded-xl text-sm transition-colors">Cancel</button>
                                       </div>
                                     </div>
                                   ) : (
-                                    <button onClick={() => setAddingLecFor(sec.id)}
+                                    <button onClick={() => { closeLectureForm(); setAddingLecFor(sec.id) }}
                                       className="w-full flex items-center gap-2 px-4 py-3 text-sm text-zinc-600 hover:text-orange-400 hover:bg-orange-500/5 transition-colors">
                                       <Plus className="w-4 h-4" /> Add lecture
                                     </button>
@@ -459,6 +515,30 @@ export default function AdminCoursesPage() {
                             </div>
                           )
                         })}
+
+                        {/* Add / sync a YouTube playlist into this course */}
+                        <div className="border border-zinc-800 rounded-xl p-3 bg-zinc-900/40">
+                          {!appendOpen ? (
+                            <button onClick={() => setAppendOpen(true)} className="flex items-center gap-2 text-sm text-zinc-400 hover:text-orange-400 transition-colors">
+                              <RefreshCw className="w-4 h-4" /> Add / sync a YouTube playlist into this course
+                            </button>
+                          ) : (
+                            <div className="space-y-2.5">
+                              <input value={appendUrl} onChange={e => setAppendUrl(e.target.value)} placeholder="https://www.youtube.com/playlist?list=PL…" className={INPUT} />
+                              <div className="flex gap-2 flex-wrap">
+                                <select value={appendSection} onChange={e => setAppendSection(e.target.value)} className={`${INPUT} flex-1 min-w-48`}>
+                                  <option value="">Create a new section from the playlist</option>
+                                  {sections.map(sc => <option key={sc.id} value={sc.id}>Add to: {sc.title}</option>)}
+                                </select>
+                                <button onClick={appendPlaylist} disabled={appending} className="flex items-center gap-2 bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-white font-bold px-5 rounded-xl text-sm">
+                                  {appending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListVideo className="w-4 h-4" />} Import
+                                </button>
+                                <button onClick={() => setAppendOpen(false)} className="px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-xl text-sm font-semibold">Cancel</button>
+                              </div>
+                              <p className="text-xs text-zinc-600">Videos already in this course are skipped, so you can re-run this whenever you add new videos to the playlist.</p>
+                            </div>
+                          )}
+                        </div>
 
                         {/* Add section */}
                         <div className="flex gap-2 pt-1">
@@ -613,7 +693,7 @@ export default function AdminCoursesPage() {
                     <input value={editing.thumbnail_url ?? ''} onChange={e => setEditing(p => ({ ...p, thumbnail_url: e.target.value }))} className={INPUT} placeholder="https://… (course cover image)" />
                     {editing.thumbnail_url && (
                       <div className="mt-3 aspect-video w-full max-w-xs rounded-xl overflow-hidden border border-zinc-800">
-                        <Image src={editing.thumbnail_url} alt="thumbnail" width={320} height={180} className="w-full h-full object-cover" onError={() => {}} />
+                        <Image src={editing.thumbnail_url} alt="thumbnail" width={320} height={180} unoptimized className="w-full h-full object-cover" />
                       </div>
                     )}</div>
                   <div>
@@ -649,7 +729,7 @@ export default function AdminCoursesPage() {
                       <input type="checkbox" checked={editing.is_published ?? false} onChange={e => setEditing(p => ({ ...p, is_published: e.target.checked }))} className="w-4 h-4 accent-orange-500" />
                     </label>
                   </div>
-                  <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Razorpay Price ID</label>
+                  <div><label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1.5">Price ID (optional, unused)</label>
                     <input value={editing.stripe_price_id ?? ''} onChange={e => setEditing(p => ({ ...p, stripe_price_id: e.target.value }))} className={INPUT} placeholder="price_xxxx (optional)" /></div>
                   <div className="p-4 bg-zinc-950 border border-orange-500/20 rounded-xl">
                     <div className="flex items-start gap-2">
@@ -657,8 +737,8 @@ export default function AdminCoursesPage() {
                       <div className="text-xs text-zinc-500 space-y-1">
                         <p className="text-zinc-300 font-semibold">To enable video upload:</p>
                         <p>1. Go to Supabase → Storage → Create bucket named <span className="text-orange-400 font-mono">course-videos</span></p>
-                        <p>2. Set bucket to <span className="text-orange-400">Public</span></p>
-                        <p>3. Add RLS policy: allow authenticated users to insert</p>
+                        <p>2. Keep the bucket <span className="text-orange-400">Private</span> — students get short-lived signed links after enrolment is checked</p>
+                        <p>3. No RLS policy needed: uploads use signed URLs from the server</p>
                       </div>
                     </div>
                   </div>

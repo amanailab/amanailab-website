@@ -100,7 +100,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const headersList = await headers()
-  const isAdmin = headersList.get('x-is-admin') === '1'
+  // Admin and the full-screen classroom (/learn/*) render without the site chrome
+  const isAdmin = headersList.get('x-is-admin') === '1' || headersList.get('x-immersive') === '1'
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>

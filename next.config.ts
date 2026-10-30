@@ -19,7 +19,7 @@ const securityHeaders = [
       "default-src 'self'",
       // Scripts: self + analytics (GA/Clarity) + Giscus + Pyodide CDN (in-browser Python)
       // wasm-unsafe-eval is required for Pyodide WebAssembly execution
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://giscus.app https://cdn.jsdelivr.net https://checkout.razorpay.com https://cdn.razorpay.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms https://giscus.app https://cdn.jsdelivr.net https://checkout.razorpay.com https://cdn.razorpay.com https://www.youtube.com https://s.ytimg.com https://player.vimeo.com",
       // Styles: self + inline (Tailwind JIT, framer-motion) + Monaco editor CSS from CDN
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
       // Fonts: Geist (Google) + Monaco editor icon font (codicon.ttf) from CDN
@@ -27,11 +27,11 @@ const securityHeaders = [
       // Images: self + data URIs + YouTube + Supabase + GitHub avatars + Twitter/X
       "img-src 'self' data: blob: https://i.ytimg.com https://i3.ytimg.com https://img.youtube.com https://yt3.ggpht.com https://yt3.googleusercontent.com https://nvjnfgdssukunoymhbmo.supabase.co https://avatars.githubusercontent.com https://pbs.twimg.com",
       // Frames: Giscus comments, YouTube embeds, Razorpay checkout iframe
-      "frame-src https://giscus.app https://www.youtube.com https://api.razorpay.com https://checkout.razorpay.com",
+      "frame-src https://giscus.app https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://iframe.mediadelivery.net https://www.loom.com https://api.razorpay.com https://checkout.razorpay.com",
       // Connections: self + all external APIs + Pyodide CDN (downloads .whl packages at runtime)
       "connect-src 'self' https://api.groq.com https://generativelanguage.googleapis.com https://nvjnfgdssukunoymhbmo.supabase.co https://www.google-analytics.com https://www.clarity.ms wss://nvjnfgdssukunoymhbmo.supabase.co https://cdn.jsdelivr.net https://api.razorpay.com https://lumberjack.razorpay.com",
       // Media
-      "media-src 'self' blob:",
+      "media-src 'self' blob: https://nvjnfgdssukunoymhbmo.supabase.co",
       // Workers (Monaco editor uses blob workers)
       "worker-src 'self' blob:",
     ].join('; '),

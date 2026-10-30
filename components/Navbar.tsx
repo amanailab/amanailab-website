@@ -11,6 +11,7 @@ import {
   BrainCircuit, Map, CalendarDays, Building2, Target, Trophy,
   User, LogOut, LayoutDashboard, Briefcase, Layers, Library, Flame, Code2, PenLine,
   Terminal, ScrollText, Crown, Rocket,
+  GraduationCap,
 } from "lucide-react";
 import Image from "next/image";
 import { YoutubeIcon } from "@/components/icons/SocialIcons";
@@ -403,6 +404,13 @@ export default function Navbar() {
                       </div>
                       <div className="p-1.5 flex flex-col gap-0.5">
                         <Link
+                          href="/my-courses"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors"
+                        >
+                          <GraduationCap className="w-4 h-4 text-zinc-500" /> My Courses
+                        </Link>
+                        <Link
                           href="/dashboard"
                           onClick={() => setUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800/80 hover:text-zinc-100 rounded-xl transition-colors"
@@ -588,6 +596,9 @@ export default function Navbar() {
 
               {userEmail ? (
                 <div className="flex flex-col gap-1">
+                  <Link href="/my-courses" className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60 rounded-xl transition-colors">
+                    <GraduationCap className="w-4 h-4 text-zinc-500" /> My Courses
+                  </Link>
                   <Link href="/dashboard" className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60 rounded-xl transition-colors">
                     <LayoutDashboard className="w-4 h-4 text-zinc-500" /> My Progress
                   </Link>

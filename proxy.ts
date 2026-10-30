@@ -26,6 +26,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Classroom is full-screen (own header) — tell the root layout to skip the site Navbar/Footer
+  if (pathname.startsWith('/learn/')) request.headers.set('x-immersive', '1')
+
   // ── Supabase session refresh ──────────────────────────────────────────────
   let supabaseResponse = NextResponse.next({ request })
 

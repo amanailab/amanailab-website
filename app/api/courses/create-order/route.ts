@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     if (error || !course) return NextResponse.json({ error: 'Course not found.' }, { status: 404 })
     if (!course.is_published) return NextResponse.json({ error: 'Course not available.' }, { status: 404 })
-    if (course.is_free) return NextResponse.json({ error: 'Course is free — enroll directly.' }, { status: 400 })
+    if (course.is_free || Number(course.price) <= 0) return NextResponse.json({ error: 'Course is free — enroll directly.' }, { status: 400 })
 
     // Check not already enrolled
     const { data: existing } = await supabase
@@ -47,7 +47,10 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         amount:          Math.round(course.price * 100), // paise
         currency:        'INR',
-        receipt:         `course_${courseId}_${Date.now()}`,
+        // Razorpay caps receipt at 40 chars — a full uuid + timestamp overflows it
+        receipt:         `c_${String(courseId).replace(/-/g, '').slice(0, 12)}_${Date.now().toString(36)}`,
+        // Bound to this user + course so verify-payment can reject an order paid for something else
+        notes:           { course_id: String(courseId), user_id: user.id },
         payment_capture: 1,
       }),
     })

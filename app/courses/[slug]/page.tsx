@@ -9,7 +9,7 @@ import {
   Star, Users, Clock, ChevronDown, ChevronUp, PlayCircle, Lock,
   CheckCircle2, GraduationCap, Zap, ArrowLeft, ShoppingCart,
   BookOpen, Award, Loader2, ChevronRight, Shield, Infinity,
-  BarChart2, FileText,
+  BarChart2, FileText, X,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import VideoPlayer from '@/components/courses/VideoPlayer'
@@ -21,6 +21,7 @@ type Course = {
   students_count: number; rating: number; rating_count: number
   is_free: boolean; stripe_price_id: string | null
 }
+type Review   = { rating: number; review_text: string | null; created_at: string }
 type Section  = { id: string; title: string; position: number; lectures: Lecture[] }
 type Lecture  = { id: string; title: string; duration_minutes: number | null; is_preview: boolean; position: number }
 
@@ -35,7 +36,7 @@ function Stars({ r, size = 'sm' }: { r: number; size?: 'sm' | 'md' }) {
   )
 }
 
-function SectionRow({ section, enrolled }: { section: Section; enrolled: boolean }) {
+function SectionRow({ section, enrolled, onPreview }: { section: Section; enrolled: boolean; onPreview: (l: Lecture) => void }) {
   const [open, setOpen] = useState(false)
   const mins = section.lectures.reduce((a, l) => a + (l.duration_minutes ?? 0), 0)
   return (
@@ -50,7 +51,9 @@ function SectionRow({ section, enrolled }: { section: Section; enrolled: boolean
       {open && (
         <div className="divide-y divide-zinc-800/50 bg-zinc-950">
           {section.lectures.map(l => (
-            <div key={l.id} className="flex items-center gap-3 px-5 py-3">
+            <div key={l.id}
+              onClick={l.is_preview && !enrolled ? () => onPreview(l) : undefined}
+              className={`flex items-center gap-3 px-5 py-3 ${l.is_preview && !enrolled ? 'cursor-pointer hover:bg-zinc-900' : ''}`}>
               {l.is_preview || enrolled
                 ? <PlayCircle className="w-4 h-4 text-orange-400 shrink-0" />
                 : <Lock className="w-4 h-4 text-zinc-600 shrink-0" />}
@@ -77,7 +80,10 @@ export default function CourseDetailPage() {
   const [userId, setUserId]     = useState<string | null>(null)
   const [loading, setLoading]   = useState(true)
   const [buying, setBuying]     = useState(false)
-  const [showPreview, setPreview] = useState(false)
+  const [previewLec, setPreviewLec] = useState<Lecture | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [notice, setNotice]   = useState<string | null>(null)
+  const [progress, setProgress] = useState<{ pct: number; resume: string | null } | null>(null)
 
   useEffect(() => {
     if (!slug) return
@@ -104,46 +110,65 @@ export default function CourseDetailPage() {
       if (user?.id) {
         const { data: e } = await sb.from('enrollments').select('id').eq('user_id', user.id).eq('course_id', c.id).maybeSingle()
         setEnrolled(!!e)
+        if (e) {
+          fetch('/api/my-courses').then(r => r.ok ? r.json() : null).then(j => {
+            const mine = j?.courses?.find((x: { id: string }) => x.id === c.id)
+            if (mine) setProgress({ pct: mine.percent, resume: mine.continueLectureId })
+          }).catch(() => {})
+        }
       }
+      fetch(`/api/courses/review?courseId=${c.id}`).then(r => r.ok ? r.json() : null).then(j => setReviews(j?.reviews ?? [])).catch(() => {})
       setLoading(false)
     }
     load()
   }, [slug])
 
+  const fail = (msg: string) => { setNotice(msg); setBuying(false) }
+
   async function handleBuy() {
-    if (!course) return
+    if (!course || buying) return
     // 1. Login required
     if (!userId) { router.push('/login?redirect=/courses/' + slug); return }
     // 2. Already enrolled → go to classroom
-    if (enrolled) { router.push('/learn/' + course.id); return }
-    // 3. Free course → enroll directly
-    if (course.is_free) {
-      const sb = createClient()
-      await sb.from('enrollments').insert({ user_id: userId, course_id: course.id })
-      router.push('/learn/' + course.id); return
+    if (enrolled) { router.push(classroomHref); return }
+    setNotice(null); setBuying(true)
+    try {
+      // 3. Free course → enroll through the server
+      if (course.is_free) {
+        const r = await fetch('/api/courses/enroll-free', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ courseId: course.id }) })
+        if (!r.ok) return fail((await r.json().catch(() => ({}))).error ?? 'Could not enroll. Please try again.')
+        router.push('/learn/' + course.id); return
+      }
+      // 4. Paid → Razorpay
+      if (!(window as unknown as { Razorpay?: unknown }).Razorpay) {
+        await new Promise<void>((resolve, reject) => {
+          const el = document.createElement('script'); el.src = 'https://checkout.razorpay.com/v1/checkout.js'
+          el.onload = () => resolve(); el.onerror = () => reject(new Error('script')); document.head.appendChild(el)
+        })
+      }
+      const res   = await fetch('/api/courses/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ courseId: course.id }) })
+      const order = await res.json().catch(() => ({}))
+      if (!res.ok || !order.id) {
+        if (order.error === 'Already enrolled.') { setEnrolled(true); router.push('/learn/' + course.id); return }
+        return fail(order.error ?? 'Could not start the payment. Please try again.')
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      new (window as any).Razorpay({
+        key: order.key, amount: order.amount, currency: order.currency,
+        name: 'AmanAI Lab', description: course.title,
+        order_id: order.id, prefill: { email: order.email },
+        theme: { color: '#f97316' },
+        handler: async (r: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+          const v = await fetch('/api/courses/verify-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...r, courseId: course.id }) })
+          const d = await v.json().catch(() => ({}))
+          if (d.ok) router.push('/learn/' + course.id)
+          else fail('Your payment went through but we could not unlock the course yet. Do not pay again: refresh in a minute, or contact support with payment id ' + r.razorpay_payment_id + '.')
+        },
+        modal: { ondismiss: () => setBuying(false) },
+      }).open()
+    } catch {
+      fail('Something went wrong. Check your connection and try again.')
     }
-    // 4. Paid → Razorpay
-    setBuying(true)
-    if (!document.querySelector('script[src*="razorpay"]')) {
-      await new Promise<void>(r => { const s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = () => r(); document.head.appendChild(s) })
-    }
-    const res   = await fetch('/api/courses/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ courseId: course.id }) })
-    const order = await res.json()
-    if (!order.id) { setBuying(false); return }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    new (window as any).Razorpay({
-      key: order.key, amount: order.amount, currency: order.currency,
-      name: 'AmanAI Lab', description: course.title,
-      order_id: order.id, prefill: { email: order.email },
-      theme: { color: '#f97316' },
-      handler: async (r: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
-        const v = await fetch('/api/courses/verify-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...r, courseId: course.id }) })
-        const d = await v.json()
-        if (d.ok) router.push('/learn/' + course.id)
-        else { alert('Payment verification failed. Contact support.'); setBuying(false) }
-      },
-      modal: { ondismiss: () => setBuying(false) },
-    }).open()
   }
 
   const totalLectures = sections.reduce((a, s) => a + s.lectures.length, 0)
@@ -162,6 +187,7 @@ export default function CourseDetailPage() {
     </main>
   )
 
+  const classroomHref = `/learn/${course.id}${progress?.resume ? `?lecture=${progress.resume}` : ''}`
   const levelCfg = { beginner: 'text-emerald-400', intermediate: 'text-blue-400', advanced: 'text-orange-400' }[course.level] ?? 'text-zinc-400'
 
   const BuyButton = () => (
@@ -174,7 +200,7 @@ export default function CourseDetailPage() {
       {buying
         ? <><Loader2 className="w-5 h-5 animate-spin" /> Processing…</>
         : enrolled
-          ? <><BookOpen className="w-5 h-5" /> Go to Course</>
+          ? <><PlayCircle className="w-5 h-5" /> {progress && progress.pct > 0 ? `Continue learning · ${progress.pct}%` : 'Start learning'}</>
           : course.is_free
             ? <><Zap className="w-5 h-5" /> Enroll Free</>
             : <><ShoppingCart className="w-5 h-5" /> Enroll Now — {`₹${course.price.toLocaleString('en-IN')}`}</>}
@@ -235,11 +261,11 @@ export default function CourseDetailPage() {
           <div className="hidden lg:block w-80 shrink-0">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden sticky top-20">
               {/* Preview player or thumbnail */}
-              <div className="aspect-video bg-zinc-900 overflow-hidden">
+              <div className="relative aspect-video bg-zinc-900 overflow-hidden">
                 {course.preview_video_url
                   ? <VideoPlayer url={course.preview_video_url} title={course.title} thumbnail={course.thumbnail_url} />
                   : course.thumbnail_url
-                    ? <Image src={course.thumbnail_url} alt={course.title} fill className="object-cover" />
+                    ? <Image src={course.thumbnail_url} alt={course.title} fill sizes="320px" unoptimized className="object-cover" />
                     : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-500/10 to-zinc-950">
                         <GraduationCap className="w-16 h-16 text-orange-500/25" />
@@ -303,7 +329,7 @@ export default function CourseDetailPage() {
                 <span className="text-sm text-zinc-500">{totalLectures} lectures · {Math.round(totalMins)}m total</span>
               </div>
               <div className="space-y-2">
-                {sections.map(s => <SectionRow key={s.id} section={s} enrolled={enrolled} />)}
+                {sections.map(s => <SectionRow key={s.id} section={s} enrolled={enrolled} onPreview={setPreviewLec} />)}
               </div>
               {!enrolled && (
                 <div className="mt-5 p-4 bg-zinc-900/60 border border-zinc-800 rounded-xl text-center">
@@ -319,8 +345,44 @@ export default function CourseDetailPage() {
               )}
             </section>
           )}
+
+          {/* Reviews */}
+          {reviews.length > 0 && (
+            <section>
+              <h2 className="text-xl font-bold text-zinc-100 mb-4">What students say</h2>
+              <div className="space-y-3">
+                {reviews.map((r, i) => (
+                  <div key={i} className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl">
+                    <Stars r={r.rating} />
+                    <p className="text-sm text-zinc-300 mt-2 whitespace-pre-line">{r.review_text}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
+
+      {notice && (
+        <div role="alert" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] flex items-start gap-3 bg-zinc-900 border border-red-500/40 text-zinc-200 text-sm px-4 py-3 rounded-xl shadow-2xl">
+          <span className="flex-1">{notice}</span>
+          <button onClick={() => setNotice(null)} aria-label="Dismiss"><X className="w-4 h-4 text-zinc-500" /></button>
+        </div>
+      )}
+
+      {previewLec && (
+        <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4" onClick={() => setPreviewLec(null)}>
+          <div className="w-full max-w-3xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3 gap-4">
+              <p className="text-zinc-200 font-semibold truncate">{previewLec.title} <span className="text-orange-400 text-xs font-bold ml-2">FREE PREVIEW</span></p>
+              <button onClick={() => setPreviewLec(null)} aria-label="Close preview" className="text-zinc-400 hover:text-white"><X className="w-6 h-6" /></button>
+            </div>
+            <div className="aspect-video rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800">
+              <VideoPlayer lectureId={previewLec.id} title={previewLec.title} thumbnail={course.thumbnail_url} autoplay />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
