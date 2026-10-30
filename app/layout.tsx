@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import ChromeGate from "@/components/ui/ChromeGate";
 import Footer from "@/components/Footer";
 import PageTransition from "@/components/ui/PageTransition";
 import CommandPalette from "@/components/ui/CommandPalette";
@@ -100,8 +101,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const headersList = await headers()
-  // Admin and the full-screen classroom (/learn/*) render without the site chrome
-  const isAdmin = headersList.get('x-is-admin') === '1' || headersList.get('x-immersive') === '1'
+  const isAdmin = headersList.get('x-is-admin') === '1'
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
@@ -126,15 +126,15 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
-        {!isAdmin && <Navbar />}
+        {!isAdmin && <ChromeGate><Navbar /></ChromeGate>}
         <NavigationProgress />
         <ToastProvider>
           <main id="main-content" className="flex-1">
             <PageTransition>{children}</PageTransition>
           </main>
-          {!isAdmin && <Footer />}
-          {!isAdmin && <CommandPalette />}
-          {!isAdmin && <BackToTop />}
+          {!isAdmin && <ChromeGate><Footer /></ChromeGate>}
+          {!isAdmin && <ChromeGate><CommandPalette /></ChromeGate>}
+          {!isAdmin && <ChromeGate><BackToTop /></ChromeGate>}
         </ToastProvider>
         {!isAdmin && <GoogleAnalytics gaId="G-1H3YS42SXP" />}
         {!isAdmin && <MicrosoftClarity />}

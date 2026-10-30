@@ -140,13 +140,14 @@ function FilePlayer({ url, autoplay, startAt, onProgress, onEnded }: {
 export default function VideoPlayer({
   lectureId, url, title, thumbnail, autoplay = false, startAt = 0, watermark, onProgress, onEnded,
 }: VideoPlayerProps) {
-  const [started, setStarted] = useState(autoplay)
+  // Classroom lectures skip the click-to-play poster: the source is fetched (and the YouTube API loaded) immediately
+  const [started, setStarted] = useState(autoplay || !!lectureId)
   const [src, setSrc]         = useState<Playable | null>(url ? toPlayable(url) : null)
   const [err, setErr]         = useState<string | null>(null)
 
   // Resolve the source from the server (enrolment-checked, private files are signed)
   useEffect(() => {
-    if (!lectureId || !started) return
+    if (!lectureId) return
     let dead = false
     setErr(null); setSrc(null)
     fetch(`/api/lectures/${lectureId}/video`)
@@ -158,7 +159,10 @@ export default function VideoPlayer({
       })
       .catch(() => { if (!dead) setErr('Network error. Check your connection and try again.') })
     return () => { dead = true }
-  }, [lectureId, started])
+  }, [lectureId])
+
+  // Warm the YouTube API while the source request is in flight
+  useEffect(() => { if (lectureId) loadYouTubeApi() }, [lectureId])
 
   if (!lectureId && !url) return (
     <div className="w-full h-full flex flex-col items-center justify-center bg-zinc-900 gap-3">
@@ -204,10 +208,10 @@ export default function VideoPlayer({
   return (
     <div className="relative w-full h-full bg-black">
       {src.kind === 'youtube' && (
-        <YouTubePlayer id={src.id} title={title} autoplay startAt={startAt} onProgress={onProgress} onEnded={onEnded} />
+        <YouTubePlayer id={src.id} title={title} autoplay={autoplay} startAt={startAt} onProgress={onProgress} onEnded={onEnded} />
       )}
       {src.kind === 'file' && (
-        <FilePlayer url={src.url} autoplay startAt={startAt} onProgress={onProgress} onEnded={onEnded} />
+        <FilePlayer url={src.url} autoplay={autoplay} startAt={startAt} onProgress={onProgress} onEnded={onEnded} />
       )}
       {src.kind === 'embed' && (
         <iframe

@@ -42,6 +42,7 @@ export default function ClassroomPage() {
   const [notesState, setNotesState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [autoNext, setAutoNext]    = useState(true)
   const [toast, setToast]          = useState<string | null>(null)
+  const [autoplayNow, setAutoplayNow] = useState(false)
   const [rating, setRating]        = useState(0)
   const [reviewText, setReviewText] = useState('')
   const [reviewSaved, setReviewSaved] = useState(false)
@@ -109,8 +110,8 @@ export default function ClassroomPage() {
   const prevLecture = currentIdx > 0 ? allLectures[currentIdx - 1] : null
   const nextLecture = currentIdx >= 0 ? allLectures[currentIdx + 1] ?? null : null
 
-  const openLecture = useCallback((id: string) => {
-    setLectureId(id); setTab('Lecture'); lastPosSent.current = 0
+  const openLecture = useCallback((id: string, play = false) => {
+    setAutoplayNow(play); setLectureId(id); setTab('Lecture'); lastPosSent.current = 0
     window.history.replaceState(null, '', `?lecture=${id}`)
     // make sure its section is open, close the drawer on mobile
     const sec = sections.find(s => s.lectures.some(l => l.id === id))
@@ -141,7 +142,7 @@ export default function ClassroomPage() {
   const onVideoEnded = useCallback(() => {
     if (!lecture) return
     if (!completed.has(lecture.id)) setDone(lecture.id, true)
-    if (autoNext && nextLecture) setTimeout(() => openLecture(nextLecture.id), 1200)
+    if (autoNext && nextLecture) setTimeout(() => openLecture(nextLecture.id, true), 1200)
   }, [lecture, completed, setDone, autoNext, nextLecture, openLecture])
 
   const onVideoProgress = useCallback((sec: number) => {
@@ -328,7 +329,7 @@ export default function ClassroomPage() {
                     title={lecture.title}
                     thumbnail={course.thumbnail_url}
                     startAt={data.positions[lecture.id] ?? 0}
-                    autoplay={false}
+                    autoplay={autoplayNow}
                     watermark={data.email}
                     onProgress={onVideoProgress}
                     onEnded={onVideoEnded}

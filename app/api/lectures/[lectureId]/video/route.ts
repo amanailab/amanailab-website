@@ -7,11 +7,10 @@ export const runtime = 'nodejs'
 // or for students enrolled in the course. Private storage files are returned as short-lived signed URLs.
 export async function GET(_req: Request, { params }: { params: Promise<{ lectureId: string }> }) {
   const { lectureId } = await params
-  const lec = await courseOfLecture(lectureId)
+  const [lec, user] = await Promise.all([courseOfLecture(lectureId), getSessionUser()])
   if (!lec || !lec.videoUrl) return NextResponse.json({ error: 'No video.' }, { status: 404 })
 
   if (!(lec.isPreview && lec.published)) {
-    const user = await getSessionUser()
     if (!user) return NextResponse.json({ error: 'Login required.' }, { status: 401 })
     if (!(await isEnrolled(user.id, lec.courseId))) {
       return NextResponse.json({ error: 'Enroll to watch this lecture.' }, { status: 403 })

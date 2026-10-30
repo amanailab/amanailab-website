@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
@@ -73,7 +73,7 @@ export default function MyCoursesPage() {
                       <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-orange-500 to-orange-400" style={{ width: `${c.percent}%` }} />
                       </div>
-                      <p className="text-xs text-zinc-500 mt-1.5">{c.completed}/{c.total} lectures Â· {c.percent}%</p>
+                      <p className="text-xs text-zinc-500 mt-1.5">{c.completed}/{c.total} lectures · {c.percent}%</p>
                     </div>
                     <div className="flex gap-2 mt-auto">
                       <Link href={href} className="flex-1 text-center bg-orange-500 hover:bg-orange-400 text-white font-bold py-2.5 rounded-xl text-sm transition-colors">
