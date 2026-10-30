@@ -89,6 +89,7 @@ export default function CourseDetailPage() {
     if (!slug) return
     const sb = createClient()
     async function load() {
+      try {
       const { data: { user } } = await sb.auth.getUser()
       setUserId(user?.id ?? null)
 
@@ -118,7 +119,11 @@ export default function CourseDetailPage() {
         }
       }
       fetch(`/api/courses/review?courseId=${c.id}`).then(r => r.ok ? r.json() : null).then(j => setReviews(j?.reviews ?? [])).catch(() => {})
-      setLoading(false)
+      } catch (e) {
+        console.error('[course page]', e)
+      } finally {
+        setLoading(false)
+      }
     }
     load()
   }, [slug])
