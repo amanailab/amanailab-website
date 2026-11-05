@@ -16,6 +16,8 @@ export default function DiwaliStatusSelect({ id, status }: { id: number; status:
   const [busy, setBusy] = useState(false)
 
   async function change(next: string) {
+    if ((next === 'paid' || next === 'selected') &&
+      !window.confirm(`Mark this applicant as "${LABELS[next]}"? This takes one of the 3 seats.`)) return
     const prev = value
     setValue(next)
     setBusy(true)

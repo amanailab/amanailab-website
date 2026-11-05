@@ -94,6 +94,9 @@ export default async function DiwaliAdminPage() {
                   {r.experience && <span className="text-zinc-400">{r.experience}</span>}
                   {r.python_level && <span className="text-zinc-400">Python: {r.python_level}</span>}
                 </div>
+                {r.status === 'paid' && !r.razorpay_payment_id && (
+                  <p className="mt-2 text-sm text-amber-400">Marked Paid manually: no Razorpay payment is recorded for this applicant.</p>
+                )}
                 {r.amount_paid ? (
                   <p className="mt-2 text-sm text-emerald-400">
                     Paid ₹{(r.amount_paid / 100).toLocaleString('en-IN')} ({r.payment_plan}) &middot; {r.razorpay_payment_id}
