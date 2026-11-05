@@ -17,6 +17,10 @@ type Application = {
   goal: string | null
   why: string | null
   status: string
+  payment_plan: string | null
+  amount_paid: number | null
+  razorpay_payment_id: string | null
+  paid_at: string | null
 }
 
 async function getApplications() {
@@ -90,6 +94,11 @@ export default async function DiwaliAdminPage() {
                   {r.experience && <span className="text-zinc-400">{r.experience}</span>}
                   {r.python_level && <span className="text-zinc-400">Python: {r.python_level}</span>}
                 </div>
+                {r.amount_paid ? (
+                  <p className="mt-2 text-sm text-emerald-400">
+                    Paid ₹{(r.amount_paid / 100).toLocaleString('en-IN')} ({r.payment_plan}) &middot; {r.razorpay_payment_id}
+                  </p>
+                ) : null}
                 {r.goal && <p className="mt-2 text-sm text-zinc-300"><span className="text-zinc-500">Goal: </span>{r.goal}</p>}
                 {r.why && <p className="mt-1 text-sm text-zinc-300"><span className="text-zinc-500">Why: </span>{r.why}</p>}
               </div>

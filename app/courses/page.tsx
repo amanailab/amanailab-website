@@ -231,7 +231,7 @@ export default function CoursesPage() {
       )}
 
       {/* ── Filters ── */}
-      <div className="sticky top-16 z-30 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/60">
+      <div className="sticky top-[calc(4rem_+_var(--diwali-bar-h,0px))] z-30 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center gap-3 flex-wrap">
           <span className="text-xs font-bold text-zinc-600 uppercase tracking-widest shrink-0">Level:</span>
           {LEVELS.map(l => (

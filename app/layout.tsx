@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import ChromeGate from "@/components/ui/ChromeGate";
+import DiwaliTopBar from "@/components/diwali/DiwaliTopBar";
+import DiwaliPopup from "@/components/diwali/DiwaliPopup";
+import { applicationsClosed } from "@/lib/diwali-config";
 import Footer from "@/components/Footer";
 import PageTransition from "@/components/ui/PageTransition";
 import CommandPalette from "@/components/ui/CommandPalette";
@@ -126,6 +129,7 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
+        {!isAdmin && <ChromeGate><DiwaliTopBar initialOpen={!applicationsClosed()} /></ChromeGate>}
         {!isAdmin && <ChromeGate><Navbar /></ChromeGate>}
         <NavigationProgress />
         <ToastProvider>
@@ -135,6 +139,7 @@ export default async function RootLayout({
           {!isAdmin && <ChromeGate><Footer /></ChromeGate>}
           {!isAdmin && <ChromeGate><CommandPalette /></ChromeGate>}
           {!isAdmin && <ChromeGate><BackToTop /></ChromeGate>}
+          {!isAdmin && <ChromeGate><DiwaliPopup /></ChromeGate>}
         </ToastProvider>
         {!isAdmin && <GoogleAnalytics gaId="G-1H3YS42SXP" />}
         {!isAdmin && <MicrosoftClarity />}

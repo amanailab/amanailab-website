@@ -46,6 +46,7 @@ interface NavLink {
 type NavItem = NavLink | NavDropdown
 
 const navItems: NavItem[] = [
+  { kind: "link", href: "/diwali-accelerator", label: "Diwali", badge: "🔥" },
   { kind: "link", href: "/courses", label: "Courses", badge: "New" },
   {
     kind: "dropdown",
@@ -204,7 +205,8 @@ export default function Navbar() {
     <nav
       role="navigation"
       aria-label="Main navigation"
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      style={{ top: "var(--diwali-bar-h, 0px)" }}
+      className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
           ? "bg-zinc-950/95 backdrop-blur-md shadow-lg shadow-black/20 border-b border-zinc-800/60"
           : "bg-transparent"

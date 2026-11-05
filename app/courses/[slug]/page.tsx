@@ -264,7 +264,7 @@ export default function CourseDetailPage() {
 
           {/* Desktop sidebar */}
           <div className="hidden lg:block w-80 shrink-0">
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden sticky top-20">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden sticky top-[calc(5rem_+_var(--diwali-bar-h,0px))]">
               {/* Preview player or thumbnail */}
               <div className="relative aspect-video bg-zinc-900 overflow-hidden">
                 {course.preview_video_url

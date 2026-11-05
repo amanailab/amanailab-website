@@ -118,19 +118,131 @@ const scrollToApply = () => document.getElementById('apply')?.scrollIntoView({ b
 const inputCls =
   'w-full bg-zinc-900 border border-zinc-700 focus:border-orange-500 focus:outline-none rounded-xl px-4 py-3 text-sm text-zinc-100 placeholder-zinc-500'
 
+type RzpOptions = {
+  key: string; amount: number; currency: string; name: string; description: string; order_id: string
+  prefill: { name: string; email: string; contact: string }; theme: { color: string }
+  handler: (r: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => void
+  modal?: { ondismiss?: () => void }
+}
+type RzpInstance = { open: () => void; on: (ev: string, cb: () => void) => void }
+
+function useRazorpay() {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    if (document.querySelector('script[src*="checkout.razorpay.com"]')) {
+      const t = setTimeout(() => setReady(true), 0)
+      return () => clearTimeout(t)
+    }
+    const s = document.createElement('script')
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    s.async = true
+    s.onload = () => setReady(true)
+    document.body.appendChild(s)
+  }, [])
+  return ready
+}
+
+function PayStep({
+  email, name, whatsapp, onPaid, closed,
+}: { email: string; name: string; whatsapp: string; onPaid: () => void; closed: boolean }) {
+  const ready = useRazorpay()
+  const [busy, setBusy] = useState<'' | 'deposit' | 'full'>('')
+  const [error, setError] = useState('')
+
+  async function pay(plan: 'deposit' | 'full') {
+    setError('')
+    if (!ready) { setError('Payment is loading. Please try again in a moment.'); return }
+    setBusy(plan)
+    try {
+      const res = await fetch('/api/diwali/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, plan }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || 'Could not start payment.'); setBusy(''); return }
+
+      const Razorpay = (window as unknown as { Razorpay: new (o: RzpOptions) => RzpInstance }).Razorpay
+      const rzp = new Razorpay({
+        key: data.key, amount: data.amount, currency: data.currency,
+        name: 'AmanAI Lab', description: 'Diwali AI Accelerator 2026', order_id: data.id,
+        prefill: { name: data.name || name, email, contact: data.contact || whatsapp },
+        theme: { color: '#f97316' },
+        modal: { ondismiss: () => setBusy('') },
+        handler: async response => {
+          const v = await fetch('/api/diwali/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(response),
+          })
+          if (v.ok) onPaid()
+          else {
+            const d = await v.json().catch(() => ({}))
+            setError(d.error || 'Payment verification failed. Please message Aman on WhatsApp with your payment screenshot.')
+          }
+          setBusy('')
+        },
+      })
+      rzp.on('payment.failed', () => { setError('Payment failed. Please try again.'); setBusy('') })
+      rzp.open()
+    } catch {
+      setError('Payment could not be started. Please try again.')
+      setBusy('')
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-orange-500/30 bg-zinc-950 p-6 sm:p-8">
+      <div className="text-center">
+        <CheckCircle className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
+        <p className="text-xl font-black">Application received{name ? `, ${name.split(' ')[0]}` : ''}!</p>
+        <p className="text-sm text-zinc-400 mt-1.5">Reserve your seat now. Seats are confirmed on payment, first come first served.</p>
+      </div>
+
+      <div className="mt-6 grid sm:grid-cols-2 gap-3">
+        <button
+          onClick={() => pay('deposit')} disabled={!!busy || closed}
+          className="text-left rounded-xl border-2 border-orange-500 bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-60 p-4"
+        >
+          <p className="text-xs font-black uppercase text-orange-400">Recommended</p>
+          <p className="text-2xl font-black mt-1">{inr(DIWALI.deposit)}</p>
+          <p className="text-sm text-zinc-300">Reserve my seat now</p>
+          <p className="text-xs text-zinc-500 mt-1">Pay the remaining {inr(DIWALI.price - DIWALI.deposit)} before Week 1</p>
+          <p className="mt-3 text-sm font-bold text-orange-400">{busy === 'deposit' ? 'Opening payment...' : 'Pay & reserve →'}</p>
+        </button>
+        <button
+          onClick={() => pay('full')} disabled={!!busy || closed}
+          className="text-left rounded-xl border border-zinc-700 hover:border-zinc-500 bg-zinc-900 disabled:opacity-60 p-4"
+        >
+          <p className="text-xs font-black uppercase text-zinc-500">One payment</p>
+          <p className="text-2xl font-black mt-1">{inr(DIWALI.price)}</p>
+          <p className="text-sm text-zinc-300">Pay the full fee</p>
+          <p className="text-xs text-zinc-500 mt-1">Nothing more to pay later</p>
+          <p className="mt-3 text-sm font-bold text-zinc-200">{busy === 'full' ? 'Opening payment...' : 'Pay in full →'}</p>
+        </button>
+      </div>
+      {error && <p className="mt-4 text-sm text-red-400 text-center">{error}</p>}
+      <p className="mt-4 text-xs text-zinc-500 text-center">Secure payment via Razorpay: UPI, cards and netbanking. After payment, Aman contacts you on WhatsApp to schedule your fit call and start date.</p>
+      <p className="mt-2 text-xs text-zinc-500 text-center">Prefer to pay later? You can close this page, and pay anytime with the same email using &quot;Already applied?&quot; below.</p>
+    </div>
+  )
+}
+
 function ApplyForm({ closed }: { closed: boolean }) {
   const [form, setForm] = useState({
     name: '', email: '', whatsapp: '', role: '', experience: '', pythonLevel: '', goal: '', why: '',
   })
-  const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle')
+  const [step, setStep] = useState<'form' | 'pay' | 'paid'>('form')
+  const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [lookupOpen, setLookupOpen] = useState(false)
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    setState('sending')
+    setSending(true)
     try {
       const res = await fetch('/api/diwali/apply', {
         method: 'POST',
@@ -138,35 +250,23 @@ function ApplyForm({ closed }: { closed: boolean }) {
         body: JSON.stringify(form),
       })
       const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setError(data.error || 'Something went wrong. Please try again.')
-        setState('idle')
-        return
-      }
-      setState('done')
+      if (!res.ok) { setError(data.error || 'Something went wrong. Please try again.'); return }
+      setStep('pay')
     } catch {
       setError('Network error. Please try again.')
-      setState('idle')
+    } finally {
+      setSending(false)
     }
   }
 
-  if (closed) {
-    return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
-        <p className="text-lg font-bold text-zinc-100">Applications are closed for this cohort</p>
-        <p className="text-sm text-zinc-400 mt-2">Message Aman on WhatsApp to ask about the next batch.</p>
-      </div>
-    )
-  }
-
-  if (state === 'done') {
-    const msg = encodeURIComponent(`Hi Aman! I just applied for the Diwali AI Accelerator 2026. My name is ${form.name}.`)
+  if (step === 'paid') {
+    const msg = encodeURIComponent(`Hi Aman! I just paid to reserve my seat in the Diwali AI Accelerator 2026. My name is ${form.name || ''} (${form.email}).`)
     return (
       <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-8 text-center">
         <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-        <p className="text-xl font-black text-zinc-100">Application received!</p>
+        <p className="text-xl font-black text-zinc-100">Your seat is reserved! 🎉</p>
         <p className="text-sm text-zinc-400 mt-2 max-w-md mx-auto">
-          Aman will review it and contact you on WhatsApp to schedule a short fit call. You can also message now to speed things up.
+          Payment confirmed. Aman will contact you on WhatsApp to schedule your fit call and confirm your start date.
         </p>
         <a
           href={`https://wa.me/${DIWALI.whatsapp}?text=${msg}`}
@@ -175,38 +275,72 @@ function ApplyForm({ closed }: { closed: boolean }) {
         >
           <MessageCircle className="w-4 h-4" /> Message Aman on WhatsApp
         </a>
+        <div className="mt-4">
+          <a href={DIWALI.pdf} download className="text-sm text-orange-400 hover:underline">Download the brochure (PDF)</a>
+        </div>
       </div>
     )
   }
 
+  if (step === 'pay') {
+    return <PayStep email={form.email.trim().toLowerCase()} name={form.name} whatsapp={form.whatsapp} closed={false} onPaid={() => setStep('paid')} />
+  }
+
   return (
-    <form onSubmit={submit} className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8 space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
-        <input required className={inputCls} placeholder="Full name *" value={form.name} onChange={set('name')} maxLength={100} />
-        <input required type="email" className={inputCls} placeholder="Email *" value={form.email} onChange={set('email')} maxLength={200} />
-        <input required type="tel" className={inputCls} placeholder="WhatsApp number (with country code) *" value={form.whatsapp} onChange={set('whatsapp')} maxLength={20} />
-        <input className={inputCls} placeholder="Current role / college" value={form.role} onChange={set('role')} maxLength={120} />
-        <select className={inputCls} value={form.experience} onChange={set('experience')}>
-          <option value="">Years of experience</option>
-          <option>Student / Fresher</option><option>0-2 years</option><option>2-5 years</option>
-          <option>5-10 years</option><option>10+ years</option>
-        </select>
-        <select className={inputCls} value={form.pythonLevel} onChange={set('pythonLevel')}>
-          <option value="">Python level</option>
-          <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
-        </select>
+    <>
+      {closed && (
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-center mb-4">
+          <p className="font-bold text-zinc-100">New applications are closed for this cohort</p>
+          <p className="text-sm text-zinc-400 mt-1">If you already applied, you can still reserve your seat below.</p>
+        </div>
+      )}
+      {!closed && (
+        <form onSubmit={submit} className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8 space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <input required className={inputCls} placeholder="Full name *" value={form.name} onChange={set('name')} maxLength={100} />
+            <input required type="email" className={inputCls} placeholder="Email *" value={form.email} onChange={set('email')} maxLength={200} />
+            <input required type="tel" className={inputCls} placeholder="WhatsApp number (with country code) *" value={form.whatsapp} onChange={set('whatsapp')} maxLength={20} />
+            <input className={inputCls} placeholder="Current role / college" value={form.role} onChange={set('role')} maxLength={120} />
+            <select className={inputCls} value={form.experience} onChange={set('experience')}>
+              <option value="">Years of experience</option>
+              <option>Student / Fresher</option><option>0-2 years</option><option>2-5 years</option>
+              <option>5-10 years</option><option>10+ years</option>
+            </select>
+            <select className={inputCls} value={form.pythonLevel} onChange={set('pythonLevel')}>
+              <option value="">Python level</option>
+              <option>Beginner</option><option>Intermediate</option><option>Advanced</option>
+            </select>
+          </div>
+          <textarea className={inputCls} rows={3} placeholder="Your goal (e.g. switch to a GenAI engineer role)" value={form.goal} onChange={set('goal')} maxLength={600} />
+          <textarea className={inputCls} rows={3} placeholder="Why do you want to join this cohort?" value={form.why} onChange={set('why')} maxLength={1000} />
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <button
+            type="submit" disabled={sending}
+            className="w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-black font-black py-3.5 rounded-xl text-sm flex items-center justify-center gap-2"
+          >
+            {sending ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : 'Apply & reserve my seat'}
+          </button>
+          <p className="text-xs text-zinc-500 text-center">Step 1 of 2. Next you can pay {inr(DIWALI.deposit)} to reserve your seat (or the full {inr(DIWALI.price)}).</p>
+        </form>
+      )}
+
+      <div className="mt-4 text-center">
+        <button onClick={() => setLookupOpen(o => !o)} className="text-sm text-orange-400 hover:underline">
+          Already applied? Pay to reserve your seat
+        </button>
+        {lookupOpen && (
+          <div className="mt-3 flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+            <input type="email" className={inputCls} placeholder="Email you applied with" value={form.email} onChange={set('email')} />
+            <button
+              onClick={() => form.email.trim() && setStep('pay')}
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold px-5 rounded-xl text-sm py-3"
+            >
+              Continue
+            </button>
+          </div>
+        )}
       </div>
-      <textarea className={inputCls} rows={3} placeholder="Your goal (e.g. switch to a GenAI engineer role)" value={form.goal} onChange={set('goal')} maxLength={600} />
-      <textarea className={inputCls} rows={3} placeholder="Why do you want to join this cohort?" value={form.why} onChange={set('why')} maxLength={1000} />
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      <button
-        type="submit" disabled={state === 'sending'}
-        className="w-full bg-orange-500 hover:bg-orange-400 disabled:opacity-60 text-black font-black py-3.5 rounded-xl text-sm flex items-center justify-center gap-2"
-      >
-        {state === 'sending' ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : 'Apply for the Diwali AI Accelerator'}
-      </button>
-      <p className="text-xs text-zinc-500 text-center">No payment now. If selected, you pay a {inr(DIWALI.deposit)} deposit after a short call with Aman.</p>
-    </form>
+    </>
   )
 }
 
@@ -278,7 +412,7 @@ export default function DiwaliContent({ seatsLeft, closed }: { seatsLeft: number
           <p className="text-xs font-black uppercase tracking-widest opacity-80">Diwali cohort price</p>
           <p className="mt-2 text-5xl sm:text-6xl font-black">{inr(DIWALI.price)}</p>
           <p className="mt-1 font-semibold">per learner &middot; Regular 1:1 mentorship: <span className="line-through">{inr(DIWALI.regularPrice)}</span></p>
-          <p className="mt-3 text-sm font-bold">Only {DIWALI.totalSeats} seats &middot; Cohort starts {DIWALI.startLabel.toLowerCase()}</p>
+          <p className="mt-3 text-sm font-bold">Only {DIWALI.totalSeats} seats &middot; Cohort starts {DIWALI.startLabel}</p>
         </div>
       </section>
 
@@ -406,11 +540,11 @@ export default function DiwaliContent({ seatsLeft, closed }: { seatsLeft: number
       <section id="apply" className="px-4 py-14 max-w-2xl mx-auto scroll-mt-20">
         <h2 className="text-2xl sm:text-3xl font-black text-center">Apply for your seat</h2>
         <p className="text-sm text-zinc-400 text-center mt-2 mb-6">
-          {closed ? 'Applications are closed.' : full ? 'All seats are currently taken. Apply to join the waitlist.' : `${seatsLeft} of ${DIWALI.totalSeats} seats left. Closes ${DIWALI.deadlineLabel}.`}
+          {closed ? 'New applications are closed.' : full ? 'All seats are currently taken. Apply to join the waitlist.' : `${seatsLeft} of ${DIWALI.totalSeats} seats left. Closes ${DIWALI.deadlineLabel}.`}
         </p>
         <ApplyForm closed={closed} />
         <div className="mt-6 grid sm:grid-cols-4 gap-3 text-center">
-          {['Apply', 'Fit call', `Pay ${inr(DIWALI.deposit)}`, 'Start'].map((s, i) => (
+          {['Apply', `Pay ${inr(DIWALI.deposit)} to reserve`, 'Fit call on WhatsApp', 'Start learning'].map((s, i) => (
             <div key={s} className="bg-zinc-900 border border-zinc-800 rounded-xl py-3">
               <p className="text-orange-400 font-black">{i + 1}</p><p className="text-xs text-zinc-300">{s}</p>
             </div>
