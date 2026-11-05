@@ -76,8 +76,6 @@ export default async function HomePage() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
-      <DiwaliBanner />
-
       {/* 1. Hook — strong value prop */}
       <HeroSection />
 
@@ -86,6 +84,9 @@ export default async function HomePage() {
         subscriberCount={formattedStats ? `${formattedStats.subs.value}${formattedStats.subs.suffix}` : undefined}
         videoCount={formattedStats ? `${formattedStats.videos.value}${formattedStats.videos.suffix}` : undefined}
       />
+
+      {/* Diwali cohort announcement (hides itself after the deadline) */}
+      <DiwaliBanner />
 
       {/* 3. Daily challenge — habit hook (self-hides until loaded) */}
       <DailyChallengeWidget />

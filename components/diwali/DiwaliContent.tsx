@@ -221,7 +221,7 @@ export default function DiwaliContent({ seatsLeft, closed }: { seatsLeft: number
   return (
     <main className="bg-zinc-950 text-zinc-100 pb-24 sm:pb-0">
       {/* Hero */}
-      <section className="relative overflow-hidden px-4 pt-16 pb-14 sm:pt-24">
+      <section className="relative overflow-hidden px-4 pt-28 pb-14 sm:pt-36">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[420px] bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="relative max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 text-orange-400 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-6">
