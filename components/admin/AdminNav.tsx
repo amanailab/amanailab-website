@@ -27,6 +27,7 @@ const navLinks = [
   { href: '/admin/users',             label: 'Users',           icon: Users },
   { href: '/admin/courses',           label: 'Courses',         icon: GraduationCap },
   { href: '/admin/masterclass',       label: 'Masterclass',     icon: GraduationCap },
+  { href: '/admin/diwali',            label: 'Diwali Cohort',   icon: GraduationCap },
   { href: '/admin/questions',         label: "Interview Q's",   icon: HelpCircle },
   { href: '/admin/company-questions', label: 'Company Q\'s',    icon: Library },
   { href: '/admin/companies',         label: 'Companies',       icon: Building2 },

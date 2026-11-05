@@ -34,6 +34,7 @@ const staticPages: MetadataRoute.Sitemap = [
   { url: `${BASE}/notes`,                 priority: 0.85, changeFrequency: 'weekly' },
   { url: `${BASE}/upgrade`,               priority: 0.8, changeFrequency: 'monthly' },
   { url: `${BASE}/connect-aman`,          priority: 0.7, changeFrequency: 'monthly' },
+  { url: `${BASE}/diwali-accelerator`,    priority: 0.8, changeFrequency: 'daily'   },
   { url: `${BASE}/services`,              priority: 0.6, changeFrequency: 'monthly' },
   { url: `${BASE}/consulting`,            priority: 0.7, changeFrequency: 'monthly' },
   { url: `${BASE}/about`,                 priority: 0.5, changeFrequency: 'monthly' },

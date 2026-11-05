@@ -11,6 +11,7 @@ import LatestVideos   from "@/components/home/LatestVideos";
 import CTASection     from "@/components/home/CTASection";
 import LearningPath   from "@/components/home/LearningPath";
 import HomeFAQ        from "@/components/home/HomeFAQ";
+import DiwaliBanner   from "@/components/home/DiwaliBanner";
 import { SITE_STATS } from "@/lib/site-stats";
 
 import type { Metadata } from 'next'
@@ -74,6 +75,8 @@ export default async function HomePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+
+      <DiwaliBanner />
 
       {/* 1. Hook — strong value prop */}
       <HeroSection />
